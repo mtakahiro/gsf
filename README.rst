@@ -30,17 +30,17 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```  
-git clone https://github.com/mtakahiro/gsf  
-cd gsf  
-python setup.py install  
+``` <br />
+git clone https://github.com/mtakahiro/gsf
+cd gsf
+python setup.py install
 ```
 
 
 Examples
 ~~~~~~~~
 
-```\
+```
 python run_gsf.py test.input flag
 ```
 
