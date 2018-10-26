@@ -14,6 +14,7 @@ Demonstration
 ~~~~~~~~~~~~~~~~~~~
 - Videos can be found [here](https://youtu.be/pdkA9Judd-M).
 
+This site was built using [GitHub Pages](https://pages.github.com/).
 
 
 Pre-requirement
