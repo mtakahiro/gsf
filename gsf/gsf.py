@@ -123,7 +123,7 @@ def main(parfile, fplt):
     #
     # Make templates based on input redsfift.
     #
-    if fplt == 0 or fplt == 1: # or fplt == 4:
+    if fplt == 0 or fplt == 1 or fplt == 2:
         #
         # Params for MCMC
         #
@@ -152,8 +152,8 @@ def main(parfile, fplt):
         ####################################
         # Start making redshifted templates.
         # Then, fit.
-        #if fplt != 4:
-        #    maketemp(inputs, zrecom, Zall, age)
+        if fplt != 2:
+            maketemp(inputs, zrecom, Zall, age)
         zprev   = zrecom # redshift from previous run
         Czprev0 = Czrec0
         Czprev1 = Czrec1
@@ -180,7 +180,7 @@ def main(parfile, fplt):
         print('This took;',stop - start)
 
 
-    if fplt == 2:
+    if fplt == 3:
         from .plot_sfh import plot_sfh_pcl2
         from .plot_Zevo import plot_sed_Z
         plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT)

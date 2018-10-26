@@ -7,19 +7,20 @@ NWALK		100
 NMCZ		1000
 NWALKZ		10
 TAU0		0.03 # in Gyr for tau; Randomly taken when MCMC.
-FNELD		0
-NTEMP		3 # Number of parallel tempering.
+FNELD		1 # Initial minimization. 0:Powell(slow but accurate), 1:Nelder(fast). See lmfit.
+NTEMP		1 # Number of parallel tempering.
 #
 # Params for data
 #
 DIR_TEMP	./templates/ # Directory of extracted spectra.
-DIR_EXTR	/Users/tmorishita/Dropbox/fsps/Extraction/GDN/ # Directory of extracted spectra.
-DIR_FILT	./filter/ 
-CAT_BB		./bb.cat # Broadband catalog.
-FILTER		f125w,f140w,f160w,f275w,f336w,f435w,f606w,f775w,f850w,f230w,f360w,f450w,f580w,f800w # In the same order as BB catalog. Should be match *.fil in FILT_DIT
+DIR_EXTR	./ # Directory of extracted spectra.
+DIR_FILT	./filter/ # .fil files. Found in source code directory.
+CAT_BB		./GDS_bb_ksirac_uvis.cat # Broadband catalog.
+FILTER		f125w,f140w,f160w,f225w,f275w,f336w,f435w,f606w,f775w,f814w,f850w,f230w,f360w,f450w,f580w,f800w # In the same order as BB catalog. Should be match *.fil in FILT_DIT
 #
 # Params for SED
 #
+TAU_COMP	0 #
 AGE		0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0 #0.01,0.03,0.1,0.3,0.5,0.7,1.0,2.0,3.0
 ZMAX		0.624 # Max metalicity
 ZMIN		-0.8 # Min metalicity
@@ -30,10 +31,10 @@ NDIM		19 # ndim  = int(1 + len(age) * 2) # dust + age + Z(age)
 #
 # Params for target
 #
-ID		06215
+ID		43114
 PA		00
-ZGAL		2.30280 # Initial guess of source redshift.
-CZ0 		1.0 # Initial guess of spectral normalization for G102.
-CZ1		1. # Initial guess of spectral normalization for G141.
-LINE 		0. #3869.,3894.6,4102,4341,4960.,5008.  # Emission lines to be masked. in AA.
+ZGAL		1.90212 # Initial guess of source redshift.
+CZ0 		0.83167 # Initial guess of spectral normalization for G102.
+CZ1		0.96804 # Initial guess of spectral normalization for G141.
+LINE 		4102,4341,4861,4959 #3869.,3894.6,4102,4341,4960.,5008.  # Emission line, iin AA.
 ZVIS		1 # Visual inspection of redshift. 1=yes, 0=no. If you are not confident with zgal, cz1/2, then ZVIS should be 1 for iteration.

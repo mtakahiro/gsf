@@ -12,9 +12,6 @@ try:
 except ImportError:
     USE_CYTHON = False
 
-if not os.path.exists('grizli/utils_c/interp.pyx'):
-    USE_CYTHON = False
-
 if USE_CYTHON:
     cext = '.pyx'
 else:
@@ -58,7 +55,7 @@ setup(
     name = "gsf",
     version = "1.0.0",
     author = "Takahiro Morishita",
-    author_email = "mtakahiro.astr@gmail.com",
+    author_email = "tmorishita@stsci.edu",
     description = "SED Fitting Code for HST Grism",
     license = "STScI",
     url = "https://github.com/mtakahiro",
@@ -74,7 +71,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
-    package_data={'gsf': ['filter/*']},
+    package_data={'gsf': ['example/*'], 'gsf': ['example/filter/*'], 'gsf': ['example/templates/*']},
     zip_safe=False,
     #install_requires=requires,
     #ext_modules = extensions,
