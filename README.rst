@@ -31,12 +31,23 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``` 
+```
 python setup.py install
 ```
 
 Examples
 ~~~~~~~~
+
+```javascript
+// code away!
+
+let generateProject = project => {
+  let code = [];
+  for (let js = 0; js < project.length; js++) {
+    code.push(js);
+  }
+};
+```
 
 ``` 
 python run_gsf.py test.input flag
