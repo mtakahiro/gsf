@@ -12,9 +12,8 @@ version 1.0.0
 
 Demonstration
 ~~~~~~~~~~~~~~~~~~~
-- Videos can be found [here](https://youtu.be/pdkA9Judd-M).
+- Videos can be found `here <https://youtu.be/pdkA9Judd-M>`__.
 
-This site was built using [GitHub Pages](https://pages.github.com/).
 
 
 Pre-requirement
@@ -39,7 +38,10 @@ python setup.py install
 Examples
 ~~~~~~~~
 
-`python run_gsf.py test.input flag`
+'''
+python run_gsf.py test.input flag
+'''
+
 
 flag
 ~~~~~~~~
