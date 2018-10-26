@@ -1,8 +1,6 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ./sample.png
-
 version 1.0.0
 
 - SED fitting code used in `Morishita et al. (2018) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__.
@@ -10,6 +8,7 @@ version 1.0.0
 - Emission lines are currently not included in fitting, but masked.
 ========================================================================================
 
+.. image:: ./sample.png
 
 Demonstration
 ~~~~~~~~~~~~~~~~~~~
@@ -32,14 +31,14 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```sh
+``` 
 python setup.py install
 ```
 
 Examples
 ~~~~~~~~
 
-```sh
+``` 
 python run_gsf.py test.input flag
 ```
 
