@@ -78,6 +78,7 @@ def main(parfile, fplt):
     except:
         print('No entry: TAU_COMP')
         ftaucomp = 0
+        print('set to %d' % ftaucomp)
         pass
 
     if os.path.exists(DIR_TMP) == False:

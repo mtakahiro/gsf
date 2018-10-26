@@ -38,9 +38,9 @@ python setup.py install
 Examples
 ~~~~~~~~
 
-'''
+```
 python run_gsf.py test.input flag
-'''
+```
 
 
 flag

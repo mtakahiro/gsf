@@ -7,6 +7,23 @@ import os
 import numpy
 
 try:
+    from Cython.Build import cythonize
+    USE_CYTHON = True
+except ImportError:
+    USE_CYTHON = False
+
+if not os.path.exists('grizli/utils_c/interp.pyx'):
+    USE_CYTHON = False
+
+if USE_CYTHON:
+    cext = '.pyx'
+else:
+    cext = '.c'
+
+print('C extension: {0}'.format(cext))
+
+
+try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup

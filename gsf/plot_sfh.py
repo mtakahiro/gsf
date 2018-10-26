@@ -1121,8 +1121,7 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     fw.write('\n')
     fw.close()
 
-
-    print('%s & $%.5e$ & $%.5e$ & $%.3f$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.1f$ & $%.1f$ & $%.2f$\\\\'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek))
+    #print('%s & $%.5e$ & $%.5e$ & $%.3f$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.1f$ & $%.1f$ & $%.2f$\\\\'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek))
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
