@@ -30,7 +30,7 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```
+```bash
 python setup.py install
 ```
 
