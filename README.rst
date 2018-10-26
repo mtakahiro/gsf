@@ -30,10 +30,16 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```  
-git clone https://github.com/mtakahiro/gsf  
-cd gsf  
-python setup.py install  
+
+.. code-block:: bash
+
+    $ pip install lenstronomy --user
+
+
+```
+git clone https://github.com/mtakahiro/gsf
+cd gsf
+python setup.py install
 ```
 
 Some basic Git commands are:
