@@ -12,7 +12,7 @@ version 1.0.0
 Demonstration
 ~~~~~~~~~~~~~~~~~~~
 .. image:: ./sample.png
-- Videos can be found `here <https://youtu.be/pdkA9Judd-M>`__.
+- Fitting movie can be found `here <https://youtu.be/pdkA9Judd-M>`__.
 
 
 
@@ -31,6 +31,8 @@ Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ```
+git clone https://github.com/mtakahiro/gsf
+cd gsf
 python setup.py install
 ```
 
