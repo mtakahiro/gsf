@@ -35,8 +35,9 @@ Installation & Documentation
 python setup.py install
 ```
 
-Examples
-~~~~~~~~
+---
+
+## Example (Optional)
 
 ```javascript
 // code away!
@@ -48,6 +49,12 @@ let generateProject = project => {
   }
 };
 ```
+
+---
+
+
+Examples
+~~~~~~~~
 
 ``` 
 python run_gsf.py test.input flag
