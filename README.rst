@@ -30,31 +30,19 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 .. code-block:: bash
 
-    $ pip install lenstronomy --user
+    git clone https://github.com/mtakahiro/gsf
+    cd gsf
+    python setup.py install
 
-
-```
-git clone https://github.com/mtakahiro/gsf
-cd gsf
-python setup.py install
-```
-
-Some basic Git commands are:
-```
-git status
-git add
-git commit
-```
 
 Examples
 ~~~~~~~~
 
-```
-python run_gsf.py test.input flag
-```
+.. code-block:: bash
+
+    python run_gsf.py test.input flag
 
 
 flag
