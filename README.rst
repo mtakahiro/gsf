@@ -31,17 +31,13 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`
-python setup.py install
-`
+`python setup.py install`
 
 
 Examples
 ~~~~~~~~
 
-`
-python run_gsf.py test.input flag
-`
+`python run_gsf.py test.input flag`
 
 flag
 ~~~~~~~~
