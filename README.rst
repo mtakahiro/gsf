@@ -41,7 +41,7 @@ Examples
 ~~~~~~~~
 
 ```
-python run_gsf.py test.input flag
+python run_gsf.py test.input flag  
 ```
 
 
