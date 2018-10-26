@@ -1,8 +1,10 @@
 .. image:: ./sample.png
 
-
-python SED fitter
-~~~~~~~~~~~~~~~~~~~
+Grism SED Fitter (GSF)
+~~~~~~~~~~~~~~~~~~~~~~
+[![NPM Version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
+[![Downloads Stats][npm-downloads]][npm-url]
 
 version 1.0.0
 
