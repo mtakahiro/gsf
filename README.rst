@@ -30,10 +30,10 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```
-git clone https://github.com/mtakahiro/gsf
-cd gsf
-python setup.py install
+```  
+git clone https://github.com/mtakahiro/gsf  
+cd gsf  
+python setup.py install  
 ```
 
 Some basic Git commands are:
