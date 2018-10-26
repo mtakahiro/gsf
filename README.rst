@@ -30,9 +30,9 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``
+```
 python setup.py install
-``
+```
 
 
 Examples
