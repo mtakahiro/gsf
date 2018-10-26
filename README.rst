@@ -33,7 +33,7 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```
+```sh
 python setup.py install
 ```
 
@@ -41,11 +41,11 @@ python setup.py install
 Examples
 ~~~~~~~~
 
-```
+```sh
 python run_gsf.py test.input flag
 ```
 
-## flag
-- 0: Start from generating z=0 templates. Then same as flag=1.
-- 1: Start with pre-existing z=0 templates.
-- 2: Only plot the SFH and SED using the existing result files.
+* flag
+  * 0: Start from generating z=0 templates. Then same as flag=1.
+  * 1: Start with pre-existing z=0 templates.
+  * 2: Only plot the SFH and SED using the existing result files.
