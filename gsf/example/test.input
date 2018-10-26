@@ -1,0 +1,39 @@
+# Input file
+#
+# params for MCMC
+#
+NMC		100000
+NWALK		100
+NMCZ		1000
+NWALKZ		10
+TAU0		0.03 # in Gyr for tau; Randomly taken when MCMC.
+FNELD		0
+NTEMP		3 # Number of parallel tempering.
+#
+# Params for data
+#
+DIR_TEMP	./templates/ # Directory of extracted spectra.
+DIR_EXTR	/Users/tmorishita/Dropbox/fsps/Extraction/GDN/ # Directory of extracted spectra.
+DIR_FILT	./filter/ 
+CAT_BB		./bb.cat # Broadband catalog.
+FILTER		f125w,f140w,f160w,f275w,f336w,f435w,f606w,f775w,f850w,f230w,f360w,f450w,f580w,f800w # In the same order as BB catalog. Should be match *.fil in FILT_DIT
+#
+# Params for SED
+#
+AGE		0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0 #0.01,0.03,0.1,0.3,0.5,0.7,1.0,2.0,3.0
+ZMAX		0.624 # Max metalicity
+ZMIN		-0.8 # Min metalicity
+DELZ		0.2
+ZEVOL		1 # Evolution in Z; 1=yes, 2=no.
+NIMF		0 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.
+NDIM		19 # ndim  = int(1 + len(age) * 2) # dust + age + Z(age)
+#
+# Params for target
+#
+ID		06215
+PA		00
+ZGAL		2.30280 # Initial guess of source redshift.
+CZ0 		1.0 # Initial guess of spectral normalization for G102.
+CZ1		1. # Initial guess of spectral normalization for G141.
+LINE 		0. #3869.,3894.6,4102,4341,4960.,5008.  # Emission lines to be masked. in AA.
+ZVIS		1 # Visual inspection of redshift. 1=yes, 0=no. If you are not confident with zgal, cz1/2, then ZVIS should be 1 for iteration.
