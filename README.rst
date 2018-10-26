@@ -30,7 +30,7 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```bash
+```ruby
 python setup.py install
 ```
 
