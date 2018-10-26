@@ -16,6 +16,8 @@ import timeit
 from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, savecpkl
 from .zfit import check_redshift
 from .plot_Zevo import *
+from .plot_sfh import plot_sfh_pcl2
+
 
 ############################
 py_v = (sys.version_info[0])
@@ -645,7 +647,9 @@ class Mainbody():
                     DIR_FILT = inputs['DIR_FILT']
                 except:
                     DIR_FILT = './'
+
                 plot_sed_Z(ID0, PA0, Zall, age, tau0=tau0, fil_path=DIR_FILT)
+                plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT)
 
 
             return 0, zrecom, Czrec0, Czrec1
