@@ -8,10 +8,10 @@ version 1.0.0
 - Emission lines are currently not included in fitting, but masked.
 ========================================================================================
 
-.. image:: ./sample.png
 
 Demonstration
 ~~~~~~~~~~~~~~~~~~~
+.. image:: ./sample.png
 - Videos can be found `here <https://youtu.be/pdkA9Judd-M>`__.
 
 
