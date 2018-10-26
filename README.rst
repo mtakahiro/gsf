@@ -14,7 +14,7 @@ version 1.0.0
 
 Demonstration
 ~~~~~~~~~~~~~~~~~~~
-- `Videos can be found here<https://youtu.be/pdkA9Judd-M>`__.
+- Videos can be found `here<https://youtu.be/pdkA9Judd-M>`__.
 
 
 
@@ -33,17 +33,17 @@ Pre-requirement
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``
+```
 python setup.py install
-``
+```
 
 
 Examples
 ~~~~~~~~
 
-``
+```
 python run_gsf.py test.input flag
-``
+```
 
 flag
 ~~~~
