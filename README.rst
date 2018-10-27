@@ -42,12 +42,12 @@ Examples
 
 .. code-block:: bash
 
-    python run_gsf.py test.input flag
+    python run_gsf.py test.input <flag>
 
 
 flag
 ~~~~~~~~
-- 0: Start from generating z=0 templates. Then same as flag=1.
-- 1: Start with pre-existing z=0 templates.
-- 2: Start with pre-existing z=z_input templates.
-- 3: Only plot the SFH and SED using the existing result files.
+- 0: Start from generating z=0 templates. Then go to 1.
+- 1: Start with pre-existing z=0 templates. Then go to 2.
+- 2: Start with pre-existing z=z_input templates. Then go to 3.
+- 3: Only plot SFH and SED using existing result files.
