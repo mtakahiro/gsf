@@ -2386,7 +2386,7 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     try:
     #if 1>0:
         from scipy import misc
-        rgb_array = misc.imread('/Users/tmorishita/Dropbox/fsps/example_MIST/rgb/rgb_'+str(int(ID0))+'.png')
+        rgb_array = misc.imread('./rgb/rgb_'+str(int(ID0))+'.png')
         axicon = fig.add_axes([0.68, 0.53, 0.4, 0.4])
         axicon.imshow(rgb_array, interpolation='nearest')
         axicon.set_xticks([])
