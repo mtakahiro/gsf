@@ -175,18 +175,13 @@ class Func:
 
         return A00 * yyd_sort, xxd_sort
 
-    # Making model template with a given param setself.
-    # Also dust attenuation.
+
     def tmp04(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
 
         ZZ = self.ZZ
         AA = self.AA
         bfnc = Basic(ZZ)
         DIR_TMP = './templates/'
-
-        zmc    = par['zmc']
-        #Cz0s  = vals['Cz0']
-        #Cz1s  = vals['Cz1']
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
         pp  = int(pp0[0])
@@ -208,116 +203,6 @@ class Func:
                 yy  = A00 * lib[:, coln]
             else:
                 yy += A00 * lib[:, coln]
-
-        # How much does this cost in time?
-        xx_s = xx / (1+zgal) * (1+zmc)
-        yy_s = np.interp(xx_s, xx, yy)
-        xx = xx_s
-        yy = yy_s
-
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
-        xxd *= (1.+zgal)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
-
-        return yyd_sort, xxd_sort
-
-    def tmp04_val(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
-
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
-
-        zmc    = par.params['zmc'].value
-        #Cz0s  = vals['Cz0']
-        #Cz1s  = vals['Cz1']
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp  = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
-
-        Av00 = par.params['Av'].value
-        for aa in range(len(AA)):
-            nmodel = aa
-            Z   = par.params['Z'+str(aa)].value
-            A00 = par.params['A'+str(aa)].value
-            NZ  = bfnc.Z2NZ(Z)
-
-            #coln = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
-            coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
-            if aa == 0:
-                nr  = lib[:, 0]
-                xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy  = A00 * lib[:, coln]
-            else:
-                yy += A00 * lib[:, coln]
-
-        # How much does this cost in time?
-        xx_s = xx / (1+zgal) * (1+zmc)
-        yy_s = np.interp(xx_s, xx, yy)
-        xx = xx_s
-        yy = yy_s
-
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
-        xxd *= (1.+zgal)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
-
-        return yyd_sort, xxd_sort
-
-    def tmp04_samp(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
-
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
-
-        #AA00[:]   = par[:len(AA)]
-        #ZZ_tmp[:] = par[len(AA)+1:len(AA)+1+len(AA)]
-        Av00      = par[len(AA)]
-        zmc       = par[len(AA)+1+len(AA)]
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp  = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
-
-        for aa in range(len(AA)):
-            #nmodel = aa
-            A00  = par[aa] #AA00[aa] #par.params['A'+str(aa)].value
-            Z    = par[len(AA)+1+aa]# ZZ_tmp[aa] #par.params['Z'+str(aa)].value
-            NZ   = bfnc.Z2NZ(Z)
-            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
-            if aa == 0:
-                nr  = lib[:, 0]
-                xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy  = A00 * lib[:, coln]
-            else:
-                yy += A00 * lib[:, coln]
-
-        # How much does this cost in time?
-        xx_s = xx / (1+zgal) * (1+zmc)
-        yy_s = np.interp(xx_s, xx, yy)
-        xx = xx_s
-        yy = yy_s
 
         yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
         xxd *= (1.+zgal)

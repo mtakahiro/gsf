@@ -25,9 +25,9 @@ class Analyze:
         self.ZEVOL = int(inputs['ZEVOL'])
         #self.NDIM= int(inputs['NDIM'])
         if self.ZEVOL == 1:
-            self.NDIM= int(1 + 1 + len(age)*2)
+            self.NDIM= int(1 + len(age)*2)
         else:
-            self.NDIM= int(1 + 1 + len(age) + 1)
+            self.NDIM= int(1 + len(age) + 1)
 
 
         Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
@@ -119,7 +119,6 @@ class Analyze:
         Zmc  = np.zeros((len(age),3), dtype='float32')
         Zb   = np.zeros(len(age), dtype='float32')
         NZbest = np.zeros(len(age), dtype='int')
-
         f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
         sedpar = f0[1]
         ms     = np.zeros(len(age), dtype='float32')
@@ -138,7 +137,6 @@ class Analyze:
         Avb   = res.params['Av'].value
         Avmc  = np.percentile(res.flatchain['Av'], [16,50,84])
         AAvmc = [Avmc]
-        zmc   = np.percentile(res.flatchain['zmc'], [16,50,84])
 
         AA_tmp = np.zeros(len(age), dtype='float32')
         ZZ_tmp = np.zeros(len(age), dtype='float32')
@@ -146,11 +144,17 @@ class Analyze:
 
         DIR_TMP = self.DIR_TEMP
         for kk in range(int(nmc/5)):
-            par_tmp   = samples[np.random.randint(len(samples))]
+            par_tmp = samples[np.random.randint(len(samples))]
             AA_tmp[:] = par_tmp[:len(age)]
             Av_tmp    = par_tmp[len(age)]
-            ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+len(age)]
-            model2, xm_tmp = fnc.tmp04_samp(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
+            ZZ_tmp[:] = par_tmp[len(age)+1:]
+
+            for ss in range(len(age)):
+                if ss == 0:
+                    model2, xm_tmp = fnc.tmp03(ID0, PA0, AA_tmp[ss], Av_tmp, ss, ZZ_tmp[ss], zrecom, lib_all, tau0=tau0)
+                else:
+                    mod0_tmp, xx_tmp = fnc.tmp03(ID0, PA0, AA_tmp[ss], Av_tmp, ss, ZZ_tmp[ss], zrecom, lib_all, tau0=tau0)
+                    model2 += mod0_tmp
 
             lmrest = xm_tmp / (1. + zrecom)
             fu_cnv = filconv(model2,lmrest,fu,lu)
@@ -255,11 +259,6 @@ class Analyze:
             col50 = fits.Column(name='Z'+str(aa), format='E', unit='logZsun', array=Zmc[aa][:])
             col01.append(col50)
 
-        # zmc
-        col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
-        col01.append(col50)
-        print(zmc[:])
-
         # Dn4000
         col50 = fits.Column(name='Dn4', format='E', unit='', array=Dnmc[:])
         col01.append(col50)
@@ -285,7 +284,7 @@ class Analyze:
         col01.append(col50)
 
         # zmc
-        col50 = fits.Column(name='z_cz', format='E', unit='', array=z_cz[:])
+        col50 = fits.Column(name='zmc', format='E', unit='', array=z_cz[:])
         col01.append(col50)
 
         # Chi
@@ -332,12 +331,14 @@ class Analyze:
         col50 = fits.Column(name='Mg2', format='E', unit='', array=Mg2mc[:])
         col01.append(col50)
 
+
         # Summarize;
         colms  = fits.ColDefs(col01)
         dathdu = fits.BinTableHDU.from_columns(colms)
         hdu    = fits.HDUList([prihdu, dathdu])
 
         hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
+
 
         ########################
         # LINES

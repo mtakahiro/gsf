@@ -16,6 +16,8 @@ import timeit
 from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, savecpkl
 from .zfit import check_redshift
 from .plot_Zevo import *
+from .plot_sfh import plot_sfh_pcl2
+
 
 ############################
 py_v = (sys.version_info[0])
@@ -39,6 +41,15 @@ d    = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW), dtype='int') # flag.
+
+
+################
+# RF colors.
+################
+home = os.path.expanduser('~')
+#fil_path = home + '/eazy-v1.01/PROG/FILT/'
+fil_path = home + '/Dropbox/FILT/'
+eaz_path = home + '/Dropbox/OUTPUT_M1149/' # From which z-prior is taken.
 
 
 #####################
@@ -189,7 +200,19 @@ class Mainbody():
         #####################
         def residual(pars): # x, y, wht are taken from out of the definition.
             vals = pars.valuesdict()
+            Av   = vals['Av']
+            ######################
+            '''
+            for aa in range(len(age)):
+                if aa == 0:
+                    mod0, x1 = fnc.tmp03(ID0, PA0, vals['A'+str(aa)], Av, aa, vals['Z'+str(aa)], zprev, lib, tau0)
+                    model = mod0
+                else:
+                    mod0, xxbs = fnc.tmp03(ID0, PA0, vals['A'+str(aa)], Av, aa, vals['Z'+str(aa)], zprev, lib, tau0)
+                    model += mod0
+            '''
             model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
+            ######################
             if fy is None:
                 print('Data is none')
                 return model
@@ -197,17 +220,17 @@ class Mainbody():
                 return (model - fy) * np.sqrt(wht2) # i.e. residual/sigma
 
         def lnprob(pars):
-            vals   = pars.valuesdict()
+            vals = pars.valuesdict()
+            Av = vals['Av']
             resid  = residual(pars)
-            s      = 1.
+            s      = 1. #pars['f']
             resid *= 1 / s
             resid *= resid
             resid += np.log(2 * np.pi * s**2)
-            #if Av<0:
-            #     return -np.inf
-            #else:
-            #    respr = np.log(1)
-            respr = np.log(1)
+            if Av<0:
+                 return -np.inf
+            else:
+                respr = np.log(1)
             return -0.5 * np.sum(resid) + respr
 
 
@@ -240,10 +263,6 @@ class Mainbody():
         fwz.write('# ID Zini chi/nu AA Av Zbest\n')
 
         nZtmp = int((Zmax-Zmin)/delZtmp)
-
-        ##############
-        # Added.
-        fit_params.add('zmc', value=zprev, min=zprev-0.1, max=zprev+0.1)
 
         if fneld == 1:
             for zz in range(0,nZtmp,1):
@@ -295,6 +314,7 @@ class Mainbody():
                 for aa in range(len(age)):
                     fit_params['Z'+str(aa)].value = ZZ
 
+                #
                 out_tmp = minimize(residual, fit_params, method='powell') # powel is the more accurate.
                 #print(ZZ, bfnc.Z2NZ(ZZ))
                 #print(fit_report(out_tmp))
@@ -349,6 +369,7 @@ class Mainbody():
         #fitc = fit_report_chi(out) # Chi2, Reduced-chi2
         ZZ   = Zbest # This is really important/does affect lnprob/residual.
 
+
         print('\n\n')
         print('#####################################')
         print('Zbest, chi are;',Zbest,chidef)
@@ -358,9 +379,18 @@ class Mainbody():
         fwz.close()
 
         Av_tmp = out.params['Av'].value
+        #Z_tmp  = Zbest
         AA_tmp = np.zeros(len(age), dtype='float32')
         ZZ_tmp = np.zeros(len(age), dtype='float32')
-        fm_tmp, xm_tmp = fnc.tmp04_val(ID0, PA0, out, zprev, lib, tau0=tau0)
+        for aa in range(len(age)):
+            AA_tmp[aa] = out.params['A'+str(aa)].value
+            ZZ_tmp[aa] = out.params['Z'+str(aa)].value
+            if aa == 0:
+                mod0_tmp, xm_tmp = fnc.tmp03(ID0, PA0, AA_tmp[aa], Av_tmp, aa, ZZ_tmp[aa], zprev, lib, tau0)
+                fm_tmp = mod0_tmp
+            else:
+                mod0_tmp, xx_tmp = fnc.tmp03(ID0, PA0, AA_tmp[aa], Av_tmp, aa, ZZ_tmp[aa], zprev, lib, tau0)
+                fm_tmp += mod0_tmp
 
 
         ########################
@@ -487,13 +517,6 @@ class Mainbody():
             Czrec0  = Cz0
             Czrec1  = Cz1
 
-            #######################
-            # Added
-            #######################
-            fit_params.add('zmc', value=z_cz[1], min=z_cz[0], max=z_cz[2])
-            #fit_params.add('C1', value=z_cz[1], min=z_cz[0], max=z_cz[2])
-            #fit_params.add('C2', value=z_cz[1], min=z_cz[0], max=z_cz[2])
-
             ##############################
             # Save fig of z-distribution.
             ##############################
@@ -566,6 +589,7 @@ class Mainbody():
 
             Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
             #Zmc  = np.percentile(res.flatchain['Z'], [16,50,84])
+
             Avpar = np.zeros((1,3), dtype='float32')
             Avpar[0,:] = Avmc
 
@@ -623,7 +647,9 @@ class Mainbody():
                     DIR_FILT = inputs['DIR_FILT']
                 except:
                     DIR_FILT = './'
+
                 plot_sed_Z(ID0, PA0, Zall, age, tau0=tau0, fil_path=DIR_FILT)
+                plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT)
 
 
             return 0, zrecom, Czrec0, Czrec1
