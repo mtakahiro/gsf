@@ -39,6 +39,7 @@ Installation & Documentation
 
 Examples
 ~~~~~~~~
+Files are found in ./gsf/examples/
 
 .. code-block:: bash
 
