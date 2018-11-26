@@ -4,11 +4,13 @@ import numpy as np
 import sys
 from scipy.integrate import simps
 import pickle as cPickle
+from scipy.integrate import simps
 
 #
 c = 3.e18 # A/s
 chimax = 1.
 mag0 = 25.0
+m0set= mag0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 ################
@@ -18,6 +20,32 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+def data_int(lmobs, lmtmp, ftmp):
+    # lmobs: Observed wavelength.
+    # lmtmp, ftmp: Those to be interpolated.
+    ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
+    return ftmp_int
+
+def flamtonu(lam, flam):
+    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    fnu  = flam * Ctmp
+    return fnu
+
+def fnutolam(lam, fnu):
+    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    flam  = fnu / Ctmp
+    return flam
+
+def gauss(x,A,sig):
+    return A * np.exp(-0.5*x**2/sig**2)
+
+def moffat(xx, A, x0, gamma, alp):
+    yy = A * (1. + (xx-x0)**2/gamma**2)**(-alp)
+    return yy
+
+def get_filt(LIBFILT, NFILT):
+    #f = open(LIBFILT + '.info', 'r')
+    f = open(LIBFILT + '', 'r')
 
 def get_fit(x,y,xer,yer, nsfh='Del.'):
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
@@ -29,14 +57,14 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
         con = (tt[:]-t0<0)
         sfr[:][con] = minsfr
         return sfr
-    
+
     def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1)):
         sfr = np.zeros(len(tt), dtype='float32') + minsfr
         sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
         con = (tt[:]-t0<0)
         sfr[:][con] = minsfr
         return sfr
-    
+
     def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1)):
         sfr = np.zeros(len(tt), dtype='float32') + minsfr
         sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
@@ -61,7 +89,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
             model = SFH_dec(t0_tmp, tau_tmp, A_tmp, tt=x)
         elif nsfh == 'Cons.':
             model = SFH_cons(t0_tmp, tau_tmp, A_tmp, tt=x)
-        
+
         #con = (model>minsfr)
         con = (model>0)
         #print(model[con])
@@ -75,11 +103,11 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
         # i.e. residual/sigma
         return resid
 
-    
+
     out = minimize(residual, fit_params, method='powell')
     #out = minimize(residual, fit_params, method='nelder')
     print(fit_report(out))
-    
+
     t0    = out.params['t0'].value
     tau   = out.params['tau'].value
     A     = out.params['A'].value
@@ -92,11 +120,9 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
             csq  = float(skey[14])
         if key[4:7] == 'red':
             skey = key.split(' ')
-            rcsq = float(skey[7])    
-    
+            rcsq = float(skey[7])
+
     return param, rcsq
-
-
 
 def savecpkl(data, cpklfile, verbose=True):
     """
@@ -131,7 +157,7 @@ def dust_MW(lm, fl, Av): # input lm is at RF.
                 Fax = -0.04473 * (xx - 5.9)**2 - 0.009779 * (xx - 5.9)**3
                 Fbx = 0.2130 * (xx - 5.9)**2 + 0.1207 * (xx - 5.9)**3
             else:
-                Fax = Fbx = 0                
+                Fax = Fbx = 0
             ax = 1.752 - 0.316 * xx - 0.104/((xx-4.67)**2+0.341) + Fax
             bx = -3.090 + 1.825 * xx + 1.206/((xx-4.62)**2+0.263) + Fbx
             Alam[ii0] = Av * (ax + bx / Rv)
@@ -147,12 +173,11 @@ def dust_MW(lm, fl, Av): # input lm is at RF.
     fl_cor = fl * np.power(10,(-0.4*Alam))
     return fl_cor
 
-
 # This function is much better than previous,
 # but is hard to impliment for the current version.
 def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
     Rv = 3.1 #4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00 
+    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
 
     lmm  = lm/10000. # in micron
     xx   = 1./lmm
@@ -188,8 +213,8 @@ def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
           + 0.01979 * yy**5 - 0.77530 * yy**6 + 0.32999 * yy**7
     bx1 = 1.41338 * yy + 2.28305 * yy**2 + 1.07233 * yy**3 - 5.38434 * yy**4\
           - 0.62251 * yy**5 + 5.30260 * yy**6 - 2.09002 * yy**7
-    
-    Fax2 = Fbx2 = 0                
+
+    Fax2 = Fbx2 = 0
     ax2  = 1.752 - 0.316 * (1./lmm2) - 0.104/(((1./lmm2)-4.67)**2+0.341) + Fax2
     bx2  = -3.090 + 1.825 * (1./lmm2) + 1.206/(((1./lmm2)-4.62)**2+0.263) + Fbx2
 
@@ -203,67 +228,106 @@ def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
     ax4  = 1.752 - 0.316 * (1./lmm4) - 0.104/(((1./lmm4)-4.67)**2+0.341) + Fax4
     bx4  = -3.090 + 1.825 * (1./lmm4) + 1.206/(((1./lmm4)-4.62)**2+0.263) + Fbx4
 
-    
+
     #Kl   = np.concatenate([Kl0,Kl1,Kl2,Kl3,Kl4])
     nrd  = np.concatenate([nr0,nr1,nr2,nr3,nr4])
     lmmc = np.concatenate([lmm0,lmm1,lmm2,lmm3,lmm4])
-    flc  = np.concatenate([fl0,fl1,fl2,fl3,fl4])    
+    flc  = np.concatenate([fl0,fl1,fl2,fl3,fl4])
     ax   = np.concatenate([ax0,ax1,ax2,ax3,ax4])
     bx   = np.concatenate([bx0,bx1,bx2,bx3,bx4])
 
     Alam   = Av * (ax + bx / Rv)
     fl_cor = flc * np.power(10,(-0.4*Alam))
-    
+
     return fl_cor, lmmc*10000., nrd
 
 # This function is much better than previous,
 # but is hard to impliment for the current version.
 def dust_calz2(lm, fl, Av, nr): # input lm is at RF.
     Rv = 4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00 
-    #lmlimu = 2.2 # Upperlimit. 2.2 in Calz+00 
+    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
     Kl = np.zeros(len(lm), dtype='float32')
 
     lmm  = lm/10000. # in micron
-    con0 = (lmm<0.12)
-    con1 = (lmm>=0.12) & (lmm<=0.63)
+    con1 = (lmm<=0.63)
     con2 = (lmm>0.63)  & (lmm<=lmlimu)
     con3 = (lmm>lmlimu)
-    
-    Kl0 = (2.659 * (-2.156 + 1.509/lmm[con0] - 0.198/lmm[con0]**2 + 0.011/lmm[con0]**3) + Rv)
+
     Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
     Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
     Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
 
-    nr0 = nr[con0]
+    #nr0 = nr[con0]
     nr1 = nr[con1]
     nr2 = nr[con2]
     nr3 = nr[con3]
 
-    lmm0 = lmm[con0]
+    #lmm0 = lmm[con0]
     lmm1 = lmm[con1]
     lmm2 = lmm[con2]
     lmm3 = lmm[con3]
 
-    fl0 = fl[con0]
+    #fl0 = fl[con0]
     fl1 = fl[con1]
     fl2 = fl[con2]
     fl3 = fl[con3]
 
-    Kl   = np.concatenate([Kl0,Kl1,Kl2,Kl3])
-    nrd  = np.concatenate([nr0,nr1,nr2,nr3])
-    lmmc = np.concatenate([lmm0,lmm1,lmm2,lmm3])
-    flc  = np.concatenate([fl0,fl1,fl2,fl3])
+    Kl   = np.concatenate([Kl1,Kl2,Kl3])
+    nrd  = np.concatenate([nr1,nr2,nr3])
+    lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    flc  = np.concatenate([fl1,fl2,fl3])
 
     Alam   = Kl * Av / Rv
-    fl_cor = flc * np.power(10,(-0.4*Alam))
-    
+    #fl_cor = flc * np.power(10,(-0.4*Alam))
+    fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
     return fl_cor, lmmc*10000., nrd
 
+'''
+def dust_calz3(lm, fl, Av, nr): # input lm is at RF.
+    Rv = 4.05 #\pm0.80 from Calzetti+00
+    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
+    Kl = np.zeros(len(lm), dtype='float32')
+
+    lmm  = lm/10000. # in micron
+    con1 = (lmm<=0.63)
+    con2 = (lmm>0.63)  & (lmm<=lmlimu)
+    con3 = (lmm>lmlimu)
+
+    Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
+    Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
+    Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
+
+    #nr0 = nr[con0]
+    nr1 = nr[con1]
+    nr2 = nr[con2]
+    nr3 = nr[con3]
+
+    #lmm0 = lmm[con0]
+    lmm1 = lmm[con1]
+    lmm2 = lmm[con2]
+    lmm3 = lmm[con3]
+
+    #fl0 = fl[con0]
+    fl1 = fl[con1]
+    fl2 = fl[con2]
+    fl3 = fl[con3]
+
+    Kl   = np.concatenate([Kl1,Kl2,Kl3])
+    nrd  = np.concatenate([nr1,nr2,nr3])
+    lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    flc  = np.concatenate([fl1,fl2,fl3])
+
+    Alam   = Kl * Av / Rv
+    #fl_cor = flc * np.power(10,(-0.4*Alam))
+    fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    return fl_cor, lmmc*10000., nrd
+'''
 
 def dust_calz(lm, fl, Av): # input lm is at RF.
     Rv = 4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00 
+    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
     Kl = np.zeros(len(lm), dtype='float32')
     for ii0 in range(len(Kl)):
         lmm = lm[ii0]/10000. # in micron
@@ -295,7 +359,7 @@ def check_line(data,wave,wht,model):
     for ii in range(ii0, ii9, 1):
         concont = (((wave>wave[ii]-dw*R_grs) & (wave<wave[ii]-(dw-ldw)*R_grs)) \
                    | ((wave<wave[ii]+dw*R_grs) & ((wave>wave[ii]+(dw-ldw)*R_grs))))
-        
+
         xcont = wave[concont]
         ycont = data[concont]
         wycont = wht[concont]
@@ -307,7 +371,7 @@ def check_line(data,wave,wht,model):
                 fconttmp  = p(wave[ii])
                 fconttmp1 = p(wave[ii-1])
                 fconttmp2 = p(wave[ii+1])
-            
+
                 if data[ii] > er[ii]*lsig + fconttmp and data[ii-1] > er[ii-1]*lsig + fconttmp1 and data[ii+1] > er[ii+1]*lsig + fconttmp2:
                     #print wave[ii]/(1.+zgal), dlw/(1+zgal)
                     for jj in range(len(LW)):
@@ -316,7 +380,7 @@ def check_line(data,wave,wht,model):
                            and wave[ii] < LW[jj]*(1.+zgal) + dlw:
                             wht2[ii-dw:ii+dw] *= 0
                             fLW[jj] = 1
-                            print(p, LN[jj], fconttmp, data[ii], wave[ii]/(1.+zgal))                    
+                            print(p, LN[jj], fconttmp, data[ii], wave[ii]/(1.+zgal))
                 elif wht2[ii] != 0:
                     wht2[ii] = wht[ii]
 
@@ -325,7 +389,6 @@ def check_line(data,wave,wht,model):
                 pass
 
     return wht2
-
 
 # Convolution of templates with filter response curves.
 def filconv_cen(band0, l0, f0): # f0 in fnu
@@ -336,20 +399,20 @@ def filconv_cen(band0, l0, f0): # f0 in fnu
         fd = np.loadtxt(DIR + 'f' + str(band0[ii]) + 'w.fil', comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
-    
+
         lmin  = np.min(lfil)
         lmax = np.max(lfil)
         imin  = 0
         imax = 0
-    
+
         lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
-        
+
         lamS,spec = l0, f0 #Two columns with wavelength and flux density
         lamF,filt = lfil, ffil #Two columns with wavelength and response in the range [0,1]
         filt_int   = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
         filtSpec = filt_int * spec #Calculate throughput
         wht        = 1. #/(er1[con_rf])**2
-    
+
         if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
             I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
             I2  = simps(filt_int/lamS,lamS)                  #Numerator
@@ -358,10 +421,11 @@ def filconv_cen(band0, l0, f0): # f0 in fnu
             I1  = 0
             I2  = 0
             fnu[ii] = 0
-        
+
     return lcen, fnu
 
 # Convolution of templates with filter response curves.
+'''
 def filconv(f00, l00, ffil, lfil): # f0 in fnu
     con00 = (l00>3000) & (l00<14000) # For U to J band calculation.
     f0 = f00[con00]
@@ -371,13 +435,13 @@ def filconv(f00, l00, ffil, lfil): # f0 in fnu
     lmax = np.max(lfil)
     imin = 0
     imax = 0
-    
+
     lamS,spec = l0, f0 #Two columns with wavelength and flux density for filter.
     lamF,filt = lfil, ffil #Two columns with wavelength and response in the range [0,1]
     filt_int  = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
     filtSpec  = filt_int * spec #Calculate throughput
     wht       = 1. #/(er1[con_rf])**2
-    
+
     if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
         I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
         #I1  = simps(spec*filt_int*lamS,lamS)   #Denominator for Flambda
@@ -387,16 +451,75 @@ def filconv(f00, l00, ffil, lfil): # f0 in fnu
         I1  = 0
         I2  = 0
         fnu = 0
-        
+
     if fnu>0:
         return fnu
     else:
         return 1e-99
-    
+'''
+
+def filconv(band0, l0, f0, DIR): # f0 in fnu
+    #home = os.path.expanduser('~')
+    #DIR  = home + '/Dropbox/FILT/'
+    fnu  = np.zeros(len(band0), dtype='float32')
+    lcen = np.zeros(len(band0), dtype='float32')
+    fwhm = np.zeros(len(band0), dtype='float32')
+
+    for ii in range(len(band0)):
+        fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
+        lfil = fd[:,1]
+        ffil = fd[:,2]
+
+        lmin  = np.min(lfil)
+        lmax  = np.max(lfil)
+        imin  = 0
+        imax  = 0
+
+        lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
+        lamS,spec = l0, f0                     # Two columns with wavelength and flux density
+        lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
+        filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+        wht       = 1. #/(er1[con_rf])**2
+
+        if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
+            I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
+            I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            fnu[ii] = I1/I2/c         #Average flux density
+        else:
+            I1  = 0
+            I2  = 0
+            fnu[ii] = 0
+
+    return lcen, fnu
+
+def fil_fwhm(band0, DIR): # f0 in fnu
+    #
+    # FWHM
+    #
+    fwhm = np.zeros(len(band0), dtype='float32')
+    for ii in range(len(band0)):
+        fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
+        lfil = fd[:,1]
+        ffil = fd[:,2]
+
+        fsum = np.sum(ffil)
+        fcum = np.zeros(len(ffil), dtype='float32')
+        lam0,lam1 = 0,0
+
+        for jj in range(len(ffil)):
+            fcum[jj] = np.sum(ffil[:jj])/fsum
+            if lam0 == 0 and fcum[jj]>0.05:
+                lam0 = lfil[jj]
+            if lam1 == 0 and fcum[jj]>0.95:
+                lam1 = lfil[jj]
+
+        fwhm[ii] = lam1 - lam0
+
+    return fwhm
 
 def calc_Dn4(x0, y0, z0):
-    con1 = (x0/(1+z0)>3850) & (x0/(1+z0)<3950)
-    con2 = (x0/(1+z0)>4000) & (x0/(1+z0)<4100)
+    con1 = (x0/(1+z0)>3750) & (x0/(1+z0)<3950)
+    con2 = (x0/(1+z0)>4050) & (x0/(1+z0)<4250)
     D41  = np.average(y0[con1])
     D42  = np.average(y0[con2])
     if D41>0 and D42>0:
@@ -432,7 +555,7 @@ def detect_line(xcont, ycont, wycont, zgal):
 
     wht2   = wycont
     flag_l = 0
-    
+
     for ii in range(len(xcont)):
         if ycont[ii] > er[ii]*lsig + ypoly[ii] and ycont[ii-1] > er[ii-1]*lsig + ypoly[ii-1] and ycont[ii+1] > er[ii+1]*lsig + ypoly[ii+1] and wht2[ii]:
             for jj in range(len(LW)):
@@ -448,7 +571,7 @@ def check_line_cz(ycont,xcont,wycont,model,zgal):
     er   = 1./np.sqrt(wycont)
     try:
         wht2, flag_l = detect_line(xcont, ycont, wycont, zgal)
-        if flag_l == 1:            
+        if flag_l == 1:
             wycont = wht2
             wht2, flag_l = detect_line(xcont, ycont, wycont,zgal)
 
@@ -460,7 +583,7 @@ def check_line_cz(ycont,xcont,wycont,model,zgal):
     z     = np.polyfit(xcont, ycont, 5, w=wht2)
     p     = np.poly1d(z)
     ypoly = p(xcont)
-    
+
     return wht2, ypoly
 
 
@@ -476,7 +599,7 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0):
     z     = np.polyfit(xcont, ycont, 5, w=wht2)
     p     = np.poly1d(z)
     ypoly = p(xcont)
-    
+
     return wht2, ypoly
 
 def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
@@ -501,7 +624,7 @@ def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
 
     wht2   = wycont
     flag_l = 0
-    
+
     for ii in range(len(xcont)):
         if 1 > 0:
             for jj in range(len(LW)):

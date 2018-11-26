@@ -6,9 +6,13 @@ NMC		100000
 NWALK		100
 NMCZ		1000
 NWALKZ		10
-TAU0		0.03 # in Gyr for tau; Randomly taken when MCMC.
 FNELD		1 # Initial minimization. 0:Powell(slow but accurate), 1:Nelder(fast). See lmfit.
 NTEMP		1 # Number of parallel tempering.
+NCPU		0 # Number of multiprocessing.
+#
+# params for basic templates
+#
+TAU0		0.03 # in Gyr for tau; If ==-99, CSP is set.
 #
 # Params for data
 #
@@ -20,14 +24,14 @@ FILTER		f125w,f140w,f160w,f225w,f275w,f336w,f435w,f606w,f775w,f814w,f850w,f230w,
 #
 # Params for SED
 #
-TAU_COMP	0 #
-AGE		0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0 #0.01,0.03,0.1,0.3,0.5,0.7,1.0,2.0,3.0
+AGE		0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0
 ZMAX		0.624 # Max metalicity
 ZMIN		-0.8 # Min metalicity
 DELZ		0.2
 ZEVOL		1 # Evolution in Z; 1=yes, 2=no.
+ZMC		1 # redshift as a free parameter in mcmc.
 NIMF		0 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.
-NDIM		19 # ndim  = int(1 + len(age) * 2) # dust + age + Z(age)
+NDIM		22 # ndim  = int(1 + 1 + len(age) * 2)
 #
 # Params for target
 #
@@ -38,3 +42,7 @@ CZ0 		0.83167 # Initial guess of spectral normalization for G102.
 CZ1		0.96804 # Initial guess of spectral normalization for G141.
 LINE 		4102,4341,4861,4959 #3869.,3894.6,4102,4341,4960.,5008.  # Emission line, iin AA.
 ZVIS		1 # Visual inspection of redshift. 1=yes, 0=no. If you are not confident with zgal, cz1/2, then ZVIS should be 1 for iteration.
+#
+# Params for plot
+#
+#TAU_COMP	0 # comparison with tau model SFH, if already calculated.

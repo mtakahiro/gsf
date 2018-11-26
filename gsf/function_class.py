@@ -1,16 +1,9 @@
 # For fitting.
-from scipy.optimize import curve_fit
-from scipy import asarray as ar,exp
 import numpy as np
 import sys
-from numpy import log10
-from scipy.integrate import simps
-import matplotlib.pyplot as plt
-from astropy.io import fits
 
 from .function import *
 from .basic_func import Basic
-
 
 c = 3.e18 # A/s
 chimax = 1.
@@ -32,7 +25,7 @@ class Func:
     # Load template in obs range.
     #############################
     def open_spec_fits(self, ID0, PA0, fall=0, tau0=[0.01,0.02,0.03]):
-
+        from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
 
@@ -77,6 +70,7 @@ class Func:
     # But for weird template.
     #############################
     def open_spec_fits_dir(self, ID0, PA0, nage, nz, kk, Av00, zgal, A00, tau0=[0.01,0.02,0.03]):
+        from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = Basic(ZZ)
@@ -124,7 +118,6 @@ class Func:
         yy = flamtonu(xx, yy0)
         lib[:,2] = yy[:]
 
-        ########
         yyd, xxd, nrd = dust_calz2(xx, yy, Av00, nr)
         xxd *= (1.+zgal)
 
@@ -140,6 +133,117 @@ class Func:
 
         return A00 * yyd_sort, xxd_sort
 
+    '''
+    def get_like(inputs, xx, yy, eyy):
+        import h5py
+
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = Basic(ZZ)
+        DIR_TMP = './templates/'
+
+        # For redshift
+        try:
+            zMC  = int(inputs['zMC'])
+            zMin = float(inputs['zMIN'])
+            zMax = float(inputs['zMAX'])
+            delzmc = float(inputs['delz'])
+            zbase  = np.arange(floatzMin, zMax, delzmc)
+        except:
+            zMC  = 0
+            zgal = float(inputs['ZGAL'])
+            zbase = [zgal]
+
+        # For amplitude
+        try:
+            Amin = float(inputs['AMIN'])
+            Amax = float(inputs['AMAX'])
+            delA = float(inputs['DELA'])
+            Amp  = np.arange(Amin, Amax, delA)
+        except:
+            Amp  = np.arange(0, 400, 0.1)
+
+        # For attenuation
+        try:
+            Avmin = float(inputs['AvMIN'])
+            Avmax = float(inputs['AvMAX'])
+            delAv = float(inputs['DELAv'])
+            Avall = np.arange(Avmin, Avmax, delAv)
+        except:
+            Avall = np.arange(0, 2.0, 0.1)
+
+        if zMC == 1:
+            print('Error here...')
+            return -1
+
+        # For tau
+        if len(tau0)>1:
+            pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
+            pp  = int(pp0[0])
+            if pp>=len(tau0):
+                pp += -1
+        else:
+            pp  = 0
+
+        Amp = np.arange(Amin,Amax,delA)
+        colntot = int(len(tau0)*len(ZZ)*len(AA)*len(Amp)*len(Avall))
+        resid_like  = np.arange((len(zbase),colntot), dtype='float32')
+        print('No. of param set is; %d' % colntot)
+
+        for zz in range(len(zbase)):
+            zmc = zbase[zz]
+            for pp in range(len(tau0)):
+                for mm in range(len(ZZ)):
+                    for aa in range(len(AA)):
+                        for ff in range(len(Amp)):
+                            for vv in range(len(Avall)):
+                                Av00 = Avall[vv]
+                                coln = pp*len(ZZ)*len(AA)*len(Amp)*len(Avall)+mm*len(AA)*len(Amp)*len(Avall)+aa*len(Amp)*len(Avall)+ff*len(Avall)+vv
+
+                                for aa in range(len(AA)):
+                                    Z   = par['Z'+str(aa)]
+                                    A00 = par['A'+str(aa)]
+                                    #NZ = np.argmin(np.abs(ZZ-Z)) # <- This is slower.
+                                    NZ  = bfnc.Z2NZ(Z)
+
+                                    coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+                                    if aa == 0:
+                                        nr  = lib[:, 0]
+                                        xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+                                        yy  = A00 * lib[:, coln]
+                                    else:
+                                        yy += A00 * lib[:, coln]
+
+                                # How much does this cost in time?
+                                if round(zmc,3) != round(zgal,3):
+                                    xx_s = xx / (1+zgal) * (1+zmc)
+                                    yy_s = np.interp(xx_s, xx, yy)
+                                else:
+                                    xx_s = xx
+                                    yy_s = yy
+
+                                xx = xx_s
+                                yy = yy_s
+                                yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+                                #yyd, xxd, nrd = yy, xx/(1.+zmc), nr #dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+                                xxd *= (1.+zmc)
+
+                                nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+                                nrd_yyd[:,0] = nrd[:]
+                                nrd_yyd[:,1] = yyd[:]
+                                nrd_yyd[:,2] = xxd[:]
+
+                                b = nrd_yyd
+                                nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+                                yyd_sort     = nrd_yyd_sort[:,1]
+                                xxd_sort     = nrd_yyd_sort[:,2]
+
+                                resid_like[zz,coln] = resid
+
+
+
+        return yyd_sort, xxd_sort
+    '''
 
     def tmp03(self, ID0, PA, A00, Av00, nmodel, Z, zgal, lib, tau0=[0.01,0.02,0.03]):
 
@@ -154,7 +258,6 @@ class Func:
         if pp>=len(tau0):
             pp += -1
 
-        #coln = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
         coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
         nr  = lib[:, 0]
         xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
@@ -178,30 +281,32 @@ class Func:
     # Making model template with a given param setself.
     # Also dust attenuation.
     def tmp04(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
-
         ZZ = self.ZZ
         AA = self.AA
         bfnc = Basic(ZZ)
         DIR_TMP = './templates/'
-
-        zmc    = par['zmc']
+        try:
+            zmc = par.params['zmc'].value
+        except:
+            zmc = zgal
         #Cz0s  = vals['Cz0']
         #Cz1s  = vals['Cz1']
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp  = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
+        if len(tau0)>1:
+            pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
+            pp  = int(pp0[0])
+            if pp>=len(tau0):
+                pp += -1
+        else:
+            pp  = 0
 
         Av00 = par['Av']
         for aa in range(len(AA)):
-            nmodel = aa
             Z   = par['Z'+str(aa)]
             A00 = par['A'+str(aa)]
+            #NZ = np.argmin(np.abs(ZZ-Z)) # <- This is slower.
             NZ  = bfnc.Z2NZ(Z)
 
-            #coln = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
-            coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
+            coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
             if aa == 0:
                 nr  = lib[:, 0]
                 xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
@@ -210,13 +315,18 @@ class Func:
                 yy += A00 * lib[:, coln]
 
         # How much does this cost in time?
-        xx_s = xx / (1+zgal) * (1+zmc)
-        yy_s = np.interp(xx_s, xx, yy)
+        if round(zmc,3) != round(zgal,3):
+            xx_s = xx / (1+zgal) * (1+zmc)
+            yy_s = np.interp(xx_s, xx, yy)
+        else:
+            xx_s = xx
+            yy_s = yy
+
         xx = xx_s
         yy = yy_s
-
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
-        xxd *= (1.+zgal)
+        yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        #yyd, xxd, nrd = yy, xx/(1.+zmc), nr #dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        xxd *= (1.+zmc)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
         nrd_yyd[:,0] = nrd[:]
@@ -237,7 +347,11 @@ class Func:
         bfnc = Basic(ZZ)
         DIR_TMP = './templates/'
 
-        zmc    = par.params['zmc'].value
+        try:
+            zmc = par.params['zmc'].value
+        except:
+            zmc = zgal
+
         #Cz0s  = vals['Cz0']
         #Cz1s  = vals['Cz1']
 
@@ -263,13 +377,15 @@ class Func:
                 yy += A00 * lib[:, coln]
 
         # How much does this cost in time?
-        xx_s = xx / (1+zgal) * (1+zmc)
-        yy_s = np.interp(xx_s, xx, yy)
-        xx = xx_s
-        yy = yy_s
+        if zmc != zgal:
+            xx_s = xx / (1+zgal) * (1+zmc)
+            yy_s = np.interp(xx_s, xx, yy)
+        else:
+            xx_s = xx
+            yy_s = yy
 
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
-        xxd *= (1.+zgal)
+        yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        xxd *= (1.+zmc)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
         nrd_yyd[:,0] = nrd[:]
@@ -293,7 +409,11 @@ class Func:
         #AA00[:]   = par[:len(AA)]
         #ZZ_tmp[:] = par[len(AA)+1:len(AA)+1+len(AA)]
         Av00      = par[len(AA)]
-        zmc       = par[len(AA)+1+len(AA)]
+
+        try:
+            zmc = par[len(AA)+1+len(AA)]
+        except:
+            zmc = zgal
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
         pp  = int(pp0[0])
@@ -314,13 +434,15 @@ class Func:
                 yy += A00 * lib[:, coln]
 
         # How much does this cost in time?
-        xx_s = xx / (1+zgal) * (1+zmc)
-        yy_s = np.interp(xx_s, xx, yy)
-        xx = xx_s
-        yy = yy_s
+        if zmc != zgal:
+            xx_s = xx / (1+zgal) * (1+zmc)
+            yy_s = np.interp(xx_s, xx, yy)
+        else:
+            xx_s = xx
+            yy_s = yy
 
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
-        xxd *= (1.+zgal)
+        yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        xxd *= (1.+zmc)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
         nrd_yyd[:,0] = nrd[:]

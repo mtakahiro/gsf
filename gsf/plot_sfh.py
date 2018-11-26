@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#<examples/doc_nistgauss.py>
 import numpy as np
 #from lmfit.models import GaussianModel, ExponentialModel, ExpressionModel
 import sys
@@ -16,6 +17,7 @@ from .function import *
 from .function_class import Func
 from .basic_func import Basic
 from . import img_scale
+
 
 lcb   = '#4682b4' # line color, blue
 
@@ -37,7 +39,6 @@ def loadcpkl(cpklfile):
 
 
 ###############
-'''
 def plot_sfh_pcl(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fil_path = './FILT/'):
     import cosmolopy.distance as cd
     import cosmolopy.constants as cc
@@ -490,6 +491,11 @@ def plot_sfh_pcl(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
 
     print('%s & $%.5e$ & $%.5e$ & $%.3f$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.1f$ & $%.1f$ & $%.2f$\\\\'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek))
 
+    fwt = open('T_' + ID0 + '_PA' + PA + '_sfh.cat', 'w')
+    fwt.write('%s %.3f %.3f %.3f'%(ID0, np.percentile(TC[0,:],50), np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)))
+    fwt.close()
+
+
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
         dely2 *= 2.
@@ -579,7 +585,7 @@ def plot_sfh_pcl(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
     #ax1.legend(loc=1, fontsize=11)
     #ax2.legend(loc=3, fontsize=8)
     plt.savefig('SFH_' + ID0 + '_PA' + PA + '_pcl.pdf')
-'''
+
 
 ###############
 def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/'):
@@ -589,12 +595,9 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     cosmo = cd.set_omega_k_0(cosmo)
 
     flim = 0.01
-
     lsfrl = -1 # log SFR low limit
-    mmax  = 500
-
+    mmax  = 1000
     Txmax = 4 # Max x value
-
     lmmin = 10.3
 
     nage = np.arange(0,len(age),1)
@@ -607,34 +610,6 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     # RF colors.
     import os.path
     home = os.path.expanduser('~')
-    #fil_path = '/Users/tmorishita/eazy-v1.01/PROG/FILT/'
-    #fil_path = home + '/Dropbox/FILT/'
-    fil_u = fil_path+'u.fil'
-    fil_b = fil_path+'b.fil'
-    fil_v = fil_path+"v.fil"
-    fil_j = fil_path+"j.fil"
-    fil_k = fil_path+"k.fil"
-    fil_f125w = fil_path+"f125w.fil"
-    fil_f160w = fil_path+"f160w.fil"
-    fil_36 = fil_path+"3.6.fil"
-    fil_45 = fil_path+"4.5.fil"
-
-    du = np.loadtxt(fil_u,comments="#")
-    lu = du[:,1]
-    fu = du[:,2]
-
-    db = np.loadtxt(fil_b,comments="#")
-    lb = db[:,1]
-    fb = db[:,2]
-
-    dv = np.loadtxt(fil_v,comments="#")
-    lv = dv[:,1]
-    fv = dv[:,2]
-
-    dj = np.loadtxt(fil_j,comments="#")
-    lj = dj[:,1]
-    fj = dj[:,2]
-
     c      = 3.e18 # A/s
     chimax = 1.
     mag0   = 25.0
@@ -848,7 +823,6 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     # Mass-to-Light ratio.
     ######################
     #ms     = np.zeros(len(age), dtype='float32')
-
     # Wht do you want from MCMC sampler?
     AM = np.zeros((len(age), mmax), dtype='float32') # Mass in each bin.
     AC = np.zeros((len(age), mmax), dtype='float32') # Cumulative mass in each bin.
@@ -962,54 +936,51 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         sfr[:][con] = minsfr
         return sfr
 
-
     if f_comp == 1:
-        try:
-            #
-            # Plot exp model?
-            #
-            DIR_exp = '/Users/tmorishita//Documents/Astronomy/sedfitter_exp/'
-            file = DIR_exp + 'summary_' + ID0 + '_PA' + PA + '.fits'
-            hdul = fits.open(file) # open a FITS file
+        #
+        # Plot exp model?
+        #
+        DIR_exp = '/Users/tmorishita/Documents/Astronomy/sedfitter_exp/'
+        file = DIR_exp + 'summary_' + ID0 + '_PA' + PA + '.fits'
+        hdul = fits.open(file) # open a FITS file
 
-            t0  = 10**float(hdul[1].data['age'][1])
-            tau = 10**float(hdul[1].data['tau'][1])
-            A   = float(hdul[1].data['A'][1])
-            Zexp= hdul[1].data['Z']
-            Mexp= float(hdul[1].data['ms'][1])
+        t0  = 10**float(hdul[1].data['age'][1])
+        tau = 10**float(hdul[1].data['tau'][1])
+        A   = float(hdul[1].data['A'][1])
+        Zexp= hdul[1].data['Z']
+        Mexp= float(hdul[1].data['ms'][1])
 
-            deltt0 = 0.01 # in Gyr
-            tt0 = np.arange(0.01,10,deltt0)
-            sfr = SFH_dec(np.max(age)-t0, tau, A, tt=tt0)
-            mtmp = np.sum(sfr * deltt0 * 1e9)
-            C_exp = Mexp/mtmp
-            ax1.plot(np.max(age) - tt0, np.log10(sfr*C_exp), marker='', linestyle='--', color='r', lw=1.5, alpha=0.7, zorder=-4, label='')
-            mctmp = tt0 * 0
-            for ii in range(len(tt0)):
-                mctmp[ii] = np.sum(sfr[:ii] * deltt0 * 1e9)
-            ax2.plot(np.max(age) - tt0, np.log10(mctmp*C_exp), marker='', linestyle='--', color='r', lw=1.5, alpha=0.7, zorder=-4)
-            ax4.errorbar(t0, Zexp[1], yerr=[[Zexp[1]-Zexp[0]], [Zexp[2]-Zexp[1]]], marker='s', color='r', alpha=0.7, zorder=-4, capsize=0)
-            sfr_exp = sfr
-            mc_exp = mctmp*C_exp
-            #
-            # Plot delay model?
-            #
-            DIR_exp = '/Users/tmorishita//Documents/Astronomy/sedfitter_del/'
-            file = DIR_exp + 'summary_' + ID0 + '_PA' + PA + '.fits'
-            hdul = fits.open(file) # open a FITS file
+        deltt0 = 0.01 # in Gyr
+        tt0 = np.arange(0.01,10,deltt0)
+        sfr = SFH_dec(np.max(age)-t0, tau, A, tt=tt0)
+        mtmp = np.sum(sfr * deltt0 * 1e9)
+        C_exp = Mexp/mtmp
+        ax1.plot(np.max(age) - tt0, np.log10(sfr*C_exp), marker='', linestyle='--', color='r', lw=1.5, alpha=0.7, zorder=-4, label='')
+        mctmp = tt0 * 0
+        for ii in range(len(tt0)):
+            mctmp[ii] = np.sum(sfr[:ii] * deltt0 * 1e9)
+        ax2.plot(np.max(age) - tt0, np.log10(mctmp*C_exp), marker='', linestyle='--', color='r', lw=1.5, alpha=0.7, zorder=-4)
+        ax4.errorbar(t0, Zexp[1], yerr=[[Zexp[1]-Zexp[0]], [Zexp[2]-Zexp[1]]], marker='s', color='r', alpha=0.7, zorder=-4, capsize=0)
+        sfr_exp = sfr
+        mc_exp = mctmp*C_exp
+        '''
+        #
+        # Plot delay model?
+        #
+        DIR_exp = '/Users/tmorishita//Documents/Astronomy/sedfitter_del/'
+        file = DIR_exp + 'summary_' + ID0 + '_PA' + PA + '.fits'
+        hdul = fits.open(file) # open a FITS file
 
-            t0  = 10**float(hdul[1].data['age'][0])
-            tau = 10**float(hdul[1].data['tau'][0])
-            A   = float(hdul[1].data['A'][0])
-            Mdel= float(hdul[1].data['ms'][1])
+        t0  = 10**float(hdul[1].data['age'][0])
+        tau = 10**float(hdul[1].data['tau'][0])
+        A   = float(hdul[1].data['A'][0])
+        Mdel= float(hdul[1].data['ms'][1])
 
-            tt0 = np.arange(0.01,10,0.01)
-            sfr = SFH_del(np.max(age)-t0, tau, A, tt=tt0)
-            mtmp = np.sum(sfr * deltt0 * 1e9)
-            C_del = Mdel/mtmp
-
-        except:
-            pass
+        tt0 = np.arange(0.01,10,0.01)
+        sfr = SFH_del(np.max(age)-t0, tau, A, tt=tt0)
+        mtmp = np.sum(sfr * deltt0 * 1e9)
+        C_del = Mdel/mtmp
+        '''
 
     #
     # Mass in each bin
@@ -1101,9 +1072,13 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     #
     # Brief Summary
     #
+    '''
     fw = open('SFH_' + ID0 + '_PA' + PA + '_pcl.cat', 'w')
     fw.write('%s %.5e %.5e %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek, nn, qq, (erekl+ereku)/2., enn, eqq, np.percentile(TL[0,:],50), np.percentile(TL[0,:],50)-np.percentile(TL[0,:],16), np.percentile(TL[0,:],84)-np.percentile(TL[0,:],50)))
+
+    fw.write('%s %.5e %.5e %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek, nn, qq, (erekl+ereku)/2., enn, eqq, np.percentile(TL[0,:],50), np.percentile(TL[0,:],50)-np.percentile(TL[0,:],16), np.percentile(TL[0,:],84)-np.percentile(TL[0,:],50)))
     fw.close()
+    '''
 
     #
     # SFH
@@ -1117,10 +1092,8 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         mmtmp = np.argmin(np.abs(Tall - Tuni0[mm]))
         zztmp = zzall[mmtmp]
         fw.write(' %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f'%(zztmp, Tuni0[mm], np.log10(ACp[mm,1]), (np.log10(ACp[mm,1])-np.log10(ACp[mm,0])), (np.log10(ACp[mm,2])-np.log10(ACp[mm,1])), ZCp[mm,1], ZCp[mm,1]-ZCp[mm,0], ZCp[mm,2]-ZCp[mm,1], SFp[mm,1], SFp[mm,1]-SFp[mm,0], SFp[mm,2]-SFp[mm,1]))
-
     fw.write('\n')
     fw.close()
-
     #print('%s & $%.5e$ & $%.5e$ & $%.3f$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.1f$ & $%.1f$ & $%.2f$\\\\'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek))
 
     dely2 = 0.1
@@ -1133,17 +1106,17 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     #ax2.yaxis.set_major_locator(plt.MaxNLocator(4))
-
-
     #ax3.set_xlabel('$t$ (Gyr)', fontsize=12)
     #ax3.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
-
-
     y3min, y3max = np.min(Z), np.max(Z)
     #ax3.set_xlim(0.008, Txmax)
     #ax3.set_ylim(y3min, y3max)
     #ax3.set_xscale('log')
     #ax3.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+    fwt = open('T_' + ID0 + '_PA' + PA + '_sfh.cat', 'w')
+    fwt.write('%s %.3f %.3f %.3f'%(ID0, np.percentile(TC[0,:],50), np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)))
+    fwt.close()
 
     # For redshift
     if zbes<2:
@@ -1194,17 +1167,6 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     #ax3.yaxis.labelpad = -2
     ax4.yaxis.labelpad = -2
 
-    #ax1.xaxis.labelpad = 4
-    #ax2.xaxis.labelpad = 4
-    #ax3.xaxis.labelpad = 4
-    #ax4.xaxis.labelpad = 4
-
-
-    #ax3t.set_xticklabels(zredl[:], minor=False)
-    #ax3t.set_xticks(Tzz[:], minor='')
-    #ax3t.tick_params(axis='x', labelcolor='k')
-    #ax3t.xaxis.set_ticks_position('none')
-    #ax3t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     ax1t.set_xticklabels(zredl[:])
     ax1t.set_xticks(Tzz[:])

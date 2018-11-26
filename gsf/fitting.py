@@ -114,6 +114,10 @@ class Mainbody():
         nwalk_cz = int(inputs['NWALKZ'])
         f_Zevol  = int(inputs['ZEVOL'])
         #f_zvis   = int(inputs['ZVIS'])
+        try:
+            fzmc = int(inputs['ZMC'])
+        except:
+            fzmc = 0
 
         #
         # Tau for MCMC parameter; not as fitting parameters.
@@ -190,11 +194,12 @@ class Mainbody():
         def residual(pars): # x, y, wht are taken from out of the definition.
             vals = pars.valuesdict()
             model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
+            con_res = (model>0) #& (fy>0)
             if fy is None:
                 print('Data is none')
-                return model
+                return model[con_res]
             else:
-                return (model - fy) * np.sqrt(wht2) # i.e. residual/sigma
+                return (model - fy)[con_res] * np.sqrt(wht2)[con_res] # i.e. residual/sigma
 
         def lnprob(pars):
             vals   = pars.valuesdict()
@@ -202,12 +207,13 @@ class Mainbody():
             s      = 1.
             resid *= 1 / s
             resid *= resid
-            resid += np.log(2 * np.pi * s**2)
+            resid += np.log(2 * 3.14 * s**2)
+            #Av   = vals['Av']
             #if Av<0:
             #     return -np.inf
             #else:
-            #    respr = np.log(1)
-            respr = np.log(1)
+            #    respr = 0 #np.log(1)
+            respr = 0
             return -0.5 * np.sum(resid) + respr
 
 
@@ -219,7 +225,8 @@ class Mainbody():
             if age[aa] == 99:
                 fit_params.add('A'+str(aa), value=0, min=0, max=0.01)
             else:
-                fit_params.add('A'+str(aa), value=1, min=0, max=400)
+                fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+
 
         #fit_params.add('Av', value=1., min=0, max=4.0)
         fit_params.add('Av', value=0.2, min=0, max=4.0)
@@ -238,17 +245,22 @@ class Mainbody():
 
         fwz = open('Z_' + ID0 + '_PA' + PA0 + '.cat', 'w')
         fwz.write('# ID Zini chi/nu AA Av Zbest\n')
+        fwz.write('# FNELD = %d\n' % fneld)
 
         nZtmp = int((Zmax-Zmin)/delZtmp)
-
+        ZZtmp = np.arange(Zmin,Zmax,delZtmp)
         ##############
         # Added.
-        fit_params.add('zmc', value=zprev, min=zprev-0.1, max=zprev+0.1)
+        #fit_params_bu = fit_params
+        #fit_params.add('zmc', value=zprev, min=zprev-0.1, max=zprev+0.1)
 
         if fneld == 1:
-            for zz in range(0,nZtmp,1):
-            #for zz in range(2,7,2):
-                ZZ = zz * delZtmp + np.min(Zall)
+        #if fneld>=0:
+            #for zz in range(0,nZtmp,1):
+            #    ZZ = zz * delZtmp + np.min(Zall)
+            for zz in range(len(ZZtmp)):
+            #for zz in range(7,8,1):
+                ZZ = ZZtmp[zz]
                 for aa in range(len(age)):
                     fit_params['Z'+str(aa)].value = ZZ
 
@@ -332,7 +344,6 @@ class Mainbody():
                     chidef = fitc[1]
                     out    = out_tmp
 
-
         #
         # Best fit
         #
@@ -362,7 +373,6 @@ class Mainbody():
         ZZ_tmp = np.zeros(len(age), dtype='float32')
         fm_tmp, xm_tmp = fnc.tmp04_val(ID0, PA0, out, zprev, lib, tau0=tau0)
 
-
         ########################
         # Check redshift
         ########################
@@ -378,12 +388,10 @@ class Mainbody():
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
 
-
         if fzvis==1:
             plt.plot(x_cz/(1+zprev)*(1.+zrecom),fm_s,'gray', linestyle='--', linewidth=0.5, label='Default ($z=%.5f$)'%(zprev)) # Model based on input z.
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
-
 
         if flag_m == 0:
             dez = 0.5
@@ -409,7 +417,7 @@ class Mainbody():
         prior_s /= np.sum(prior_s)
 
         print('################\nStart MCMC for redshift fit\n################')
-        res_cz, fitc_cz = check_redshift(fy_cz,ey_cz,x_cz,fm_tmp,xm_tmp/(1+zprev),zprev,dez,prior_s,NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
+        res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp,xm_tmp/(1+zprev), zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
         z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
         scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
         scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -422,9 +430,8 @@ class Mainbody():
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
 
         whtl        = 1/np.square(ey_cz)
-        wht2, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW0)
-        con_line    = (wht2==0)
-
+        wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW0)
+        con_line    = (wht3==0)
 
         print('\n\n')
         print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Cz0 * Czrec0, Cz1 * Czrec1, fitc_cz[1]))
@@ -478,7 +485,6 @@ class Mainbody():
         else:
             flag_z = 'y'
 
-
         #################################################
         # Gor for mcmc phase
         #################################################
@@ -490,32 +496,36 @@ class Mainbody():
             #######################
             # Added
             #######################
-            fit_params.add('zmc', value=z_cz[1], min=z_cz[0], max=z_cz[2])
-            #fit_params.add('C1', value=z_cz[1], min=z_cz[0], max=z_cz[2])
-            #fit_params.add('C2', value=z_cz[1], min=z_cz[0], max=z_cz[2])
+            if fzmc == 1:
+                fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0]), max=zrecom+(z_cz[2]-z_cz[1]))
+                if fneld == 1:
+                    out = minimize(residual, fit_params, method='nelder') # It needs to define out with redshift constrain.
+                else:
+                    out = minimize(residual, fit_params, method='powell') # powel is the more accurate.
 
-            ##############################
-            # Save fig of z-distribution.
-            ##############################
-            fig = plt.figure(figsize=(6.5,2.5))
-            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
-            n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=False, color='gray',label='')
+            if 1>0:
+                ##############################
+                # Save fig of z-distribution.
+                ##############################
+                fig = plt.figure(figsize=(6.5,2.5))
+                fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
+                ax1 = fig.add_subplot(111)
+                n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=False, color='gray',label='')
 
-            yy = np.arange(0,np.max(n),1)
-            xx = yy * 0 + z_cz[1]
-            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
-            xx = yy * 0 + z_cz[0]
-            ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-            xx = yy * 0 + z_cz[2]
-            ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-            xx = yy * 0 + zprev
-            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
-            ax1.set_xlabel('Redshift')
-            ax1.set_ylabel('$dn/dz$')
-            ax1.legend(loc=0)
-            plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
-            plt.close()
+                yy = np.arange(0,np.max(n),1)
+                xx = yy * 0 + z_cz[1]
+                ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
+                xx = yy * 0 + z_cz[0]
+                ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
+                xx = yy * 0 + z_cz[2]
+                ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
+                xx = yy * 0 + zprev
+                ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
+                ax1.set_xlabel('Redshift')
+                ax1.set_ylabel('$dn/dz$')
+                ax1.legend(loc=0)
+                plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
+                plt.close()
 
             ##############################
             print('\n\n')
@@ -546,6 +556,7 @@ class Mainbody():
             except:
                 ncpu = ncpu0
                 pass
+
             print('No. of CPU is set to %d'%(ncpu))
             start_mc = timeit.default_timer()
             res  = mini.emcee(burn=int(nmc/2), steps=nmc, thin=10, nwalkers=nwalk, params=out.params, is_weighted=True, ntemps=ntemp, workers=ncpu)
@@ -597,7 +608,6 @@ class Mainbody():
                 fig1 = corner.corner(res.flatchain, labels=res.var_names, label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), plot_datapoints=False, plot_contours=True, no_fill_contours=True, plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
                 fig1.savefig('SPEC_' + ID0 + '_PA' + PA0 + '_corner.pdf')
                 plt.close()
-
 
             #########################
             msmc0 = 0

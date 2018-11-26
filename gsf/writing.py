@@ -23,11 +23,18 @@ class Analyze:
         age = [float(x.strip()) for x in age.split(',')]
         self.AGE = age
         self.ZEVOL = int(inputs['ZEVOL'])
-        #self.NDIM= int(inputs['NDIM'])
-        if self.ZEVOL == 1:
-            self.NDIM= int(1 + 1 + len(age)*2)
-        else:
-            self.NDIM= int(1 + 1 + len(age) + 1)
+        try:
+            self.NDIM = int(inputs['NDIM'])
+        except:
+            if self.ZEVOL == 1:
+                self.NDIM = int(1 + len(age)*2)
+            else:
+                self.NDIM = int(1 + len(age) + 1)
+
+            try:
+                self.NDIM += int(inputs['ZMC'])
+            except:
+                pass
 
 
         Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
@@ -62,52 +69,31 @@ class Analyze:
         home = os.path.expanduser('~')
         #fil_path = home + '/FILT/'
         fil_path = self.DIR_FILT
-        fil_u = fil_path+'u.fil'
-        fil_b = fil_path+'b.fil'
-        fil_v = fil_path+"v.fil"
-        fil_j = fil_path+"j.fil"
-        fil_sz= fil_path+"sz.fil"
-
-        du = np.loadtxt(fil_u,comments="#")
-        lu = du[:,1]
-        fu = du[:,2]
-
-        db = np.loadtxt(fil_b,comments="#")
-        lb = db[:,1]
-        fb = db[:,2]
-
-        dv = np.loadtxt(fil_v,comments="#")
-        lv = dv[:,1]
-        fv = dv[:,2]
-
-        dj = np.loadtxt(fil_j,comments="#")
-        lj = dj[:,1]
-        fj = dj[:,2]
-
-        dsz = np.loadtxt(fil_sz,comments="#")
-        lsz = dsz[:,0]
-        fsz = dsz[:,1]
-
         nmc  = self.NMC
         ndim = self.NDIM
+
+        mmax = 300
+        if nmc<mmax:
+            mmax = int(nmc/2.)
+
         # RF color
-        uv = np.zeros(int(nmc/2), dtype='float32')
-        bv = np.zeros(int(nmc/2), dtype='float32')
-        vj = np.zeros(int(nmc/2), dtype='float32')
-        zj = np.zeros(int(nmc/2), dtype='float32')
+        uv = np.zeros(int(mmax), dtype='float32')
+        bv = np.zeros(int(mmax), dtype='float32')
+        vj = np.zeros(int(mmax), dtype='float32')
+        zj = np.zeros(int(mmax), dtype='float32')
 
         # Lick indeces
-        Dn4  = np.zeros(int(nmc/2), dtype='float32')
-        Mgb  = np.zeros(int(nmc/2), dtype='float32')
-        Fe52 = np.zeros(int(nmc/2), dtype='float32')
-        Fe53 = np.zeros(int(nmc/2), dtype='float32')
-        Mg1  = np.zeros(int(nmc/2), dtype='float32')
-        Mg2  = np.zeros(int(nmc/2), dtype='float32')
-        G4300= np.zeros(int(nmc/2), dtype='float32')
-        NaD  = np.zeros(int(nmc/2), dtype='float32')
-        Hb   = np.zeros(int(nmc/2), dtype='float32')
+        Dn4  = np.zeros(int(mmax), dtype='float32')
+        Mgb  = np.zeros(int(mmax), dtype='float32')
+        Fe52 = np.zeros(int(mmax), dtype='float32')
+        Fe53 = np.zeros(int(mmax), dtype='float32')
+        Mg1  = np.zeros(int(mmax), dtype='float32')
+        Mg2  = np.zeros(int(mmax), dtype='float32')
+        G4300= np.zeros(int(mmax), dtype='float32')
+        NaD  = np.zeros(int(mmax), dtype='float32')
+        Hb   = np.zeros(int(mmax), dtype='float32')
 
-        mm = 0
+        #mm = 0
         samples1 = res.chain[:, :, :].reshape((-1, ndim))
         #samples  = samples1[int(nmc/2):]
         samples  = samples1[:] # Already reduced.
@@ -138,14 +124,18 @@ class Analyze:
         Avb   = res.params['Av'].value
         Avmc  = np.percentile(res.flatchain['Av'], [16,50,84])
         AAvmc = [Avmc]
-        zmc   = np.percentile(res.flatchain['zmc'], [16,50,84])
+        try:
+            zmc   = np.percentile(res.flatchain['zmc'], [16,50,84])
+        except:
+            zmc   = z_cz
 
         AA_tmp = np.zeros(len(age), dtype='float32')
         ZZ_tmp = np.zeros(len(age), dtype='float32')
         NZbest = np.zeros(len(age), dtype='int')
 
         DIR_TMP = self.DIR_TEMP
-        for kk in range(int(nmc/5)):
+        #for kk in range(int(nmc/5)):
+        for mm in range(0,mmax,1):
             par_tmp   = samples[np.random.randint(len(samples))]
             AA_tmp[:] = par_tmp[:len(age)]
             Av_tmp    = par_tmp[len(age)]
@@ -153,11 +143,14 @@ class Analyze:
             model2, xm_tmp = fnc.tmp04_samp(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
 
             lmrest = xm_tmp / (1. + zrecom)
-            fu_cnv = filconv(model2,lmrest,fu,lu)
-            fb_cnv = filconv(model2,lmrest,fb,lb)
-            fv_cnv = filconv(model2,lmrest,fv,lv)
-            fj_cnv = filconv(model2,lmrest,fj,lj)
-            fz_cnv = filconv(model2,lmrest,fsz,lsz)
+
+            band0 = ['u','b','v','j','sz']
+            lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # f0 in fnu
+            fu_cnv = fconv[0]
+            fb_cnv = fconv[1]
+            fv_cnv = fconv[2]
+            fj_cnv = fconv[3]
+            fz_cnv = fconv[4]
 
             Dn4[mm]= calc_Dn4(xm_tmp, model2, zrecom) # Dust attenuation is not included?
             uv[mm] = -2.5*np.log10(fu_cnv/fv_cnv)
@@ -165,6 +158,7 @@ class Analyze:
             vj[mm] = -2.5*np.log10(fv_cnv/fj_cnv)
             zj[mm] = -2.5*np.log10(fz_cnv/fj_cnv)
 
+            '''
             AA_tmp_sum = 0
             for ii in range(len(ZZ_tmp)):
                 NZbest[ii]  = bfnc.Z2NZ(ZZ_tmp[ii])
@@ -190,9 +184,8 @@ class Analyze:
             Hb[mm]    /= AA_tmp_sum
             Mg1[mm]   /= AA_tmp_sum
             Mg2[mm]   /= AA_tmp_sum
-
-            mm += 1
-
+            '''
+            #mm += 1
 
         conper = (Dn4>0)
         Dnmc = np.percentile(Dn4[conper], [16,50,84])
@@ -236,13 +229,14 @@ class Analyze:
         prihdr['z']   = zrecom
         prihdr['SN']  = SN
         prihdr['nSN'] = NSN
+        prihdr['NDIM'] = ndim
         prihdr['tcalc'] = tcalc
-
+        prihdr['chi2']    = fitc[0]
+        prihdr['chi2nu'] = fitc[1]
         prihdu = fits.PrimaryHDU(header=prihdr)
 
         # Data
         col01 = []
-
         for aa in range(len(age)):
             col50 = fits.Column(name='A'+str(aa), format='E', unit='', array=Amc[aa][:])
             col01.append(col50)
@@ -256,9 +250,9 @@ class Analyze:
             col01.append(col50)
 
         # zmc
+        #if int(inputs['ZMC']) == 1:
         col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
         col01.append(col50)
-        print(zmc[:])
 
         # Dn4000
         col50 = fits.Column(name='Dn4', format='E', unit='', array=Dnmc[:])
@@ -336,7 +330,6 @@ class Analyze:
         colms  = fits.ColDefs(col01)
         dathdu = fits.BinTableHDU.from_columns(colms)
         hdu    = fits.HDUList([prihdu, dathdu])
-
         hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
 
         ########################
