@@ -39,7 +39,7 @@ Installation & Documentation
 
 Examples
 ~~~~~~~~
-Files are found in ./gsf/examples/
+Example data set is stored in ./gsf/examples/
 
 .. code-block:: bash
 
