@@ -426,6 +426,27 @@ class Mainbody():
         Czrec0  = scl_cz0[1]
         Czrec1  = scl_cz1[1]
 
+        # Switch to peak redshift:
+        from scipy import stats
+        from scipy.stats import norm
+        # find minimum and maximum of xticks, so we know
+        # where we should compute theoretical distribution
+        ser = res_cz.flatchain['z']
+        xmin, xmax = zprev-0.2, zprev+0.2
+        lnspc = np.linspace(xmin, xmax, len(ser))
+
+        try:
+        #if 1>0:
+            # lets try the normal distribution first
+            m, s  = stats.norm.fit(ser) # get mean and standard deviation
+            pdf_g = stats.norm.pdf(lnspc, m, s) # now get theoretical values in our interval
+            z_cz[:]    = [m-s, m, m+s]
+            zrecom     = z_cz[1]
+            f_fitgauss = 1
+        except:
+            print('Guassian fitting to z distribution failed.')
+            f_fitgauss=0
+
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
 
@@ -497,35 +518,50 @@ class Mainbody():
             # Added
             #######################
             if fzmc == 1:
-                fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0]), max=zrecom+(z_cz[2]-z_cz[1]))
-                if fneld == 1:
-                    out = minimize(residual, fit_params, method='nelder') # It needs to define out with redshift constrain.
-                else:
-                    out = minimize(residual, fit_params, method='powell') # powel is the more accurate.
+                out_keep = out
+                sigz = 1.0
+                fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0])*sigz, max=zrecom+(z_cz[2]-z_cz[1])*sigz)
+                #print('z is defined in this range:', zrecom, zrecom-(z_cz[1]-z_cz[0])*sigz, zrecom+(z_cz[2]-z_cz[1])*sigz)
+                #if fneld == 1:
+                out = minimize(residual, fit_params, method='nelder') # It needs to define out with redshift constrain.
 
-            if 1>0:
-                ##############################
-                # Save fig of z-distribution.
-                ##############################
-                fig = plt.figure(figsize=(6.5,2.5))
-                fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-                ax1 = fig.add_subplot(111)
-                n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=False, color='gray',label='')
+                # Fix params to what we had before.
+                out.params['zmc'].value = zrecom
+                out.params['Av'].value  = out_keep.params['Av'].value
+                for aa in range(len(age)):
+                    out.params['A'+str(aa)].value = out_keep.params['A'+str(aa)].value
+                    try:
+                        out.params['Z'+str(aa)].value = out_keep.params['Z'+str(aa)].value
+                    except:
+                        out.params['Z0'].value = out_keep.params['Z0'].value
 
-                yy = np.arange(0,np.max(n),1)
-                xx = yy * 0 + z_cz[1]
-                ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
-                xx = yy * 0 + z_cz[0]
-                ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-                xx = yy * 0 + z_cz[2]
-                ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-                xx = yy * 0 + zprev
-                ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
-                ax1.set_xlabel('Redshift')
-                ax1.set_ylabel('$dn/dz$')
-                ax1.legend(loc=0)
-                plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
-                plt.close()
+
+            ##############################
+            # Save fig of z-distribution.
+            ##############################
+            fig = plt.figure(figsize=(6.5,2.5))
+            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = fig.add_subplot(111)
+            #n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=False, color='gray',label='')
+            n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=True, color='gray',label='')
+            if f_fitgauss==1:
+                ax1.plot(lnspc, pdf_g, label='Gaussian fit', color='g', linestyle='-') # plot it
+                ax1.set_xlim(m-s*3,m+s*3)
+
+            yy = np.arange(0,np.max(n),1)
+            xx = yy * 0 + z_cz[1]
+            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
+            xx = yy * 0 + z_cz[0]
+            ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
+            xx = yy * 0 + z_cz[2]
+            ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
+            xx = yy * 0 + zprev
+            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
+            ax1.set_xlabel('Redshift')
+            ax1.set_ylabel('$dn/dz$')
+            ax1.legend(loc=0)
+            plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
+            plt.close()
 
             ##############################
             print('\n\n')
@@ -567,6 +603,7 @@ class Mainbody():
 
             #----------- Save pckl file
             #-------- store chain into a cpkl file
+            start_mc = timeit.default_timer()
             import corner
             burnin   = int(nmc/2)
             savepath = './'
@@ -574,6 +611,9 @@ class Mainbody():
             savecpkl({'chain':res.flatchain,
                           'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
                          savepath+cpklname) # Already burn in
+            stop_mc  = timeit.default_timer()
+            tcalc_mc = stop_mc - start_mc
+            print('#######################\nSaving chain took %.1f sec\n#######################'%(tcalc_mc))
 
             Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
             #Zmc  = np.percentile(res.flatchain['Z'], [16,50,84])
@@ -621,8 +661,11 @@ class Mainbody():
             stop  = timeit.default_timer()
             tcalc = stop - start
 
+            start_mc = timeit.default_timer()
             wrt.get_param(res, lib_all, zrecom, Czrec0, Czrec1, z_cz[:], scl_cz0[:], scl_cz1[:], fitc[:], tau0=tau0, tcalc=tcalc)
-
+            stop_mc  = timeit.default_timer()
+            tcalc_mc = stop_mc - start_mc
+            print('#######################\nWriting params tp file took %.1f sec\n#######################'%(tcalc_mc))
 
             ##########
             # Plot
