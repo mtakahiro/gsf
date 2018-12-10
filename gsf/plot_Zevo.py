@@ -3289,16 +3289,14 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
     col02 = []
+
+    f1    = fits.open(DIR_TMP + 'spec_all.fits')
+    spechdu = f1[1]
     for zz in range(len(Z)):
         col00 = []
         col01 = []
         for pp in range(len(tau0)):
-
-            f1    = fits.open(DIR_TMP + 'spec_all_'+str(zz)+'.fits')
-            spechdu = f1[1]
-
             Zbest = Z[zz]
-
             Na  = len(age)
             Nz  = 1
 

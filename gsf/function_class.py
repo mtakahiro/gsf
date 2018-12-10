@@ -39,12 +39,12 @@ class Func:
         DIR_TMP = './templates/'
         for pp in range(len(tau0)):
             for zz in range(len(ZZ)):
-                f0 = fits.open(DIR_TMP + 'spec_' + app + ID0 + '_PA' + PA0 + '_'+str(zz)+'.fits')
-                hdu0 = f0[1]
                 Z    = ZZ[zz]
                 NZ   = bfnc.Z2NZ(Z)
 
                 if zz == 0 and pp == 0:
+                    f0   = fits.open(DIR_TMP + 'spec_' + app + ID0 + '_PA' + PA0 + '.fits')
+                    hdu0 = f0[1]
                     nr   = hdu0.data['colnum']
                     xx   = hdu0.data['wavelength']
 
@@ -74,13 +74,13 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = Basic(ZZ)
-        app = 'all_'
+        app = 'all'
         DIR_TMP = './templates/'
 
         #for pp in range(len(tau0)):
         pp = 0
         zz = nz
-        f0 = fits.open(DIR_TMP + 'spec_' + app + str(zz) + '.fits')
+        f0 = fits.open(DIR_TMP + 'spec_' + app + '.fits')
         hdu0 = f0[1]
 
         # Luminosity

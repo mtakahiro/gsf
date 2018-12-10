@@ -71,17 +71,16 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     print('#######################################')
 
     col01 = [] # For M/L ratio.
+    col02 = [] # For templates
+    col05 = [] # For spectral indices.
+    #col06 = [] # For weird templates for UVJ calculation;
     for zz in range(len(Z)):
-        col02 = [] # For templates
-        col05 = [] # For spectral indices.
-        col06 = [] # For weird templates for UVJ calculation;
 
         for pp in range(len(tau0)):
             spall = [] # For sps model
             ms = np.zeros(Na, dtype='float32')
             Ls = np.zeros(Na, dtype='float32')
             LICK = np.zeros((Na,len(INDICES)), dtype='float32')
-
 
             tau0_old = 0
             for ss in range(Na):
@@ -110,8 +109,6 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                     print('Skip fsps, by using previous library.')
 
                 tau0_old = tautmp
-                #spall.append(sptmp)
-                #sp = spall[ss]
                 sp = sptmp
 
                 print(zz, sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8") , pp)
@@ -124,7 +121,7 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 LICK[ss,:] = get_ind(wave, flux)
 
 
-                if ss == 0 and pp == 0:
+                if ss == 0 and pp == 0 and zz == 0:
                     col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
                     col02.append(col3)
 
@@ -160,24 +157,24 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 col01.append(col2)
 
 
-        # ##############
-        # Create header;
-        hdr     = fits.Header()
-        hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
-        for pp in range(len(tau0)):
-            hdr['Tau%d'%(pp)] = tau0[pp]
+    # ##############
+    # Create header;
+    hdr     = fits.Header()
+    hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
+    for pp in range(len(tau0)):
+        hdr['Tau%d'%(pp)] = tau0[pp]
 
-        colspec = fits.ColDefs(col02)
-        hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)
-        hdu2.writeto(DIR_TMP + 'spec_all_'+str(zz)+'.fits', overwrite=True)
+    colspec = fits.ColDefs(col02)
+    hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)
+    hdu2.writeto(DIR_TMP + 'spec_all.fits', overwrite=True)
 
-        colind = fits.ColDefs(col05)
-        hdu5   = fits.BinTableHDU.from_columns(colind, header=hdr)
-        hdu5.writeto(DIR_TMP + 'index_'+str(zz)+'.fits', overwrite=True)
+    colind = fits.ColDefs(col05)
+    hdu5   = fits.BinTableHDU.from_columns(colind, header=hdr)
+    hdu5.writeto(DIR_TMP + 'index.fits', overwrite=True)
 
-        #colspec6 = fits.ColDefs(col06)
-        #hdu6     = fits.BinTableHDU.from_columns(colspec6, header=hdr)
-        #hdu6.writeto(DIR_TMP + 'spec_all_inv_'+str(zz)+'.fits', overwrite=True)
+    #colspec6 = fits.ColDefs(col06)
+    #hdu6     = fits.BinTableHDU.from_columns(colspec6, header=hdr)
+    #hdu6.writeto(DIR_TMP + 'spec_all_inv_'+str(zz)+'.fits', overwrite=True)
 
     #
     col6 = fits.Column(name='tA', format='E', unit='Gyr', array=age[:])

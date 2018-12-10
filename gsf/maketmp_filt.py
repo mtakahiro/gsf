@@ -295,13 +295,13 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
+    col00 = []
+    col01 = []
     col02 = []
     for zz in range(len(Z)):
-        col00 = []
-        col01 = []
         for pp in range(len(tau0)):
 
-            f1    = fits.open(DIR_TMP + 'spec_all_'+str(zz)+'.fits')
+            f1    = fits.open(DIR_TMP + 'spec_all.fits')
             spechdu = f1[1]
 
             Zbest = Z[zz]
@@ -378,7 +378,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 ##########################################
                 # Writing out the templates to fits table.
                 ##########################################
-                if ss == 0 and pp == 0:
+                if ss == 0 and pp == 0 and zz == 0:
                     # First file
                     nd1    = np.arange(0,len(lm),1)
                     nd3    = np.arange(10000,10000+len(ltmpbb[ss,:]),1)
@@ -412,17 +412,16 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 col02.append(colms)
 
 
-        #########################
-        # Summarize the templates
-        #########################
-        coldefs_spec = fits.ColDefs(col00)
-        hdu = fits.BinTableHDU.from_columns(coldefs_spec)
-        hdu.writeto(DIR_TMP + 'spec_' + ID + '_PA' + PA + '_'+str(zz)+'.fits', overwrite=True)
+    #########################
+    # Summarize the templates
+    #########################
+    coldefs_spec = fits.ColDefs(col00)
+    hdu = fits.BinTableHDU.from_columns(coldefs_spec)
+    hdu.writeto(DIR_TMP + 'spec_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
-        coldefs_spec = fits.ColDefs(col01)
-        hdu2 = fits.BinTableHDU.from_columns(coldefs_spec)
-        hdu2.writeto(DIR_TMP + 'spec_all_' + ID + '_PA' + PA + '_'+str(zz)+'.fits', overwrite=True)
-
+    coldefs_spec = fits.ColDefs(col01)
+    hdu2 = fits.BinTableHDU.from_columns(coldefs_spec)
+    hdu2.writeto(DIR_TMP + 'spec_all_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
     coldefs_ms = fits.ColDefs(col02)
     hdu3 = fits.BinTableHDU.from_columns(coldefs_ms)
