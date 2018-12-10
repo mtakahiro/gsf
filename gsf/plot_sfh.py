@@ -232,7 +232,7 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
             delT[aa]  = delTu[aa] + delTl[aa]
         elif Tuni/cc.Gyr_s < age[aa]:
             delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = 10.
+            delTu[aa] = delTl[aa] #10.
             delT[aa]  = delTu[aa] + delTl[aa]
         elif aa == len(age)-1:
             delTl[aa] = (age[aa]-age[aa-1])/2.
