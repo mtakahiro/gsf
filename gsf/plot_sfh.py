@@ -286,6 +286,7 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ZMM= np.zeros((len(age), mmax), dtype='float32') # Mass weighted Z.
     ZML= np.zeros((len(age), mmax), dtype='float32') # Light weighted Z.
     SF = np.zeros((len(age), mmax), dtype='float32') # SFR
+    Av = np.zeros(mmax, dtype='float32') # SFR
 
 
     # ##############################
@@ -304,6 +305,7 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         dfile    = np.loadtxt(meanfile, comments='#')
         eA = dfile[:,2]
         eZ = dfile[:,4]
+        eAv= np.mean(dfile[:,6])
         if f_zev == 0:
             eZ_mean = np.mean(eZ[:])
             eZ[:]   = age * 0 #+ eZ_mean
@@ -319,6 +321,7 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         print('No simulation file (%s).\nError may be underestimated.' % meanfile)
         eA = age * 0
         eZ = age * 0
+        eAv= 0
 
     mm = 0
     #while mm<mmax:
@@ -335,6 +338,12 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         sedpar = f0[1]
         f1     = fits.open(DIR_TMP + 'ms.fits')
         mloss  = f1[1].data
+
+        Avrand = np.random.uniform(-eAv, eAv)
+        if Av_tmp + Avrand<0:
+            Av[mm] = 0
+        else:
+            Av[mm] = Av_tmp + Avrand
 
         for aa in range(len(age)):
             AAtmp[aa] = samples['A'+str(aa)][mtmp]/mu
@@ -377,7 +386,8 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
             TC[aa, mm] /= ACs
             TL[aa, mm] /= ALs
 
-    Avtmp  = np.percentile(samples['Av'][:],[16,50,84])
+    #Avtmp  = np.percentile(samples['Av'][:],[16,50,84])
+    Avtmp  = np.percentile(Av[:],[16,50,84])
 
     #############
     # Plot
