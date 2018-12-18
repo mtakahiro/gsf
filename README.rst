@@ -3,9 +3,10 @@ Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.0.0
 
-- SED fitting code used in `Morishita et al. (2018) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__.
+- SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (submitted)`__.
 - This uses FSPS templates generated via python-fsps.
-- Emission lines are currently not included in fitting, but masked.
+- Emission lines are currently not included in fitting, but jut masked in the current version.
+- Please use this code at your own risk.
 ========================================================================================
 
 
