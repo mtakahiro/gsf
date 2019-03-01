@@ -69,7 +69,15 @@ def main(parfile, fplt):
     zgal = float(inputs['ZGAL'])
     Cz0  = float(inputs['CZ0'])
     Cz1  = float(inputs['CZ1'])
-    DIR_EXTR = inputs['DIR_EXTR']
+    try:
+        DIR_EXTR = inputs['DIR_EXTR']
+    except:
+        DIR_EXTR = False
+    try:
+        fneb = inputs['ADD_LINES']
+    except:
+        fneb = 0
+
     DIR_TMP  = inputs['DIR_TEMP']
     DIR_FILT = inputs['DIR_FILT']
 
@@ -145,7 +153,7 @@ def main(parfile, fplt):
             zmin   = 1.0
             lammax = 80000/(1.+zmin)
             nimf = int(inputs['NIMF'])
-            make_tmp_z0(nimf, Zall, age, lammax = lammax, tau0=tau0)
+            make_tmp_z0(nimf, Zall, age, lammax = lammax, tau0=tau0, fneb=fneb)
             flag_suc = 0
             print('Fitting is stopped. L.176')
 
@@ -153,7 +161,7 @@ def main(parfile, fplt):
         # Start making redshifted templates.
         # Then, fit.
         if fplt != 2:
-            maketemp(inputs, zrecom, Zall, age)
+            maketemp(inputs, zrecom, Zall, age, fneb=fneb)
         zprev   = zrecom # redshift from previous run
         Czprev0 = Czrec0
         Czprev1 = Czrec1
@@ -184,7 +192,7 @@ def main(parfile, fplt):
         from .plot_sfh import plot_sfh_pcl2
         from .plot_Zevo import plot_sed_Z
         plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs)
-        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, figpdf=True)
+        #plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, figpdf=True)
 
     '''
     if fplt == 6:

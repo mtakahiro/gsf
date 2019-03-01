@@ -153,8 +153,12 @@ def sim_spec(lmin, fin, sn): # wave_obs, wave_temp, flux_temp, sn_obs
 ###################################################
 # Make SPECTRA at given z and filter set.
 ###################################################
-def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
-
+def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fneb=0):
+    #
+    # Z (array)  : Stellar phase metallicity in logZsun.
+    # age (array): Age, in Gyr.
+    # fneb (int) : flag for adding nebular emissionself.
+    #
     nage = np.arange(0,len(age),1)
     fnc  = Func(Z, nage) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
@@ -162,8 +166,11 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     ID = inputs['ID']
     PA = inputs['PA']
     #zbest = float(inputs['ZGAL'])
-    DIR_EXTR = inputs['DIR_EXTR']
     #LIBFILT  = inputs['LIBFILTER']
+    try:
+        DIR_EXTR = inputs['DIR_EXTR']
+    except:
+        DIR_EXTR = False
     DIR_FILT = inputs['DIR_FILT']
     CAT_BB   = inputs['CAT_BB']
     SFILT    = inputs['FILTER'] # filter band string.
@@ -200,8 +207,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     except Exception:
         pass
 
-    # Gave up using G102
-    # which introduce systematic error.
     try:
         fd1   = np.loadtxt(DIR_EXTR + ID + '_PA' + PA + '_inp1_tmp3_err.cat',comments='#')
         #fd1   = np.loadtxt(ID + '_PA' + PA + '_inp1_tmp3.cat',comments='#')
@@ -275,24 +280,23 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             pass
 
     #################################################
-    xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-
-    if Amp>0 and alp>0:
-        LSF = moffat(xMof, Amp, 0, gamma, alp)
-        print('Template convolution with Moffat.')
-        print('params are;',Amp, 0, gamma, alp)
-    else:
-        sigma = gamma
-        LSF = gauss(xMof, Amp, sigma)
-        print('Template convolution with Gaussian.')
-        print('params is sigma;',sigma)
+    if DIR_EXTR:
+        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+        if Amp>0 and alp>0:
+            LSF = moffat(xMof, Amp, 0, gamma, alp)
+            print('Template convolution with Moffat.')
+            print('params are;',Amp, 0, gamma, alp)
+        else:
+            sigma = gamma
+            LSF = gauss(xMof, Amp, sigma)
+            print('Template convolution with Gaussian.')
+            print('params is sigma;',sigma)
 
 
     ####################################
     # Start generating templates
     ####################################
     DIR_TMP = './templates/'
-
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
     col00 = []
@@ -300,10 +304,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     col02 = []
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
-
             f1    = fits.open(DIR_TMP + 'spec_all.fits')
             spechdu = f1[1]
-
             Zbest = Z[zz]
 
             Na  = len(age)
@@ -322,9 +324,11 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
             if zz == 0 and pp == 0:
                 lm0    = spechdu.data['wavelength']
-                #spec0  = spechdu.data['fspec_'+str(zz)+'_0']
-                spec0  = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
-
+                if fneb == 1:
+                    spec0 = spechdu.data['efspec_'+str(zz)+'_0_'+str(pp)]
+                    logU  = f1[0].header['logU']
+                else:
+                    spec0 = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
 
             lmbest   = np.zeros((Ntmp, len(lm0)), dtype='float32')
             fbest    = np.zeros((Ntmp, len(lm0)), dtype='float32')
@@ -339,26 +343,29 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float32')
             ftmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
             ltmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
-            #fwtmpbb= np.zeros((Na, len(SFILT)), dtype='float32') # fwhm of filter.
-
             spec_av_tmp = np.zeros((Na, len(lm0)), dtype='float32')
 
-            ms       = np.zeros(Na, dtype='float32')
-            Ls       = np.zeros(Na, dtype='float32')
+            ms    = np.zeros(Na, dtype='float32')
+            Ls    = np.zeros(Na, dtype='float32')
             ms[:] = mshdu.data['ms_'+str(zz)][:] # [:] is necessary.
             Ls[:] = mshdu.data['Ls_'+str(zz)][:]
 
 
             for ss in range(Na):
-                wave         = spechdu.data['wavelength']
-                spec_mul[ss] = spechdu.data['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                wave = spechdu.data['wavelength']
+                if fneb == 1:
+                    spec_mul[ss] = spechdu.data['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                else:
+                    spec_mul[ss] = spechdu.data['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
 
-                spec_av_tmp            = spec_mul[ss,:] #dust_calz(wave, spec_mul[ss,:], 0)
-                spec_mul_nu[ss,:]      = flamtonu(wave, spec_av_tmp)
-                spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
+                spec_av_tmp       = spec_mul[ss,:] #dust_calz(wave, spec_mul[ss,:], 0)
+                spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+                if DIR_EXTR:
+                    spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
+                else:
+                    spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
                 spec_sum = 0*spec_mul[0] # This is dummy file.
-
                 DL = cd.luminosity_distance(zbest, **cosmo) * Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
                 spec_av = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.

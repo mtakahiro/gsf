@@ -214,24 +214,27 @@ class Analyze:
         esp  = fds[:,3]
 
         consp = (nrs<10000) & (lams/(1.+zrecom)>3600) & (lams/(1.+zrecom)<4200)
-        SN  = np.median((fsp/esp)[consp])
         NSN = len((fsp/esp)[consp])
+        if NSN>0:
+            SN = np.median((fsp/esp)[consp])
+        else:
+            SN = 0
 
         ######################
         # Write in Fits table.
         ######################
         # Header
         prihdr = fits.Header()
-        prihdr['ID']  = ID0
-        prihdr['PA']  = PA0
-        prihdr['Cz0'] = Czrec0
-        prihdr['Cz1'] = Czrec1
-        prihdr['z']   = zrecom
-        prihdr['SN']  = SN
-        prihdr['nSN'] = NSN
-        prihdr['NDIM'] = ndim
-        prihdr['tcalc'] = tcalc
-        prihdr['chi2']    = fitc[0]
+        prihdr['ID']     = ID0
+        prihdr['PA']     = PA0
+        prihdr['Cz0']    = Czrec0
+        prihdr['Cz1']    = Czrec1
+        prihdr['z']      = zrecom
+        prihdr['SN']     = SN
+        prihdr['nSN']    = NSN
+        prihdr['NDIM']   = ndim
+        prihdr['tcalc']  = tcalc
+        prihdr['chi2']   = fitc[0]
         prihdr['chi2nu'] = fitc[1]
         prihdu = fits.PrimaryHDU(header=prihdr)
 

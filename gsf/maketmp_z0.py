@@ -59,9 +59,13 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin = 400, lammax = 80000, tau0 = [0.01,0.02,0.03]):
+def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin = 400, lammax = 80000, tau0 = [0.01,0.02,0.03], fneb=0, logU=-2.5):
     #
-    # nimf - 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
+    # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
+    # Z (array)  : Stellar phase metallicity in logZsun.
+    # age (array): Age, in Gyr.
+    # fneb (int) : flag for adding nebular emissionself.
+    # logU (float): ionizing parameter, in logU.
     #
     NZ = len(Z)
     Na = len(age)
@@ -97,36 +101,56 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                         tautmp = 0.01
                         print('SSP is applied.')
                         sptmp  = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
+                        if fneb == 1:
+                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1)
                     elif tau0[pp] > 0.0:
                         print('Fixed tau, %.3f, is applied.'%(tau0[pp]))
-                        #tautmp = tau0[pp]
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
+                        if fneb == 1:
+                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
                     else:
                         print('CSP is applied.')
                         print('tau is %.2f Gyr' % tautmp)
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
+                        if fneb == 1:
+                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
                 else:
                     print('Skip fsps, by using previous library.')
 
                 tau0_old = tautmp
-                sp = sptmp
-
+                sp  = sptmp
                 print(zz, sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8") , pp)
 
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True)
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
+
+                if fneb == 1:
+                    esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    esptmp.params['gas_logu'] = logU # ionization parameter
+                    esp = esptmp
+                    print('Nebular is also added.')
+                    ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
+                    con = (ewave0>lammin) & (ewave0<lammax)
+                    eflux = eflux0[con]
+
+                #plt.plot(wave, flux, linestyle='-')
+                #plt.plot(wave, eflux, linestyle='--')
+                #plt.show()
+
+                # Mass-Luminosity
                 ms[ss]  = sp.stellar_mass
                 Ls[ss]  = 10**sp.log_lbol
                 LICK[ss,:] = get_ind(wave, flux)
-
 
                 if ss == 0 and pp == 0 and zz == 0:
                     col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
                     col02.append(col3)
 
-                col4 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
+                col4  = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
                 col02.append(col4)
+                col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
+                col02.append(col4e)
 
                 for ss0 in range(len(age)):
                     if ss == 0 and age[ss0] == age[ss]:
@@ -135,6 +159,12 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                         con1 = (wave1>lammin) & (wave1<lammax)
                         col001 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=flux1[con1])
                         col02.append(col001)
+                        if fneb == 1:
+                            ewave1, eflux1 = esp.get_spectrum(tage=0.01, peraa=True)
+                            eflux1 /= 10**esp.log_lbol
+                            con1 = (ewave1>lammin) & (ewave1<lammax)
+                            col001 = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=eflux1[con1])
+                            col02.append(col001)
 
                     if age[ss0] < age[ss]:
                         wave1, flux1 = sp.get_spectrum(tage=age[ss] - age[ss0], peraa=True)
@@ -142,6 +172,12 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                         con1 = (wave1>lammin) & (wave1<lammax)
                         col001 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=flux1[con1])
                         col02.append(col001)
+                        if fneb == 1:
+                            ewave1, eflux1 = esp.get_spectrum(tage=age[ss] - age[ss0], peraa=True)
+                            eflux1 /= 10**esp.log_lbol
+                            con1 = (ewave1>lammin) & (ewave1<lammax)
+                            col001 = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=eflux1[con1])
+                            col02.append(col001)
 
 
 
@@ -159,8 +195,10 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
 
     # ##############
     # Create header;
-    hdr     = fits.Header()
+    hdr = fits.Header()
     hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
+    if fneb == 1:
+        hdr['COMMENT'] = 'logU:%.2f'%(logU)
     for pp in range(len(tau0)):
         hdr['Tau%d'%(pp)] = tau0[pp]
 

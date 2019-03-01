@@ -416,27 +416,40 @@ class Mainbody():
         prior_s  = zz_prob * 0 + 1.
         prior_s /= np.sum(prior_s)
 
-        print('################\nStart MCMC for redshift fit\n################')
-        res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp,xm_tmp/(1+zprev), zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
-        z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
-        scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
-        scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
+        try:
+            print('################\nStart MCMC for redshift fit\n################')
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp,xm_tmp/(1+zprev), zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
+            z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
+            scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
+            scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
-        zrecom  = z_cz[1]
-        Czrec0  = scl_cz0[1]
-        Czrec1  = scl_cz1[1]
+            zrecom  = z_cz[1]
+            Czrec0  = scl_cz0[1]
+            Czrec1  = scl_cz1[1]
 
-        # Switch to peak redshift:
-        from scipy import stats
-        from scipy.stats import norm
-        # find minimum and maximum of xticks, so we know
-        # where we should compute theoretical distribution
-        ser = res_cz.flatchain['z']
-        xmin, xmax = zprev-0.2, zprev+0.2
-        lnspc = np.linspace(xmin, xmax, len(ser))
+            # Switch to peak redshift:
+            from scipy import stats
+            from scipy.stats import norm
+            # find minimum and maximum of xticks, so we know
+            # where we should compute theoretical distribution
+            ser = res_cz.flatchain['z']
+            xmin, xmax = zprev-0.2, zprev+0.2
+            lnspc = np.linspace(xmin, xmax, len(ser))
+
+            print('\n\n')
+            print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Cz0 * Czrec0, Cz1 * Czrec1, fitc_cz[1]))
+            print('\n\n')
+
+        except:
+            delzz   = 0.3 # ?
+            z_cz    = [zprev-delzz,zprev,zprev+delzz]
+            zrecom  = z_cz[1]
+            scl_cz0 = [1.,1.,1.]
+            scl_cz1 = [1.,1.,1.]
+            Czrec0  = scl_cz0[1]
+            Czrec1  = scl_cz1[1]
 
         try:
-        #if 1>0:
             # lets try the normal distribution first
             m, s  = stats.norm.fit(ser) # get mean and standard deviation
             pdf_g = stats.norm.pdf(lnspc, m, s) # now get theoretical values in our interval
@@ -449,19 +462,17 @@ class Mainbody():
 
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
+        whtl = 1/np.square(ey_cz)
+        try:
+            wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW0)
+        except:
+            wht3, ypoly = whtl, fy_cz
+        con_line = (wht3==0)
 
-        whtl        = 1/np.square(ey_cz)
-        wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW0)
-        con_line    = (wht3==0)
-
-        print('\n\n')
-        print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Cz0 * Czrec0, Cz1 * Czrec1, fitc_cz[1]))
-        print('\n\n')
 
         if fzvis==1:
             plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='Updated model ($z=%.5f$)'%(zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
-
             # Plot lines for reference
             for ll in range(len(LW)):
                 conpoly = (x_cz>12000) & (x_cz<16500)
@@ -496,7 +507,6 @@ class Mainbody():
             print('Error is %.3f per cent.'%(eC0sigma*100))
             print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
             print('Error is %.3f per cent.'%(eC1sigma*100))
-
             plt.show()
 
             #
@@ -539,29 +549,33 @@ class Mainbody():
             ##############################
             # Save fig of z-distribution.
             ##############################
-            fig = plt.figure(figsize=(6.5,2.5))
-            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
-            #n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=False, color='gray',label='')
-            n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=True, color='gray',label='')
-            if f_fitgauss==1:
-                ax1.plot(lnspc, pdf_g, label='Gaussian fit', color='g', linestyle='-') # plot it
-                ax1.set_xlim(m-s*3,m+s*3)
+            try:
+                fig = plt.figure(figsize=(6.5,2.5))
+                fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
+                ax1 = fig.add_subplot(111)
+                #n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=False, color='gray',label='')
+                n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=True, color='gray',label='')
+                if f_fitgauss==1:
+                    ax1.plot(lnspc, pdf_g, label='Gaussian fit', color='g', linestyle='-') # plot it
+                    ax1.set_xlim(m-s*3,m+s*3)
 
-            yy = np.arange(0,np.max(n),1)
-            xx = yy * 0 + z_cz[1]
-            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
-            xx = yy * 0 + z_cz[0]
-            ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-            xx = yy * 0 + z_cz[2]
-            ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-            xx = yy * 0 + zprev
-            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
-            ax1.set_xlabel('Redshift')
-            ax1.set_ylabel('$dn/dz$')
-            ax1.legend(loc=0)
-            plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
-            plt.close()
+                yy = np.arange(0,np.max(n),1)
+                xx = yy * 0 + z_cz[1]
+                ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
+                xx = yy * 0 + z_cz[0]
+                ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
+                xx = yy * 0 + z_cz[2]
+                ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
+                xx = yy * 0 + zprev
+                ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
+                ax1.set_xlabel('Redshift')
+                ax1.set_ylabel('$dn/dz$')
+                ax1.legend(loc=0)
+                plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
+                plt.close()
+            except:
+                print('Figure is not generated.')
+                pass
 
             ##############################
             print('\n\n')
