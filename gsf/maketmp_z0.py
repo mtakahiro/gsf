@@ -129,7 +129,7 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
                     esptmp.params['gas_logu'] = logU # ionization parameter
                     esp = esptmp
-                    print('Nebular is also added.')
+                    print('Nebular is also added, with logU=%.2f.'%(logU))
                     ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
@@ -149,8 +149,9 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
 
                 col4  = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
                 col02.append(col4)
-                col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
-                col02.append(col4e)
+                if fneb == 1:
+                    col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=eflux)
+                    col02.append(col4e)
 
                 for ss0 in range(len(age)):
                     if ss == 0 and age[ss0] == age[ss]:
@@ -198,7 +199,7 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     hdr = fits.Header()
     hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
     if fneb == 1:
-        hdr['COMMENT'] = 'logU:%.2f'%(logU)
+        hdr['logU'] = logU
     for pp in range(len(tau0)):
         hdr['Tau%d'%(pp)] = tau0[pp]
 

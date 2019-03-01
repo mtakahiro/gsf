@@ -24,6 +24,7 @@ m0set = 25.0
 from .function import *
 from .function_class import Func
 from .basic_func import Basic
+from .function_igm import *
 
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
@@ -326,7 +327,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 lm0    = spechdu.data['wavelength']
                 if fneb == 1:
                     spec0 = spechdu.data['efspec_'+str(zz)+'_0_'+str(pp)]
-                    logU  = f1[0].header['logU']
+                    #logU  = f1[0].header['logU']
                 else:
                     spec0 = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
 
@@ -358,8 +359,16 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 else:
                     spec_mul[ss] = spechdu.data['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
 
-                spec_av_tmp       = spec_mul[ss,:] #dust_calz(wave, spec_mul[ss,:], 0)
+                '''
+                plt.plot(wave, spechdu.data['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)],linestyle='-')
+                plt.plot(wave, spechdu.data['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)],linestyle='--')
+                plt.show()
+                '''
+
+                # IGM attenuation.
+                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+
                 if DIR_EXTR:
                     spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                 else:
@@ -368,7 +377,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 spec_sum = 0*spec_mul[0] # This is dummy file.
                 DL = cd.luminosity_distance(zbest, **cosmo) * Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
-                spec_av = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
+                spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
                 ftmp_int = data_int(lm, wavetmp, spec_av)
 
                 Lsun = 3.839 * 1e33 #erg s-1

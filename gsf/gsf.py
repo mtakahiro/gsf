@@ -74,7 +74,7 @@ def main(parfile, fplt):
     except:
         DIR_EXTR = False
     try:
-        fneb = inputs['ADD_LINES']
+        fneb = int(inputs['ADD_LINES'])
     except:
         fneb = 0
 

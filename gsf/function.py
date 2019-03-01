@@ -4,7 +4,6 @@ import numpy as np
 import sys
 from scipy.integrate import simps
 import pickle as cPickle
-from scipy.integrate import simps
 
 #
 c = 3.e18 # A/s
@@ -19,6 +18,7 @@ d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
+
 
 def data_int(lmobs, lmtmp, ftmp):
     # lmobs: Observed wavelength.
@@ -243,7 +243,13 @@ def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
 
 # This function is much better than previous,
 # but is hard to impliment for the current version.
-def dust_calz2(lm, fl, Av, nr): # input lm is at RF.
+def dust_calz2(lm, fl, Av, nr):
+    #
+    # lm (float array) : wavelength, at RF.
+    # fl (float array) : fnu
+    # Av (float)       : mag
+    # nr (int array)   : index, to be used for sorting.
+    #
     Rv = 4.05 #\pm0.80 from Calzetti+00
     lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
     Kl = np.zeros(len(lm), dtype='float32')
