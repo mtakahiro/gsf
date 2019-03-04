@@ -1749,7 +1749,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
 
 
-def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', figpdf=False):
+def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True):
 
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
@@ -1781,7 +1781,7 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     # Fitting Results
     ##################
     DIR_TMP = './templates/'
-    SNlim = 1 # avobe which SN line is shown.
+    #SNlim = 1.5 # avobe which SN line is shown.
 
     ###########################
     # Open result file
@@ -1921,9 +1921,12 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
             yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
             #ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
 
-    conbb = (fybb/eybb>3)
+    conbb = (fybb/eybb>SNlim)
     ax1.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
     ax1.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+    conebb = (fybb/eybb<=SNlim)
+    ax1.errorbar(xbb[conebb], eybb[conebb] * c / np.square(xbb[conebb]) / d * SNlim, yerr=fybb[conebb]*0+np.max(fybb[conbb]*c/np.square(xbb[conbb])/d)*0.05, uplims=eybb[conebb]*c/np.square(xbb[conebb])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
+    #ax1.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
 
 
     ################
@@ -1947,24 +1950,16 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
             y0p, x0p = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
             ysump = y0p
             ysum  = y0
-
             if A50[ii]/Asum > flim:
                 ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-
         else:
             y0_r, x0_tmp = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
             y0p, x0p     = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
-
             ysump += y0p
             ysum  += y0_r
-
             if A50[ii]/Asum > flim:
                 ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-
-
         ysum_wid = ysum * 0
-        #print(ii, A50[ii],age[ii])
-        #plt.close()
         for kk in range(0,ii+1,1):
             tt = int(len(II0) - kk - 1)
             nn = int(len(II0) - ii - 1)
@@ -2015,12 +2010,11 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     #############
     # Main result
     #############
-    #ax1.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=1, color='gray', zorder=-1)#, label='$\chi^2/\\nu=%.2f$'%(chin)) # chin
-    ymax = np.max([fybb[conbb]*c/np.square(xbb[conbb])/d] or ysum*c/np.square(x0)/d) * 2.
-
+    conbb_ymax = (conbb) & (xbb>0.5)
+    #ymax = np.max([fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d] or ysum*c/np.square(x0)/d) * 2.
+    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 3.
 
     #######################
-
     #ax1.text(12000, ymax*0.9, '%s'%(ID0), fontsize=10, color='k')
     xboxl = 17000
     xboxu = 28000
@@ -2031,7 +2025,7 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     ax1.set_xlim(2200, 88000)
     #ax1.set_xlim(12500, 16000)
     ax1.set_xscale('log')
-    ax1.set_ylim(-0.05, ymax)
+    ax1.set_ylim(-ymax*0.1, ymax)
 
     #import matplotlib.ticker as ticker
     import matplotlib
@@ -2296,11 +2290,38 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
         ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
         ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
-    #for kk in range(len(ytmp)):
-    #    ytmpmin[kk] = np.percentile(ytmp[:,kk],16)
-    #    ytmpmax[kk] = np.percentile(ytmp[:,kk],84)
-    #ax1.fill_between(xm_tmp, ytmpmin, ytmpmax, linestyle='-', lw=1, facecolor='gray', zorder=-2, alpha=0.4)
-    #ax2t.fill_between(xm_tmp/zscl, ytmpmin, ytmpmax, linestyle='-', lw=1, facecolor='gray', zorder=-2, alpha=0.4)
+    if save_sed == True:
+        col00  = []
+        ytmp16 = np.zeros(len(xm_tmp), dtype='float32')
+        ytmp50 = np.zeros(len(xm_tmp), dtype='float32')
+        ytmp84 = np.zeros(len(xm_tmp), dtype='float32')
+        for kk in range(len(xm_tmp[:])):
+            ytmp16[kk] = np.percentile(ytmp[:,kk],16)
+            ytmp50[kk] = np.percentile(ytmp[:,kk],50)
+            ytmp84[kk] = np.percentile(ytmp[:,kk],84)
+        col1  = fits.Column(name='wave_model', format='E', unit='AA', array=xm_tmp)
+        col00.append(col1)
+        col2  = fits.Column(name='f_model_16', format='E', unit='1e-18erg/s/cm2/AA', array=ytmp16[:])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_50', format='E', unit='1e-18erg/s/cm2/AA', array=ytmp50[:])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_84', format='E', unit='1e-18erg/s/cm2/AA', array=ytmp84[:])
+        col00.append(col4)
+        col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
+        col00.append(col5)
+        col6  = fits.Column(name='f_obs', format='E', unit='1e-18erg/s/cm2/AA', array=fybb[:] * c / np.square(xbb[:]) / d)
+        col00.append(col6)
+        col7  = fits.Column(name='e_obs', format='E', unit='1e-18erg/s/cm2/AA', array=eybb[:] * c / np.square(xbb[:]) / d)
+        col00.append(col7)
+
+        hdr = fits.Header()
+        hdr['redshift'] = zbes
+        hdr['id'] = ID0
+
+        colspec = fits.ColDefs(col00)
+        hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
+        hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID0), overwrite=True)
+
 
     #######################################
     ax2t.set_xlabel('RF wavelength ($\mathrm{\mu m}$)')

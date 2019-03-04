@@ -87,6 +87,11 @@ class Mainbody():
         snlim  = 1
         zliml  = zgal - 0.5
 
+        import cosmolopy.distance as cd
+        import cosmolopy.constants as cc
+        cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
+        cosmo = cd.set_omega_k_0(cosmo)
+        agemax = cd.age(zgal, use_flat=True, **cosmo)/cc.Gyr_s
 
         # N of param:
         try:
@@ -222,8 +227,8 @@ class Mainbody():
         ###############################
         fit_params = Parameters()
         for aa in range(len(age)):
-            if age[aa] == 99:
-                fit_params.add('A'+str(aa), value=0, min=0, max=0.01)
+            if age[aa] == 99 or age[aa]>agemax:
+                fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
             else:
                 fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
 
@@ -232,8 +237,8 @@ class Mainbody():
         fit_params.add('Av', value=0.2, min=0, max=4.0)
         #fit_params.add('Z', value=0, min=np.min(Zall), max=np.max(Zall))
         for aa in range(len(age)):
-            if age[aa] == 99:
-                fit_params.add('Z'+str(aa), value=1, min=0, max=0.01)
+            if age[aa] == 99 or age[aa]>agemax:
+                fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
             else:
                 fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
 
