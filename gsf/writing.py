@@ -36,7 +36,6 @@ class Analyze:
             except:
                 pass
 
-
         Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
         delZ = float(inputs['DELZ'])
         self.ZALL = np.arange(Zmin, Zmax, delZ) # in logZsun
@@ -51,6 +50,9 @@ class Analyze:
         #Cz1  = float(inputs['CZ1'])
 
     def get_param(self, res, lib_all, zrecom, Czrec0, Czrec1, z_cz, scl_cz0, scl_cz1, fitc, tau0=[0.1,0.2,0.3], tcalc=1.):
+        print('##########################')
+        print('### Writing parameters ###')
+        print('##########################')
 
         ID0 = self.ID0
         PA0 = self.PA0
@@ -113,8 +115,12 @@ class Analyze:
         for aa in range(len(age)):
             Ab[aa]    = res.params['A'+str(aa)].value
             Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)], [16,50,84])
-            Zb[aa]    = res.params['Z'+str(aa)].value
-            Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
+            try:
+                Zb[aa]    = res.params['Z'+str(aa)].value
+                Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
+            except:
+                Zb[aa]    = res.params['Z0'].value
+                Zmc[aa,:] = np.percentile(res.flatchain['Z0'], [16,50,84])
 
             NZbest[aa]= bfnc.Z2NZ(Zb[aa])
             ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
@@ -139,9 +145,11 @@ class Analyze:
             par_tmp   = samples[np.random.randint(len(samples))]
             AA_tmp[:] = par_tmp[:len(age)]
             Av_tmp    = par_tmp[len(age)]
-            ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+len(age)]
+            if self.ZEVOL == 1:
+                ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+len(age)]
+            else:
+                ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+1]
             model2, xm_tmp = fnc.tmp04_samp(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
-
             lmrest = xm_tmp / (1. + zrecom)
 
             band0 = ['u','b','v','j','sz']
@@ -335,9 +343,9 @@ class Analyze:
         hdu    = fits.HDUList([prihdu, dathdu])
         hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
 
-        ########################
+        ##########
         # LINES
-        ########################
+        ##########
         MB = Mainbody(self.inputs)
         LW, fLW = MB.get_lines(self.LW0)
 

@@ -2277,7 +2277,11 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
         Av_tmp = samples['Av'][nr]
         for ss in range(len(age)):
             AA_tmp = samples['A'+str(ss)][nr]
-            ZZ_tmp = samples['Z'+str(ss)][nr]
+            try:
+                Ztest  = samples['Z'+str(len(age)-1)][nr]
+                ZZ_tmp = samples['Z'+str(ss)][nr]
+            except:
+                ZZ_tmp = samples['Z0'][nr]
 
             if ss == 0:
                 mod0_tmp, xm_tmp = fnc.tmp03(ID0, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)

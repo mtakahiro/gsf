@@ -55,6 +55,9 @@ class Mainbody():
 
     def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=1, fzvis=1, specplot=1, fneld=0, ntemp=5): # flag_m related to redshift error in redshift check func.
 
+        print('########################')
+        print('### Fitting Function ###')
+        print('########################')
         start = timeit.default_timer()
 
         inputs = self.inputs
@@ -96,12 +99,20 @@ class Mainbody():
         # N of param:
         try:
             ndim = int(inputs['NDIM'])
+            print('No of params are : %d'%(ndim))
         except:
             if int(inputs['ZEVOL']) == 1:
                 ndim = int(len(nage) * 2 + 1)
+                print('Metallicity evolution is on.')
+                if int(inputs['ZMC']) == 1:
+                    ndim += 1
+                print('No of params are : %d'%(ndim))
             else:
                 ndim = int(len(nage) + 1 + 1)
-
+                print('Metallicity evolution is off.')
+                if int(inputs['ZMC']) == 1:
+                    ndim += 1
+                print('No of params are : %d'%(ndim))
             pass
 
         #
@@ -129,8 +140,6 @@ class Mainbody():
         #
         tau0 = inputs['TAU0']
         tau0 = [float(x.strip()) for x in tau0.split(',')]
-        #tau0     = [0.1,0.2,0.3] # Gyr
-
 
         from .function_class import Func
         from .basic_func import Basic
@@ -146,15 +155,9 @@ class Mainbody():
         lib     = fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
         lib_all = fnc.open_spec_fits(ID0, PA0, fall=1, tau0=tau0)
 
-        #####################
-        # Model templates.
-        #####################
-        chimax = 1.
-
         #################
         # Observed Data
         #################
-
         ##############
         # Spectrum
         ##############
@@ -233,18 +236,27 @@ class Mainbody():
                 fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
 
 
-        #fit_params.add('Av', value=1., min=0, max=4.0)
+        #####################
+        # Dust attenuation
+        #####################
         fit_params.add('Av', value=0.2, min=0, max=4.0)
         #fit_params.add('Z', value=0, min=np.min(Zall), max=np.max(Zall))
-        for aa in range(len(age)):
-            if age[aa] == 99 or age[aa]>agemax:
-                fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
-            else:
-                fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
+        #####################
+        # Metallicity
+        #####################
+        if int(inputs['ZEVOL']) == 1:
+            for aa in range(len(age)):
+                if age[aa] == 99 or age[aa]>agemax:
+                    fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
+                else:
+                    fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
+        else:
+            aa = 0
+            fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
 
-        ##################################
-        # Metallicity determination
-        ##################################
+        ####################################
+        # Initial Metallicity Determination
+        ####################################
         chidef = 1e5
         Zbest  = 0
 
@@ -254,26 +266,20 @@ class Mainbody():
 
         nZtmp = int((Zmax-Zmin)/delZtmp)
         ZZtmp = np.arange(Zmin,Zmax,delZtmp)
-        ##############
-        # Added.
-        #fit_params_bu = fit_params
-        #fit_params.add('zmc', value=zprev, min=zprev-0.1, max=zprev+0.1)
 
+        # How to get initial parameters?
+        # Nelder;
         if fneld == 1:
-        #if fneld>=0:
-            #for zz in range(0,nZtmp,1):
-            #    ZZ = zz * delZtmp + np.min(Zall)
             for zz in range(len(ZZtmp)):
-            #for zz in range(7,8,1):
                 ZZ = ZZtmp[zz]
-                for aa in range(len(age)):
+                if int(inputs['ZEVOL']) == 1:
+                    for aa in range(len(age)):
+                        fit_params['Z'+str(aa)].value = ZZ
+                else:
+                    aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
                 out_tmp = minimize(residual, fit_params, method='nelder') # nelder is the most efficient.
-                #print(ZZ, bfnc.Z2NZ(ZZ))
-                #print(fit_report(out_tmp))
-                #print('\n')
-
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
                 rcsq = 99999
@@ -297,7 +303,12 @@ class Mainbody():
 
                 Av_tmp = out_tmp.params['Av'].value
                 fwz.write(' %.5f'%(Av_tmp))
-                for aa in range(len(age)):
+                if int(inputs['ZEVOL']) == 1:
+                    for aa in range(len(age)):
+                        ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                        fwz.write(' %.5f'%(ZZ_tmp[aa]))
+                else:
+                    aa = 0
                     ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
                     fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
@@ -305,17 +316,19 @@ class Mainbody():
                 if fitc[1]<chidef:
                     chidef = fitc[1]
                     out    = out_tmp
-
+        # Or
+        # Powell;
         else:
             for zz in range(0,nZtmp,2):
                 ZZ = zz * delZtmp + np.min(Zall)
-                for aa in range(len(age)):
+                if int(inputs['ZEVOL']) == 1:
+                    for aa in range(len(age)):
+                        fit_params['Z'+str(aa)].value = ZZ
+                else:
+                    aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
                 out_tmp = minimize(residual, fit_params, method='powell') # powel is the more accurate.
-                #print(ZZ, bfnc.Z2NZ(ZZ))
-                #print(fit_report(out_tmp))
-                #print('\n')
 
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
@@ -339,9 +352,12 @@ class Mainbody():
 
                 Av_tmp = out_tmp.params['Av'].value
                 fwz.write(' %.5f'%(Av_tmp))
-                #Z_tmp  = out_tmp.params['Z'].value
-                for aa in range(len(age)):
-                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                if int(inputs['ZEVOL']) == 1:
+                    for aa in range(len(age)):
+                        ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                        fwz.write(' %.5f'%(ZZ_tmp[aa]))
+                else:
+                    aa = 0
                     fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
                 fwz.write('\n')
@@ -584,8 +600,10 @@ class Mainbody():
 
             ##############################
             print('\n\n')
+            print('###############################')
             print('Input redshift is adopted.')
             print('Starting long journey in MCMC.')
+            print('###############################')
             print('\n\n')
             #################
             # Initialize mm.
@@ -595,11 +613,12 @@ class Mainbody():
             # out.params.add('f', value=1, min=0.001, max=20)
             wht2 = wht
 
-
             ################################
-            print('Defined Minimizer\n')
+            print('\nMinimizer Defined\n')
             mini = Minimizer(lnprob, out.params)
-            print('################\nStarting emcee\n################\n')
+            print('######################')
+            print('### Starting emcee ###')
+            print('######################')
             import multiprocessing
             ncpu0 = int(multiprocessing.cpu_count()/2)
             try:
@@ -617,8 +636,9 @@ class Mainbody():
             res  = mini.emcee(burn=int(nmc/2), steps=nmc, thin=10, nwalkers=nwalk, params=out.params, is_weighted=True, ntemps=ntemp, workers=ncpu)
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
-            print('#######################\nMCMC part took %.1f sec\n#######################'%(tcalc_mc))
-
+            print('###############################')
+            print('### MCMC part took %.1f sec ###'%(tcalc_mc))
+            print('###############################')
 
             #----------- Save pckl file
             #-------- store chain into a cpkl file
@@ -632,7 +652,9 @@ class Mainbody():
                          savepath+cpklname) # Already burn in
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
-            print('#######################\nSaving chain took %.1f sec\n#######################'%(tcalc_mc))
+            print('#################################')
+            print('### Saving chain took %.1f sec'%(tcalc_mc))
+            print('#################################')
 
             Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
             #Zmc  = np.percentile(res.flatchain['Z'], [16,50,84])
@@ -653,8 +675,12 @@ class Mainbody():
             for aa in range(len(age)):
                 Ab[aa]    = out.params['A'+str(aa)].value
                 Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)], [16,50,84])
-                Zb[aa]    = out.params['Z'+str(aa)].value
-                Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
+                try:
+                    Zb[aa]    = out.params['Z'+str(aa)].value
+                    Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
+                except:
+                    Zb[aa]    = out.params['Z0'].value
+                    Zmc[aa,:] = np.percentile(res.flatchain['Z0'], [16,50,84])
                 NZbest[aa]= bfnc.Z2NZ(Zb[aa])
                 ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
 
@@ -684,7 +710,9 @@ class Mainbody():
             wrt.get_param(res, lib_all, zrecom, Czrec0, Czrec1, z_cz[:], scl_cz0[:], scl_cz1[:], fitc[:], tau0=tau0, tcalc=tcalc)
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
-            print('#######################\nWriting params tp file took %.1f sec\n#######################'%(tcalc_mc))
+            print('##############################################')
+            print('### Writing params tp file took %.1f sec ###'%(tcalc_mc))
+            print('##############################################')
 
             ##########
             # Plot

@@ -301,9 +301,13 @@ class Func:
 
         Av00 = par['Av']
         for aa in range(len(AA)):
-            Z   = par['Z'+str(aa)]
+            try:
+                Ztest = par['Z'+str(len(AA)-1)] # instead of 'ZEVOL'
+                Z   = par['Z'+str(aa)]
+            except:
+                # This is in the case with ZEVO=0.
+                Z   = par['Z0']
             A00 = par['A'+str(aa)]
-            #NZ = np.argmin(np.abs(ZZ-Z)) # <- This is slower.
             NZ  = bfnc.Z2NZ(Z)
 
             coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
@@ -363,7 +367,12 @@ class Func:
         Av00 = par.params['Av'].value
         for aa in range(len(AA)):
             nmodel = aa
-            Z   = par.params['Z'+str(aa)].value
+            try:
+                Ztest = par.params['Z'+str(len(AA)-1)].value # instead of 'ZEVOL'
+                Z = par.params['Z'+str(aa)].value
+            except:
+                # This is in the case with ZEVO=0.
+                Z = par.params['Z0'].value
             A00 = par.params['A'+str(aa)].value
             NZ  = bfnc.Z2NZ(Z)
 
@@ -406,10 +415,7 @@ class Func:
         bfnc = Basic(ZZ)
         DIR_TMP = './templates/'
 
-        #AA00[:]   = par[:len(AA)]
-        #ZZ_tmp[:] = par[len(AA)+1:len(AA)+1+len(AA)]
         Av00      = par[len(AA)]
-
         try:
             zmc = par[len(AA)+1+len(AA)]
         except:
@@ -423,9 +429,16 @@ class Func:
         for aa in range(len(AA)):
             #nmodel = aa
             A00  = par[aa] #AA00[aa] #par.params['A'+str(aa)].value
-            Z    = par[len(AA)+1+aa]# ZZ_tmp[aa] #par.params['Z'+str(aa)].value
-            NZ   = bfnc.Z2NZ(Z)
-            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+            try:
+                Ztest= par[len(AA)+1+len(AA)] # instead of 'ZEVOL'
+                Z    = par[len(AA)+1+aa] # ZZ_tmp[aa] #par.params['Z'+str(aa)].value
+                NZ   = bfnc.Z2NZ(Z)
+                coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+            except:
+                Z    = par[len(AA)+1] # ZZ_tmp[aa] #par.params['Z'+str(aa)].value
+                NZ   = bfnc.Z2NZ(Z)
+                coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA))
+
             if aa == 0:
                 nr  = lib[:, 0]
                 xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
