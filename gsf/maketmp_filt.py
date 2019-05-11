@@ -156,9 +156,11 @@ def sim_spec(lmin, fin, sn): # wave_obs, wave_temp, flux_temp, sn_obs
 ###################################################
 def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fneb=0):
     #
-    # Z (array)  : Stellar phase metallicity in logZsun.
-    # age (array): Age, in Gyr.
-    # fneb (int) : flag for adding nebular emissionself.
+    # inputs      : Configuration file.
+    # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
+    # Z (array)   : Stellar phase metallicity in logZsun.
+    # age (array) : Age, in Gyr.
+    # fneb (int)  : flag for adding nebular emissionself.
     #
     nage = np.arange(0,len(age),1)
     fnc  = Func(Z, nage) # Set up the number of Age/ZZ
@@ -166,10 +168,10 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
     ID = inputs['ID']
     PA = inputs['PA']
-    #zbest = float(inputs['ZGAL'])
-    #LIBFILT  = inputs['LIBFILTER']
     try:
         DIR_EXTR = inputs['DIR_EXTR']
+        if len(DIR_EXTR)==0:
+            DIR_EXTR = False
     except:
         DIR_EXTR = False
     DIR_FILT = inputs['DIR_FILT']
@@ -195,56 +197,53 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #
     # Get ascii data.
     #
-    ninp0 = 0
-    ninp1 = 0
-    ninp2 = 0
+    #ninp1 = 0
+    #ninp2 = 0
     try:
-        fd0   = np.loadtxt(DIR_EXTR + ID + '_PA' + PA + '_inp0_tmp3_err.cat',comments='#')
-        #fd0   = np.loadtxt(ID + '_PA' + PA + '_inp0_tmp3.cat',comments='#')
-        lm0   = fd0[:,0] #* 10000.
-        fobs0 = fd0[:,1]
-        eobs0 = fd0[:,2]
-        ninp0 = len(lm0)
-    except Exception:
+        spec_files = inputs['SPEC_FILE'] # filter band string.
+        spec_files = [x.strip() for x in spec_files.split(',')]
+        ninp0 = np.zeros(len(spec_files), dtype='int')
+        for ff, spec_file in enumerate(spec_files):
+            try:
+                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp= fd0[:,0]
+                fobs0 = fd0[:,1]
+                eobs0 = fd0[:,2]
+                ninp0[ff] = len(lm0tmp)#[con_tmp])
+            except Exception:
+                print('File, %s, can be open.'%(spec_file))
+                pass
+
+        # Constructing arrays.
+        lm   = np.zeros(np.sum(ninp0[:]),dtype='float32')
+        fobs = np.zeros(np.sum(ninp0[:]),dtype='float32')
+        eobs = np.zeros(np.sum(ninp0[:]),dtype='float32')
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
+        for ff, spec_file in enumerate(spec_files):
+            try:
+                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp= fd0[:,0]
+                fobs0 = fd0[:,1]
+                eobs0 = fd0[:,2]
+                for ii1 in range(ninp0[ff]):
+                    if ff==0:
+                        ii = ii1
+                    else:
+                        ii = ii1 + np.sum(ninp0[:ff])
+                    fgrs[ii] = ff
+                    lm[ii]   = lm0tmp[ii1]
+                    fobs[ii] = fobs0[ii1]
+                    eobs[ii] = eobs0[ii1]
+
+            except Exception:
+                pass
+    except:
+        print('No spec file is provided.')
         pass
 
-    try:
-        fd1   = np.loadtxt(DIR_EXTR + ID + '_PA' + PA + '_inp1_tmp3_err.cat',comments='#')
-        #fd1   = np.loadtxt(ID + '_PA' + PA + '_inp1_tmp3.cat',comments='#')
-        lm1   = fd1[:,0] #* 10000.
-        fobs1 = fd1[:,1]
-        eobs1 = fd1[:,2]
-        ninp1 = len(lm1)
-    except Exception:
-        pass
-
-    lm   = np.zeros(ninp0+ninp1+ninp2,dtype='float32')
-    fobs = np.zeros(ninp0+ninp1+ninp2,dtype='float32')
-    eobs = np.zeros(ninp0+ninp1+ninp2,dtype='float32')
-    fgrs = np.zeros(ninp0+ninp1+ninp2,dtype='int')  # FLAG for G102/G141.
-
-    try:
-        for ii1 in range(0,ninp1,1):
-            ii = ii1 + ninp2
-            lm[ii]   = lm1[ii1]
-            fobs[ii] = fobs1[ii1]
-            eobs[ii] = eobs1[ii1]
-            fgrs[ii] = 1
-    except Exception:
-        pass
-
-    try:
-        for ii0 in range(0,ninp0,1):
-            ii = ii0 + ninp2 + ninp1
-            lm[ii]   = lm0[ii0]
-            fobs[ii] = fobs0[ii0]
-            eobs[ii] = eobs0[ii0]
-            fgrs[ii] = 0
-    except Exception:
-        pass
-
-
-    #fd = np.loadtxt(ID + '_bb_ksirac_uvis.cat',comments='#')
+    #############################
+    # Extracting BB photometry:
+    #############################
     fd0 = np.loadtxt(CAT_BB, comments='#')
     id0 = fd0[:,0]
     for ii in range(len(id0)):
@@ -262,37 +261,57 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         fbb[ii] = fd[ii*2+1]
         ebb[ii] = fd[ii*2+2]
 
-    Amp = 0
+
+    #############################
+    # Getting Morphology params.
+    #############################
+    Amp    = 0
+    f_morp = False
     try:
-        fm = np.loadtxt(DIR_EXTR + ID + '_PA' + PA + '_inp0_moffat_err.cat', comments='#') # G141
-        Amp   = fm[2]
-        gamma = fm[4]
-        alp   = fm[5]
-    except Exception:
+        if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
+            f_morp = True
+            try:
+                mor_file = inputs['MORP_FILE']
+                fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
+                Amp   = fm[0]
+                gamma = fm[1]
+                if inputs['MORP'] == 'moffat':
+                    alp   = fm[2]
+                else:
+                    alp   = 0
+            except Exception:
+                print('Error in reading morphology params.')
+                return -1
+        else:
+            print('MORP Keywords does not match.')
+            print('No morphology convolution.')
+    except:
         pass
 
-    if Amp == 0:
-        try:
-            fm = np.loadtxt(DIR_EXTR + ID + '_PA' + PA + '_inp1_moffat_err.cat', comments='#') # G102
-            Amp   = fm[2]
-            gamma = fm[4]
-            alp   = fm[5]
-        except Exception:
-            pass
-
     #################################################
-    if DIR_EXTR:
+    if f_morp:
         xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-        if Amp>0 and alp>0:
+        if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
             LSF = moffat(xMof, Amp, 0, gamma, alp)
             print('Template convolution with Moffat.')
             print('params are;',Amp, 0, gamma, alp)
-        else:
+        elif inputs['MORP'] == 'gauss':
             sigma = gamma
             LSF = gauss(xMof, Amp, sigma)
             print('Template convolution with Gaussian.')
             print('params is sigma;',sigma)
-
+        else:
+            print('Something is wrong.')
+            return -1
+    else:
+        f_disp = False
+        try:
+            vdisp = float(inputs['VDISP'])
+            print('Templates are convolved at %.2f km/s.'%(vdisp))
+        except:
+            vdisp = 0.
+            print('Templates are not convolved.')
+            pass
 
     ####################################
     # Start generating templates
@@ -305,23 +324,20 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     col02 = []
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
-            f1    = fits.open(DIR_TMP + 'spec_all.fits')
+            f1      = fits.open(DIR_TMP + 'spec_all.fits')
             spechdu = f1[1]
-            Zbest = Z[zz]
+            Zbest   = Z[zz]
 
-            Na  = len(age)
-            Nz  = 1
-
-            param = np.zeros((Na, 6), dtype='float32')
+            Na      = len(age)
+            Nz      = 1
+            param   = np.zeros((Na, 6), dtype='float32')
             param[:,2] = 1e99
-
-            Ntmp  = 1
-            chi2  = np.zeros(Ntmp) + 1e99
-            snorm = np.zeros(Ntmp)
+            Ntmp    = 1
+            chi2    = np.zeros(Ntmp) + 1e99
+            snorm   = np.zeros(Ntmp)
             agebest = np.zeros(Ntmp)
-            avbest = np.zeros(Ntmp)
-
-            age_univ = cd.age(zbest, use_flat=True, **cosmo)
+            avbest  = np.zeros(Ntmp)
+            age_univ= cd.age(zbest, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
                 lm0    = spechdu.data['wavelength']
@@ -341,6 +357,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             spec_mul = np.zeros((Na, len(lm0)), dtype='float32')
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float32')
             spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype='float32')
+
             ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float32')
             ftmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
             ltmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
@@ -351,7 +368,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             ms[:] = mshdu.data['ms_'+str(zz)][:] # [:] is necessary.
             Ls[:] = mshdu.data['Ls_'+str(zz)][:]
 
-
             for ss in range(Na):
                 wave = spechdu.data['wavelength']
                 if fneb == 1:
@@ -359,13 +375,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 else:
                     spec_mul[ss] = spechdu.data['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
 
-                '''
-                plt.plot(wave, spechdu.data['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)],linestyle='-')
-                plt.plot(wave, spechdu.data['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)],linestyle='--')
-                plt.show()
-                '''
-
+                ###################
                 # IGM attenuation.
+                ###################
                 spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
 
@@ -391,6 +403,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
                 ftmp_nu_int[ss,:]  = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
+
                 ##########################################
                 # Writing out the templates to fits table.
                 ##########################################
@@ -443,27 +456,25 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     hdu3 = fits.BinTableHDU.from_columns(coldefs_ms)
     hdu3.writeto(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
-
     ##########################################
     # For observation.
     # Write out for the Multi-component fitting.
     ##########################################
-    #lamliml = 11741./(1.+zbest)
     lamliml = 0.
     lamlimu = 20000.
     fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
     for ii in range(len(lm)):
-        if fgrs[ii]==1: # G102
+        if fgrs[ii]==0: # G102
             if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii, lm[ii], fobs[ii], eobs[ii]))
             else:
                 fw.write('%d %.5f 0 1000\n'%(ii, lm[ii]))
-
-        elif fgrs[ii]==0: # G141
+        elif fgrs[ii]==1: # G141
             if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+1000, lm[ii], fobs[ii], eobs[ii]))
             else:
                 fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
+
     for ii in range(len(ltmpbb[0,:])):
         if  ebb[ii]>1000:
             fw.write('%d %.5f 0 1000\n'%(ii+10000, ltmpbb[0,ii]))
@@ -473,7 +484,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
     fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
-        if  ebb[ii]>1000:
+        if ebb[ii]>1000:
             fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
