@@ -239,20 +239,20 @@ class Mainbody():
                 f = vals['f']
             else:
                 f = 0 # temporary... (if f is param, then take from vals dictionary.)
-            con_res = (model>0) #& (fy>0)
-            sig     = np.sqrt(1./wht2+f**2*model**2)[con_res]
+            con_res = (model>0) & (wht2>0) #& (fy>0)
+            sig     = np.sqrt(1./wht2+f**2*model**2)
             if not out:
                 if fy is None:
                     print('Data is none')
                     return model[con_res]
                 else:
-                    return (model - fy)[con_res] / sig # i.e. residual/sigma. Because is_weighted = True.
+                    return (model - fy)[con_res] / sig[con_res] # i.e. residual/sigma. Because is_weighted = True.
             if out:
                 if fy is None:
                     print('Data is none')
-                    return model[con_res], model[con_res]
+                    return model[con_res], model
                 else:
-                    return (model - fy)[con_res] / sig, model[con_res] # i.e. residual/sigma. Because is_weighted = True.
+                    return (model - fy)[con_res] / sig[con_res], model # i.e. residual/sigma. Because is_weighted = True.
 
         def lnprob(pars):
             #
@@ -264,9 +264,10 @@ class Mainbody():
             else:
                 f = 0 # temporary... (if f is param, then take from vals dictionary.)
             resid, model = residual(pars, out=True)
-            con_res = (model>0) #& (fy>0)
-            sig     = np.sqrt(1./wht2+f**2*model**2)[con_res]
-            lnlike = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig**2))
+            con_res = (model>0) & (wht2>0)
+            sig     = np.sqrt(1./wht2+f**2*model**2)
+            lnlike = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig[con_res]**2))
+            #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
             #Av   = vals['Av']
             #if Av<0:
             #     return -np.inf
