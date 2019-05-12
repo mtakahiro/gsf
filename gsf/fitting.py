@@ -54,7 +54,6 @@ class Mainbody():
         return LW, fLW
 
     def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=1, fzvis=1, specplot=1, fneld=0, ntemp=5): # flag_m related to redshift error in redshift check func.
-
         print('########################')
         print('### Fitting Function ###')
         print('########################')
@@ -65,6 +64,9 @@ class Mainbody():
 
         if os.path.exists(DIR_TMP) == False:
             os.mkdir(DIR_TMP)
+
+        # For error parameter
+        ferr = 0
 
         #
         # Age
@@ -199,6 +201,7 @@ class Mainbody():
         #####################
         # Function fo MCMC
         #####################
+        '''
         def residual(pars): # x, y, wht are taken from out of the definition.
             vals = pars.valuesdict()
             model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
@@ -223,7 +226,54 @@ class Mainbody():
             #    respr = 0 #np.log(1)
             respr = 0
             return -0.5 * np.sum(resid) + respr
+        '''
 
+        def residual(pars, out=False): # x, y, wht are taken from out of the definition.
+            #
+            # Returns: residual of model and data.
+            # out: model as second output. For lnprob func.
+            #
+            vals = pars.valuesdict()
+            model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
+            if ferr == 1:
+                f = vals['f']
+            else:
+                f = 0 # temporary... (if f is param, then take from vals dictionary.)
+            con_res = (model>0) #& (fy>0)
+            sig     = np.sqrt(1./wht2+f**2*model**2)[con_res]
+            if not out:
+                if fy is None:
+                    print('Data is none')
+                    return model[con_res]
+                else:
+                    return (model - fy)[con_res] / sig # i.e. residual/sigma. Because is_weighted = True.
+            if out:
+                if fy is None:
+                    print('Data is none')
+                    return model[con_res], model[con_res]
+                else:
+                    return (model - fy)[con_res] / sig, model[con_res] # i.e. residual/sigma. Because is_weighted = True.
+
+        def lnprob(pars):
+            #
+            # Returns: posterior.
+            #
+            vals   = pars.valuesdict()
+            if ferr == 1:
+                f = vals['f']
+            else:
+                f = 0 # temporary... (if f is param, then take from vals dictionary.)
+            resid, model = residual(pars, out=True)
+            con_res = (model>0) #& (fy>0)
+            sig     = np.sqrt(1./wht2+f**2*model**2)[con_res]
+            lnlike = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig**2))
+            #Av   = vals['Av']
+            #if Av<0:
+            #     return -np.inf
+            #else:
+            #    respr = 0 #np.log(1)
+            respr = 0 # Flat prior...
+            return lnlike + respr
 
         ###############################
         # Add parameters
@@ -239,8 +289,13 @@ class Mainbody():
         #####################
         # Dust attenuation
         #####################
-        fit_params.add('Av', value=0.2, min=0, max=4.0)
-        #fit_params.add('Z', value=0, min=np.min(Zall), max=np.max(Zall))
+        try:
+            Avmin = float(inputs['AVMIN'])
+            Avmax = float(inputs['AVMIN'])
+            fit_params.add('Av', value=0.2, min=Avmin, max=Avmax)
+        except:
+            fit_params.add('Av', value=0.2, min=0, max=4.0)
+
         #####################
         # Metallicity
         #####################
@@ -552,10 +607,20 @@ class Mainbody():
                 out_keep = out
                 sigz = 1.0
                 fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0])*sigz, max=zrecom+(z_cz[2]-z_cz[1])*sigz)
-                #print('z is defined in this range:', zrecom, zrecom-(z_cz[1]-z_cz[0])*sigz, zrecom+(z_cz[2]-z_cz[1])*sigz)
-                #if fneld == 1:
-                out = minimize(residual, fit_params, method='nelder') # It needs to define out with redshift constrain.
+                #####################
+                # Error parameter
+                #####################
+                try:
+                    ferr = int(inputs['F_ERR'])
+                    if ferr == 1:
+                        fit_params.add('f', value=1e-2, min=0, max=1e2)
+                        ndim += 1
+                except:
+                    ferr = 0
+                    pass
 
+                # Then, minimize again.
+                out = minimize(residual, fit_params, method='nelder') # It needs to define out with redshift constrain.
                 # Fix params to what we had before.
                 out.params['zmc'].value = zrecom
                 out.params['Av'].value  = out_keep.params['Av'].value
