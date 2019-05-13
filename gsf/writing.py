@@ -30,9 +30,12 @@ class Analyze:
                 self.NDIM = int(1 + len(age)*2)
             else:
                 self.NDIM = int(1 + len(age) + 1)
-
             try:
                 self.NDIM += int(inputs['ZMC'])
+            except:
+                pass
+            try:
+                self.NDIM += int(inputs['F_ERR'])
             except:
                 pass
 
@@ -95,7 +98,6 @@ class Analyze:
         NaD  = np.zeros(int(mmax), dtype='float32')
         Hb   = np.zeros(int(mmax), dtype='float32')
 
-        #mm = 0
         samples1 = res.chain[:, :, :].reshape((-1, ndim))
         #samples  = samples1[int(nmc/2):]
         samples  = samples1[:] # Already reduced.

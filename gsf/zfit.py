@@ -45,11 +45,10 @@ def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu,
             return fm_s
         else:
             return (fm_s - fcon) * np.sqrt(wht2) # i.e. residual/sigma
-    ###############################
 
     ###############################
     def lnprob_cz(pars):
-        resid  = residual_z(pars) # (data - model) * wht
+        resid  = residual_z(pars) # i.e. (data - model) * wht
         z      = pars['z']
         s_z    = 1 #pars['f_cz']
         resid *= 1 / s_z
@@ -65,9 +64,8 @@ def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu,
 
         return -0.5 * np.sum(resid)
     #################################
-        
+
     out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
-    #fitc_cz = fit_report_chi(out_cz) # Chi2, Reduced-chi2
 
     #
     # Best fit
@@ -80,7 +78,7 @@ def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu,
         if key[4:7] == 'red':
             skey = key.split(' ')
             rcsq = float(skey[7])
-            
+
     fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
 
     zrecom  = out_cz.params['z'].value
@@ -89,6 +87,5 @@ def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu,
 
     mini_cz = Minimizer(lnprob_cz, out_cz.params)
     res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=10, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
-    
+
     return res_cz, fitc_cz
-    

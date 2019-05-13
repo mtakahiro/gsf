@@ -286,7 +286,7 @@ class Func:
         bfnc = Basic(ZZ)
         DIR_TMP = './templates/'
         try:
-            zmc = par.params['zmc'].value
+            zmc = par['zmc']
         except:
             zmc = zgal
         #Cz0s  = vals['Cz0']
