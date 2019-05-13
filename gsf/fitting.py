@@ -438,7 +438,9 @@ class Mainbody():
         prior_s /= np.sum(prior_s)
 
         try:
-            print('################\nStart MCMC for redshift fit\n################')
+            print('############################')
+            print('Start MCMC for redshift fit')
+            print('############################')
             res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp,xm_tmp/(1+zprev), zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
             z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
