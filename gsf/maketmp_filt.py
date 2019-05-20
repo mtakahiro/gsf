@@ -15,7 +15,7 @@ import cosmolopy.distance as cd
 import cosmolopy.constants as cc
 cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
 cosmo = cd.set_omega_k_0(cosmo)
-c = 3e18
+c = 3e18 # speed of light in AA/s
 pixelscale = 0.06 # arcsec/pixel
 Mpc_cm = 3.08568025e+24 # cm/Mpc
 m0set = 25.0
@@ -288,30 +288,61 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     except:
         pass
 
-    #################################################
+    ############################
+    # Template convolution;
+    ############################
+    try:
+        sig_temp = float(inputs['SIG_TEMP'])
+    except:
+        sig_temp = 50.
+        print('Template resolution is unknown.')
+        print('Set to %.1f km/s.'%(sig_temp))
+    dellam = lm[1] - lm[0] # AA/pix
+    R_temp = c/(sig_temp*1e3*1e10)
+    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
+
+    # If grism;
     if f_morp:
+        print('Templates convolution (intrinsic morphology).')
+        if gamma>sig_temp_pix:
+            sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
+        else:
+            sig_conv = 0
+            print('Template resolution is broader than Morphology.')
+            print('No convolution is applied to templates.')
+
         xMof = np.arange(-5, 5.1, .1) # dimension must be even.
         if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
-            LSF = moffat(xMof, Amp, 0, gamma, alp)
+            LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
+            print(np.sqrt(gamma**2-sig_temp_pix**2))
             print('Template convolution with Moffat.')
-            print('params are;',Amp, 0, gamma, alp)
+            #print('params are;',Amp, 0, gamma, alp)
         elif inputs['MORP'] == 'gauss':
             sigma = gamma
-            LSF = gauss(xMof, Amp, sigma)
+            LSF = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
             print('Template convolution with Gaussian.')
             print('params is sigma;',sigma)
         else:
             print('Something is wrong.')
             return -1
-    else:
+    else: # For slit spectroscopy. To be updated...
+        print('Templates convolution (intrinsic velocity).')
         f_disp = False
         try:
             vdisp = float(inputs['VDISP'])
+            dellam = lm[1] - lm[0] # AA/pix
+            R_disp = c/(vdisp*1e3*1e10)
+            vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
             print('Templates are convolved at %.2f km/s.'%(vdisp))
+            sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
         except:
             vdisp = 0.
             print('Templates are not convolved.')
+            sig_conv = np.sqrt(sig_temp_pix**2)
             pass
+        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+        Amp  = 1.
+        LSF  = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
 
     ####################################
     # Start generating templates

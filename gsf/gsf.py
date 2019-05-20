@@ -115,8 +115,11 @@ def main(parfile, fplt):
     #
     # Line
     #
-    LW0 = inputs['LINE']
-    LW0 = [float(x.strip()) for x in LW0.split(',')]
+    try:
+        LW0 = inputs['LINE']
+        LW0 = [float(x.strip()) for x in LW0.split(',')]
+    except:
+        LW0 = []
 
     #
     flag_suc = 1
@@ -192,8 +195,7 @@ def main(parfile, fplt):
         from .plot_sfh import plot_sfh_pcl2
         from .plot_Zevo import plot_sed_Z
         plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs)
-        #plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True)
-
+        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True)
 
     '''
     if fplt == 6:

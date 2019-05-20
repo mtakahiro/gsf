@@ -2246,10 +2246,8 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
 
     con4000b = (xg01/zscl>3400) & (xg01/zscl<3800) & (fy01>0) & (ey01>0)
     con4000r = (xg01/zscl>4200) & (xg01/zscl<5000) & (fy01>0) & (ey01>0)
-    print('##############################')
-    print('Median SN/element at 3400-3800 is %.2f' %np.median((fy01/ey01)[con4000b]))
-    print('Median SN/element at 4200-5000 is %.2f' %np.median((fy01/ey01)[con4000r]))
-    print('##############################')
+    print('Median SN at 3400-3800 is;', np.median((fy01/ey01)[con4000b]))
+    print('Median SN at 4200-5000 is;', np.median((fy01/ey01)[con4000r]))
     #print('SN of all pixels are;')
     #print((fy01/ey01)[con4000b])
 

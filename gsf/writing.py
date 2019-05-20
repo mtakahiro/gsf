@@ -30,12 +30,9 @@ class Analyze:
                 self.NDIM = int(1 + len(age)*2)
             else:
                 self.NDIM = int(1 + len(age) + 1)
+
             try:
                 self.NDIM += int(inputs['ZMC'])
-            except:
-                pass
-            try:
-                self.NDIM += int(inputs['F_ERR'])
             except:
                 pass
 
@@ -45,12 +42,11 @@ class Analyze:
         self.DIR_FILT = inputs['DIR_FILT']
         self.DIR_TEMP = inputs['DIR_TEMP']
 
-        LW0 = inputs['LINE']
-        self.LW0 = [float(x.strip()) for x in LW0.split(',')]
-
-        #self.zgal = float(inputs['ZGAL'])
-        #Cz0  = float(inputs['CZ0'])
-        #Cz1  = float(inputs['CZ1'])
+        try:
+            LW0 = inputs['LINE']
+            self.LW0 = [float(x.strip()) for x in LW0.split(',')]
+        except:
+            self.LW0 = []
 
     def get_param(self, res, lib_all, zrecom, Czrec0, Czrec1, z_cz, scl_cz0, scl_cz1, fitc, tau0=[0.1,0.2,0.3], tcalc=1.):
         print('##########################')
@@ -98,6 +94,7 @@ class Analyze:
         NaD  = np.zeros(int(mmax), dtype='float32')
         Hb   = np.zeros(int(mmax), dtype='float32')
 
+        #mm = 0
         samples1 = res.chain[:, :, :].reshape((-1, ndim))
         #samples  = samples1[int(nmc/2):]
         samples  = samples1[:] # Already reduced.
