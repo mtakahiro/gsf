@@ -314,8 +314,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         xMof = np.arange(-5, 5.1, .1) # dimension must be even.
         if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
             LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
-            print(np.sqrt(gamma**2-sig_temp_pix**2))
             print('Template convolution with Moffat.')
+            print('sigma = %.2f pixel' % np.sqrt(gamma**2-sig_temp_pix**2))
             #print('params are;',Amp, 0, gamma, alp)
         elif inputs['MORP'] == 'gauss':
             sigma = gamma
