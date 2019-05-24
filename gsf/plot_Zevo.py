@@ -1749,7 +1749,9 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
 
 
-def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True):
+def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  \
+f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True,
+inputs=False, nmc2=300):
 
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
@@ -1780,9 +1782,18 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     ##################
     # Fitting Results
     ##################
-    DIR_TMP = './templates/'
-    #SNlim = 1.5 # avobe which SN line is shown.
+    DIR_TMP  = './templates/'
+    DIR_FILT = fil_path
+    if inputs:
+        SFILT = inputs['FILTER'] # filter band string.
+        SFILT = [x.strip() for x in SFILT.split(',')]
+    else:
+        SFILT = []
 
+    try:
+        f_err = int(inputs['F_ERR'])
+    except:
+        f_err = 0
     ###########################
     # Open result file
     ###########################
@@ -1968,7 +1979,6 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
             y0_wid, x0_wid = fnc.open_spec_fits_dir(ID0, PA, tt, nZ, nn, AAv[0], zbes, A50[tt], tau0=tau0)
             ysum_wid += y0_wid
 
-
         lmrest_wid = x0_wid/(1.+zbes)
 
         band0 = ['u','v','j']
@@ -2001,7 +2011,6 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     vjtmp = -2.5*log10(fv_cnv/fj_cnv)
 
     conw = (wht3>0)
-    #npar = NDIM
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
     print('chi2/nu is %.2f'%(chin))
     #nu   = len(fy[conw])-NDIM
@@ -2074,7 +2083,6 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
         eAMl[ii] = AM50[ii] - AM16[ii]
         eAMu[ii] = AM84[ii] - AM50[ii]
         AC50[ii] = np.sum(AM50[ii:])
-
 
     ################
     # Lines
@@ -2268,7 +2276,6 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     samples  = res #.chain[:, :, :].reshape((-1, ndim))
 
     #for kk in range(int(nmc/5)):
-    nmc2 = 300
     ytmp = np.zeros((nmc2,len(ysum)), dtype='float32')
     ytmpmax = np.zeros(len(ysum), dtype='float32')
     ytmpmin = np.zeros(len(ysum), dtype='float32')
@@ -2290,9 +2297,19 @@ def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 mod0_tmp, xx_tmp = fnc.tmp03(ID0, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
                 fm_tmp += mod0_tmp
 
-        ytmp[kk,:] = fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
+        if f_err == 1:
+            ferr_tmp = samples['f'][nr]
+        else:
+            ferr_tmp = 1.0
+        ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
         ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
         ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+
+    # plot BB model;
+    #from .maketmp_filt import filconv
+    lbb, fbb = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT)
+    ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
+    zorder=2, alpha=1.0, marker='s', s=10)
 
     if save_sed == True:
         col00  = []

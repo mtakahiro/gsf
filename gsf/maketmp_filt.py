@@ -234,9 +234,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     lm[ii]   = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
+                f_spec = True
             except Exception:
                 pass
-        f_spec = True
     except:
         print('No spec file is provided.')
         pass
@@ -417,7 +417,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
 
-                if DIR_EXTR:
+                #if DIR_EXTR:
+                if len(lm)>0:
                     spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                 else:
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
