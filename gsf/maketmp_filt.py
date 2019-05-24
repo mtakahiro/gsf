@@ -199,6 +199,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #
     #ninp1 = 0
     #ninp2 = 0
+    f_spec = False
     try:
         spec_files = inputs['SPEC_FILE'] # filter band string.
         spec_files = [x.strip() for x in spec_files.split(',')]
@@ -213,7 +214,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             except Exception:
                 print('File, %s, can be open.'%(spec_file))
                 pass
-
         # Constructing arrays.
         lm   = np.zeros(np.sum(ninp0[:]),dtype='float32')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float32')
@@ -234,9 +234,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     lm[ii]   = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
-
             except Exception:
                 pass
+        f_spec = True
     except:
         print('No spec file is provided.')
         pass
@@ -261,88 +261,92 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         fbb[ii] = fd[ii*2+1]
         ebb[ii] = fd[ii*2+2]
 
-
     #############################
     # Getting Morphology params.
     #############################
     Amp    = 0
     f_morp = False
-    try:
-        if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
-            f_morp = True
-            try:
-                mor_file = inputs['MORP_FILE']
-                fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                Amp   = fm[0]
-                gamma = fm[1]
-                if inputs['MORP'] == 'moffat':
-                    alp   = fm[2]
-                else:
-                    alp   = 0
-            except Exception:
-                print('Error in reading morphology params.')
-                return -1
-        else:
-            print('MORP Keywords does not match.')
-            print('No morphology convolution.')
-    except:
-        pass
-
-    ############################
-    # Template convolution;
-    ############################
-    try:
-        sig_temp = float(inputs['SIG_TEMP'])
-    except:
-        sig_temp = 50.
-        print('Template resolution is unknown.')
-        print('Set to %.1f km/s.'%(sig_temp))
-    dellam = lm[1] - lm[0] # AA/pix
-    R_temp = c/(sig_temp*1e3*1e10)
-    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
-
-    # If grism;
-    if f_morp:
-        print('Templates convolution (intrinsic morphology).')
-        if gamma>sig_temp_pix:
-            sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
-        else:
-            sig_conv = 0
-            print('Template resolution is broader than Morphology.')
-            print('No convolution is applied to templates.')
-
-        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-        if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
-            LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
-            print('Template convolution with Moffat.')
-            print('sigma = %.2f pixel' % np.sqrt(gamma**2-sig_temp_pix**2))
-            #print('params are;',Amp, 0, gamma, alp)
-        elif inputs['MORP'] == 'gauss':
-            sigma = gamma
-            LSF = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
-            print('Template convolution with Gaussian.')
-            print('params is sigma;',sigma)
-        else:
-            print('Something is wrong.')
-            return -1
-    else: # For slit spectroscopy. To be updated...
-        print('Templates convolution (intrinsic velocity).')
-        f_disp = False
+    if f_spec:
         try:
-            vdisp = float(inputs['VDISP'])
-            dellam = lm[1] - lm[0] # AA/pix
-            R_disp = c/(vdisp*1e3*1e10)
-            vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
-            print('Templates are convolved at %.2f km/s.'%(vdisp))
-            sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
+            if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
+                f_morp = True
+                try:
+                    mor_file = inputs['MORP_FILE']
+                    fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
+                    Amp   = fm[0]
+                    gamma = fm[1]
+                    if inputs['MORP'] == 'moffat':
+                        alp   = fm[2]
+                    else:
+                        alp   = 0
+                except Exception:
+                    print('Error in reading morphology params.')
+                    print('No morphology convolution.')
+                    #return -1
+                    pass
+            else:
+                print('MORP Keywords does not match.')
+                print('No morphology convolution.')
         except:
-            vdisp = 0.
-            print('Templates are not convolved.')
-            sig_conv = np.sqrt(sig_temp_pix**2)
             pass
-        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-        Amp  = 1.
-        LSF  = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
+
+        ############################
+        # Template convolution;
+        ############################
+        try:
+            sig_temp = float(inputs['SIG_TEMP'])
+        except:
+            sig_temp = 50.
+            print('Template resolution is unknown.')
+            print('Set to %.1f km/s.'%(sig_temp))
+        dellam = lm[1] - lm[0] # AA/pix
+        R_temp = c/(sig_temp*1e3*1e10)
+        sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
+
+        # If grism;
+        if f_morp:
+            print('Templates convolution (intrinsic morphology).')
+            if gamma>sig_temp_pix:
+                sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
+            else:
+                sig_conv = 0
+                print('Template resolution is broader than Morphology.')
+                print('No convolution is applied to templates.')
+
+            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+            if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
+                LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
+                print(np.sqrt(gamma**2-sig_temp_pix**2))
+                print('Template convolution with Moffat.')
+                #print('params are;',Amp, 0, gamma, alp)
+            elif inputs['MORP'] == 'gauss':
+                sigma = gamma
+                LSF = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
+                print('Template convolution with Gaussian.')
+                print('params is sigma;',sigma)
+            else:
+                print('Something is wrong.')
+                return -1
+        else: # For slit spectroscopy. To be updated...
+            print('Templates convolution (intrinsic velocity).')
+            f_disp = False
+            try:
+                vdisp = float(inputs['VDISP'])
+                dellam = lm[1] - lm[0] # AA/pix
+                R_disp = c/(vdisp*1e3*1e10)
+                vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
+                print('Templates are convolved at %.2f km/s.'%(vdisp))
+                sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
+            except:
+                vdisp = 0.
+                print('Templates are not convolved.')
+                sig_conv = np.sqrt(sig_temp_pix**2)
+                pass
+            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+            Amp  = 1.
+            LSF  = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
+    else:
+        lm = []
 
     ####################################
     # Start generating templates
@@ -389,10 +393,11 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float32')
             spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype='float32')
 
-            ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float32')
             ftmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
             ltmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
-            spec_av_tmp = np.zeros((Na, len(lm0)), dtype='float32')
+
+            ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float32')
+            spec_av_tmp = np.zeros((Na, len(lm)), dtype='float32')
 
             ms    = np.zeros(Na, dtype='float32')
             Ls    = np.zeros(Na, dtype='float32')
@@ -424,17 +429,15 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 ftmp_int = data_int(lm, wavetmp, spec_av)
 
                 Lsun = 3.839 * 1e33 #erg s-1
-                ftmpbb[ss,:]           *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-
                 stmp_common = 1e10 # 1 tmp is in 1e10Lsun
-                ftmpbb[ss,:]      *= (1./Ls[ss])*stmp_common
+                #ftmpbb[ss,:]           *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                #ftmpbb[ss,:]      *= (1./Ls[ss])*stmp_common
+                spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common
-                ms[ss]            *= (1./Ls[ss])*stmp_common # 1 unit template has this mass in [Msolar].
-
-                ftmp_nu_int[ss,:]  = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                ms[ss]                 *= (1./Ls[ss])*stmp_common # 1 unit template has this mass in [Msolar].
+                if f_spec:
+                    ftmp_nu_int[ss,:]  = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
-
                 ##########################################
                 # Writing out the templates to fits table.
                 ##########################################
@@ -447,7 +450,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
                     col1   = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
                     col2   = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
-                    col00 = [col1, col2]
+                    col00  = [col1, col2]
 
                     # Second file
                     col3   = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
@@ -455,14 +458,12 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     col4   = fits.Column(name='colnum', format='K', unit='', array=nd)
                     col01 = [col3, col4]
 
-
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
                 colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_ap)
                 col00.append(colspec)
 
                 colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_mul_nu_conv[ss,:])
                 col01.append(colspec_all)
-
 
             #########################
             # Summarize the ML

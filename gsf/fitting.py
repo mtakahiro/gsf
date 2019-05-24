@@ -151,7 +151,6 @@ class Mainbody():
         from .writing import Analyze
         wrt = Analyze(inputs) # Set up for input
 
-
         # Open ascii file and stock to array.
         #lib = open_spec(ID0, PA0)
         lib     = fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
@@ -547,7 +546,6 @@ class Mainbody():
         except:
             wht3, ypoly = whtl, fy_cz
         con_line = (wht3==0)
-
 
         if fzvis==1:
             plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='Updated model ($z=%.5f$)'%(zrecom)) # Model based on recomended z.
