@@ -17,6 +17,11 @@ from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, save
 from .zfit import check_redshift
 from .plot_Zevo import *
 
+import cosmolopy.distance as cd
+import cosmolopy.constants as cc
+cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
+cosmo = cd.set_omega_k_0(cosmo)
+
 ############################
 py_v = (sys.version_info[0])
 if py_v > 2:
@@ -91,11 +96,6 @@ class Mainbody():
         zlimu  = 6.
         snlim  = 1
         zliml  = zgal - 0.5
-
-        import cosmolopy.distance as cd
-        import cosmolopy.constants as cc
-        cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-        cosmo = cd.set_omega_k_0(cosmo)
         agemax = cd.age(zgal, use_flat=True, **cosmo)/cc.Gyr_s
 
         # N of param:
@@ -200,34 +200,7 @@ class Mainbody():
         #####################
         # Function fo MCMC
         #####################
-        '''
-        def residual(pars): # x, y, wht are taken from out of the definition.
-            vals = pars.valuesdict()
-            model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
-            con_res = (model>0) #& (fy>0)
-            if fy is None:
-                print('Data is none')
-                return model[con_res]
-            else:
-                return (model - fy)[con_res] * np.sqrt(wht2)[con_res] # i.e. residual/sigma
-
-        def lnprob(pars):
-            vals   = pars.valuesdict()
-            resid  = residual(pars)
-            s      = 1.
-            resid *= 1 / s
-            resid *= resid
-            resid += np.log(2 * 3.14 * s**2)
-            #Av   = vals['Av']
-            #if Av<0:
-            #     return -np.inf
-            #else:
-            #    respr = 0 #np.log(1)
-            respr = 0
-            return -0.5 * np.sum(resid) + respr
-        '''
-
-        def residual(pars, out=False): # x, y, wht are taken from out of the definition.
+        def residual(pars, fy, wht2, out=False): # x, y, wht are taken from out of the definition.
             #
             # Returns: residual of model and data.
             # out: model as second output. For lnprob func.
@@ -253,7 +226,7 @@ class Mainbody():
                 else:
                     return (model - fy)[con_res] / sig[con_res], model # i.e. residual/sigma. Because is_weighted = True.
 
-        def lnprob(pars):
+        def lnprob(pars, fy, wht2):
             #
             # Returns: posterior.
             #
@@ -262,7 +235,7 @@ class Mainbody():
                 f = vals['f']
             else:
                 f = 0 # temporary... (if f is param, then take from vals dictionary.)
-            resid, model = residual(pars, out=True)
+            resid, model = residual(pars, fy, wht2, out=True)
             con_res = (model>0) & (wht2>0)
             sig     = np.sqrt(1./wht2+f**2*model**2)
             lnlike = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig[con_res]**2))
@@ -334,7 +307,7 @@ class Mainbody():
                     aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
-                out_tmp = minimize(residual, fit_params, method='nelder') # nelder is the most efficient.
+                out_tmp = minimize(residual, fit_params, args=(fy, wht2), method='nelder') # nelder is the most efficient.
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
                 rcsq = 99999
@@ -383,7 +356,7 @@ class Mainbody():
                     aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
-                out_tmp = minimize(residual, fit_params, method='powell') # powel is the more accurate.
+                out_tmp = minimize(residual, fit_params, args=(fy, wht2), method='powell') # powel is the more accurate.
 
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
@@ -621,7 +594,7 @@ class Mainbody():
                     pass
 
                 # Then, minimize again.
-                out = minimize(residual, fit_params, method='nelder') # It needs to define out with redshift constrain.
+                out = minimize(residual, fit_params, args=(fy, wht2), method='nelder') # It needs to define out with redshift constrain.
                 # Fix params to what we had before.
                 out.params['zmc'].value = zrecom
                 out.params['Av'].value  = out_keep.params['Av'].value
@@ -681,12 +654,12 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(lnprob, out.params)
+            mini = Minimizer(lnprob, out.params, fcn_args=[fy, wht2])
             print('######################')
             print('### Starting emcee ###')
             print('######################')
-            import multiprocessing
-            ncpu0 = int(multiprocessing.cpu_count()/2)
+            import multiprocess
+            ncpu0 = int(multiprocess.cpu_count()/2)
             try:
                 ncpu = int(inputs['NCPU'])
                 if ncpu > ncpu0:

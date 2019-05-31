@@ -45,8 +45,11 @@ class Analyze:
         self.DIR_FILT = inputs['DIR_FILT']
         self.DIR_TEMP = inputs['DIR_TEMP']
 
-        LW0 = inputs['LINE']
-        self.LW0 = [float(x.strip()) for x in LW0.split(',')]
+        try:
+            LW0 = inputs['LINE']
+            self.LW0 = [float(x.strip()) for x in LW0.split(',')]
+        except:
+            self.LW0 = []
 
         #self.zgal = float(inputs['ZGAL'])
         #Cz0  = float(inputs['CZ0'])
