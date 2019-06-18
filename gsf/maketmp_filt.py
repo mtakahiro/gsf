@@ -212,7 +212,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
             except Exception:
-                print('File, %s, can be open.'%(spec_file))
+                print('File, %s, cannot be open.'%(spec_file))
                 pass
         # Constructing arrays.
         lm   = np.zeros(np.sum(ninp0[:]),dtype='float32')
@@ -327,6 +327,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             else:
                 print('Something is wrong.')
                 return -1
+
         else: # For slit spectroscopy. To be updated...
             print('Templates convolution (intrinsic velocity).')
             f_disp = False
@@ -337,14 +338,18 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
                 print('Templates are convolved at %.2f km/s.'%(vdisp))
                 sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
+                if vdisp_pix-sig_temp_pix>0:
+                    sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
+                else:
+                    sig_conv = 0
             except:
                 vdisp = 0.
                 print('Templates are not convolved.')
-                sig_conv = np.sqrt(sig_temp_pix**2)
+                sig_conv = 0 #np.sqrt(sig_temp_pix**2)
                 pass
             xMof = np.arange(-5, 5.1, .1) # dimension must be even.
             Amp  = 1.
-            LSF  = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
+            LSF  = gauss(xMof, Amp, sig_conv)
     else:
         lm = []
 
