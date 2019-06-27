@@ -303,6 +303,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         R_temp = c/(sig_temp*1e3*1e10)
         sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
 
+        #
+        sig_inst = 0 #65 #km/s for Manga
+
         # If grism;
         if f_morp:
             print('Templates convolution (intrinsic morphology).')
@@ -334,10 +337,10 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             try:
                 vdisp = float(inputs['VDISP'])
                 dellam = lm[1] - lm[0] # AA/pix
-                R_disp = c/(vdisp*1e3*1e10)
+                #R_disp = c/(vdisp*1e3*1e10)
+                R_disp = c/(np.sqrt(vdisp**2-sig_inst**2)*1e3*1e10)
                 vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
                 print('Templates are convolved at %.2f km/s.'%(vdisp))
-                sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
                 if vdisp_pix-sig_temp_pix>0:
                     sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
                 else:
@@ -422,9 +425,13 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
 
-                #if DIR_EXTR:
                 if len(lm)>0:
-                    spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
+                    try:
+                        spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
+                    except:
+                        spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
+                        if zz==0 and ss==0:
+                            print('Kernel is too small. No convolution.')
                 else:
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 

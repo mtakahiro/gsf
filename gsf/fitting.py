@@ -278,6 +278,11 @@ class Mainbody():
                     fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
+        elif inputs['ZFIX']:
+            #print('Z is fixed')
+            ZFIX = float(inputs['ZFIX'])
+            aa = 0
+            fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.01)
         else:
             aa = 0
             fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
@@ -525,7 +530,8 @@ class Mainbody():
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
             # Plot lines for reference
             for ll in range(len(LW)):
-                conpoly = (x_cz>12000) & (x_cz<16500)
+                #conpoly = (x_cz>12000) & (x_cz<16500)
+                conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
                 yline = np.max(ypoly[conpoly])
                 yy    = np.arange(yline/1.02, yline*1.1)
                 xxpre = yy * 0 + LW[ll] * (1.+zprev)
