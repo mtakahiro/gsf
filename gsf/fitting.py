@@ -530,22 +530,30 @@ class Mainbody():
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
             # Plot lines for reference
             for ll in range(len(LW)):
-                #conpoly = (x_cz>12000) & (x_cz<16500)
-                conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
-                yline = np.max(ypoly[conpoly])
-                yy    = np.arange(yline/1.02, yline*1.1)
-                xxpre = yy * 0 + LW[ll] * (1.+zprev)
-                xx    = yy * 0 + LW[ll] * (1.+zrecom)
-                plt.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
-                plt.text(LW[ll] * (1.+zprev), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
-                plt.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
-                plt.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
+                try:
+                    conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
+                    yline = np.max(ypoly[conpoly])
+                    yy    = np.arange(yline/1.02, yline*1.1)
+                    xxpre = yy * 0 + LW[ll] * (1.+zprev)
+                    xx    = yy * 0 + LW[ll] * (1.+zrecom)
+                    plt.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
+                    plt.text(LW[ll] * (1.+zprev), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
+                    plt.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
+                    plt.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
+                except:
+                    pass
 
             plt.plot(xbb, fybb, '.r', linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
             plt.plot(xm_tmp, fm_tmp, color='gray', marker='.', ms=0.5, linestyle='', linewidth=0.5, zorder=4, label='Model')
-            xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
+            try:
+                xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
+            except:
+                xmin, xmax = 2000,10000
             plt.xlim(xmin,xmax)
-            plt.ylim(0,yline*1.1)
+            try:
+                plt.ylim(0,yline*1.1)
+            except:
+                pass
             plt.xlabel('Wavelength ($\mathrm{\AA}$)')
             plt.ylabel('$F_\\nu$ (arb.)')
             plt.legend(loc=0)

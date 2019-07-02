@@ -1932,13 +1932,21 @@ inputs=False, nmc2=300):
             yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
             #ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
 
-    conbb = (fybb/eybb>SNlim)
-    ax1.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-    ax1.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-    conebb = (fybb/eybb<=SNlim)
-    ax1.errorbar(xbb[conebb], eybb[conebb] * c / np.square(xbb[conebb]) / d * SNlim, yerr=fybb[conebb]*0+np.max(fybb[conbb]*c/np.square(xbb[conbb])/d)*0.05, uplims=eybb[conebb]*c/np.square(xbb[conebb])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
-    #ax1.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-
+    try:
+        conbb_hs = (fybb/eybb>SNlim)
+        ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
+        yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
+        ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
+        '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+    except:
+        pass
+    try:
+        conebb_ls = (fybb/eybb<=SNlim)
+        ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * SNlim, \
+        yerr=fybb[conebb_ls]*0+np.max(fybb[conbb_ls]*c/np.square(xbb[conbb_ls])/d)*0.05, \
+        uplims=eybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
+    except:
+        pass
 
     ################
     # Open ascii file and stock to array.
@@ -1992,7 +2000,7 @@ inputs=False, nmc2=300):
 
     fwuvj.close()
 
-
+    '''
     lmrest = x0/(1.+zbes)
     model2 = ysum
     band0  = ['u','v','j','f140w']
@@ -2009,22 +2017,18 @@ inputs=False, nmc2=300):
 
     uvtmp = -2.5*log10(fu_cnv/fv_cnv)
     vjtmp = -2.5*log10(fv_cnv/fj_cnv)
+    '''
 
     conw = (wht3>0)
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
     print('chi2/nu is %.2f'%(chin))
-    #nu   = len(fy[conw])-NDIM
-    #print('chi2/nu is %.2f'%(chi2/nu))
 
     #############
     # Main result
     #############
     conbb_ymax = (conbb) & (xbb>0.5)
-    #ymax = np.max([fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d] or ysum*c/np.square(x0)/d) * 2.
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 3.
 
-    #######################
-    #ax1.text(12000, ymax*0.9, '%s'%(ID0), fontsize=10, color='k')
     xboxl = 17000
     xboxu = 28000
 
