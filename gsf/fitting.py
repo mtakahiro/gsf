@@ -491,14 +491,20 @@ class Mainbody():
             ser = res_cz.flatchain['z']
             xmin, xmax = zprev-0.2, zprev+0.2
             lnspc = np.linspace(xmin, xmax, len(ser))
-
             print('\n\n')
             print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Cz0 * Czrec0, Cz1 * Czrec1, fitc_cz[1]))
             print('\n\n')
 
         except:
-            delzz   = 0.3 # ?
-            z_cz    = [zprev-delzz,zprev,zprev+delzz]
+            try:
+                ezl = float(inputs['EZL'])
+                ezu = float(inputs['EZU'])
+                print('Redshift error is taken from input file.')
+            except:
+                ezl = 0.3
+                ezu = 0.3
+                print('Redshift error is assumed to %.1f.'%(ezl))
+            z_cz    = [zprev-ezl,zprev,zprev+ezu]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
@@ -623,7 +629,7 @@ class Mainbody():
             ##############################
             # Save fig of z-distribution.
             ##############################
-            try:
+            try: # if spectrum;
                 fig = plt.figure(figsize=(6.5,2.5))
                 fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
                 ax1 = fig.add_subplot(111)
@@ -631,8 +637,8 @@ class Mainbody():
                 n, nbins, patches = ax1.hist(res_cz.flatchain['z'], bins=200, normed=True, color='gray',label='')
                 if f_fitgauss==1:
                     ax1.plot(lnspc, pdf_g, label='Gaussian fit', color='g', linestyle='-') # plot it
-                    ax1.set_xlim(m-s*3,m+s*3)
 
+                ax1.set_xlim(m-s*3,m+s*3)
                 yy = np.arange(0,np.max(n),1)
                 xx = yy * 0 + z_cz[1]
                 ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(z_cz[1],z_cz[1]-z_cz[0],z_cz[2]-z_cz[1], Czrec0, Czrec1))
@@ -648,7 +654,7 @@ class Mainbody():
                 plt.savefig('zprob_' + ID0 + '_PA' + PA0 + '.pdf', dpi=300)
                 plt.close()
             except:
-                print('Figure is not generated.')
+                print('z-distribution figure is not generated.')
                 pass
 
             ##############################
