@@ -500,6 +500,10 @@ class Mainbody():
                 ezl = float(inputs['EZL'])
                 ezu = float(inputs['EZU'])
                 print('Redshift error is taken from input file.')
+                if ezl<0.03:
+                    ezl = 0.03
+                if ezu<0.01:
+                    ezu = 0.03
             except:
                 ezl = 0.3
                 ezu = 0.3
@@ -511,6 +515,7 @@ class Mainbody():
             Czrec0  = scl_cz0[1]
             Czrec1  = scl_cz1[1]
 
+        '''
         try:
             # lets try the normal distribution first
             m, s  = stats.norm.fit(ser) # get mean and standard deviation
@@ -521,6 +526,9 @@ class Mainbody():
         except:
             print('Guassian fitting to z distribution failed.')
             f_fitgauss=0
+        '''
+        print('Guassian fitting to z distribution failed.')
+        f_fitgauss=0
 
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
@@ -600,6 +608,7 @@ class Mainbody():
             if fzmc == 1:
                 out_keep = out
                 sigz = 1.0
+                #print(ID0,zrecom,z_cz[2],z_cz[1],z_cz[0])
                 fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0])*sigz, max=zrecom+(z_cz[2]-z_cz[1])*sigz)
                 #####################
                 # Error parameter

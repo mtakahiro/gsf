@@ -216,7 +216,12 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
 
 
 # Creat "cumulative" png for gif image.
-def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, out_ind=0):
+def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, out_ind=0, snlimbb=1.0):
+    #
+    # Returns: plots.
+    #
+    # snlimbb: SN limit to show flux or up lim in SED.
+    #
     nage = np.arange(0,len(age),1)
     fnc  = Func(Zall, age) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -350,9 +355,12 @@ def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 
     conspec = (NR<10000) #& (fy/ey>1)
     #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
-    conbb = (fybb/eybb>1)
+    conbb = (fybb/eybb>snlimbb)
     ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)
+
+    conbbe = (fybb/eybb<snlimbb)
+    ax0.plot(xbb[conbbe], eybb[conbbe] * c / np.square(xbb[conbbe]) / d, 'vr', ms=10, linestyle='', linewidth=0, zorder=4)
 
     ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
     ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
@@ -1453,8 +1461,6 @@ def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.
                 print(x, x1min, x1max)
                 #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
                 #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-                #ax.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
                 ax.set_yticklabels([])
                 #ax.set_xticklabels([])
                 #ax.set_title('%s'%(Par[i]), fontsize=12)
@@ -1504,6 +1510,7 @@ def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.
                     ax.set_frame_on(False)
                     ax.set_xticks([])
                     ax.set_yticks([])
+
                     '''
                     ax.set_yticklabels([])
                     if i == K-1:
@@ -1588,7 +1595,6 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
         fig1.savefig('SPEC_' + ID + '_PA' + PA + '_corner.pdf')
         plt.close()
-
 
 
 def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3]):
@@ -1749,10 +1755,14 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
 
 
-def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  \
-f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True,
-inputs=False, nmc2=300):
-
+def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
+f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, \
+save_sed=True, inputs=False, nmc2=300):
+    #
+    # Returns: plots.
+    #
+    # snlimbb: SN limit to show flux or up lim in SED.
+    #
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     nage = np.arange(0,len(age),1)
@@ -1934,6 +1944,7 @@ inputs=False, nmc2=300):
 
     try:
         conbb_hs = (fybb/eybb>SNlim)
+        print(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d)
         ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
         yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
         ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
@@ -1943,7 +1954,7 @@ inputs=False, nmc2=300):
     try:
         conebb_ls = (fybb/eybb<=SNlim)
         ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * SNlim, \
-        yerr=fybb[conebb_ls]*0+np.max(fybb[conbb_ls]*c/np.square(xbb[conbb_ls])/d)*0.05, \
+        yerr=fybb[conebb_ls]*0+np.max(fybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d)*0.05, \
         uplims=eybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
     except:
         pass
