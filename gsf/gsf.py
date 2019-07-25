@@ -190,12 +190,12 @@ def main(parfile, fplt):
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
 
-
-    if fplt == 3:
+    if fplt <= 3:
         from .plot_sfh import plot_sfh_pcl2
         from .plot_Zevo import plot_sed_Z
         plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs)
         plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True, inputs=inputs)
+
 
     '''
     if fplt == 6:

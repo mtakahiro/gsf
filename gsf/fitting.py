@@ -58,7 +58,11 @@ class Mainbody():
         LW  = LW0
         return LW, fLW
 
-    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=1, fzvis=1, specplot=1, fneld=0, ntemp=5): # flag_m related to redshift error in redshift check func.
+    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=1, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01): # flag_m related to redshift error in redshift check func.
+        #
+        # sigz (float): confidence interval for redshift fit.
+        # ezmin (float): minimum error in redshift.
+        #
         print('########################')
         print('### Fitting Function ###')
         print('########################')
@@ -500,13 +504,13 @@ class Mainbody():
                 ezl = float(inputs['EZL'])
                 ezu = float(inputs['EZU'])
                 print('Redshift error is taken from input file.')
-                if ezl<0.03:
-                    ezl = 0.03
-                if ezu<0.01:
-                    ezu = 0.03
+                if ezl<ezmin:
+                    ezl = ezmin #0.03
+                if ezu<ezmin:
+                    ezu = ezmin #0.03
             except:
-                ezl = 0.3
-                ezu = 0.3
+                ezl = ezmin
+                ezu = ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
             z_cz    = [zprev-ezl,zprev,zprev+ezu]
             zrecom  = z_cz[1]
@@ -607,9 +611,9 @@ class Mainbody():
             #######################
             if fzmc == 1:
                 out_keep = out
-                sigz = 1.0
-                #print(ID0,zrecom,z_cz[2],z_cz[1],z_cz[0])
+                #sigz = 1.0 #3.0
                 fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0])*sigz, max=zrecom+(z_cz[2]-z_cz[1])*sigz)
+                #print(zrecom,zrecom-(z_cz[1]-z_cz[0])*sigz,zrecom+(z_cz[2]-z_cz[1])*sigz)
                 #####################
                 # Error parameter
                 #####################
@@ -785,6 +789,7 @@ class Mainbody():
             ##########
             # Plot
             ##########
+            '''
             if specplot == 1:
                 plt.close()
                 try:
@@ -792,7 +797,7 @@ class Mainbody():
                 except:
                     DIR_FILT = './'
                 plot_sed_Z(ID0, PA0, Zall, age, tau0=tau0, fil_path=DIR_FILT)
-
+            '''
 
             return 0, zrecom, Czrec0, Czrec1
 

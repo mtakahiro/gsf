@@ -40,6 +40,9 @@ def loadcpkl(cpklfile):
 
 ###############
 def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None):
+    #
+    #
+    #
     import cosmolopy.distance as cd
     import cosmolopy.constants as cc
     cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
