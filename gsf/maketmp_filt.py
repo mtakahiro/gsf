@@ -175,7 +175,15 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     except:
         DIR_EXTR = False
     DIR_FILT = inputs['DIR_FILT']
-    CAT_BB   = inputs['CAT_BB']
+    try:
+        CAT_BB_IND = inputs['CAT_BB_IND']
+    except:
+        CAT_BB_IND = False
+    try:
+        CAT_BB = inputs['CAT_BB']
+    except:
+        CAT_BB = False
+
     SFILT    = inputs['FILTER'] # filter band string.
     SFILT    = [x.strip() for x in SFILT.split(',')]
     FWFILT   = fil_fwhm(SFILT, DIR_FILT)
@@ -244,22 +252,56 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #############################
     # Extracting BB photometry:
     #############################
-    fd0 = np.loadtxt(CAT_BB, comments='#')
-    id0 = fd0[:,0]
-    for ii in range(len(id0)):
-        if int(id0[ii]) == int(ID):
-            ii0 = ii
-            break
-    if (int(id0[ii0]) !=  int(ID)):
-        return -1
+    if CAT_BB:
+        fd0 = np.loadtxt(CAT_BB, comments='#')
+        id0 = fd0[:,0]
+        for ii in range(len(id0)):
+            if int(id0[ii]) == int(ID):
+                ii0 = ii
+                break
+        if (int(id0[ii0]) !=  int(ID)):
+            return -1
 
-    fd  = fd0[ii0,:]
-    id  = fd[0]
-    fbb = np.zeros(len(SFILT), dtype='float32')
-    ebb = np.zeros(len(SFILT), dtype='float32')
-    for ii in range(len(SFILT)):
-        fbb[ii] = fd[ii*2+1]
-        ebb[ii] = fd[ii*2+2]
+        fd  = fd0[ii0,:]
+        id  = fd[0]
+        fbb = np.zeros(len(SFILT), dtype='float32')
+        ebb = np.zeros(len(SFILT), dtype='float32')
+        for ii in range(len(SFILT)):
+            fbb[ii] = fd[ii*2+1]
+            ebb[ii] = fd[ii*2+2]
+    elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
+        fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
+        hd0   = fd0[1].header
+        bunit_bb = float(hd0['bunit'][:5])
+        lmbb0= fd0[1].data['wavelength']
+        fbb0 = fd0[1].data['flux'] * bunit_bb
+        ebb0 = 1/np.sqrt(fd0[1].data['inverse_variance']) * bunit_bb
+
+        unit  = 'nu'
+        try:
+            unit = inputs['UNIT_SPEC']
+        except:
+            print('No param for UNIT_SPEC is found.')
+            print('BB flux unit is assumed to Fnu.')
+            pass
+
+        if unit == 'lambda':
+            print('#########################')
+            print('Changed BB from Flam to Fnu')
+            snbb0= fbb0/ebb0
+            fbb  = flamtonu(lmbb0, fbb0)
+            ebb  = fbb/snbb0
+        else:
+            snbb0= fbb0/ebb0
+            fbb  = fbb0
+            ebb  = ebb0
+
+    else:
+        fbb = np.zeros(len(SFILT), dtype='float32')
+        ebb = np.zeros(len(SFILT), dtype='float32')
+        for ii in range(len(SFILT)):
+            fbb[ii] = 0
+            ebb[ii] = -99 #1000
 
     #############################
     # Getting Morphology params.
