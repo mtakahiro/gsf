@@ -478,7 +478,7 @@ def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 
                 bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
                 ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
                 ax.set_xlim(x1min, x1max)
-                print(x, x1min, x1max)
+                #print(x, x1min, x1max)
                 #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
                 #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
                 #ax.set_xlabel('$\log T_*$/Gyr', fontsize=12)
@@ -1944,7 +1944,7 @@ save_sed=True, inputs=False, nmc2=300):
 
     try:
         conbb_hs = (fybb/eybb>SNlim)
-        print(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d)
+        #print(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d)
         ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
         yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
         ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
@@ -2037,7 +2037,7 @@ save_sed=True, inputs=False, nmc2=300):
     #############
     # Main result
     #############
-    conbb_ymax = (conbb) & (xbb>0.5)
+    conbb_ymax = (xbb>0.5)# (conbb) &
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 3.
 
     xboxl = 17000
@@ -2046,16 +2046,21 @@ save_sed=True, inputs=False, nmc2=300):
     ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
     ax1.set_ylabel('Flux ($10^{-18}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
 
-    ax1.set_xlim(2200, 88000)
-    #ax1.set_xlim(12500, 16000)
+    x1max = 22000
+    if x1max < np.max(xbb[conbb_ymax]):
+        x1max = np.max(xbb[conbb_ymax]) * 1.1
+    ax1.set_xlim(2200, x1max)
+    print(x1max)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1, ymax)
 
     #import matplotlib.ticker as ticker
     import matplotlib
     #ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
-    ax1.set_xticks([2500, 5000, 10000, 20000, 40000, 80000])
-    ax1.set_xticklabels(['0.25', '0.5', '1', '2', '4', '8'])
+    xticks = [2500, 5000, 10000, 20000, 40000, 80000]
+    xlabels= ['0.25', '0.5', '1', '2', '4', '8']
+    ax1.set_xticks(xticks)
+    ax1.set_xticklabels(xlabels)
     #ax1.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
     dely1 = 0.5

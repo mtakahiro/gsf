@@ -209,7 +209,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #ninp2 = 0
     f_spec = False
     try:
-        spec_files = inputs['SPEC_FILE'] # filter band string.
+        spec_files = inputs['SPEC_FILE'].replace('$ID','%s'%(ID))
         spec_files = [x.strip() for x in spec_files.split(',')]
         ninp0 = np.zeros(len(spec_files), dtype='int')
         for ff, spec_file in enumerate(spec_files):
@@ -313,12 +313,15 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
                 f_morp = True
                 try:
-                    mor_file = inputs['MORP_FILE']
+                    mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
                     fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                    Amp   = fm[0]
-                    gamma = fm[1]
+                    #Amp   = fm[0]
+                    #gamma = fm[1]
+                    Amp   = fm[2]
+                    gamma = fm[4]
                     if inputs['MORP'] == 'moffat':
-                        alp   = fm[2]
+                        #alp   = fm[2]
+                        alp   = fm[5]
                     else:
                         alp   = 0
                 except Exception:
@@ -361,7 +364,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             xMof = np.arange(-5, 5.1, .1) # dimension must be even.
             if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
                 LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
-                print(np.sqrt(gamma**2-sig_temp_pix**2))
+                #print(np.sqrt(gamma**2-sig_temp_pix**2))
                 print('Template convolution with Moffat.')
                 #print('params are;',Amp, 0, gamma, alp)
             elif inputs['MORP'] == 'gauss':

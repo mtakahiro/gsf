@@ -157,8 +157,8 @@ def main(parfile, fplt):
             lammax = 80000/(1.+zmin)
             nimf = int(inputs['NIMF'])
             make_tmp_z0(nimf, Zall, age, lammax = lammax, tau0=tau0, fneb=fneb)
-            flag_suc = 0
-            print('Fitting is stopped. L.176')
+            #flag_suc = 0
+            #print('Fitting is stopped. L.176')
 
         ####################################
         # Start making redshifted templates.
