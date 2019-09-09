@@ -641,29 +641,27 @@ def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
     return wht2,flag_l
 
 
-def check_line_man(data,xcont,wht,model,zgal,LW=LW0):
+def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
+    #
+    # lsig (float): which sigma to detect lines.
+    #
+
     ################
     # Line library
     ################
     #LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'Halpha', 'S2L', 'S2H']
     #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4983, 6563, 6717, 6731]
     fLW = np.zeros(len(LW), dtype='int') # flag.
-
     R_grs = (xcont[1] - xcont[0])
-    #R_grs = 45/2.
-    #R_grs = 23.0/2.
     dw    = 1.
-    lsig  = 1.5 # significance of lines.
     er    = 1./np.sqrt(wht)
-
     wht2   = wht
     flag_l = 0
 
     for ii in range(len(xcont)):
-        if 1 > 0:
-            for jj in range(len(LW)):
+        for jj in range(len(LW)):
+            if LW[jj]>0:
                 if xcont[ii]/(1.+zgal) > LW[jj] - dw*R_grs and xcont[ii]/(1.+zgal) < LW[jj] + dw*R_grs:
                     wht2[int(ii-dw):int(ii+dw)] *= 0
                     flag_l  = 1
-
     return wht2
