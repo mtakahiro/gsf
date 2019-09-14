@@ -254,15 +254,17 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #############################
     if CAT_BB:
         fd0 = np.loadtxt(CAT_BB, comments='#')
-        id0 = fd0[:,0]
-        for ii in range(len(id0)):
-            if int(id0[ii]) == int(ID):
-                ii0 = ii
-                break
-        if (int(id0[ii0]) !=  int(ID)):
-            return -1
-
-        fd  = fd0[ii0,:]
+        try:
+            id0 = fd0[:,0]
+            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
+            if int(id0[ii0]) !=  int(ID):
+                return -1
+            fd  = fd0[ii0,:]
+        except:
+            id0 = fd0[0]
+            if int(id0) !=  int(ID):
+                return -1
+            fd  = fd0[:]
         id  = fd[0]
         fbb = np.zeros(len(SFILT), dtype='float32')
         ebb = np.zeros(len(SFILT), dtype='float32')

@@ -43,3 +43,4 @@ CZ0 		0.83167 # Initial guess of spectral normalization for G102.
 CZ1		0.96804 # Initial guess of spectral normalization for G141.
 LINE 		4102,4341,4861,4959 #3869.,3894.6,4102,4341,4960.,5008.  # Emission line, iin AA.
 ZVIS		1 # Visual inspection of redshift. 1=yes, 0=no. If you are not confident with zgal, cz1/2, then ZVIS should be 1 for iteration.
+ADD_NEBULAE	0 # Add nebular lines from Cloudy if 1.

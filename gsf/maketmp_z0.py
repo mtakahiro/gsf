@@ -129,7 +129,7 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
                     esptmp.params['gas_logu'] = logU # ionization parameter
                     esp = esptmp
-                    print('Nebular is also added, with logU=%.2f.'%(logU))
+                    print('Nebular lines are also added, with logU=%.2f.'%(logU))
                     ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
