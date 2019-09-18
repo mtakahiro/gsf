@@ -220,7 +220,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
             except Exception:
-                print('File, %s, cannot be open.'%(spec_file))
+                print('File, %s%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
         lm   = np.zeros(np.sum(ninp0[:]),dtype='float32')
@@ -254,17 +254,15 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #############################
     if CAT_BB:
         fd0 = np.loadtxt(CAT_BB, comments='#')
-        try:
-            id0 = fd0[:,0]
-            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-            if int(id0[ii0]) !=  int(ID):
-                return -1
-            fd  = fd0[ii0,:]
-        except:
-            id0 = fd0[0]
-            if int(id0) !=  int(ID):
-                return -1
-            fd  = fd0[:]
+        id0 = fd0[:,0]
+        for ii in range(len(id0)):
+            if int(id0[ii]) == int(ID):
+                ii0 = ii
+                break
+        if (int(id0[ii0]) !=  int(ID)):
+            return -1
+
+        fd  = fd0[ii0,:]
         id  = fd[0]
         fbb = np.zeros(len(SFILT), dtype='float32')
         ebb = np.zeros(len(SFILT), dtype='float32')
@@ -328,8 +326,13 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                         alp   = 0
                 except Exception:
                     print('Error in reading morphology params.')
-                    print('No morphology convolution.')
-                    #return -1
+                    try:
+                        Amp   = fm[0]
+                        gamma = fm[1]
+                        alp   = fm[2]
+                        print('Morpho param file order changed.')
+                    except:
+                        print('No morphology convolution.')
                     pass
             else:
                 print('MORP Keywords does not match.')
@@ -575,9 +578,10 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     fw.close()
 
     fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw.write('# ColumnNo Wave Flux Error FWHM NoFILT\n')
     for ii in range(len(ltmpbb[0,:])):
         if ebb[ii]>1000:
-            fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f 0 1000 %.1f %s\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2., SFILT[ii]))
         else:
-            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
     fw.close()
