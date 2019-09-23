@@ -478,7 +478,7 @@ def filconv(band0, l0, f0, DIR, fw=False):
         if fw == True:
             ffil_cum = np.cumsum(ffil)
             ffil_cum/= ffil_cum.max()
-            con      = (ffil_cum>0.16) & (ffil_cum<0.84)
+            con      = (ffil_cum>0.05) & (ffil_cum<0.95)
             fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
 
         lmin  = np.min(lfil)
