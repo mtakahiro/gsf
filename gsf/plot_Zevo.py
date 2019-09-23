@@ -2330,6 +2330,13 @@ save_sed=True, inputs=False, nmc2=300):
     lbb, fbb = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT)
     ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
     zorder=2, alpha=1.0, marker='s', s=10)
+    if save_sed == True:
+        fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
+        fw.write('# wave fnu\n')
+        fw.write('# (AA) (m0=25.0)\n')
+        for ii in range(len(lbb)):
+            fw.write('%.2f %.5f %s\n'%(lbb[ii],fbb[ii],SFILT[ii]))
+        fw.close()
 
     if save_sed == True:
         col00  = []
