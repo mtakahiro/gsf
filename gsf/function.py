@@ -8,8 +8,6 @@ import pickle as cPickle
 #
 c = 3.e18 # A/s
 chimax = 1.
-mag0 = 25.0
-m0set= mag0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 ################
@@ -26,12 +24,12 @@ def data_int(lmobs, lmtmp, ftmp):
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 
-def flamtonu(lam, flam):
+def flamtonu(lam, flam, m0set=25.0):
     Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     fnu  = flam * Ctmp
     return fnu
 
-def fnutolam(lam, fnu):
+def fnutolam(lam, fnu, m0set=25.0):
     Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     flam  = fnu / Ctmp
     return flam
@@ -464,24 +462,31 @@ def filconv(f00, l00, ffil, lfil): # f0 in fnu
         return 1e-99
 '''
 
-def filconv(band0, l0, f0, DIR): # f0 in fnu
-    #home = os.path.expanduser('~')
-    #DIR  = home + '/Dropbox/FILT/'
+def filconv(band0, l0, f0, DIR, fw=False):
+    #
+    # f0: in fnu
+    #
     fnu  = np.zeros(len(band0), dtype='float32')
     lcen = np.zeros(len(band0), dtype='float32')
-    fwhm = np.zeros(len(band0), dtype='float32')
+    if fw == True:
+        fwhm = np.zeros(len(band0), dtype='float32')
 
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
+        if fw == True:
+            ffil_cum = np.cumsum(ffil)
+            ffil_cum/= ffil_cum.max()
+            con      = (ffil_cum>0.16) & (ffil_cum<0.84)
+            fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
 
         lmin  = np.min(lfil)
         lmax  = np.max(lfil)
         imin  = 0
         imax  = 0
 
-        lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
+        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
         lamS,spec = l0, f0                     # Two columns with wavelength and flux density
         lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
         filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
@@ -496,7 +501,10 @@ def filconv(band0, l0, f0, DIR): # f0 in fnu
             I2  = 0
             fnu[ii] = 0
 
-    return lcen, fnu
+    if fw == True:
+        return lcen, fnu, fwhm
+    else:
+        return lcen, fnu
 
 def fil_fwhm(band0, DIR): # f0 in fnu
     #
