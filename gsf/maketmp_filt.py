@@ -188,6 +188,22 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     SFILT    = [x.strip() for x in SFILT.split(',')]
     FWFILT   = fil_fwhm(SFILT, DIR_FILT)
 
+    # If FIR data;
+    try:
+        DFILT    = inputs['FIR_FILTER'] # filter band string.
+        DFILT    = [x.strip() for x in DFILT.split(',')]
+        DFWFILT  = fil_fwhm(DFILT, DIR_FILT)
+        CAT_BB_DUST = inputs['CAT_BB_DUST']
+        DT0 = float(inputs['TDUST_LOW'])
+        DT1 = float(inputs['TDUST_HIG'])
+        dDT = float(inputs['TDUST_DEL'])
+        f_dust = True
+        print('FIR is implemented.')
+    except:
+        print('No FIR is implemented.')
+        f_dust = False
+        pass
+
     #
     # Tau for MCMC parameter; not as fitting parameters.
     #
@@ -220,7 +236,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
             except Exception:
-                print('File, %s%s, cannot be open.'%(DIR_EXTR,spec_file))
+                print('File, %s, cannot be open.'%(spec_file))
                 pass
         # Constructing arrays.
         lm   = np.zeros(np.sum(ninp0[:]),dtype='float32')
@@ -254,15 +270,17 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #############################
     if CAT_BB:
         fd0 = np.loadtxt(CAT_BB, comments='#')
-        id0 = fd0[:,0]
-        for ii in range(len(id0)):
-            if int(id0[ii]) == int(ID):
-                ii0 = ii
-                break
-        if (int(id0[ii0]) !=  int(ID)):
-            return -1
-
-        fd  = fd0[ii0,:]
+        try:
+            id0 = fd0[:,0]
+            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
+            if int(id0[ii0]) !=  int(ID):
+                return -1
+            fd  = fd0[ii0,:]
+        except:
+            id0 = fd0[0]
+            if int(id0) !=  int(ID):
+                return -1
+            fd  = fd0[:]
         id  = fd[0]
         fbb = np.zeros(len(SFILT), dtype='float32')
         ebb = np.zeros(len(SFILT), dtype='float32')
@@ -303,6 +321,28 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             fbb[ii] = 0
             ebb[ii] = -99 #1000
 
+
+    # Dust flux;
+    if f_dust:
+        fdd = np.loadtxt(CAT_BB_DUST, comments='#')
+        try:
+            id0 = fdd[:,0]
+            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
+            if int(id0[ii0]) !=  int(ID):
+                return -1
+            fd  = fdd[ii0,:]
+        except:
+            id0 = fdd[0]
+            if int(id0) !=  int(ID):
+                return -1
+            fd  = fdd[:]
+        id  = fd[0]
+        fbb_d = np.zeros(len(DFILT), dtype='float32')
+        ebb_d = np.zeros(len(DFILT), dtype='float32')
+        for ii in range(len(DFILT)):
+            fbb_d[ii] = fd[ii*2+1]
+            ebb_d[ii] = fd[ii*2+2]
+
     #############################
     # Getting Morphology params.
     #############################
@@ -326,13 +366,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                         alp   = 0
                 except Exception:
                     print('Error in reading morphology params.')
-                    try:
-                        Amp   = fm[0]
-                        gamma = fm[1]
-                        alp   = fm[2]
-                        print('Morpho param file order changed.')
-                    except:
-                        print('No morphology convolution.')
+                    print('No morphology convolution.')
+                    #return -1
                     pass
             else:
                 print('MORP Keywords does not match.')
@@ -551,6 +586,62 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     hdu3 = fits.BinTableHDU.from_columns(coldefs_ms)
     hdu3.writeto(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
+    ######################
+    # Add dust component;
+    ######################
+    if f_dust:
+        Temp = np.arange(DT0,DT1,dDT)
+        lambda_d = np.arange(1e4,1e8,1e3) # RF wavelength, in AA. #* (1.+zbest)
+        # c in AA/s.
+        kb = 1.380649e-23 # Boltzmann constant, in J/K
+        hp = 6.62607015e-34 # Planck constant, in J*s
+
+        # from Eq.3 of Bianchi 13
+        kabs0 = 4.0 # in cm2/g
+        beta_d= 2.08 #
+        lam0  = 250. # mu m
+        kappa = kabs0 * (lam0/lambda_d)**beta_d # cm2/g
+        kappa *= (1e8)**2 # AA2/g
+
+        for tt in range(len(Temp)):
+            if tt == 0:
+                # For full;
+                nd_d       = np.arange(0,len(lambda_d),1)
+                colspec_dw = fits.Column(name='wavelength', format='E', unit='AA', array=lambda_d*(1.+zbest))
+                col_dw     = fits.Column(name='colnum', format='K', unit='', array=nd_d)
+                col03      = [colspec_dw,col_dw]
+            #BT_lam[:] = 2*hp*c**2 / lambda_d[:]**5 / (np.exp(hp*c/(lambda_d[:]*kb*Temp))-1) # J*s * (AA/s)^2 / AA^5 / sr = J / s / AA^3 / sr.
+            #flam_d[:,tt] = 1.0 / (4.*np.pi*DL**2) * kappa * BT_lam[:] # 1/cm2 * cm2/g * J / s / AA^3 = J/s/AA^3/g
+            #flam_d[:,tt] *= 1.989e+33 # J/s/AA^3/Msun; i.e. 1 flux is in 1Msun
+            nu_d  = c / lambda_d # 1/s = Hz
+            BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
+            fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * kappa * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
+            fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
+            fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
+            colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=fnu_d)
+            col03.append(colspec_d)
+
+            # Convolution;
+            ltmpbb_d, ftmpbb_d = filconv(DFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            #plt.plot(lambda_d*(1.+zbest),fnu_d,linestyle='-')
+            #plt.show()
+            if tt == 0:
+                # For conv;
+                col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
+                nd_db  = np.arange(0,len(ltmpbb_d),1)
+                col4   = fits.Column(name='colnum', format='K', unit='', array=nd_db)
+                col04 = [col3, col4]
+            colspec_db = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=ftmpbb_d)
+            col04.append(colspec_db)
+
+        coldefs_d = fits.ColDefs(col03)
+        hdu4 = fits.BinTableHDU.from_columns(coldefs_d)
+        hdu4.writeto(DIR_TMP + 'spec_dust_all_' + ID + '_PA' + PA + '.fits', overwrite=True)
+
+        coldefs_db = fits.ColDefs(col04)
+        hdu5 = fits.BinTableHDU.from_columns(coldefs_db)
+        hdu5.writeto(DIR_TMP + 'spec_dust_' + ID + '_PA' + PA + '.fits', overwrite=True)
+
     ##########################################
     # For observation.
     # Write out for the Multi-component fitting.
@@ -575,13 +666,31 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             fw.write('%d %.5f 0 1000\n'%(ii+10000, ltmpbb[0,ii]))
         else:
             fw.write('%d %.5f %.5e %.5e\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii]))
+
+    fw.close()
+    fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    if f_dust:
+        nbblast = len(ltmpbb[0,:])
+        for ii in range(len(ltmpbb_d[:])):
+            if  ebb_d[ii]>1000:
+                fw.write('%d %.5f 0 1000\n'%(ii+10000+nbblast, ltmpbb_d[ii]))
+            else:
+                fw.write('%d %.5f %.5e %.5e\n'%(ii+10000+nbblast, ltmpbb_d[ii], fbb_d[ii], ebb_d[ii]))
     fw.close()
 
     fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
-    fw.write('# ColumnNo Wave Flux Error FWHM NoFILT\n')
     for ii in range(len(ltmpbb[0,:])):
         if ebb[ii]>1000:
-            fw.write('%d %.5f 0 1000 %.1f %s\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2., SFILT[ii]))
+            fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
-            fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
+            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+
+    fw.close()
+    fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    if f_dust:
+        for ii in range(len(ltmpbb_d[:])):
+            if  ebb_d[ii]>1000:
+                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii], DFWFILT[ii]/2.))
+            else:
+                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
     fw.close()

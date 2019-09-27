@@ -142,6 +142,20 @@ class Mainbody():
             fzmc = 0
 
         #
+        # If FIR data;
+        #
+        try:
+            DT0 = float(inputs['TDUST_LOW'])
+            DT1 = float(inputs['TDUST_HIG'])
+            dDT = float(inputs['TDUST_DEL'])
+            Temp= np.arange(DT0,DT1,dDT)
+            f_dust = True
+            print('FIR fit is on.')
+        except:
+            f_dust = False
+            pass
+
+        #
         # Tau for MCMC parameter; not as fitting parameters.
         #
         tau0 = inputs['TAU0']
@@ -159,6 +173,10 @@ class Mainbody():
         #lib = open_spec(ID0, PA0)
         lib     = fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
         lib_all = fnc.open_spec_fits(ID0, PA0, fall=1, tau0=tau0)
+
+        if f_dust:
+            lib_dust     = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=0, tau0=tau0)
+            lib_dust_all = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=1, tau0=tau0)
 
         #################
         # Observed Data
@@ -199,18 +217,23 @@ class Mainbody():
         fybb = dat[:, 2]
         eybb = dat[:, 3]
         exbb = dat[:, 4]
-        wht2 = check_line_man(fy, x, wht, fy, zprev,LW0)
+        wht2 = check_line_man(fy, x, wht, fy, zprev, LW0)
 
         #####################
         # Function fo MCMC
         #####################
-        def residual(pars, fy, wht2, out=False): # x, y, wht are taken from out of the definition.
+        def residual(pars, fy, wht2, f_fir, out=False): # x, y, wht are taken from out of the definition.
             #
             # Returns: residual of model and data.
             # out: model as second output. For lnprob func.
-            #
+            # f_fir: syntax. If dust component is on or off.
             vals = pars.valuesdict()
             model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
+            if f_fir:
+                model_dust, x1_dust = fnc.tmp04_dust(ID0, PA0, vals, zprev, lib_dust, tau0=tau0)
+                model = np.append(model,model_dust)
+                x1    = np.append(x1,x1_dust)
+
             if ferr == 1:
                 f = vals['f']
             else:
@@ -230,7 +253,7 @@ class Mainbody():
                 else:
                     return (model - fy)[con_res] / sig[con_res], model # i.e. residual/sigma. Because is_weighted = True.
 
-        def lnprob(pars, fy, wht2):
+        def lnprob(pars,fy,wht2,f_fir):
             #
             # Returns: posterior.
             #
@@ -239,10 +262,10 @@ class Mainbody():
                 f = vals['f']
             else:
                 f = 0 # temporary... (if f is param, then take from vals dictionary.)
-            resid, model = residual(pars, fy, wht2, out=True)
+            resid, model = residual(pars, fy, wht2, f_fir, out=True)
             con_res = (model>0) & (wht2>0)
             sig     = np.sqrt(1./wht2+f**2*model**2)
-            lnlike = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig[con_res]**2))
+            lnlike  = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig[con_res]**2))
             #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
             #Av   = vals['Av']
             #if Av<0:
@@ -261,7 +284,6 @@ class Mainbody():
                 fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
             else:
                 fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
-
 
         #####################
         # Dust attenuation
@@ -316,7 +338,7 @@ class Mainbody():
                     aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
-                out_tmp = minimize(residual, fit_params, args=(fy, wht2), method='nelder') # nelder is the most efficient.
+                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method='nelder') # nelder is the most efficient.
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
                 rcsq = 99999
@@ -365,7 +387,7 @@ class Mainbody():
                     aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
-                out_tmp = minimize(residual, fit_params, args=(fy, wht2), method='powell') # powel is the more accurate.
+                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method='powell') # powel is the more accurate.
 
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
@@ -626,8 +648,36 @@ class Mainbody():
                     ferr = 0
                     pass
 
+                #####################
+                # Dust;
+                #####################
+                if f_dust:
+                    Tdust = np.arange(DT0,DT1,dDT)
+                    fit_params.add('TDUST', value=0, min=0, max=len(Tdust))
+                    fit_params.add('MDUST', value=1., min=0, max=1e10)
+                    ndim += 2
+
+                    # Append data;
+                    dat_d = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
+                    NRbb = dat[:, 0]
+                    xbb  = dat[:, 1]
+                    fybb = dat[:, 2]
+                    eybb = dat[:, 3]
+                    exbb = dat[:, 4]
+
+                    dat_d = np.loadtxt(DIR_TMP + 'spec_dust_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
+                    #NR  = dat[:,0]
+                    x_d   = dat_d[:,1]
+                    fy_d  = dat_d[:,2]
+                    ey_d  = dat_d[:,3]
+
+                    fy = np.append(fy,fy_d)
+                    x  = np.append(x,x_d)
+                    wht= np.append(wht,1./np.square(ey_d))
+                    wht2= check_line_man(fy, x, wht, fy, zprev, LW0)
+
                 # Then, minimize again.
-                out = minimize(residual, fit_params, args=(fy, wht2), method='nelder') # It needs to define out with redshift constrain.
+                out = minimize(residual, fit_params, args=(fy, wht2, f_dust), method='nelder') # It needs to define out with redshift constrain.
                 # Fix params to what we had before.
                 out.params['zmc'].value = zrecom
                 out.params['Av'].value  = out_keep.params['Av'].value
@@ -687,7 +737,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(lnprob, out.params, fcn_args=[fy, wht2])
+            mini = Minimizer(lnprob, out.params, fcn_args=[fy,wht2,f_dust])
             print('######################')
             print('### Starting emcee ###')
             print('######################')
@@ -734,8 +784,9 @@ class Mainbody():
             Avpar[0,:] = Avmc
 
             out = res
-            ##############################
+            ####################
             # Best parameters
+            ####################
             Amc  = np.zeros((len(age),3), dtype='float32')
             Ab   = np.zeros(len(age), dtype='float32')
             Zmc  = np.zeros((len(age),3), dtype='float32')
@@ -756,7 +807,15 @@ class Mainbody():
                 NZbest[aa]= bfnc.Z2NZ(Zb[aa])
                 ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
 
-            Avb   = out.params['Av'].value
+            Avb = out.params['Av'].value
+
+            if f_dust:
+                Mdust_mc = np.zeros(3, dtype='float32')
+                Tdust_mc = np.zeros(3, dtype='float32')
+                Mdust_mc[:] = np.percentile(res.flatchain['MDUST'], [16,50,84])
+                Tdust_mc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
+                print(Mdust_mc,Tdust_mc)
+            print(hoge)
 
             ####################
             # MCMC corner plot.

@@ -65,6 +65,40 @@ class Func:
 
         return lib
 
+
+    ##################################
+    # Load dust template in obs range.
+    ##################################
+    def open_spec_dust_fits(self, ID0, PA0, Temp, fall=0, tau0=[0.01,0.02,0.03]):
+        from astropy.io import fits
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = Basic(ZZ)
+
+        if fall == 0:
+            app = ''
+        elif fall == 1:
+            app = 'all_'
+
+        DIR_TMP = './templates/'
+        f0   = fits.open(DIR_TMP + 'spec_dust_' + app + ID0 + '_PA' + PA0 + '.fits')
+        hdu0 = f0[1]
+        nr   = hdu0.data['colnum']
+        xx   = hdu0.data['wavelength']
+
+        lib  = np.zeros((len(nr), 2+len(Temp)), dtype='float32')
+        lib[:,0] = nr[:]
+        lib[:,1] = xx[:]
+
+        for aa in range(len(Temp)):
+            coln    = int(2 + aa)
+            colname = 'fspec_' + str(aa)
+            colnall = int(2 + aa) # 2 takes account of wavelength and AV columns.
+            lib[:,colnall] = hdu0.data[colname]
+
+        return lib
+
+
     #############################
     # Load template in obs range.
     # But for weird template.
@@ -231,6 +265,36 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return yyd_sort, xxd_sort
+
+    # Making model template with a given param setself.
+    # Also dust attenuation.
+    def tmp04_dust(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = Basic(ZZ)
+        DIR_TMP = './templates/'
+
+        m_dust = par['MDUST']
+        t_dust = par['TDUST']
+
+        nr  = lib[:, 0]
+        xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+        coln= int(t_dust+0.5)
+        yy  = m_dust * lib[:, coln]
+
+        try:
+            zmc = par.params['zmc'].value
+        except:
+            zmc = zgal
+
+        # How much does this cost in time?
+        if round(zmc,3) != round(zgal,3):
+            xx_s = xx / (1+zgal) * (1+zmc)
+            yy_s = np.interp(xx_s, xx, yy)
+        else:
+            xx_s = xx
+            yy_s = yy
+        return yy_s, xx_s
 
     def tmp04_val(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
 
