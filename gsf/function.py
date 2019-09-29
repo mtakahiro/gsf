@@ -475,6 +475,7 @@ def filconv(band0, l0, f0, DIR, fw=False):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
+        ffil /= np.max(ffil)
         if fw == True:
             ffil_cum = np.cumsum(ffil)
             ffil_cum/= ffil_cum.max()
@@ -486,16 +487,22 @@ def filconv(band0, l0, f0, DIR, fw=False):
         imin  = 0
         imax  = 0
 
-        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
-        lamS,spec = l0, f0                     # Two columns with wavelength and flux density
-        lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-        filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
-        wht       = 1. #/(er1[con_rf])**2
+        con = (l0>lmin) & (l0<lmax) & (f0>0)
+        if len(l0[con])>0:
+            lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
+            lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
+            lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
+            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+            wht       = 1.
 
-        if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
-            I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-            I2  = simps(filt_int/lamS,lamS)                  #Numerator
-            fnu[ii] = I1/I2/c         #Average flux density
+            if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
+                I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
+                I2  = simps(filt_int/lamS,lamS)                  #Numerator
+                fnu[ii] = I1/I2/c         #Average flux density
+            else:
+                I1  = 0
+                I2  = 0
+                fnu[ii] = 0
         else:
             I1  = 0
             I2  = 0

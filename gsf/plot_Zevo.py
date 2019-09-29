@@ -214,7 +214,6 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     plt.savefig('TZ_' + ID + '_PA' + PA + '_corner.pdf')
     plt.close()
 
-
 # Creat "cumulative" png for gif image.
 def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, out_ind=0, snlimbb=1.0):
     #
@@ -541,7 +540,6 @@ def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 
 
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=200)
     plt.close()
-
 
 # Creat temporal png for gif image.
 def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, out_ind=0):
@@ -1044,7 +1042,6 @@ def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1,
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
     plt.close()
 
-
 # Creat temporal png for gif image.
 def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None):
     nage = np.arange(0,len(age),1)
@@ -1527,8 +1524,6 @@ def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.
             #files.append(fname)
             plt.close()
 
-
-
 def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  mcmcplot=1, flim=0.05):
     nage = np.arange(0,len(age),1)
     fnc  = Func(Zall, age) # Set up the number of Age/ZZ
@@ -1595,7 +1590,6 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
         fig1.savefig('SPEC_' + ID + '_PA' + PA + '_corner.pdf')
         plt.close()
-
 
 def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3]):
 
@@ -1754,7 +1748,6 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
 
-
 def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
 f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, \
 save_sed=True, inputs=False, nmc2=300):
@@ -1773,9 +1766,6 @@ save_sed=True, inputs=False, nmc2=300):
     # RF colors.
     import os.path
     home = os.path.expanduser('~')
-    #fil_path = '/Users/tmorishita/eazy-v1.01/PROG/FILT/'
-    #fil_path = home + '/Dropbox/FILT/'
-
     c      = 3.e18 # A/s
     chimax = 1.
     mag0   = 25.0
@@ -1811,16 +1801,17 @@ save_sed=True, inputs=False, nmc2=300):
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
-    zp50  = hdul[1].data['zmc'][1]
     zp16  = hdul[1].data['zmc'][0]
+    zp50  = hdul[1].data['zmc'][1]
     zp84  = hdul[1].data['zmc'][2]
 
-
-    M50 = hdul[1].data['ms'][1]
+    # Stellar mass MC
     M16 = hdul[1].data['ms'][0]
+    M50 = hdul[1].data['ms'][1]
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
+    # Amplitude MC
     A50 = np.zeros(len(age), dtype='float32')
     A16 = np.zeros(len(age), dtype='float32')
     A84 = np.zeros(len(age), dtype='float32')
@@ -1832,8 +1823,8 @@ save_sed=True, inputs=False, nmc2=300):
     Asum  = np.sum(A50)
 
     aa = 0
-    Av50 = hdul[1].data['Av'+str(aa)][1]
     Av16 = hdul[1].data['Av'+str(aa)][0]
+    Av50 = hdul[1].data['Av'+str(aa)][1]
     Av84 = hdul[1].data['Av'+str(aa)][2]
     AAv = [Av50]
 
@@ -1842,13 +1833,33 @@ save_sed=True, inputs=False, nmc2=300):
     Z84 = np.zeros(len(age), dtype='float32')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
-        Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
+        Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
         NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
+    # Light weighted Z.
+    ZZ50 = np.sum(Z50*A50)/np.sum(A50)
 
-    ZZ50 = np.sum(Z50*A50)/np.sum(A50)  # Light weighted Z.
+    # FIR Dust;
+    #try:
+    if True:
+        MD16 = hdul[1].data['MDUST'][0]
+        MD50 = hdul[1].data['MDUST'][1]
+        MD84 = hdul[1].data['MDUST'][2]
+        TD16 = hdul[1].data['TDUST'][0]
+        TD50 = hdul[1].data['TDUST'][1]
+        TD84 = hdul[1].data['TDUST'][2]
+        nTD16 = hdul[1].data['nTDUST'][0]
+        nTD50 = hdul[1].data['nTDUST'][1]
+        nTD84 = hdul[1].data['nTDUST'][2]
+        DFILT   = inputs['FIR_FILTER'] # filter band string.
+        DFILT   = [x.strip() for x in DFILT.split(',')]
+        DFWFILT = fil_fwhm(DFILT, DIR_FILT)
+        print('Total dust mass is %.2e'%(MD50))
+        f_dust = True
+    #except:
+    #    f_dust = False
 
     chi   = hdul[1].data['chi'][0]
     chin  = hdul[1].data['chi'][1]
@@ -1858,8 +1869,6 @@ save_sed=True, inputs=False, nmc2=300):
     Cz1   = hdul[0].header['Cz1']
     zbes  = hdul[0].header['z']
     zscl = (1.+zbes)
-
-    #print(zbes,0,Cz0,Cz1)
 
     ###############################
     # Data taken from
@@ -1900,7 +1909,6 @@ save_sed=True, inputs=False, nmc2=300):
     exbb = dat[:, 4]
     snbb = fybb/eybb
 
-
     ######################
     # Weight by line
     ######################
@@ -1908,7 +1916,6 @@ save_sed=True, inputs=False, nmc2=300):
     LW0 = []
     model = fg0
     wht3 = check_line_man(fy, x, wht, fy, zbes, LW0)
-
 
     ######################
     # Mass-to-Light ratio.
@@ -1926,7 +1933,7 @@ save_sed=True, inputs=False, nmc2=300):
     conbb = (NR>=10000)
 
     #######################
-    # Box for BB photometry
+    # D.Kelson like Box for BB photometry
     for ii in range(len(xbb)):
         if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
             xx = [xbb[ii]-exbb[ii],xbb[ii]-exbb[ii]]
@@ -1944,7 +1951,6 @@ save_sed=True, inputs=False, nmc2=300):
 
     try:
         conbb_hs = (fybb/eybb>SNlim)
-        #print(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d)
         ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
         yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
         ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
@@ -1959,19 +1965,23 @@ save_sed=True, inputs=False, nmc2=300):
     except:
         pass
 
-    ################
+    #####################################
     # Open ascii file and stock to array.
     lib     = fnc.open_spec_fits(ID0, PA, fall=0, tau0=tau0)
     lib_all = fnc.open_spec_fits(ID0, PA, fall=1, tau0=tau0)
-    #lib_wid = fnc.open_spec_fits_wid(ID0, PA, fall=1, tau0=tau0)
+    if f_dust:
+        DT0 = float(inputs['TDUST_LOW'])
+        DT1 = float(inputs['TDUST_HIG'])
+        dDT = float(inputs['TDUST_DEL'])
+        Temp= np.arange(DT0,DT1,dDT)
+        lib_dust     = fnc.open_spec_dust_fits(ID0, PA, Temp, fall=0, tau0=tau0)
+        lib_dust_all = fnc.open_spec_dust_fits(ID0, PA, Temp, fall=1, tau0=tau0)
 
     II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(II0)-1
 
-
     fwuvj = open(ID0 + '_PA' + PA + '_uvj.txt', 'w')
     fwuvj.write('# age uv vj\n')
-
     Asum = np.sum(A50[:])
     for jj in range(len(II0)):
         ii = int(len(II0) - jj - 1) # from old to young templates.
@@ -1990,6 +2000,7 @@ save_sed=True, inputs=False, nmc2=300):
             if A50[ii]/Asum > flim:
                 ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
         ysum_wid = ysum * 0
+
         for kk in range(0,ii+1,1):
             tt = int(len(II0) - kk - 1)
             nn = int(len(II0) - ii - 1)
@@ -2008,8 +2019,41 @@ save_sed=True, inputs=False, nmc2=300):
         uvt  = -2.5*log10(fu_t/fv_t)
         vjt  = -2.5*log10(fv_t/fj_t)
         fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
-
     fwuvj.close()
+
+    # FIR dust plot;
+    if f_dust:
+        from lmfit import Parameters
+        par = Parameters()
+        par.add('MDUST',value=MD50)
+        par.add('TDUST',value=nTD50)
+        par.add('zmc',value=zp50)
+        y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+
+        # data;
+        ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+        NRbbd = ddat[:, 0]
+        xbbd  = ddat[:, 1]
+        fybbd = ddat[:, 2]
+        eybbd = ddat[:, 3]
+        exbbd = ddat[:, 4]
+        snbbd = fybbd/eybbd
+        try:
+            conbbd_hs = (fybbd/eybbd>SNlim)
+            ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
+            yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
+            ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
+            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+        except:
+            pass
+        try:
+            conebbd_ls = (fybbd/eybbd<=SNlim)
+            ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d * SNlim, \
+            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
+            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
+        except:
+            pass
 
     '''
     lmrest = x0/(1.+zbes)
@@ -2033,7 +2077,6 @@ save_sed=True, inputs=False, nmc2=300):
     conw = (wht3>0)
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
     print('chi2/nu is %.2f'%(chin))
-
     #############
     # Main result
     #############
@@ -2050,7 +2093,6 @@ save_sed=True, inputs=False, nmc2=300):
     if x1max < np.max(xbb[conbb_ymax]):
         x1max = np.max(xbb[conbb_ymax]) * 1.1
     ax1.set_xlim(2200, x1max)
-    print(x1max)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1, ymax)
 
@@ -2059,9 +2101,11 @@ save_sed=True, inputs=False, nmc2=300):
     #ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     xticks = [2500, 5000, 10000, 20000, 40000, 80000]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8']
+    if f_dust:
+        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 1e7]
+        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '1000']
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
-    #ax1.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 
     dely1 = 0.5
     while (ymax-0)/dely1>4:
@@ -2070,9 +2114,7 @@ save_sed=True, inputs=False, nmc2=300):
     y1ticks = np.arange(0, ymax, dely1)
     ax1.set_yticks(y1ticks)
     ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
-
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-
 
     #############
     # Plot
@@ -2081,9 +2123,7 @@ save_sed=True, inputs=False, nmc2=300):
     eAAu = np.zeros(len(age),dtype='float32')
     eAMl = np.zeros(len(age),dtype='float32')
     eAMu = np.zeros(len(age),dtype='float32')
-
     MSsum = np.sum(ms)
-
     Asum = np.sum(A50)
     A50 /= Asum
     A16 /= Asum
@@ -2178,7 +2218,6 @@ save_sed=True, inputs=False, nmc2=300):
         LW      = fl[:,2]
         Fcont50 = fl[:,3]
         Fline50 = fl[:,6]
-
         for ii in range(len(LW)):
             if Fcont50[ii] > 0:
                 WL = LW[ii] * (1.+zbes)
@@ -2259,7 +2298,6 @@ save_sed=True, inputs=False, nmc2=300):
 
     except:
         pass
-
     flw.close()
 
     ############
@@ -2321,24 +2359,62 @@ save_sed=True, inputs=False, nmc2=300):
             ferr_tmp = samples['f'][nr]
         else:
             ferr_tmp = 1.0
-        ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-        ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-        ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+
+        if not f_dust:
+            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
+            ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+
+        # Dust component;
+        if f_dust:
+            if kk == 0:
+                par  = Parameters()
+                par.add('MDUST',value=samples['MDUST'][nr])
+                par.add('TDUST',value=samples['TDUST'][nr])
+            model_dust, x1_dust = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+            #ax1.plot(x1_dust, model_dust * c/ np.square(x1_dust) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            if kk == 0:
+                deldt  = (x1_dust[1] - x1_dust[0])
+                x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
+                ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float32')
+            model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
+            ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
     # plot BB model;
     #from .maketmp_filt import filconv
-    lbb, fbb, lfwhm = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT, fw=True)
-    ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-    zorder=2, alpha=1.0, marker='s', s=10)
-    if save_sed == True:
-        fnu   = flamtonu(lbb, fbb*1e-18, m0set=25.0)
-        lbb_nu, fbb_nu, lfwhm = filconv(SFILT, lbb, fnu, DIR_FILT, fw=True)
-        fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
-        fw.write('# wave fnu       filt_width No.Filt\n')
-        fw.write('# (AA) (m0=25.0) (AA)       ()\n')
-        for ii in range(len(lbb)):
-            fw.write('%.2f %.5f %.2f %s\n'%(lbb_nu[ii],fbb_nu[ii],lfwhm[ii],SFILT[ii]))
-        fw.close()
+    if not f_dust:
+        lbb, fbb, lfwhm = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT, fw=True)
+        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
+        zorder=2, alpha=1.0, marker='s', s=10)
+        if save_sed == True:
+            fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
+            #lbb_nu, fbb_nu, lfwhm = filconv(SFILT, lbb, fnu, DIR_FILT, fw=True)
+            fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
+            fw.write('# wave fnu       filt_width No.Filt\n')
+            fw.write('# (AA) (m0=25.0) (AA)       ()\n')
+            for ii in range(len(lbb)):
+                fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],SFILT[ii]))
+            fw.close()
+    if f_dust:
+        ALLFILT = np.append(SFILT,DFILT)
+        #print('Convolution is limited to lam < 10*1e4 AA')
+        #con = (x1_tot<10*1e8) # AA
+        #print(x1_tot[con], model_tot[con])
+        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, model_tot*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
+        ax1.plot(x1_tot, model_tot*c/np.square(x1_tot)/d, color='k')
+        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
+        zorder=2, alpha=1.0, marker='s', s=10)
+        if save_sed == True:
+            fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
+            #lbb_nu, fbb_nu, lfwhm = filconv(ALLFILT, lbb, fnu, DIR_FILT, fw=True)
+            fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
+            fw.write('# wave fnu       filt_width No.Filt\n')
+            fw.write('# (AA) (m0=25.0) (AA)       ()\n')
+            for ii in range(len(lbb)):
+                fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],ALLFILT[ii]))
+            fw.close()
 
     if save_sed == True:
         col00  = []
@@ -2393,7 +2469,6 @@ save_sed=True, inputs=False, nmc2=300):
     LN0 = ['Mg2', '$NeIV$', '[OII]', 'H$\theta$', 'H$\eta$', 'Ne3?', 'H$\delta$', 'H$\gamma$', 'H$\\beta$', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
     LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 5175, 6563, 6717, 6731]
     fsl = 9 # Fontsize for line
-
     try:
         for ii in range(len(LW)):
             ll = np.argmin(np.abs(LW[ii]-LW0[:]))
@@ -2436,7 +2511,6 @@ save_sed=True, inputs=False, nmc2=300):
     except:
         pass
 
-
     ####################
     # Plot Different Z
     ####################
@@ -2475,7 +2549,6 @@ save_sed=True, inputs=False, nmc2=300):
     # RGB
     ################
     try:
-    #if 1>0:
         from scipy import misc
         rgb_array = misc.imread('/Users/tmorishita/Box Sync/Research/M18_rgb/rgb_'+str(int(ID0))+'.png')
         axicon = fig.add_axes([0.68, 0.53, 0.4, 0.4])
@@ -2578,7 +2651,6 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
         NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
-
     ZZ50 = np.sum(Z50*A50)/np.sum(A50)  # Light weighted Z.
 
     chi   = hdul[1].data['chi'][0]
@@ -2589,8 +2661,6 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     Cz1   = hdul[0].header['Cz1']
     zbes  = hdul[0].header['z']
     zscl = (1.+zbes)
-
-    #print(zbes,0,Cz0,Cz1)
 
     ###############################
     # Data taken from
@@ -2674,8 +2744,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     conspec = (NR<10000) #& (fy/ey>1)
     ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
-
-    conbb = (NR>=10000)
+    #conbb = (NR>=10000)
 
     #######################
     # Box for BB photometry

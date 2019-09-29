@@ -95,7 +95,12 @@ class Func:
             colname = 'fspec_' + str(aa)
             colnall = int(2 + aa) # 2 takes account of wavelength and AV columns.
             lib[:,colnall] = hdu0.data[colname]
-
+            if fall==1 and False:
+                import matplotlib.pyplot as plt
+                plt.close()
+                print(Temp[aa])
+                plt.plot(lib[:,1],lib[:,coln],linestyle='-')
+                plt.show()
         return lib
 
 
@@ -276,17 +281,16 @@ class Func:
 
         m_dust = par['MDUST']
         t_dust = par['TDUST']
+        #print(t_dust,m_dust)
 
-        nr  = lib[:, 0]
-        xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-        coln= int(t_dust+0.5)
-        yy  = m_dust * lib[:, coln]
-
+        nr  = lib[:,0]
+        xx  = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        coln= 2+int(t_dust+0.5)
+        yy  = m_dust * lib[:,coln]
         try:
             zmc = par.params['zmc'].value
         except:
             zmc = zgal
-
         # How much does this cost in time?
         if round(zmc,3) != round(zgal,3):
             xx_s = xx / (1+zgal) * (1+zmc)

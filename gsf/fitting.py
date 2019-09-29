@@ -166,9 +166,6 @@ class Mainbody():
         fnc  = Func(Zall, nage) # Set up the number of Age/ZZ
         bfnc = Basic(Zall)
 
-        from .writing import Analyze
-        wrt = Analyze(inputs) # Set up for input
-
         # Open ascii file and stock to array.
         #lib = open_spec(ID0, PA0)
         lib     = fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
@@ -177,6 +174,7 @@ class Mainbody():
         if f_dust:
             lib_dust     = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=0, tau0=tau0)
             lib_dust_all = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=1, tau0=tau0)
+            #print(lib_dust[:,3])
 
         #################
         # Observed Data
@@ -231,8 +229,15 @@ class Mainbody():
             model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
             if f_fir:
                 model_dust, x1_dust = fnc.tmp04_dust(ID0, PA0, vals, zprev, lib_dust, tau0=tau0)
-                model = np.append(model,model_dust)
-                x1    = np.append(x1,x1_dust)
+                n_optir = len(model)
+                # Add dust flux to opt/IR grid.
+                model[:]+= model_dust[:n_optir]
+                #print(model_dust)
+                # then append only FIR flux grid.
+                model = np.append(model,model_dust[n_optir:])
+                x1    = np.append(x1,x1_dust[n_optir:])
+                #plt.plot(x1,model,'r.')
+                #plt.show()
 
             if ferr == 1:
                 f = vals['f']
@@ -329,6 +334,7 @@ class Mainbody():
         # How to get initial parameters?
         # Nelder;
         if fneld == 1:
+            fit_name = 'nelder'
             for zz in range(len(ZZtmp)):
                 ZZ = ZZtmp[zz]
                 if int(inputs['ZEVOL']) == 1:
@@ -338,7 +344,7 @@ class Mainbody():
                     aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
-                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method='nelder') # nelder is the most efficient.
+                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # nelder is the most efficient.
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
                 rcsq = 99999
@@ -378,6 +384,7 @@ class Mainbody():
         # Or
         # Powell;
         else:
+            fit_name='powell'
             for zz in range(0,nZtmp,2):
                 ZZ = zz * delZtmp + np.min(Zall)
                 if int(inputs['ZEVOL']) == 1:
@@ -387,8 +394,7 @@ class Mainbody():
                     aa = 0
                     fit_params['Z'+str(aa)].value = ZZ
 
-                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method='powell') # powel is the more accurate.
-
+                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # powel is the more accurate.
                 keys = fit_report(out_tmp).split('\n')
                 csq  = 99999
                 rcsq = 99999
@@ -540,7 +546,6 @@ class Mainbody():
             scl_cz1 = [1.,1.,1.]
             Czrec0  = scl_cz0[1]
             Czrec1  = scl_cz1[1]
-
         '''
         try:
             # lets try the normal distribution first
@@ -653,20 +658,21 @@ class Mainbody():
                 #####################
                 if f_dust:
                     Tdust = np.arange(DT0,DT1,dDT)
-                    fit_params.add('TDUST', value=0, min=0, max=len(Tdust))
+                    #fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust))
+                    fit_params.add('TDUST', value=1, min=0, max=len(Tdust)-1)
                     fit_params.add('MDUST', value=1., min=0, max=1e10)
                     ndim += 2
 
                     # Append data;
+                    '''
                     dat_d = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
                     NRbb = dat[:, 0]
                     xbb  = dat[:, 1]
                     fybb = dat[:, 2]
                     eybb = dat[:, 3]
                     exbb = dat[:, 4]
-
+                    '''
                     dat_d = np.loadtxt(DIR_TMP + 'spec_dust_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
-                    #NR  = dat[:,0]
                     x_d   = dat_d[:,1]
                     fy_d  = dat_d[:,2]
                     ey_d  = dat_d[:,3]
@@ -677,7 +683,9 @@ class Mainbody():
                     wht2= check_line_man(fy, x, wht, fy, zprev, LW0)
 
                 # Then, minimize again.
-                out = minimize(residual, fit_params, args=(fy, wht2, f_dust), method='nelder') # It needs to define out with redshift constrain.
+                out = minimize(residual, fit_params, args=(fy, wht2, f_dust), method=fit_name) # It needs to define out with redshift constrain.
+                print(fit_report(out))
+
                 # Fix params to what we had before.
                 out.params['zmc'].value = zrecom
                 out.params['Av'].value  = out_keep.params['Av'].value
@@ -687,7 +695,6 @@ class Mainbody():
                         out.params['Z'+str(aa)].value = out_keep.params['Z'+str(aa)].value
                     except:
                         out.params['Z0'].value = out_keep.params['Z0'].value
-
 
             ##############################
             # Save fig of z-distribution.
@@ -814,14 +821,18 @@ class Mainbody():
                 Tdust_mc = np.zeros(3, dtype='float32')
                 Mdust_mc[:] = np.percentile(res.flatchain['MDUST'], [16,50,84])
                 Tdust_mc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
-                print(Mdust_mc,Tdust_mc)
-            print(hoge)
+            print(Mdust_mc)
+            print(Tdust_mc)
 
             ####################
             # MCMC corner plot.
             ####################
             if mcmcplot == 1:
-                fig1 = corner.corner(res.flatchain, labels=res.var_names, label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), plot_datapoints=False, plot_contours=True, no_fill_contours=True, plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
+                fig1 = corner.corner(res.flatchain, labels=res.var_names, \
+                label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
+                title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), \
+                plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
+                plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
                 fig1.savefig('SPEC_' + ID0 + '_PA' + PA0 + '_corner.pdf')
                 plt.close()
 
@@ -829,13 +840,16 @@ class Mainbody():
             msmc0 = 0
             for aa in range(len(age)):
                 msmc0 += res.flatchain['A'+str(aa)]*ms[aa]
-
             msmc = np.percentile(msmc0, [16,50,84])
 
             # Do analysis on MCMC results.
             # Write to file.
             stop  = timeit.default_timer()
             tcalc = stop - start
+
+            # Load writing package;
+            from .writing import Analyze
+            wrt = Analyze(inputs) # Set up for input
 
             start_mc = timeit.default_timer()
             wrt.get_param(res, lib_all, zrecom, Czrec0, Czrec1, z_cz[:], scl_cz0[:], scl_cz1[:], fitc[:], tau0=tau0, tcalc=tcalc)
@@ -844,19 +858,6 @@ class Mainbody():
             print('##############################################')
             print('### Writing params tp file took %.1f sec ###'%(tcalc_mc))
             print('##############################################')
-
-            ##########
-            # Plot
-            ##########
-            '''
-            if specplot == 1:
-                plt.close()
-                try:
-                    DIR_FILT = inputs['DIR_FILT']
-                except:
-                    DIR_FILT = './'
-                plot_sed_Z(ID0, PA0, Zall, age, tau0=tau0, fil_path=DIR_FILT)
-            '''
 
             return 0, zrecom, Czrec0, Czrec1
 

@@ -18,7 +18,7 @@ cosmo = cd.set_omega_k_0(cosmo)
 c = 3e18 # speed of light in AA/s
 pixelscale = 0.06 # arcsec/pixel
 Mpc_cm = 3.08568025e+24 # cm/Mpc
-m0set = 25.0
+#m0set = 25.0
 
 # Custom package
 from .function import *
@@ -41,7 +41,7 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
     chi2 = np.sum(((fobs-s*ftmp)/eobs)**2) + np.sum(((fbb-s*ftmp_bb)/ebb)**2)
     return chi2, s
 
-
+'''
 def filconv(band0, l0, f0, DIR): # f0 in fnu
     #home = os.path.expanduser('~')
     #DIR  = home + '/Dropbox/FILT/'
@@ -75,7 +75,7 @@ def filconv(band0, l0, f0, DIR): # f0 in fnu
             fnu[ii] = 0
 
     return lcen, fnu
-
+'''
 
 def fil_fwhm(band0, DIR): # f0 in fnu
     #
@@ -109,12 +109,12 @@ def data_int(lmobs, lmtmp, ftmp):
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 
-def flamtonu(lam, flam):
+def flamtonu(lam, flam, m0set=25.):
     Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     fnu  = flam * Ctmp
     return fnu
 
-def fnutolam(lam, fnu):
+def fnutolam(lam, fnu, m0set=25.):
     Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     flam  = fnu / Ctmp
     return flam
@@ -184,15 +184,15 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     except:
         CAT_BB = False
 
-    SFILT    = inputs['FILTER'] # filter band string.
-    SFILT    = [x.strip() for x in SFILT.split(',')]
-    FWFILT   = fil_fwhm(SFILT, DIR_FILT)
+    SFILT  = inputs['FILTER'] # filter band string.
+    SFILT  = [x.strip() for x in SFILT.split(',')]
+    FWFILT = fil_fwhm(SFILT, DIR_FILT)
 
     # If FIR data;
     try:
-        DFILT    = inputs['FIR_FILTER'] # filter band string.
-        DFILT    = [x.strip() for x in DFILT.split(',')]
-        DFWFILT  = fil_fwhm(DFILT, DIR_FILT)
+        DFILT   = inputs['FIR_FILTER'] # filter band string.
+        DFILT   = [x.strip() for x in DFILT.split(',')]
+        DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         CAT_BB_DUST = inputs['CAT_BB_DUST']
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
@@ -209,12 +209,10 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #
     tau0 = inputs['TAU0']
     tau0 = [float(x.strip()) for x in tau0.split(',')]
-    #tau0     = [0.1,0.2,0.3] # Gyr
 
     print('############################')
     print('Making templates at %.4f'%(zbest))
     print('############################')
-
     ####################################################
     # Get extracted spectra.
     ####################################################
@@ -509,7 +507,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 ###################
                 spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
-
                 if len(lm)>0:
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
@@ -532,7 +529,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 #ftmpbb[ss,:]      *= (1./Ls[ss])*stmp_common
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common
-                ms[ss]                 *= (1./Ls[ss])*stmp_common # 1 unit template has this mass in [Msolar].
+                ms[ss]                 *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
                 if f_spec:
                     ftmp_nu_int[ss,:]  = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
@@ -591,7 +588,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     ######################
     if f_dust:
         Temp = np.arange(DT0,DT1,dDT)
-        lambda_d = np.arange(1e4,1e8,1e3) # RF wavelength, in AA. #* (1.+zbest)
+        lambda_d = np.arange(1e4,1e7,1e3) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
+        #lambda_d = np.arange(4000,1e7,1e3) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
         # c in AA/s.
         kb = 1.380649e-23 # Boltzmann constant, in J/K
         hp = 6.62607015e-34 # Planck constant, in J*s
@@ -599,10 +597,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         # from Eq.3 of Bianchi 13
         kabs0 = 4.0 # in cm2/g
         beta_d= 2.08 #
-        lam0  = 250. # mu m
+        lam0  = 250.*1e4 # mu m to AA
         kappa = kabs0 * (lam0/lambda_d)**beta_d # cm2/g
         kappa *= (1e8)**2 # AA2/g
-
         for tt in range(len(Temp)):
             if tt == 0:
                 # For full;
@@ -610,21 +607,28 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 colspec_dw = fits.Column(name='wavelength', format='E', unit='AA', array=lambda_d*(1.+zbest))
                 col_dw     = fits.Column(name='colnum', format='K', unit='', array=nd_d)
                 col03      = [colspec_dw,col_dw]
-            #BT_lam[:] = 2*hp*c**2 / lambda_d[:]**5 / (np.exp(hp*c/(lambda_d[:]*kb*Temp))-1) # J*s * (AA/s)^2 / AA^5 / sr = J / s / AA^3 / sr.
-            #flam_d[:,tt] = 1.0 / (4.*np.pi*DL**2) * kappa * BT_lam[:] # 1/cm2 * cm2/g * J / s / AA^3 = J/s/AA^3/g
-            #flam_d[:,tt] *= 1.989e+33 # J/s/AA^3/Msun; i.e. 1 flux is in 1Msun
             nu_d  = c / lambda_d # 1/s = Hz
             BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
+            # in side exp: J*s * (1/s) / (J/K * K) = 1;
             fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * kappa * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
+            #fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
             fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
             fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
+            fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
+            print('Somehow, this crazy scale is required...')
+            fnu_d *= 1e25
             colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=fnu_d)
             col03.append(colspec_d)
 
             # Convolution;
-            ltmpbb_d, ftmpbb_d = filconv(DFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
-            #plt.plot(lambda_d*(1.+zbest),fnu_d,linestyle='-')
-            #plt.show()
+            #ltmpbb_d, ftmpbb_d = filconv(DFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            ALLFILT = np.append(SFILT,DFILT)
+            ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            if False:
+                plt.plot(lambda_d/1e4,fnu_d)
+                plt.plot(lambda_d*(1.+zbest)/1e4,fnu_d)
+                plt.plot(ltmpbb_d/1e4, ftmpbb_d, 'x')
+                plt.show()
             if tt == 0:
                 # For conv;
                 col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
@@ -633,6 +637,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 col04 = [col3, col4]
             colspec_db = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=ftmpbb_d)
             col04.append(colspec_db)
+            #plt.plot(x1_dust,model_dust,'r.')
+            #plt.show()
 
         coldefs_d = fits.ColDefs(col03)
         hdu4 = fits.BinTableHDU.from_columns(coldefs_d)
@@ -648,6 +654,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     ##########################################
     lamliml = 0.
     lamlimu = 20000.
+    ebblim  = 1e5
     fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
     for ii in range(len(lm)):
         if fgrs[ii]==0: # G102
@@ -662,7 +669,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
 
     for ii in range(len(ltmpbb[0,:])):
-        if  ebb[ii]>1000:
+        if  ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000\n'%(ii+10000, ltmpbb[0,ii]))
         else:
             fw.write('%d %.5f %.5e %.5e\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii]))
@@ -671,16 +678,16 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
     if f_dust:
         nbblast = len(ltmpbb[0,:])
-        for ii in range(len(ltmpbb_d[:])):
-            if  ebb_d[ii]>1000:
-                fw.write('%d %.5f 0 1000\n'%(ii+10000+nbblast, ltmpbb_d[ii]))
+        for ii in range(len(ebb_d[:])):
+            if  ebb_d[ii]>ebblim:
+                fw.write('%d %.5f 0 1000\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast]))
             else:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii+10000+nbblast, ltmpbb_d[ii], fbb_d[ii], ebb_d[ii]))
+                fw.write('%d %.5f %.5e %.5e\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
     fw.close()
 
     fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
-        if ebb[ii]>1000:
+        if ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
@@ -688,9 +695,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     fw.close()
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
     if f_dust:
-        for ii in range(len(ltmpbb_d[:])):
-            if  ebb_d[ii]>1000:
-                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii], DFWFILT[ii]/2.))
+        for ii in range(len(ebb_d[:])):
+            if  ebb_d[ii]>ebblim:
+                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
             else:
-                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
+                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
     fw.close()
