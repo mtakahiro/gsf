@@ -191,7 +191,7 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     ybins = np.arange(y1min, y1max, 0.01)
 
     xycounts,_,_ = np.histogram2d(np.log10(Ttmp), np.log10(Ztmp), bins=[xbins,ybins])
-    ax1.contour(xbins[:-1], ybins[:-1], xycounts.T, 4, linewidths=np.arange(.5, 4, 0.1), colors='k') #('k', 'k', 'k', 'k', 'k', 'k'))
+    ax1.contour(xbins[:-1], ybins[:-1], xycounts.T, 4, linewidths=np.arange(.5, 4, 0.1), colors='k')
 
     ax1.scatter(np.log10(Ttmp), np.log10(Ztmp), c='r', s=1, marker='.', alpha=0.1)
     #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
@@ -1873,9 +1873,9 @@ save_sed=True, inputs=False, nmc2=300):
     ###############################
     # Data taken from
     ###############################
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
-    NR = dat[:, 0]
-    x  = dat[:, 1]
+    dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    NR   = dat[:, 0]
+    x    = dat[:, 1]
     fy00 = dat[:, 2]
     ey00 = dat[:, 3]
 
@@ -1887,6 +1887,11 @@ save_sed=True, inputs=False, nmc2=300):
     xg1  = x[con1]
     fg1  = fy00[con1] * Cz1
     eg1  = ey00[con1] * Cz1
+    if len(xg0)>0 or len(xg1)>0:
+        f_grsm = True
+    else:
+        f_grsm = False
+
     con2 = (NR>=10000)#& (fy/ey>SNlim)
     xg2  = x[con2]
     fg2  = fy00[con2]
@@ -2021,8 +2026,18 @@ save_sed=True, inputs=False, nmc2=300):
         fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
     fwuvj.close()
 
+    ################
+    # Set the inset.
+    ################
+    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+    from mpl_toolkits.axes_grid.inset_locator import inset_axes
+    if f_grsm:
+        ax2t = inset_axes(ax1, width="40%", height="30%", loc=2)
+
     # FIR dust plot;
     if f_dust:
+        ax3t = inset_axes(ax1, width="40%", height="30%", loc=1)
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
@@ -2030,6 +2045,7 @@ save_sed=True, inputs=False, nmc2=300):
         par.add('zmc',value=zp50)
         y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
         # data;
         ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
@@ -2045,6 +2061,8 @@ save_sed=True, inputs=False, nmc2=300):
             yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
             ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
             '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+            ax3t.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
+            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
         except:
             pass
         try:
@@ -2052,27 +2070,11 @@ save_sed=True, inputs=False, nmc2=300):
             ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d * SNlim, \
             yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
             uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
+            ax3t.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d * SNlim, \
+            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
+            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
         except:
             pass
-
-    '''
-    lmrest = x0/(1.+zbes)
-    model2 = ysum
-    band0  = ['u','v','j','f140w']
-    lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # f0 in fnu
-    fu_cnv = fconv[0]
-    fv_cnv = fconv[1]
-    fj_cnv = fconv[2]
-    f140_cnv = fconv[3]
-
-    flw = open(ID0 + '_PA' + PA + '_mag.txt', 'w')
-    flw.write('# ID PA flux_u flux_v flux_j flux_f140w\n')
-    flw.write('%s %s %.5f %.5f %.5f %.5f\n'%(ID0, PA, fu_cnv, fv_cnv, fj_cnv, f140_cnv))
-    flw.close()
-
-    uvtmp = -2.5*log10(fu_cnv/fv_cnv)
-    vjtmp = -2.5*log10(fv_cnv/fj_cnv)
-    '''
 
     conw = (wht3>0)
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
@@ -2081,7 +2083,7 @@ save_sed=True, inputs=False, nmc2=300):
     # Main result
     #############
     conbb_ymax = (xbb>0.5)# (conbb) &
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 3.
+    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 2.
 
     xboxl = 17000
     xboxu = 28000
@@ -2101,9 +2103,9 @@ save_sed=True, inputs=False, nmc2=300):
     #ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     xticks = [2500, 5000, 10000, 20000, 40000, 80000]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8']
-    if f_dust:
-        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 1e7]
-        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '1000']
+    #if f_dust:
+    #    xticks = [2500, 5000, 10000, 20000, 40000, 80000, 1e7]
+    #    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '1000']
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
 
@@ -2169,14 +2171,6 @@ save_sed=True, inputs=False, nmc2=300):
     # Magnification
     ########################
     umag = 1
-
-    ################
-    # Set the inset.
-    ################
-    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    from mpl_toolkits.axes_grid.inset_locator import inset_axes
-    ax2t = inset_axes(ax1, width="40%", height="30%", loc=2)
 
     ####################
     # For cosmology
@@ -2257,7 +2251,8 @@ save_sed=True, inputs=False, nmc2=300):
                         popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL+20,10],sigma=eyys)
                         xxss = xxs/zscl
 
-                    ax2t.plot(xxs/zscl, (gaus(xxs,*popt)+yy2s) * c/np.square(xxs)/d, '#4682b4', linestyle='-', linewidth=1, alpha=0.8, zorder=20)
+                    if f_grsm:
+                        ax2t.plot(xxs/zscl, (gaus(xxs,*popt)+yy2s) * c/np.square(xxs)/d, '#4682b4', linestyle='-', linewidth=1, alpha=0.8, zorder=20)
 
                     I1 = simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
                     I2 = I1 - simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
@@ -2303,19 +2298,17 @@ save_sed=True, inputs=False, nmc2=300):
     ############
     # Zoom Line
     ############
-    #ax2t.plot(x0/zscl, ysum * c/np.square(x0)/d, '-', lw=0.5, color='gray', zorder=3.)
-    conspec = (NR<10000) #& (fy/ey>1)
-    ax2t.fill_between(xg1/zscl, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-    ax2t.fill_between(xg0/zscl, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
-    ax2t.errorbar(xg1/zscl, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-    ax2t.errorbar(xg0/zscl, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+    if f_grsm:
+        conspec = (NR<10000) #& (fy/ey>1)
+        ax2t.fill_between(xg1/zscl, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
+        ax2t.fill_between(xg0/zscl, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
+        ax2t.errorbar(xg1/zscl, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg0/zscl, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
-    con4000b = (xg01/zscl>3400) & (xg01/zscl<3800) & (fy01>0) & (ey01>0)
-    con4000r = (xg01/zscl>4200) & (xg01/zscl<5000) & (fy01>0) & (ey01>0)
-    print('Median SN at 3400-3800 is;', np.median((fy01/ey01)[con4000b]))
-    print('Median SN at 4200-5000 is;', np.median((fy01/ey01)[con4000r]))
-    #print('SN of all pixels are;')
-    #print((fy01/ey01)[con4000b])
+        con4000b = (xg01/zscl>3400) & (xg01/zscl<3800) & (fy01>0) & (ey01>0)
+        con4000r = (xg01/zscl>4200) & (xg01/zscl<5000) & (fy01>0) & (ey01>0)
+        print('Median SN at 3400-3800 is;', np.median((fy01/ey01)[con4000b]))
+        print('Median SN at 4200-5000 is;', np.median((fy01/ey01)[con4000r]))
 
     # From MCMC chain
     file = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
@@ -2363,7 +2356,8 @@ save_sed=True, inputs=False, nmc2=300):
         if not f_dust:
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
             ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-            ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            if f_grsm:
+                ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Dust component;
         if f_dust:
@@ -2379,7 +2373,9 @@ save_sed=True, inputs=False, nmc2=300):
                 ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float32')
             model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-            ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            if f_grsm:
+                ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
     # plot BB model;
@@ -2403,8 +2399,10 @@ save_sed=True, inputs=False, nmc2=300):
         #con = (x1_tot<10*1e8) # AA
         #print(x1_tot[con], model_tot[con])
         lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, model_tot*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
-        ax1.plot(x1_tot, model_tot*c/np.square(x1_tot)/d, color='k')
+        #ax1.plot(x1_tot, model_tot*c/np.square(x1_tot)/d, color='k')
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
+        zorder=2, alpha=1.0, marker='s', s=10)
+        ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
         zorder=2, alpha=1.0, marker='s', s=10)
         if save_sed == True:
             fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
@@ -2448,20 +2446,27 @@ save_sed=True, inputs=False, nmc2=300):
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
         hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID0), overwrite=True)
 
-
     #######################################
-    ax2t.set_xlabel('RF wavelength ($\mathrm{\mu m}$)')
-    ax2t.set_xlim(3600, 5400)
-    conaa = (x0/zscl>3300) & (x0/zscl<6000)
-    ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.2
-    yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.2
-    ax2t.set_ylim(yminzoom, ymaxzoom)
-    #ax2t.legend(loc=1, ncol=2, fontsize=7)
     ax1.xaxis.labelpad = -3
-    ax2t.xaxis.labelpad = -2
-    ax2t.set_yticklabels(())
-    ax2t.set_xticks([4000, 5000])
-    ax2t.set_xticklabels(['0.4', '0.5'])
+    if f_grsm:
+        ax2t.set_xlabel('RF wavelength ($\mathrm{\mu m}$)')
+        ax2t.set_xlim(3600, 5400)
+        conaa = (x0/zscl>3300) & (x0/zscl<6000)
+        ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.2
+        yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.2
+        ax2t.set_ylim(yminzoom, ymaxzoom)
+
+        ax2t.xaxis.labelpad = -2
+        ax2t.set_yticklabels(())
+        ax2t.set_xticks([4000, 5000])
+        ax2t.set_xticklabels(['0.4', '0.5'])
+
+    if f_dust:
+        ax3t.set_xlim(1e5, 2e7)
+        ax3t.set_xscale('log')
+        #ax3t.set_yticklabels(())
+        ax3t.set_xticks([100000, 1000000, 10000000])
+        ax3t.set_xticklabels(['10', '100', '1000'])
 
     ###############
     # Line name
@@ -2469,47 +2474,47 @@ save_sed=True, inputs=False, nmc2=300):
     LN0 = ['Mg2', '$NeIV$', '[OII]', 'H$\theta$', 'H$\eta$', 'Ne3?', 'H$\delta$', 'H$\gamma$', 'H$\\beta$', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
     LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 5175, 6563, 6717, 6731]
     fsl = 9 # Fontsize for line
-    try:
-        for ii in range(len(LW)):
-            ll = np.argmin(np.abs(LW[ii]-LW0[:]))
+    if f_grsm:
+        try:
+            for ii in range(len(LW)):
+                ll = np.argmin(np.abs(LW[ii]-LW0[:]))
 
-            if ll == 2 and FLW[ii] == 1: # FLW is the flag for line fitting.
-                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                xxl = yyl * 0 + LW0[ll]
-                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                ax2t.text(xxl[0]-130, yyl[0]*1.28, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+                if ll == 2 and FLW[ii] == 1: # FLW is the flag for line fitting.
+                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
+                    xxl = yyl * 0 + LW0[ll]
+                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                    ax2t.text(xxl[0]-130, yyl[0]*1.28, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
 
-            elif (ll == 9 and FLW[ii] == 1):
-                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                xxl = yyl * 0 + LW0[ll]
-                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                elif (ll == 9 and FLW[ii] == 1):
+                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
+                    xxl = yyl * 0 + LW0[ll]
+                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
 
-            elif (ll == 10 and FLW[ii] == 1):
-                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                xxl = yyl * 0 + LW0[ll]
-                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                ax2t.text(xxl[0]+40, yyl[0]*0.75, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+                elif (ll == 10 and FLW[ii] == 1):
+                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
+                    xxl = yyl * 0 + LW0[ll]
+                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                    ax2t.text(xxl[0]+40, yyl[0]*0.75, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
 
-            elif FLW[ii] == 1 and (ll == 6 or ll == 7 or ll == 8):
-                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
-                xxl = yyl * 0 + LW0[ll]
-                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+                elif FLW[ii] == 1 and (ll == 6 or ll == 7 or ll == 8):
+                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
+                    xxl = yyl * 0 + LW0[ll]
+                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                    ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
 
-            elif ll == 6 or ll == 7 or ll == 8:
-                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
-                xxl = yyl * 0 + LW0[ll]
-                ax2t.errorbar(xxl, yyl, lw=0.5, color='gray', zorder=1, alpha=1., label='', capsize=0)
-                ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color='gray', fontsize=9, rotation=90)
+                elif ll == 6 or ll == 7 or ll == 8:
+                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
+                    xxl = yyl * 0 + LW0[ll]
+                    ax2t.errorbar(xxl, yyl, lw=0.5, color='gray', zorder=1, alpha=1., label='', capsize=0)
+                    ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color='gray', fontsize=9, rotation=90)
 
-            elif FLW[ii] == 1:
-                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.7,yminzoom+(ymaxzoom-yminzoom)*.95, 0.01)
-                xxl = yyl * 0 + LW0[ll]
-                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-    except:
-        pass
+                elif FLW[ii] == 1:
+                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.7,yminzoom+(ymaxzoom-yminzoom)*.95, 0.01)
+                    xxl = yyl * 0 + LW0[ll]
+                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                    ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+        except:
+            pass
 
     ####################
     # Plot Different Z
@@ -2542,8 +2547,8 @@ save_sed=True, inputs=False, nmc2=300):
                 ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=\ \ %.2f$'%(Zini[jj])) # Z here is Zinitial.
             else:
                 ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=%.2f$'%(Zini[jj])) # Z here is Zinitial.
-            ax2t.plot(x0_r/zscl, ysum_Z * c/ np.square(x0_r) / d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.5)
-
+            if f_grsm:
+                ax2t.plot(x0_r/zscl, ysum_Z * c/ np.square(x0_r) / d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.5)
 
     ################
     # RGB
@@ -2555,12 +2560,6 @@ save_sed=True, inputs=False, nmc2=300):
         axicon.imshow(rgb_array, interpolation='nearest', origin='upper')
         axicon.set_xticks([])
         axicon.set_yticks([])
-        #xxl = np.arange(0, twokpc, 0.01)
-        #axicon.errorbar(xxl + 0.2, xxl*0+0.2, lw=1., color='w', zorder=1, alpha=1., capsize=0)
-        #axicon.text(0.1, 1.5, '5kpc', color='w', fontsize=12)
-        #axicon.text(10, 10.0, '%s'%(ID0), color='w', fontsize=14)
-        #axicon.text(11, 10.0, '%s'%(ID0), color='w', fontsize=14)
-        #axicon.text(10, 11.0, '%s'%(ID0), color='w', fontsize=14)
     except:
         pass
     ####################
