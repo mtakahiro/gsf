@@ -100,6 +100,7 @@ class Analyze:
         G4300= np.zeros(int(mmax), dtype='float32')
         NaD  = np.zeros(int(mmax), dtype='float32')
         Hb   = np.zeros(int(mmax), dtype='float32')
+        Muv  = np.zeros(int(mmax), dtype='float32')
 
         samples1 = res.chain[:, :, :].reshape((-1, ndim))
         #samples  = samples1[int(nmc/2):]
@@ -170,6 +171,11 @@ class Analyze:
             bv[mm] = -2.5*np.log10(fb_cnv/fv_cnv)
             vj[mm] = -2.5*np.log10(fv_cnv/fj_cnv)
             zj[mm] = -2.5*np.log10(fz_cnv/fj_cnv)
+
+            # UV magnitude;
+            print('%s AA is used as UV reference.'%(xm_tmp[iiuv]))
+            mAB, MAB = magnitudes.magnitude_AB1450(zrecom, model2_tmp, (zrecom+1.)*1450, **fidcosmo, nu_power=0.0)
+            print(mAB, MAB)
 
             '''
             AA_tmp_sum = 0
