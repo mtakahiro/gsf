@@ -482,7 +482,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
             spec_mul = np.zeros((Na, len(lm0)), dtype='float32')
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float32')
-            spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype='float32')
+            spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype='float64')
 
             ftmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
             ltmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
@@ -494,6 +494,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             Ls    = np.zeros(Na, dtype='float32')
             ms[:] = mshdu.data['ms_'+str(zz)][:] # [:] is necessary.
             Ls[:] = mshdu.data['Ls_'+str(zz)][:]
+            Fuv   = np.zeros(Na, dtype='float32')
 
             for ss in range(Na):
                 wave = spechdu.data['wavelength']
@@ -528,11 +529,17 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 #ftmpbb[ss,:]           *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 #ftmpbb[ss,:]      *= (1./Ls[ss])*stmp_common
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common
+                spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss]                 *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
                 if f_spec:
-                    ftmp_nu_int[ss,:]  = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                    ftmp_nu_int[ss,:]      = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
+
+                # UV magnitude;
+                #print('%s AA is used as UV reference.'%(xm_tmp[iiuv]))
+                #print(ms[ss], (Lsun/(4.*np.pi*DL**2/(1.+zbest))))
+                #print('m-M=',5*np.log10(DL/Mpc_cm*1e6/10))
+
                 ##########################################
                 # Writing out the templates to fits table.
                 ##########################################
@@ -556,9 +563,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
                 colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_ap)
                 col00.append(colspec)
-
                 colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_mul_nu_conv[ss,:])
                 col01.append(colspec_all)
+
 
             #########################
             # Summarize the ML

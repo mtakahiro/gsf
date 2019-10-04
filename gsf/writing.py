@@ -45,15 +45,28 @@ class Analyze:
         self.DIR_FILT = inputs['DIR_FILT']
         self.DIR_TEMP = inputs['DIR_TEMP']
 
+        # If FIR data;
+        try:
+            self.DFILT = inputs['FIR_FILTER'] # filter band string.
+            self.DFILT = [x.strip() for x in self.DFILT.split(',')]
+            #self.DFWFILT     = fil_fwhm(DFILT, DIR_FILT)
+            self.CAT_BB_DUST = inputs['CAT_BB_DUST']
+            self.DT0 = float(inputs['TDUST_LOW'])
+            self.DT1 = float(inputs['TDUST_HIG'])
+            self.dDT = float(inputs['TDUST_DEL'])
+            self.f_dust = True
+            self.NDIM += 2
+            print('FIR is implemented.')
+        except:
+            print('No FIR is implemented.')
+            self.f_dust = False
+            pass
+
         try:
             LW0 = inputs['LINE']
             self.LW0 = [float(x.strip()) for x in LW0.split(',')]
         except:
             self.LW0 = []
-
-        #self.zgal = float(inputs['ZGAL'])
-        #Cz0  = float(inputs['CZ0'])
-        #Cz1  = float(inputs['CZ1'])
 
     def get_param(self, res, lib_all, zrecom, Czrec0, Czrec1, z_cz, scl_cz0, scl_cz1, fitc, tau0=[0.1,0.2,0.3], tcalc=1.):
         print('##########################')
@@ -75,7 +88,6 @@ class Analyze:
         # Filters
         import os.path
         home = os.path.expanduser('~')
-        #fil_path = home + '/FILT/'
         fil_path = self.DIR_FILT
         nmc  = self.NMC
         ndim = self.NDIM
@@ -100,10 +112,9 @@ class Analyze:
         G4300= np.zeros(int(mmax), dtype='float32')
         NaD  = np.zeros(int(mmax), dtype='float32')
         Hb   = np.zeros(int(mmax), dtype='float32')
-        Muv  = np.zeros(int(mmax), dtype='float32')
+        #Muv  = np.zeros(int(mmax), dtype='float32')
 
         samples1 = res.chain[:, :, :].reshape((-1, ndim))
-        #samples  = samples1[int(nmc/2):]
         samples  = samples1[:] # Already reduced.
 
         ##############################
@@ -113,6 +124,10 @@ class Analyze:
         Zmc  = np.zeros((len(age),3), dtype='float32')
         Zb   = np.zeros(len(age), dtype='float32')
         NZbest = np.zeros(len(age), dtype='int')
+        if self.f_dust:
+            Mdustmc = np.zeros(3, dtype='float32')
+            nTdustmc= np.zeros(3, dtype='float32')
+            Tdustmc = np.zeros(3, dtype='float32')
 
         f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
         sedpar = f0[1]
@@ -137,16 +152,18 @@ class Analyze:
         Avmc  = np.percentile(res.flatchain['Av'], [16,50,84])
         AAvmc = [Avmc]
         try:
-            zmc   = np.percentile(res.flatchain['zmc'], [16,50,84])
+            zmc = np.percentile(res.flatchain['zmc'], [16,50,84])
         except:
-            zmc   = z_cz
+            zmc = z_cz
 
         AA_tmp = np.zeros(len(age), dtype='float32')
         ZZ_tmp = np.zeros(len(age), dtype='float32')
         NZbest = np.zeros(len(age), dtype='int')
+        DIR_TMP= self.DIR_TEMP
 
-        DIR_TMP = self.DIR_TEMP
-        #for kk in range(int(nmc/5)):
+        #
+        # Get mcmc model templates, plus some indicies.
+        #
         for mm in range(0,mmax,1):
             par_tmp   = samples[np.random.randint(len(samples))]
             AA_tmp[:] = par_tmp[:len(age)]
@@ -156,9 +173,17 @@ class Analyze:
             else:
                 ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+1]
             model2, xm_tmp = fnc.tmp04_samp(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
-            lmrest = xm_tmp / (1. + zrecom)
 
-            band0 = ['u','b','v','j','sz']
+            '''
+            # not necessary here.
+            if self.f_dust:
+                model2_dust, xm_tmp_dust = fnc.tmp04_dust(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
+                model2 = np.append(model2,model2_dust)
+                xm_tmp = np.append(xm_tmp,xm_tmp_dust)
+            '''
+
+            lmrest = xm_tmp / (1. + zrecom)
+            band0  = ['u','b','v','j','sz']
             lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # f0 in fnu
             fu_cnv = fconv[0]
             fb_cnv = fconv[1]
@@ -171,11 +196,6 @@ class Analyze:
             bv[mm] = -2.5*np.log10(fb_cnv/fv_cnv)
             vj[mm] = -2.5*np.log10(fv_cnv/fj_cnv)
             zj[mm] = -2.5*np.log10(fz_cnv/fj_cnv)
-
-            # UV magnitude;
-            print('%s AA is used as UV reference.'%(xm_tmp[iiuv]))
-            mAB, MAB = magnitudes.magnitude_AB1450(zrecom, model2_tmp, (zrecom+1.)*1450, **fidcosmo, nu_power=0.0)
-            print(mAB, MAB)
 
             '''
             AA_tmp_sum = 0
@@ -194,7 +214,6 @@ class Analyze:
                 Mg1[mm]  += f0[1].data['Mg1_'+str(NZbest[ii])][ii]    * AA_tmp[ii]
                 Mg2[mm]  += f0[1].data['Mg2_'+str(NZbest[ii])][ii]    * AA_tmp[ii]
 
-
             Mgb[mm]   /= AA_tmp_sum
             Fe52[mm]  /= AA_tmp_sum
             Fe53[mm]  /= AA_tmp_sum
@@ -204,7 +223,6 @@ class Analyze:
             Mg1[mm]   /= AA_tmp_sum
             Mg2[mm]   /= AA_tmp_sum
             '''
-            #mm += 1
 
         conper = (Dn4>0)
         Dnmc = np.percentile(Dn4[conper], [16,50,84])
@@ -222,9 +240,9 @@ class Analyze:
         Mg1mc  = np.percentile(Mg1[conper], [16,50,84])
         Mg2mc  = np.percentile(Mg2[conper], [16,50,84])
 
-        ######################
+        ############
         # Get SN.
-        ######################
+        ############
         file = 'templates/spec_obs_' + ID0 + '_PA' + PA0 + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
@@ -269,6 +287,17 @@ class Analyze:
 
         for aa in range(len(Zmc)):
             col50 = fits.Column(name='Z'+str(aa), format='E', unit='logZsun', array=Zmc[aa][:])
+            col01.append(col50)
+
+        if self.f_dust:
+            Mdustmc[:]  = np.percentile(res.flatchain['MDUST'], [16,50,84])
+            nTdustmc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
+            Tdustmc[:]  = self.DT0 + self.dDT * nTdustmc[:]
+            col50 = fits.Column(name='MDUST', format='E', unit='Msun', array=Mdustmc[:])
+            col01.append(col50)
+            col50 = fits.Column(name='nTDUST', format='E', unit='K', array=nTdustmc[:])
+            col01.append(col50)
+            col50 = fits.Column(name='TDUST', format='E', unit='K', array=Tdustmc[:])
             col01.append(col50)
 
         # zmc

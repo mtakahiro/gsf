@@ -18,6 +18,19 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
+def get_Muv(lmtmp, ftmp, lmin=1400, lmax=1500):
+    #
+    # lmtmp: Rest frame wave (AA)
+    # ftmp: Fnu ()
+    #
+    con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
+    if len(lmtmp[con])>0:
+        lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
+        I1  = simps(spec/lamS**2*c*1.0*lamS,lamS)   #Denominator for Fnu
+        I2  = simps(1.0/lamS,lamS)                  #Numerator
+        fnu = I1/I2/c         #Average flux density
+    return fnu
+
 def data_int(lmobs, lmtmp, ftmp):
     # lmobs: Observed wavelength.
     # lmtmp, ftmp: Those to be interpolated.

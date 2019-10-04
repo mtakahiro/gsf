@@ -2330,6 +2330,13 @@ save_sed=True, inputs=False, nmc2=300):
     ytmp = np.zeros((nmc2,len(ysum)), dtype='float32')
     ytmpmax = np.zeros(len(ysum), dtype='float32')
     ytmpmin = np.zeros(len(ysum), dtype='float32')
+
+    # MUV;
+    Mpc_cm  = 3.08568025e+24 # cm/Mpc
+    DL      = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
+    Fuv     = np.zeros(nmc2, dtype='float32')
+
     for kk in range(0,nmc2,1):
         nr = np.random.randint(len(samples))
         Av_tmp = samples['Av'][nr]
@@ -2358,6 +2365,7 @@ save_sed=True, inputs=False, nmc2=300):
             ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             if f_grsm:
                 ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            Fuv[kk] = get_Muv(xm_tmp[:]/(1.+zbes), fm_tmp * (DL**2/(1.+zbes)) / (DL10**2), 1400, 1500)
 
         # Dust component;
         if f_dust:
@@ -2377,6 +2385,7 @@ save_sed=True, inputs=False, nmc2=300):
                 ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
             ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
+            Fuv[kk] = get_Muv(x1_tot[:]/(1.+zbes), model_tot * (DL**2/(1.+zbes)) / (DL10**2), 1250, 1650)
 
     # plot BB model;
     #from .maketmp_filt import filconv
@@ -2441,6 +2450,11 @@ save_sed=True, inputs=False, nmc2=300):
         hdr = fits.Header()
         hdr['redshift'] = zbes
         hdr['id'] = ID0
+
+        MUV = -2.5 * np.log10(Fuv[:]) + 25.0
+        hdr['MUV16'] = np.percentile(MUV[:],16)
+        hdr['MUV50'] = np.percentile(MUV[:],50)
+        hdr['MUV84'] = np.percentile(MUV[:],84)
 
         colspec = fits.ColDefs(col00)
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
