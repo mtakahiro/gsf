@@ -617,21 +617,29 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             nu_d  = c / lambda_d # 1/s = Hz
             BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
             # in side exp: J*s * (1/s) / (J/K * K) = 1;
+
+            # if optically thin;
+            #kappa = nu_d ** beta_d
             fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * kappa * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
             #fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
             fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
             fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
-            fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
-            print('Somehow, this crazy scale is required...')
-            fnu_d *= 1e25
-            colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=fnu_d)
+
+            #fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
+            #print('Somehow, this crazy scale is required...')
+            #fnu_d *= 1e25
+            colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
             col03.append(colspec_d)
+            #print('At z=%.2f, luminosity surface is %.2e cm^2'%(zbest,4.*np.pi*DL**2/(1.+zbest)))
 
             # Convolution;
             #ltmpbb_d, ftmpbb_d = filconv(DFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
             ALLFILT = np.append(SFILT,DFILT)
             ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
             if False:
+                #plt.plot(nu_d/1e9/(1.+zbest),fnu_d)
+                #nubb_d = c / ltmpbb_d
+                #plt.plot(nubb_d/1e9, ftmpbb_d, 'x')
                 plt.plot(lambda_d/1e4,fnu_d)
                 plt.plot(lambda_d*(1.+zbest)/1e4,fnu_d)
                 plt.plot(ltmpbb_d/1e4, ftmpbb_d, 'x')
@@ -644,8 +652,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 col04 = [col3, col4]
             colspec_db = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=ftmpbb_d)
             col04.append(colspec_db)
-            #plt.plot(x1_dust,model_dust,'r.')
-            #plt.show()
 
         coldefs_d = fits.ColDefs(col03)
         hdu4 = fits.BinTableHDU.from_columns(coldefs_d)

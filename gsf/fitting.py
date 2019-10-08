@@ -660,7 +660,7 @@ class Mainbody():
                     Tdust = np.arange(DT0,DT1,dDT)
                     #fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust))
                     fit_params.add('TDUST', value=1, min=0, max=len(Tdust)-1)
-                    fit_params.add('MDUST', value=1., min=0, max=1e10)
+                    fit_params.add('MDUST', value=1e6, min=0, max=1e10)
                     ndim += 2
 
                     # Append data;
