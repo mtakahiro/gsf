@@ -39,7 +39,7 @@ def loadcpkl(cpklfile):
 
 
 ###############
-def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None):
+def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0):
     #
     #
     #
@@ -55,7 +55,7 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     lmmin = 10.3
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage) # Set up the number of Age/ZZ
+    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
     age = np.asarray(age)

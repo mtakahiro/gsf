@@ -17,7 +17,6 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
-
 def get_Muv(lmtmp, ftmp, lmin=1400, lmax=1500):
     #
     # lmtmp: Rest frame wave (AA)
@@ -371,7 +370,6 @@ def dust_mw(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
     return fl_cor, lmmc*10000., nrd
-
 
 '''
 def dust_calz3(lm, fl, Av, nr): # input lm is at RF.

@@ -122,12 +122,21 @@ def main(parfile, fplt):
         LW0 = []
 
     #
+    # Dust model specification;
+    #
+    try:
+        dust_model = int(inputs['DUST_MODEL'])
+    except:
+        dust_model = 0
+
+
+    #
     flag_suc = 1
     zrecom   = zgal
     Czrec0   = Cz0
     Czrec1   = Cz1
 
-    fnc  = Func(Zall, nage) # Set up the number of Age/ZZ
+    fnc  = Func(Zall, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
 
 
@@ -193,8 +202,8 @@ def main(parfile, fplt):
     if fplt <= 3:
         from .plot_sfh import plot_sfh_pcl2
         from .plot_Zevo import plot_sed_Z
-        plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs)
-        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=30)
+        plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs, dust_model=dust_model)
+        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=30, dust_model=dust_model)
 
 
     '''
