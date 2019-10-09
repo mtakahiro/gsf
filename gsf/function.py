@@ -144,6 +144,7 @@ def savecpkl(data, cpklfile, verbose=True):
     cPickle.dump(data, f, 2)
     f.close()
 
+'''
 def dust_MW(lm, fl, Av): # input lm is at RF.
     # By Cardelli89
     Rv = 3.1 #\pm0.80 from Calzetti+00
@@ -183,7 +184,6 @@ def dust_MW(lm, fl, Av): # input lm is at RF.
             print('Error in dust attenuation. at', xx, lm[ii0], lmm)
     fl_cor = fl * np.power(10,(-0.4*Alam))
     return fl_cor
-
 # This function is much better than previous,
 # but is hard to impliment for the current version.
 def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
@@ -251,18 +251,19 @@ def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
     fl_cor = flc * np.power(10,(-0.4*Alam))
 
     return fl_cor, lmmc*10000., nrd
+'''
 
 # This function is much better than previous,
 # but is hard to impliment for the current version.
-def dust_calz2(lm, fl, Av, nr):
+def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
     #
     # lm (float array) : wavelength, at RF.
     # fl (float array) : fnu
     # Av (float)       : mag
     # nr (int array)   : index, to be used for sorting.
+    # Rv: from Calzetti+00
+    # lmlimu: Upperlimit. 2.2 in Calz+00
     #
-    Rv = 4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
     Kl = np.zeros(len(lm), dtype='float32')
 
     lmm  = lm/10000. # in micron
@@ -299,6 +300,78 @@ def dust_calz2(lm, fl, Av, nr):
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
     return fl_cor, lmmc*10000., nrd
+
+def dust_mw(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
+    #
+    # lm (float array) : wavelength, at RF, in AA.
+    # fl (float array) : fnu
+    # Av (float)       : mag
+    # nr (int array)   : index, to be used for sorting.
+    # Rv: from Calzetti+00
+    # lmlimu: Upperlimit. 2.2 in Calz+00
+    #
+    Kl = np.zeros(len(lm), dtype='float32')
+
+    lmm  = lm/10000. # into micron
+    xx   = 1./lmm
+    con0 = (xx<1.1)
+    con1 = (xx>=1.1) & (xx<3.3)
+    con2 = (xx>=3.3) & (xx<5.9)
+    con3 = (xx>=5.9) & (xx<8.0)
+    con4 = (xx>=8.0)
+
+    nr0 = nr[con0]
+    nr1 = nr[con1]
+    nr2 = nr[con2]
+    nr3 = nr[con3]
+    nr4 = nr[con4]
+
+    lmm0 = lmm[con0]
+    lmm1 = lmm[con1]
+    lmm2 = lmm[con2]
+    lmm3 = lmm[con3]
+    lmm4 = lmm[con4]
+
+    fl0 = fl[con0]
+    fl1 = fl[con1]
+    fl2 = fl[con2]
+    fl3 = fl[con3]
+    fl4 = fl[con4]
+
+    ax0 =  0.574 * (1./lmm0)**1.61
+    bx0 = -0.527 * (1./lmm0)**1.61
+
+    yy  = ((1./lmm1) - 1.82)
+    ax1 = 1. + 0.17699 * yy - 0.50447 * yy**2 - 0.02427 * yy**3 + 0.72085 * yy**4\
+          + 0.01979 * yy**5 - 0.77530 * yy**6 + 0.32999 * yy**7
+    bx1 = 1.41338 * yy + 2.28305 * yy**2 + 1.07233 * yy**3 - 5.38434 * yy**4\
+          - 0.62251 * yy**5 + 5.30260 * yy**6 - 2.09002 * yy**7
+
+    Fax2 = Fbx2 = lmm2 * 0
+    ax2  = 1.752 - 0.316 * (1./lmm2) - 0.104/(((1./lmm2)-4.67)**2+0.341) + Fax2
+    bx2  = -3.090 + 1.825 * (1./lmm2) + 1.206/(((1./lmm2)-4.62)**2+0.263) + Fbx2
+
+    Fax3 = -0.04473 * ((1./lmm3) - 5.9)**2 - 0.009779 * ((1./lmm3) - 5.9)**3
+    Fbx3 = 0.2130 * ((1./lmm3) - 5.9)**2 + 0.1207 * ((1./lmm3) - 5.9)**3
+    ax3  = 1.752 - 0.316 * (1./lmm3) - 0.104/(((1./lmm3)-4.67)**2+0.341) + Fax3
+    bx3  = -3.090 + 1.825 * (1./lmm3) + 1.206/(((1./lmm3)-4.62)**2+0.263) + Fbx3
+
+    Fax4 = -0.04473 * ((1./lmm4) - 5.9)**2 - 0.009779 * ((1./lmm4) - 5.9)**3
+    Fbx4 = 0.2130 * ((1./lmm4) - 5.9)**2 + 0.1207 * ((1./lmm4) - 5.9)**3
+    ax4  = 1.752 - 0.316 * (1./lmm4) - 0.104/(((1./lmm4)-4.67)**2+0.341) + Fax4
+    bx4  = -3.090 + 1.825 * (1./lmm4) + 1.206/(((1./lmm4)-4.62)**2+0.263) + Fbx4
+
+    nrd  = np.concatenate([nr0,nr1,nr2,nr3,nr4])
+    lmmc = np.concatenate([lmm0,lmm1,lmm2,lmm3,lmm4])
+    flc  = np.concatenate([fl0,fl1,fl2,fl3,fl4])
+    ax   = np.concatenate([ax0,ax1,ax2,ax3,ax4])
+    bx   = np.concatenate([bx0,bx1,bx2,bx3,bx4])
+
+    Alam   = Av * (ax + bx / Rv)
+    fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    return fl_cor, lmmc*10000., nrd
+
 
 '''
 def dust_calz3(lm, fl, Av, nr): # input lm is at RF.
@@ -340,7 +413,6 @@ def dust_calz3(lm, fl, Av, nr): # input lm is at RF.
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
     return fl_cor, lmmc*10000., nrd
-'''
 
 def dust_calz(lm, fl, Av): # input lm is at RF.
     Rv = 4.05 #\pm0.80 from Calzetti+00
@@ -359,6 +431,7 @@ def dust_calz(lm, fl, Av): # input lm is at RF.
     Alam   = Kl * Av / Rv
     fl_cor = fl * np.power(10,(-0.4*Alam))
     return fl_cor
+'''
 
 def check_line(data,wave,wht,model):
     R_grs = 50
@@ -440,40 +513,6 @@ def filconv_cen(band0, l0, f0): # f0 in fnu
             fnu[ii] = 0
 
     return lcen, fnu
-
-# Convolution of templates with filter response curves.
-'''
-def filconv(f00, l00, ffil, lfil): # f0 in fnu
-    con00 = (l00>3000) & (l00<14000) # For U to J band calculation.
-    f0 = f00[con00]
-    l0 = l00[con00]
-
-    lmin = np.min(lfil)
-    lmax = np.max(lfil)
-    imin = 0
-    imax = 0
-
-    lamS,spec = l0, f0 #Two columns with wavelength and flux density for filter.
-    lamF,filt = lfil, ffil #Two columns with wavelength and response in the range [0,1]
-    filt_int  = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
-    filtSpec  = filt_int * spec #Calculate throughput
-    wht       = 1. #/(er1[con_rf])**2
-
-    if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
-        I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-        #I1  = simps(spec*filt_int*lamS,lamS)   #Denominator for Flambda
-        I2  = simps(filt_int/lamS,lamS)                  #Numerator
-        fnu = I1/I2/c         #Average flux density
-    else:
-        I1  = 0
-        I2  = 0
-        fnu = 0
-
-    if fnu>0:
-        return fnu
-    else:
-        return 1e-99
-'''
 
 def filconv(band0, l0, f0, DIR, fw=False):
     #

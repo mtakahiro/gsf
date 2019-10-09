@@ -11,10 +11,11 @@ m0set  = 25.0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 class Func:
-    def __init__(self, ZZ, AA):
+    def __init__(self, ZZ, AA, dust_model='calz'):
         self.ZZ   = ZZ
         self.AA   = AA
         self.delZ = ZZ[1] - ZZ[0]
+        self.dust_model = dust_model
 
     def demo(self):
         ZZ = self.ZZ
@@ -28,9 +29,7 @@ class Func:
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
-
         bfnc = Basic(ZZ)
-
         if fall == 0:
             app = ''
         elif fall == 1:
@@ -61,7 +60,6 @@ class Func:
                     colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
 
                     lib[:,colnall] = hdu0.data[colname]
-
 
         return lib
 
@@ -145,21 +143,20 @@ class Func:
 
         if aa >0 and aa == kk:
             colname = 'fspec_' + str(zz) + '_0' + '_' + str(pp)# + '_0'
-        #print(colname)
 
         yy0 = hdu0.data[colname]/Ls[aa]
-
-        def flamtonu(lam, flam):
-            Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
-            fnu  = flam * Ctmp
-            return fnu
-
-        yy = flamtonu(xx, yy0)
+        yy  = flamtonu(xx, yy0)
         lib[:,2] = yy[:]
 
-        yyd, xxd, nrd = dust_calz2(xx, yy, Av00, nr)
-        xxd *= (1.+zgal)
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx, yy, Av00, nr)
+        else:
+            print('Dust model?')
+            yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
 
+        xxd *= (1.+zgal)
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
         nrd_yyd[:,0] = nrd[:]
         nrd_yyd[:,1] = yyd[:]
@@ -190,7 +187,12 @@ class Func:
         xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
         yy  = lib[:, coln]
 
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zgal), yy, Av00, nr)
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av00, nr)
+        else:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
         xxd *= (1.+zgal)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
@@ -255,8 +257,12 @@ class Func:
 
         xx = xx_s
         yy = yy_s
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
-        #yyd, xxd, nrd = yy, xx/(1.+zmc), nr #dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
+        else:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
@@ -349,7 +355,12 @@ class Func:
             xx_s = xx
             yy_s = yy
 
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
+        else:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
@@ -410,7 +421,12 @@ class Func:
             xx_s = xx
             yy_s = yy
 
-        yyd, xxd, nrd = dust_calz2(xx/(1.+zmc), yy, Av00, nr)
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
+        else:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')

@@ -161,9 +161,17 @@ class Mainbody():
         tau0 = inputs['TAU0']
         tau0 = [float(x.strip()) for x in tau0.split(',')]
 
+        #
+        # Dust model specification;
+        #
+        try:
+            dust_model = int(inputs['DUST_MODEL'])
+        except:
+            dust_model = 0
+
         from .function_class import Func
         from .basic_func import Basic
-        fnc  = Func(Zall, nage) # Set up the number of Age/ZZ
+        fnc  = Func(Zall, nage, dust_model=dust_model) # Set up the number of Age/ZZ
         bfnc = Basic(Zall)
 
         # Open ascii file and stock to array.
