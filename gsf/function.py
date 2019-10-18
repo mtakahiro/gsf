@@ -571,18 +571,13 @@ def filconv(band0, l0, f0, DIR, fw=False):
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
             filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
             wht       = 1.
-
-            if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
-                I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-                I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
+            I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            if I2>0:
                 fnu[ii] = I1/I2/c         #Average flux density
             else:
-                I1  = 0
-                I2  = 0
                 fnu[ii] = 0
         else:
-            I1  = 0
-            I2  = 0
             fnu[ii] = 0
 
     if fw == True:

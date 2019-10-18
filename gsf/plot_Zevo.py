@@ -2395,17 +2395,6 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
 
     # plot BB model;
     #from .maketmp_filt import filconv
-    if not f_dust:
-        lbb, fbb, lfwhm = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT, fw=True)
-        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='s', s=10)
-        if save_sed == True:
-            fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
-            fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
-            fw.write('# wave fnu       filt_width No.Filt\n')
-            fw.write('# (AA) (m0=25.0) (AA)       ()\n')
-            for ii in range(len(lbb)):
-                fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],SFILT[ii]))
-            fw.close()
     if f_dust:
         ALLFILT = np.append(SFILT,DFILT)
         lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, model_tot*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
@@ -2415,12 +2404,22 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
         zorder=2, alpha=1.0, marker='s', s=10)
         if save_sed == True:
             fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
-            #lbb_nu, fbb_nu, lfwhm = filconv(ALLFILT, lbb, fnu, DIR_FILT, fw=True)
             fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
             fw.write('# wave fnu       filt_width No.Filt\n')
             fw.write('# (AA) (m0=25.0) (AA)       ()\n')
             for ii in range(len(lbb)):
                 fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],ALLFILT[ii]))
+            fw.close()
+    else:
+        lbb, fbb, lfwhm = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT, fw=True)
+        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='s', s=10)
+        if save_sed == True:
+            fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
+            fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
+            fw.write('# wave fnu       filt_width No.Filt\n')
+            fw.write('# (AA) (m0=25.0) (AA)       ()\n')
+            for ii in range(len(lbb)):
+                fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],SFILT[ii]))
             fw.close()
 
     if save_sed == True:
