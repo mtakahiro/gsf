@@ -2335,7 +2335,10 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
     Mpc_cm  = 3.08568025e+24 # cm/Mpc
     DL      = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-    Fuv     = np.zeros(nmc2, dtype='float32')
+    Fuv     = np.zeros(nmc2, dtype='float64') # For Muv
+    Fuv28   = np.zeros(nmc2, dtype='float64') # For Fuv(1500-2800)
+    Lir     = np.zeros(nmc2, dtype='float64') # For L(8-1000um)
+    Cmznu   = 10**((48.6+mag0)/(-2.5)) # Conversion from m0_25 to fnu
 
     for kk in range(0,nmc2,1):
         nr = np.random.randint(len(samples))
@@ -2360,13 +2363,6 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
         else:
             ferr_tmp = 1.0
 
-        if not f_dust:
-            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-            ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-            if f_grsm:
-                ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
-            Fuv[kk] = get_Muv(xm_tmp[:]/(1.+zbes), fm_tmp * (DL**2/(1.+zbes)) / (DL10**2), 1400, 1500)
-
         # Dust component;
         if f_dust:
             if kk == 0:
@@ -2385,17 +2381,25 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
                 ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
             ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
-            Fuv[kk] = get_Muv(x1_tot[:]/(1.+zbes), model_tot * (DL**2/(1.+zbes)) / (DL10**2), 1250, 1650)
+            Fuv[kk]    = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
+            Fuv28[kk]  = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
+            Lir[kk]    = get_Fint(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
+        else:
+            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
+            ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            if f_grsm:
+                ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            Fuv[kk]   = get_Fuv(xm_tmp[:]/(1.+zbes), fm_tmp * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
+            Fuv28[kk] = get_Fuv(xm_tmp[:]/(1.+zbes), fm_tmp * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
+            Lir[kk]   = 0 #get_Fint(xm_tmp[:]/(1.+zbes), fm_tmp * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
 
     # plot BB model;
     #from .maketmp_filt import filconv
     if not f_dust:
         lbb, fbb, lfwhm = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT, fw=True)
-        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-        zorder=2, alpha=1.0, marker='s', s=10)
+        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='s', s=10)
         if save_sed == True:
             fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
-            #lbb_nu, fbb_nu, lfwhm = filconv(SFILT, lbb, fnu, DIR_FILT, fw=True)
             fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
             fw.write('# wave fnu       filt_width No.Filt\n')
             fw.write('# (AA) (m0=25.0) (AA)       ()\n')
@@ -2404,11 +2408,7 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
             fw.close()
     if f_dust:
         ALLFILT = np.append(SFILT,DFILT)
-        #print('Convolution is limited to lam < 10*1e4 AA')
-        #con = (x1_tot<10*1e8) # AA
-        #print(x1_tot[con], model_tot[con])
         lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, model_tot*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
-        #ax1.plot(x1_tot, model_tot*c/np.square(x1_tot)/d, color='k')
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
         zorder=2, alpha=1.0, marker='s', s=10)
         ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
@@ -2451,11 +2451,23 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
         hdr['redshift'] = zbes
         hdr['id'] = ID0
 
+        # Muv
         MUV = -2.5 * np.log10(Fuv[:]) + 25.0
         hdr['MUV16'] = np.percentile(MUV[:],16)
         hdr['MUV50'] = np.percentile(MUV[:],50)
         hdr['MUV84'] = np.percentile(MUV[:],84)
 
+        # Fuv (!= flux of Muv)
+        hdr['FUV16'] = np.percentile(Fuv28[:],16)
+        hdr['FUV50'] = np.percentile(Fuv28[:],50)
+        hdr['FUV84'] = np.percentile(Fuv28[:],84)
+
+        # LIR
+        hdr['LIR16'] = np.percentile(Lir[:],16)
+        hdr['LIR50'] = np.percentile(Lir[:],50)
+        hdr['LIR84'] = np.percentile(Lir[:],84)
+
+        # Write;
         colspec = fits.ColDefs(col00)
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
         hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID0), overwrite=True)
