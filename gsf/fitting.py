@@ -829,8 +829,8 @@ class Mainbody():
                 Tdust_mc = np.zeros(3, dtype='float32')
                 Mdust_mc[:] = np.percentile(res.flatchain['MDUST'], [16,50,84])
                 Tdust_mc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
-            print(Mdust_mc)
-            print(Tdust_mc)
+                print(Mdust_mc)
+                print(Tdust_mc)
 
             ####################
             # MCMC corner plot.

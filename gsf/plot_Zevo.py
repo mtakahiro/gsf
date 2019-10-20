@@ -1842,8 +1842,8 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
     ZZ50 = np.sum(Z50*A50)/np.sum(A50)
 
     # FIR Dust;
-    #try:
-    if True:
+    try:
+    #if True:
         MD16 = hdul[1].data['MDUST'][0]
         MD50 = hdul[1].data['MDUST'][1]
         MD84 = hdul[1].data['MDUST'][2]
@@ -1858,8 +1858,8 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         print('Total dust mass is %.2e'%(MD50))
         f_dust = True
-    #except:
-    #    f_dust = False
+    except:
+        f_dust = False
 
     chi   = hdul[1].data['chi'][0]
     chin  = hdul[1].data['chi'][1]
