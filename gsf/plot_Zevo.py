@@ -2046,6 +2046,8 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
         y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        #ax1.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        #ax3t.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
         # data;
         ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
@@ -2075,6 +2077,10 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
             uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
         except:
             pass
+
+        #print(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d)
+        #print(np.max(y0d * c/ np.square(x0d) / d))
+        #plt.show()
 
     conw = (wht3>0)
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
@@ -2370,7 +2376,6 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
                 par.add('MDUST',value=samples['MDUST'][nr])
                 par.add('TDUST',value=samples['TDUST'][nr])
             model_dust, x1_dust = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
-            #ax1.plot(x1_dust, model_dust * c/ np.square(x1_dust) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
@@ -2397,6 +2402,8 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
     #from .maketmp_filt import filconv
     if f_dust:
         ALLFILT = np.append(SFILT,DFILT)
+        #for ii in range(len(x1_tot)):
+        #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
         lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, model_tot*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
         zorder=2, alpha=1.0, marker='s', s=10)
@@ -2487,11 +2494,20 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
         ax2t.set_xticklabels(['0.4', '0.5'])
 
     if f_dust:
+        try:
+            contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
+            #y3min, y3max = -.2*np.max(fybbd[contmp]*c/np.square(xbbd[contmp])/d), np.max((fybbd)[contmp]*c/np.square(xbbd[contmp])/d)*1.1
+            y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*1.1
+            ax3t.set_ylim(y3min, y3max)
+        except:
+            print('y3 limit is not specified.')
+            pass
         ax3t.set_xlim(1e5, 2e7)
         ax3t.set_xscale('log')
         #ax3t.set_yticklabels(())
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
+        #plt.show()
 
     ###############
     # Line name

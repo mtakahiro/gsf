@@ -624,10 +624,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             #fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
             fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
             fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
-
             #fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
-            #print('Somehow, this crazy scale is required...')
-            #fnu_d *= 1e25
+            print('Somehow, this crazy scale is required...')
+            fnu_d *= 1e40
             colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
             col03.append(colspec_d)
             #print('At z=%.2f, luminosity surface is %.2e cm^2'%(zbest,4.*np.pi*DL**2/(1.+zbest)))

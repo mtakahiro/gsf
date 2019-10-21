@@ -253,6 +253,15 @@ class Mainbody():
                 f = 0 # temporary... (if f is param, then take from vals dictionary.)
             con_res = (model>0) & (wht2>0) #& (fy>0)
             sig     = np.sqrt(1./wht2+f**2*model**2)
+
+            '''
+            contmp = x1>1e6 & (wht2>0)
+            try:
+                print(x1[contmp],model[contmp],fy[contmp],np.log10(vals['MDUST']))
+            except:
+                pass
+            '''
+            
             if not out:
                 if fy is None:
                     print('Data is none')
@@ -536,6 +545,7 @@ class Mainbody():
             print('\n\n')
 
         except:
+            print('z fit failed. No spectral data set?')
             try:
                 ezl = float(inputs['EZL'])
                 ezu = float(inputs['EZU'])
@@ -566,7 +576,6 @@ class Mainbody():
             print('Guassian fitting to z distribution failed.')
             f_fitgauss=0
         '''
-        print('Guassian fitting to z distribution failed.')
         f_fitgauss=0
 
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
@@ -666,20 +675,12 @@ class Mainbody():
                 #####################
                 if f_dust:
                     Tdust = np.arange(DT0,DT1,dDT)
-                    #fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust))
-                    fit_params.add('TDUST', value=1, min=0, max=len(Tdust)-1)
+                    fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust)-1)
+                    #fit_params.add('TDUST', value=1, min=0, max=len(Tdust)-1)
                     fit_params.add('MDUST', value=1e6, min=0, max=1e10)
                     ndim += 2
 
                     # Append data;
-                    '''
-                    dat_d = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
-                    NRbb = dat[:, 0]
-                    xbb  = dat[:, 1]
-                    fybb = dat[:, 2]
-                    eybb = dat[:, 3]
-                    exbb = dat[:, 4]
-                    '''
                     dat_d = np.loadtxt(DIR_TMP + 'spec_dust_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
                     x_d   = dat_d[:,1]
                     fy_d  = dat_d[:,2]

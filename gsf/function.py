@@ -543,10 +543,10 @@ def filconv(band0, l0, f0, DIR, fw=False):
     #
     # f0: in fnu
     #
-    fnu  = np.zeros(len(band0), dtype='float32')
-    lcen = np.zeros(len(band0), dtype='float32')
+    fnu  = np.zeros(len(band0), dtype='float64')
+    lcen = np.zeros(len(band0), dtype='float64')
     if fw == True:
-        fwhm = np.zeros(len(band0), dtype='float32')
+        fwhm = np.zeros(len(band0), dtype='float64')
 
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
@@ -565,14 +565,18 @@ def filconv(band0, l0, f0, DIR, fw=False):
         imax  = 0
 
         con = (l0>lmin) & (l0<lmax) & (f0>0)
-        if len(l0[con])>0:
+        if len(l0[con])>1:
             lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
             filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
             wht       = 1.
-            I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-            I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            # This does not work sometimes;
+            #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
+            #I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            delS = lamS[1]-lamS[0]
+            I1  = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
+            I2  = np.sum(filt_int/lamS*delS)                  #Numerator
             if I2>0:
                 fnu[ii] = I1/I2/c         #Average flux density
             else:
