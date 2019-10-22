@@ -243,7 +243,7 @@ class Analyze:
         ############
         # Get SN.
         ############
-        file = 'templates/spec_obs_' + ID0 + '_PA' + PA0 + '.cat'
+        file = DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA0 + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]

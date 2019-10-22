@@ -11,11 +11,12 @@ m0set  = 25.0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 class Func:
-    def __init__(self, ZZ, AA, dust_model='calz'):
+    def __init__(self, ZZ, AA, dust_model='calz', DIR_TMP='./templates/'):
         self.ZZ   = ZZ
         self.AA   = AA
         self.delZ = ZZ[1] - ZZ[0]
         self.dust_model = dust_model
+        self.DIR_TMP    = DIR_TMP
 
     def demo(self):
         ZZ = self.ZZ
@@ -35,7 +36,8 @@ class Func:
         elif fall == 1:
             app = 'all_'
 
-        DIR_TMP = './templates/'
+        #DIR_TMP = './templates/'
+        DIR_TMP = self.DIR_TMP
         for pp in range(len(tau0)):
             for zz in range(len(ZZ)):
                 Z    = ZZ[zz]
@@ -78,7 +80,7 @@ class Func:
         elif fall == 1:
             app = 'all_'
 
-        DIR_TMP = './templates/'
+        DIR_TMP = self.DIR_TMP #'./templates/'
         f0   = fits.open(DIR_TMP + 'spec_dust_' + app + ID0 + '_PA' + PA0 + '.fits')
         hdu0 = f0[1]
         nr   = hdu0.data['colnum']
@@ -112,7 +114,7 @@ class Func:
         AA = self.AA
         bfnc = Basic(ZZ)
         app = 'all'
-        DIR_TMP = './templates/'
+        DIR_TMP = self.DIR_TMP #'./templates/'
 
         #for pp in range(len(tau0)):
         pp = 0

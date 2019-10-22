@@ -442,7 +442,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     ####################################
     # Start generating templates
     ####################################
-    DIR_TMP = './templates/'
+    #DIR_TMP = './templates/'
+    DIR_TMP = inputs['DIR_TEMP']
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
     col00 = []

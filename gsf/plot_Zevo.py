@@ -1750,7 +1750,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
 def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
 f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, \
-save_sed=True, inputs=False, nmc2=300, dust_model=0):
+save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     #
     # Returns: plots.
     #
@@ -1759,7 +1759,7 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
     ################
@@ -1782,7 +1782,7 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0):
     ##################
     # Fitting Results
     ##################
-    DIR_TMP  = './templates/'
+    #DIR_TMP  = './templates/'
     DIR_FILT = fil_path
     if inputs:
         SFILT = inputs['FILTER'] # filter band string.

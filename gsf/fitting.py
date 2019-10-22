@@ -171,7 +171,7 @@ class Mainbody():
 
         from .function_class import Func
         from .basic_func import Basic
-        fnc  = Func(Zall, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+        fnc  = Func(Zall, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
         bfnc = Basic(Zall)
 
         # Open ascii file and stock to array.
@@ -261,7 +261,7 @@ class Mainbody():
             except:
                 pass
             '''
-            
+
             if not out:
                 if fy is None:
                     print('Data is none')
