@@ -621,22 +621,20 @@ def plot_sfh_pcl2(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     fwt.close()
 
     # For redshift
-    if zbes<2:
-        zred  = [zbes, 2, 3, 6]
-        #zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
-        zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
-    elif zbes<2.5:
-        zred  = [zbes, 2.5, 3, 6]
-        zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
-    elif zbes<3.:
-        zred  = [zbes, 3, 6]
-        zredl = ['$z_\mathrm{obs.}$', 3, 6]
-    elif zbes<6:
-        zred  = [zbes, 6]
-        zredl = ['$z_\mathrm{obs.}$', 6]
+    if zbes<4:
+        if zbes<2:
+            zred  = [zbes, 2, 3, 6]
+            #zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
+        elif zbes<2.5:
+            zred  = [zbes, 2.5, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
+        elif zbes<3.:
+            zred  = [zbes, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 3, 6]
     else:
-        zred  = [zbes, 12]
-        zredl = ['$z_\mathrm{obs.}$', 12]
+        zred  = [zbes, 6, 7, 9, 15]
+        zredl = ['$z_\mathrm{obs.}$', 6, 7, 9, 15]
 
     Tzz   = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
