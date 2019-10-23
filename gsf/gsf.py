@@ -203,7 +203,7 @@ def main(parfile, fplt):
         from .plot_sfh import plot_sfh_pcl2
         from .plot_Zevo import plot_sed_Z
         plot_sfh_pcl2(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs, dust_model=dust_model, DIR_TMP=DIR_TMP)
-        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=30, dust_model=dust_model, DIR_TMP=DIR_TMP)
+        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=3.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300, dust_model=dust_model, DIR_TMP=DIR_TMP)
 
 
     '''

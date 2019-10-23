@@ -2046,6 +2046,22 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
         y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+
+        '''
+        print(MD16,MD50,MD84)
+        print(nTD16,nTD50,nTD84)
+        # 16;
+        par['MDUST'].value=MD16
+        par['TDUST'].value=nTD16
+        y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        # 84
+        par['MDUST'].value=MD84
+        par['TDUST'].value=nTD84
+        y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        '''
+        print()
         #ax1.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
         #ax3t.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
@@ -2375,6 +2391,8 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
                 par  = Parameters()
                 par.add('MDUST',value=samples['MDUST'][nr])
                 par.add('TDUST',value=samples['TDUST'][nr])
+            par['MDUST'].value = samples['MDUST'][nr]
+            par['TDUST'].value = samples['TDUST'][nr]
             model_dust, x1_dust = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
