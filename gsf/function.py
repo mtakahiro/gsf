@@ -17,6 +17,27 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
+    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
+    con = (tt[:]-t0<0)
+    sfr[:][con] = minsfr
+    return sfr
+
+def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
+    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
+    con = (tt[:]-t0<0)
+    sfr[:][con] = minsfr
+    return sfr
+
+def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
+    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
+    con = (tt[:]<t0) | (tt[:]>tau)
+    sfr[:][con] = minsfr
+    return sfr
+
 def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     #
     # lmtmp: Rest frame wave (AA)
@@ -86,29 +107,6 @@ def get_filt(LIBFILT, NFILT):
 
 def get_fit(x,y,xer,yer, nsfh='Del.'):
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-
-    minsfr = 1e-10
-    def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1)): # tt = x_data
-        sfr = np.zeros(len(tt), dtype='float32') + minsfr
-        sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
-        con = (tt[:]-t0<0)
-        sfr[:][con] = minsfr
-        return sfr
-
-    def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1)):
-        sfr = np.zeros(len(tt), dtype='float32') + minsfr
-        sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
-        con = (tt[:]-t0<0)
-        sfr[:][con] = minsfr
-        return sfr
-
-    def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1)):
-        sfr = np.zeros(len(tt), dtype='float32') + minsfr
-        sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
-        con = (tt[:]<t0) | (tt[:]>tau+t0)
-        sfr[:][con] = minsfr
-        return sfr
-
 
     fit_params = Parameters()
     #fit_params.add('t0', value=1., min=0, max=np.max(tt))

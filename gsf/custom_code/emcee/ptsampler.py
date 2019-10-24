@@ -163,6 +163,8 @@ class PTSampler(Sampler):
         self.loglkwargs = loglkwargs
         self.logpkwargs = logpkwargs
 
+        self.f_disp = f_disp
+
         self.nwalkers = nwalkers
         self.dim = dim
 
@@ -298,11 +300,15 @@ class PTSampler(Sampler):
                                                                nsave))),
                                                     axis=2)
 
+        if not self.f_disp:
+            print('MC progress display mode is off.')
+            print('Enable f_disp=True in Minimizer.')
+
         for i in range(iterations):
 
             # #######################
             # TM added om 2018/09/21;
-            if ((i/iterations)*100)%1 == 0:
+            if self.f_disp and ((i/iterations)*100)%1 == 0:
                 t = datetime.datetime.now()
                 print('Progress:%d/%d @ %s'%(i,iterations,t))
             # #######################

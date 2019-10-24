@@ -15,7 +15,7 @@ import timeit
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, savecpkl
 from .zfit import check_redshift
-from .plot_Zevo import *
+from .plot_sed import *
 
 import cosmolopy.distance as cd
 import cosmolopy.constants as cc
@@ -753,7 +753,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(lnprob, out.params, fcn_args=[fy,wht2,f_dust])
+            mini = Minimizer(lnprob, out.params, fcn_args=[fy,wht2,f_dust], f_disp=True)
             print('######################')
             print('### Starting emcee ###')
             print('######################')

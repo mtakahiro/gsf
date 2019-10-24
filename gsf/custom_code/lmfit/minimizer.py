@@ -327,7 +327,7 @@ class Minimizer(object):
 
     def __init__(self, userfcn, params, fcn_args=None, fcn_kws=None,
                  iter_cb=None, scale_covar=True, nan_policy='raise',
-                 reduce_fcn=None, **kws):
+                 reduce_fcn=None, f_disp=True, **kws):
         """
         Parameters
         ----------
@@ -432,6 +432,7 @@ class Minimizer(object):
         self.params = params
         self.jacfcn = None
         self.nan_policy = nan_policy
+        self.f_disp = f_disp
 
     @property
     def values(self):
@@ -1067,6 +1068,8 @@ class Minimizer(object):
         else:
             sampler_kwargs['args'] = lnprob_args
             sampler_kwargs['kwargs'] = lnprob_kwargs
+
+        sampler_kwargs['f_disp'] = self.f_disp
 
         # set up the random number generator
         rng = _make_random_gen(seed)

@@ -80,12 +80,14 @@ class EnsembleSampler(Sampler):
     """
     def __init__(self, nwalkers, dim, lnpostfn, a=2.0, args=[], kwargs={},
                  postargs=None, threads=1, pool=None, live_dangerously=False,
-                 runtime_sortingfn=None):
+                 runtime_sortingfn=None, f_disp=False):
         self.k = nwalkers
         self.a = a
         self.threads = threads
         self.pool = pool
         self.runtime_sortingfn = runtime_sortingfn
+
+        self.f_disp = f_disp
 
         if postargs is not None:
             args = postargs
@@ -219,7 +221,7 @@ class EnsembleSampler(Sampler):
         for i in range(int(iterations)):
             # #######################
             # TM added om 2018/09/21;
-            if ((self.iterations/iterations)*100)%1 == 0:
+            if self.f_disp and ((self.iterations/iterations)*100)%1 == 0:
                 #t = (datetime.datetime.time(datetime.datetime.now()))
                 t = datetime.datetime.now()
                 print('Progress:%d/%d @ %s'%(self.iterations,iterations,t))
@@ -264,7 +266,6 @@ class EnsembleSampler(Sampler):
                 # Slices for the first and second halves
                 first, second = slice(halfk), slice(halfk, self.k)
                 for S0, S1 in [(first, second), (second, first)]:
-                    #q, newlnp, acc, blob = self._propose_stretch(p[S0], p[S1],
                     q, newlnp, acc, blob = self._propose_stretch(p[S0], p[S1],
                                                                  lnprob[S0])
                     if np.any(acc):
@@ -298,7 +299,6 @@ class EnsembleSampler(Sampler):
                 yield p, lnprob, self.random_state, blobs
             else:
                 yield p, lnprob, self.random_state
-
 
     def _propose_stretch(self, p0, p1, lnprob0):
         """
@@ -345,63 +345,6 @@ class EnsembleSampler(Sampler):
         # Decide whether or not the proposals should be accepted.
         lnpdiff = (self.dim - 1.) * np.log(zz) + newlnprob - lnprob0
         accept = (lnpdiff > np.log(self._random.rand(len(lnpdiff))))
-
-        return q, newlnprob, accept, blob
-
-    def _propose_stretch_gibbs(self, p0, p1, lnprob0):
-        """
-        TM 2018/09/23
-        Still editing...
-
-        Propose a new position for one sub-ensemble given the positions of
-        another.
-
-        :param p0:
-            The positions from which to jump.
-
-        :param p1:
-            The positions of the other ensemble.
-
-        :param lnprob0:
-            The log-probabilities at ``p0``.
-
-        This method returns:
-
-        * ``q`` - The new proposed positions for the walkers in ``ensemble``.
-
-        * ``newlnprob`` - The vector of log-probabilities at the positions
-          given by ``q``.
-
-        * ``accept`` - A vector of type ``bool`` indicating whether or not
-          the proposed position for each walker should be accepted.
-
-        * ``blob`` - The new meta data blobs or ``None`` if nothing was
-          returned by ``lnprobfn``.
-
-        """
-        s = np.atleast_2d(p0)
-        Ns = len(s)
-        c = np.atleast_2d(p1)
-        Nc = len(c)
-        print(self._random.randint(Nc, size=(Ns,)))
-
-        # For each param;
-        for dd in range(self.dim):
-            # Generate the vectors of random numbers that will produce the
-            # proposal.
-            zz = ((self.a - 1.) * self._random.rand(Ns) + 1) ** 2. / self.a
-            rint = self._random.randint(Nc, size=(Ns,))
-
-
-            # Calculate the proposed positions and the log-probability there.
-            q = c[rint] - zz[:, np.newaxis] * (c[rint] - s)
-            newlnprob, blob = self._get_lnprob(q)
-
-
-        # Decide whether or not the proposals should be accepted.
-        lnpdiff = (self.dim - 1.) * np.log(zz) + newlnprob - lnprob0
-        #accept = (lnpdiff > np.log(self._random.rand(len(lnpdiff))))
-        accept = (1>0)
 
         return q, newlnprob, accept, blob
 
