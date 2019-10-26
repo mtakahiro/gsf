@@ -2104,8 +2104,10 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     #############
     # Main result
     #############
-    conbb_ymax = (xbb>0.5)# (conbb) &
+    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 2.
+    #iix = np.argmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d)
+    #print(fybb[iix],eybb[iix],xbb[iix])
 
     xboxl = 17000
     xboxu = 28000
@@ -2118,7 +2120,7 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
         x1max = np.max(xbb[conbb_ymax]) * 1.1
     ax1.set_xlim(2200, x1max)
     ax1.set_xscale('log')
-    ax1.set_ylim(-ymax*0.1, ymax)
+    ax1.set_ylim(-ymax*0.1,ymax)
 
     #import matplotlib.ticker as ticker
     import matplotlib
