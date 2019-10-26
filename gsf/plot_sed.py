@@ -2121,6 +2121,7 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     ax1.set_xlim(2200, x1max)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1,ymax)
+    ax1.text(2200,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
     #import matplotlib.ticker as ticker
     import matplotlib
@@ -2576,6 +2577,7 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
                     ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
         except:
             pass
+
 
     ####################
     # Plot Different Z
