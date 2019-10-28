@@ -7,6 +7,7 @@ import os
 import fsps
 
 from astropy.io import fits
+from scipy.integrate import simps
 
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
@@ -28,118 +29,17 @@ from .function_igm import *
 
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
-def fit_spec(lm, fobs, eobs, ftmp):
-    s = np.sum(fobs*ftmp/eobs**2)/np.sum(ftmp**2/eobs**2)
-    chi2 = np.sum(((fobs-s*ftmp)/eobs)**2)
-    return chi2, s
-
-
-def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
-    I1   = np.sum(fobs*ftmp/eobs**2) + np.sum(fbb*ftmp_bb/ebb**2)
-    I2   = np.sum(ftmp**2/eobs**2)   + np.sum(ftmp_bb**2/ebb**2)
-    s    = I1/I2
-    chi2 = np.sum(((fobs-s*ftmp)/eobs)**2) + np.sum(((fbb-s*ftmp_bb)/ebb)**2)
-    return chi2, s
-
-'''
-def filconv(band0, l0, f0, DIR): # f0 in fnu
-    #home = os.path.expanduser('~')
-    #DIR  = home + '/Dropbox/FILT/'
-    fnu  = np.zeros(len(band0), dtype='float32')
-    lcen = np.zeros(len(band0), dtype='float32')
-    fwhm = np.zeros(len(band0), dtype='float32')
-
-    for ii in range(len(band0)):
-        fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
-        lfil = fd[:,1]
-        ffil = fd[:,2]
-
-        lmin  = np.min(lfil)
-        lmax  = np.max(lfil)
-        imin  = 0
-        imax  = 0
-
-        lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
-        lamS,spec = l0, f0                     # Two columns with wavelength and flux density
-        lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-        filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
-        wht       = 1. #/(er1[con_rf])**2
-
-        if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
-            I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-            I2  = simps(filt_int/lamS,lamS)                  #Numerator
-            fnu[ii] = I1/I2/c         #Average flux density
-        else:
-            I1  = 0
-            I2  = 0
-            fnu[ii] = 0
-
-    return lcen, fnu
-'''
-
-def fil_fwhm(band0, DIR): # f0 in fnu
-    #
-    # FWHM
-    #
-    fwhm = np.zeros(len(band0), dtype='float32')
-    for ii in range(len(band0)):
-        fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
-        lfil = fd[:,1]
-        ffil = fd[:,2]
-
-        fsum = np.sum(ffil)
-        fcum = np.zeros(len(ffil), dtype='float32')
-        lam0,lam1 = 0,0
-
-        for jj in range(len(ffil)):
-            fcum[jj] = np.sum(ffil[:jj])/fsum
-            if lam0 == 0 and fcum[jj]>0.05:
-                lam0 = lfil[jj]
-            if lam1 == 0 and fcum[jj]>0.95:
-                lam1 = lfil[jj]
-
-        fwhm[ii] = lam1 - lam0
-
-    return fwhm
-
-from scipy.integrate import simps
-def data_int(lmobs, lmtmp, ftmp):
-    # lmobs: Observed wavelength.
-    # lmtmp, ftmp: Those to be interpolated.
-    ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
-    return ftmp_int
-
-def flamtonu(lam, flam, m0set=25.):
-    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
-    fnu  = flam * Ctmp
-    return fnu
-
-def fnutolam(lam, fnu, m0set=25.):
-    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
-    flam  = fnu / Ctmp
-    return flam
-
-def gauss(x,A,sig):
-    return A * np.exp(-0.5*x**2/sig**2)
-
-def moffat(xx, A, x0, gamma, alp):
-    yy = A * (1. + (xx-x0)**2/gamma**2)**(-alp)
-    return yy
-
-def get_filt(LIBFILT, NFILT):
-    #f = open(LIBFILT + '.info', 'r')
-    f = open(LIBFILT + '', 'r')
-
-
 
 ###################################################
 ### SIMULATION of SPECTRA.
 ###################################################
-def sim_spec(lmin, fin, sn): # wave_obs, wave_temp, flux_temp, sn_obs
-
+def sim_spec(lmin, fin, sn):
+    #
+    # wave_obs, wave_temp, flux_temp, sn_obs
+    # Return: frand, erand
+    #
     frand = fin * 0
     erand = fin * 0
-
     for ii in range(len(lmin)):
         if fin[ii]>0 and sn[ii]>0:
             erand[ii] = fin[ii]/sn[ii]
@@ -147,9 +47,7 @@ def sim_spec(lmin, fin, sn): # wave_obs, wave_temp, flux_temp, sn_obs
         else:
             erand[ii] = 1e10
             frand[ii] = np.random.normal(fin[ii],erand[ii],1)
-
     return frand, erand
-
 
 ###################################################
 # Make SPECTRA at given z and filter set.
@@ -522,8 +420,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 spec_sum = 0*spec_mul[0] # This is dummy file.
                 DL = cd.luminosity_distance(zbest, **cosmo) * Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
-                spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
-                ftmp_int = data_int(lm, wavetmp, spec_av)
+                #spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
+                #ftmp_int = data_int(lm, wavetmp, spec_av)
 
                 Lsun = 3.839 * 1e33 #erg s-1
                 stmp_common = 1e10 # 1 tmp is in 1e10Lsun
@@ -567,14 +465,12 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_mul_nu_conv[ss,:])
                 col01.append(colspec_all)
 
-
             #########################
             # Summarize the ML
             #########################
             if pp == 0:
                 colms = fits.Column(name='ML_'+str(zz), format='E', unit='Msun/1e10Lsun', array=ms)
                 col02.append(colms)
-
 
     #########################
     # Summarize the templates

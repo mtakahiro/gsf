@@ -128,8 +128,7 @@ class Func:
         Ls    = np.zeros(len(AA), dtype='float32')
         Ls[:] = mshdu.data['Ls_'+str(zz)][:]
 
-
-        xx   = hdu0.data['wavelength']
+        xx   = hdu0.data['wavelength'] # RF;
         nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
         lib  = np.zeros((len(nr), 2+1), dtype='float32')
@@ -376,7 +375,8 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return yyd_sort, xxd_sort
-
+        
+    '''
     def tmp04_samp(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
 
         ZZ = self.ZZ
@@ -442,3 +442,4 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return yyd_sort, xxd_sort
+    '''

@@ -182,7 +182,6 @@ class Mainbody():
         if f_dust:
             lib_dust     = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=0, tau0=tau0)
             lib_dust_all = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=1, tau0=tau0)
-            #print(lib_dust[:,3])
 
         #################
         # Observed Data

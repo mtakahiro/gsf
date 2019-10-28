@@ -134,10 +134,6 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
 
-                #plt.plot(wave, flux, linestyle='-')
-                #plt.plot(wave, eflux, linestyle='--')
-                #plt.show()
-
                 # Mass-Luminosity
                 ms[ss]  = sp.stellar_mass
                 Ls[ss]  = 10**sp.log_lbol
@@ -170,7 +166,7 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                     if age[ss0] < age[ss]:
                         wave1, flux1 = sp.get_spectrum(tage=age[ss] - age[ss0], peraa=True)
                         flux1 /= 10**sp.log_lbol
-                        con1 = (wave1>lammin) & (wave1<lammax)
+                        con1   = (wave1>lammin) & (wave1<lammax)
                         col001 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=flux1[con1])
                         col02.append(col001)
                         if fneb == 1:
@@ -179,8 +175,6 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                             con1 = (ewave1>lammin) & (ewave1<lammax)
                             col001 = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=eflux1[con1])
                             col02.append(col001)
-
-
 
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
@@ -192,7 +186,6 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
                 col01.append(col1)
                 col01.append(col2)
-
 
     # ##############
     # Create header;

@@ -114,8 +114,7 @@ class Analyze:
         Hb   = np.zeros(int(mmax), dtype='float32')
         #Muv  = np.zeros(int(mmax), dtype='float32')
 
-        samples1 = res.chain[:, :, :].reshape((-1, ndim))
-        samples  = samples1[:] # Already reduced.
+        samples = res.chain[:, :, :].reshape((-1, ndim)) # Already burned.
 
         ##############################
         # Best parameters
@@ -164,7 +163,12 @@ class Analyze:
         #
         # Get mcmc model templates, plus some indicies.
         #
+        #print(res.flatchain['Av'][0])
+        from lmfit import Parameters
+        fit_params = Parameters()
         for mm in range(0,mmax,1):
+            rn = np.random.randint(len(samples))
+            '''
             par_tmp   = samples[np.random.randint(len(samples))]
             AA_tmp[:] = par_tmp[:len(age)]
             Av_tmp    = par_tmp[len(age)]
@@ -172,7 +176,17 @@ class Analyze:
                 ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+len(age)]
             else:
                 ZZ_tmp[:] = par_tmp[len(age)+1:len(age)+1+1]
-            model2, xm_tmp = fnc.tmp04_samp(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
+
+            '''
+            for aa in range(len(age)):
+                fit_params.add('A'+str(aa), value=res.flatchain['A%d'%(aa)][rn], min=0, max=10000)
+            fit_params.add('Av', value=res.flatchain['Av'][rn], min=0, max=10)
+            for aa in range(len(age)):
+                try:
+                    fit_params.add('Z'+str(aa), value=res.flatchain['Z%d'%(aa)][rn], min=-10, max=10)
+                except:
+                    pass
+            model2, xm_tmp = fnc.tmp04(ID0, PA0, fit_params, zrecom, lib_all, tau0=tau0)
 
             '''
             # not necessary here.
@@ -184,18 +198,13 @@ class Analyze:
 
             lmrest = xm_tmp / (1. + zrecom)
             band0  = ['u','b','v','j','sz']
-            lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # f0 in fnu
-            fu_cnv = fconv[0]
-            fb_cnv = fconv[1]
-            fv_cnv = fconv[2]
-            fj_cnv = fconv[3]
-            fz_cnv = fconv[4]
+            lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # model2 in fnu
 
             Dn4[mm]= calc_Dn4(xm_tmp, model2, zrecom) # Dust attenuation is not included?
-            uv[mm] = -2.5*np.log10(fu_cnv/fv_cnv)
-            bv[mm] = -2.5*np.log10(fb_cnv/fv_cnv)
-            vj[mm] = -2.5*np.log10(fv_cnv/fj_cnv)
-            zj[mm] = -2.5*np.log10(fz_cnv/fj_cnv)
+            uv[mm] = -2.5*np.log10(fconv[0]/fconv[2])
+            bv[mm] = -2.5*np.log10(fconv[1]/fconv[2])
+            vj[mm] = -2.5*np.log10(fconv[2]/fconv[3])
+            zj[mm] = -2.5*np.log10(fconv[4]/fconv[3])
 
             '''
             AA_tmp_sum = 0
@@ -224,7 +233,7 @@ class Analyze:
             Mg2[mm]   /= AA_tmp_sum
             '''
 
-        conper = (Dn4>0)
+        conper = (Dn4>-99) #(Dn4>0)
         Dnmc = np.percentile(Dn4[conper], [16,50,84])
         uvmc = np.percentile(uv[conper], [16,50,84])
         bvmc = np.percentile(bv[conper], [16,50,84])
@@ -310,7 +319,7 @@ class Analyze:
         col01.append(col50)
 
         # Mass
-        col50 = fits.Column(name='ms', format='E', unit='1e10Msun', array=msmc[:])
+        col50 = fits.Column(name='ms', format='E', unit='Msun', array=msmc[:])
         col01.append(col50)
 
         # U-V

@@ -17,6 +17,20 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+# Fitting. (Not sure)
+def fit_spec(lm, fobs, eobs, ftmp):
+    s = np.sum(fobs*ftmp/eobs**2)/np.sum(ftmp**2/eobs**2)
+    chi2 = np.sum(((fobs-s*ftmp)/eobs)**2)
+    return chi2, s
+
+def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
+    I1   = np.sum(fobs*ftmp/eobs**2) + np.sum(fbb*ftmp_bb/ebb**2)
+    I2   = np.sum(ftmp**2/eobs**2)   + np.sum(ftmp_bb**2/ebb**2)
+    s    = I1/I2
+    chi2 = np.sum(((fobs-s*ftmp)/eobs)**2) + np.sum(((fbb-s*ftmp_bb)/ebb)**2)
+    return chi2, s
+
+# SFH
 def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
     sfr = np.zeros(len(tt), dtype='float32')+minsfr
     sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
