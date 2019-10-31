@@ -569,6 +569,9 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         elif zbes<3.:
             zred  = [zbes, 3, 6]
             zredl = ['$z_\mathrm{obs.}$', 3, 6]
+        else:
+            zred  = [zbes, 6]
+            zredl = ['$z_\mathrm{obs.}$', 6]
     else:
         zred  = [zbes, 6, 7, 9, 15]
         zredl = ['$z_\mathrm{obs.}$', 6, 7, 9, 15]
