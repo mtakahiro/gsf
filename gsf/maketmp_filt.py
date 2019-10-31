@@ -52,7 +52,7 @@ def sim_spec(lmin, fin, sn):
 ###################################################
 # Make SPECTRA at given z and filter set.
 ###################################################
-def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fneb=0):
+def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fneb=0, DIR_TMP='./templates/'):
     #
     # inputs      : Configuration file.
     # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
@@ -341,7 +341,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     # Start generating templates
     ####################################
     #DIR_TMP = './templates/'
-    DIR_TMP = inputs['DIR_TEMP']
+    #DIR_TMP = inputs['DIR_TEMP']
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
     col00 = []

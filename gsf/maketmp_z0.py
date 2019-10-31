@@ -25,7 +25,6 @@ pixelscale = 0.06 # arcsec/pixel
 #######################
 # Path
 #######################
-DIR_TMP = './templates/' # Templates are saved in this directory.
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
 #
@@ -59,7 +58,7 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin = 400, lammax = 80000, tau0 = [0.01,0.02,0.03], fneb=0, logU=-2.5):
+def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin = 400, lammax = 80000, tau0 = [0.01,0.02,0.03], fneb=0, logU=-2.5, DIR_TMP='./templates/'):
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
     # Z (array)  : Stellar phase metallicity in logZsun.

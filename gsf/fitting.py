@@ -58,7 +58,7 @@ class Mainbody():
         LW  = LW0
         return LW, fLW
 
-    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=1, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01): # flag_m related to redshift error in redshift check func.
+    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=True, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01): # flag_m related to redshift error in redshift check func.
         #
         # sigz (float): confidence interval for redshift fit.
         # ezmin (float): minimum error in redshift.
@@ -835,7 +835,7 @@ class Mainbody():
             ####################
             # MCMC corner plot.
             ####################
-            if mcmcplot == 1:
+            if mcmcplot:
                 fig1 = corner.corner(res.flatchain, labels=res.var_names, \
                 label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
                 title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), \

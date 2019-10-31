@@ -36,8 +36,8 @@ import timeit
 start = timeit.default_timer()
 
 #if __name__ == "__main__":
-def main(parfile, fplt, mcmcplot=1):
-    fplt    = int(fplt)
+def main(parfile, fplt, mcmcplot=True):
+    fplt = int(fplt)
     #
     # Get info from param file.
     #
@@ -165,15 +165,13 @@ def main(parfile, fplt, mcmcplot=1):
             zmin   = 1.0
             lammax = 80000/(1.+zmin)
             nimf = int(inputs['NIMF'])
-            make_tmp_z0(nimf, Zall, age, lammax = lammax, tau0=tau0, fneb=fneb)
-            #flag_suc = 0
-            #print('Fitting is stopped. L.176')
+            make_tmp_z0(nimf, Zall, age, lammax = lammax, tau0=tau0, fneb=fneb, DIR_TMP=DIR_TMP)
 
         ####################################
         # Start making redshifted templates.
         # Then, fit.
         if fplt != 2:
-            maketemp(inputs, zrecom, Zall, age, fneb=fneb)
+            maketemp(inputs, zrecom, Zall, age, fneb=fneb, DIR_TMP=DIR_TMP)
         zprev   = zrecom # redshift from previous run
         Czprev0 = Czrec0
         Czprev1 = Czrec1
@@ -184,7 +182,7 @@ def main(parfile, fplt, mcmcplot=1):
             print('\n\n')
             print('Making templates...')
             print('\n\n')
-            maketemp(inputs, zrecom, Zall, age)
+            maketemp(inputs, zrecom, Zall, age, fneb=fneb, DIR_TMP=DIR_TMP)
             print('\n\n')
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
