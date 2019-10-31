@@ -36,7 +36,7 @@ import timeit
 start = timeit.default_timer()
 
 #if __name__ == "__main__":
-def main(parfile, fplt):
+def main(parfile, fplt, mcmcplot=1):
     fplt    = int(fplt)
     #
     # Get info from param file.
@@ -178,7 +178,7 @@ def main(parfile, fplt):
         Czprev0 = Czrec0
         Czprev1 = Czrec1
 
-        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 0, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp)
+        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 0, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp, mcmcplot=mcmcplot)
         #flag_suc = 0
         while (flag_suc == 1):
             print('\n\n')
@@ -191,7 +191,7 @@ def main(parfile, fplt):
             zprev     = zrecom # redshift from previous run
             Czprev0  *= Czrec0
             Czprev1  *= Czrec1
-            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 1, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp)
+            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 1, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp, mcmcplot=mcmcplot)
 
         #
         # Total calculation time
