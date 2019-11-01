@@ -17,6 +17,12 @@ from .basic_func import Basic
 from .function_igm import *
 from . import img_scale
 
+import cosmolopy.distance as cd
+import cosmolopy.constants as cc
+cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
+cosmo = cd.set_omega_k_0(cosmo)
+Lsun = 3.839 * 1e33 #erg s-1
+Mpc_cm = 3.08568025e+24 # cm/Mpc
 
 lcb   = '#4682b4' # line color, blue
 
@@ -42,11 +48,6 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #
     #
     #
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
     flim = 0.01
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
@@ -147,13 +148,6 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ####################
     # For cosmology
     ####################
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.3, 'omega_lambda_0' : 0.7, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
-    Lsun = 3.839 * 1e33 #erg s-1
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
     DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
@@ -651,11 +645,6 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     # Returns: SED as function of age, based on SF and Z histories;
     #
     print('This function may take a while.')
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
     flim = 0.01
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
@@ -733,13 +722,6 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     ####################
     # For cosmology
     ####################
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.3, 'omega_lambda_0' : 0.7, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
-    Lsun = 3.839 * 1e33 #erg s-1
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
     DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
@@ -1001,11 +983,7 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     #
     # Returns: SED as function of age, based on SF and Z histories;
     #
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
+    ################
     flim = 0.01
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
@@ -1029,14 +1007,13 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     #############
     # Plot.
     #############
-    fig = plt.figure(figsize=(8,2.8))
-    fig.subplots_adjust(top=0.88, bottom=0.16, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
-    ax1 = fig.add_subplot(131)
-    ax2 = fig.add_subplot(132)
-    ax3 = fig.add_subplot(133)
-    #ax1t = ax1.twiny()
-    #ax2t = ax2.twiny()
-    #ax3t = ax3.twiny()
+    fig = plt.figure(figsize=(5,2.6))
+    fig.subplots_adjust(top=0.96, bottom=0.16, left=0.12, right=0.99, hspace=0.15, wspace=0.15)
+    #ax1 = fig.add_subplot(131)
+    #ax2 = fig.add_subplot(132)
+    #ax3 = fig.add_subplot(133)
+    ax2 = fig.add_subplot(121)
+    ax3 = fig.add_subplot(122)
 
     ###########################
     # Open result file
@@ -1080,214 +1057,11 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         Asum += A50[aa]
 
-    ####################
-    # For cosmology
-    ####################
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.3, 'omega_lambda_0' : 0.7, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
-    Lsun = 3.839 * 1e33 #erg s-1
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
+    # Cosmo;
     DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
-
     Tuni = cd.age(zbes, use_flat=True, **cosmo)
     Tuni0 = (Tuni/cc.Gyr_s - age[:])
-
-    '''
-    delT  = np.zeros(len(age),dtype='float32')
-    delTl = np.zeros(len(age),dtype='float32')
-    delTu = np.zeros(len(age),dtype='float32')
-    for aa in range(len(age)):
-        if aa == 0:
-            delTl[aa] = age[aa]
-            delTu[aa] = (age[aa+1]-age[aa])/2.
-            delT[aa]  = delTu[aa] + delTl[aa]
-        elif Tuni/cc.Gyr_s < age[aa]:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = delTl[aa] #10.
-            delT[aa]  = delTu[aa] + delTl[aa]
-        elif aa == len(age)-1:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = Tuni/cc.Gyr_s - age[aa]
-            delT[aa]  = delTu[aa] + delTl[aa]
-        else:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = (age[aa+1]-age[aa])/2.
-            delT[aa]  = delTu[aa] + delTl[aa]
-
-    delT[:]  *= 1e9 # Gyr to yr
-    delTl[:] *= 1e9 # Gyr to yr
-    delTu[:] *= 1e9 # Gyr to yr
-    ##############################
-    # Load Pickle
-    ##############################
-    samplepath = './'
-    pfile = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
-
-    niter = 0
-    data = loadcpkl(os.path.join(samplepath+'/'+pfile))
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #* nwalk/10/2 # I think this takes 3/4 of samples
-        #if nmc>1000:
-        #    Nburn  = 500
-        samples = data['chain'][:]
-    except:
-        print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-        return -1
-
-    ######################
-    # Mass-to-Light ratio.
-    ######################
-    AM = np.zeros((len(age), mmax), dtype='float32') # Mass in each bin.
-    AC = np.zeros((len(age), mmax), dtype='float32') # Cumulative mass in each bin.
-    AL = np.zeros((len(age), mmax), dtype='float32') # Cumulative light in each bin.
-    ZM = np.zeros((len(age), mmax), dtype='float32') # Z.
-    ZC = np.zeros((len(age), mmax), dtype='float32') # Cumulative Z.
-    ZL = np.zeros((len(age), mmax), dtype='float32') # Light weighted cumulative Z.
-    TC = np.zeros((len(age), mmax), dtype='float32') # Mass weighted T.
-    TL = np.zeros((len(age), mmax), dtype='float32') # Light weighted T.
-    ZMM= np.zeros((len(age), mmax), dtype='float32') # Mass weighted Z.
-    ZML= np.zeros((len(age), mmax), dtype='float32') # Light weighted Z.
-    SF = np.zeros((len(age), mmax), dtype='float32') # SFR
-    Av = np.zeros(mmax, dtype='float32') # SFR
-
-    # ##############################
-    # Add simulated scatter in quad
-    # if files are available.
-    # ##############################
-    if inputs:
-        f_zev = int(inputs['ZEVOL'])
-    else:
-        f_zev = 1
-
-    eZ_mean = 0
-    try:
-        meanfile = './sim_SFH_mean.cat'
-        dfile    = np.loadtxt(meanfile, comments='#')
-        eA = dfile[:,2]
-        eZ = dfile[:,4]
-        eAv= np.mean(dfile[:,6])
-        if f_zev == 0:
-            eZ_mean = np.mean(eZ[:])
-            eZ[:]   = age * 0 #+ eZ_mean
-        else:
-            try:
-                f_zev = int(prihdr['ZEVOL'])
-                if f_zev == 0:
-                    eZ_mean = np.mean(eZ[:])
-                    eZ = age * 0
-            except:
-                pass
-    except:
-        print('No simulation file (%s).\nError may be underestimated.' % meanfile)
-        eA = age * 0
-        eZ = age * 0
-        eAv= 0
-
-    mm = 0
-    #mmax = 10
-    #print('mmax is set to 10')
-    for mm in range(mmax):
-        mtmp  = np.random.randint(len(samples))# + Nburn
-        AAtmp = np.zeros(len(age), dtype='float32')
-        ZZtmp = np.zeros(len(age), dtype='float32')
-        mslist= np.zeros(len(age), dtype='float32')
-
-        Av_tmp = samples['Av'][mtmp]
-
-        f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
-        sedpar = f0[1]
-        f1     = fits.open(DIR_TMP + 'ms.fits')
-        mloss  = f1[1].data
-
-        Avrand = np.random.uniform(-eAv, eAv)
-        if Av_tmp + Avrand<0:
-            Av[mm] = 0
-        else:
-            Av[mm] = Av_tmp + Avrand
-
-        for aa in range(len(age)):
-            AAtmp[aa] = samples['A'+str(aa)][mtmp]
-            try:
-                ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
-            except:
-                ZZtmp[aa] = samples['Z0'][mtmp]
-
-            nZtmp      = bfnc.Z2NZ(ZZtmp[aa])
-            mslist[aa] = sedpar.data['ML_'+str(nZtmp)][aa]
-
-            ml = mloss['ms_'+str(nZtmp)][aa]
-
-            Arand = np.random.uniform(-eA[aa],eA[aa])
-            Zrand = np.random.uniform(-eZ[aa],eZ[aa])
-            AM[aa, mm] = AAtmp[aa] * mslist[aa] * 10**Arand
-            AL[aa, mm] = AM[aa, mm] / mslist[aa]
-            SF[aa, mm] = AAtmp[aa] * mslist[aa] / delT[aa] / ml * 10**Arand
-            ZM[aa, mm] = ZZtmp[aa] + Zrand
-            ZMM[aa, mm]= (10 ** ZZtmp[aa]) * AAtmp[aa] * mslist[aa] * 10**Zrand
-            ZML[aa, mm]= ZMM[aa, mm] / mslist[aa]
-
-        for aa in range(len(age)):
-            AC[aa, mm] = np.sum(AM[aa:, mm])
-            ZC[aa, mm] = np.log10(np.sum(ZMM[aa:, mm])/AC[aa, mm])
-            ZL[aa, mm] = np.log10(np.sum(ZML[aa:, mm])/np.sum(AL[aa:, mm]))
-            if f_zev == 0: # To avoid random fluctuation in A.
-                ZC[aa, mm] = ZM[aa, mm]
-
-            ACs = 0
-            ALs = 0
-            for bb in range(aa, len(age), 1):
-                tmpAA       = 10**np.random.uniform(-eA[bb],eA[bb])
-                tmpTT       = np.random.uniform(-delT[bb]/1e9,delT[bb]/1e9)
-                TC[aa, mm] += (age[bb]+tmpTT) * AAtmp[bb] * mslist[bb] * tmpAA
-                TL[aa, mm] += (age[bb]+tmpTT) * AAtmp[bb] * tmpAA
-                ACs        += AAtmp[bb] * mslist[bb] * tmpAA
-                ALs        += AAtmp[bb] * tmpAA
-
-            TC[aa, mm] /= ACs
-            TL[aa, mm] /= ALs
-
-    Avtmp  = np.percentile(Av[:],[16,50,84])
-
-    #############
-    # Plot
-    #############
-    AMp = np.zeros((len(age),3), dtype='float32')
-    ACp = np.zeros((len(age),3), dtype='float32')
-    ZMp = np.zeros((len(age),3), dtype='float32')
-    ZCp = np.zeros((len(age),3), dtype='float32')
-    SFp = np.zeros((len(age),3), dtype='float32')
-    for aa in range(len(age)):
-       AMp[aa,:] = np.percentile(AM[aa,:], [16,50,84])
-       ACp[aa,:] = np.percentile(AC[aa,:], [16,50,84])
-       ZMp[aa,:] = np.percentile(ZM[aa,:], [16,50,84])
-       ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
-       SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
-
-    ###################
-    msize = np.zeros(len(age), dtype='float32')
-    for aa in range(len(age)):
-        if A50[aa]/Asum>flim: # if >1%
-            msize[aa] = 150 * A50[aa]/Asum
-
-    conA = (msize>=0)
-    #ax1.fill_between(age[conA], np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA], linestyle='-', color='k', alpha=0.3)
-    #ax1.scatter(age[conA], np.log10(SFp[:,1])[conA], marker='.', c='k', s=msize[conA])
-    #ax1.errorbar(age[conA], np.log10(SFp[:,1])[conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[np.log10(SFp[:,1])[conA]-np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA]-np.log10(SFp[:,1])[conA]], linestyle='-', color='k', lw=0.5, marker='')
-
-    # Make template;
-    tbegin = np.min(Tuni/cc.Gyr_s-age)
-    tuniv_hr = np.arange(tbegin,Tuni/cc.Gyr_s,delt_sfh) # in Gyr
-    sfh_hr_in= np.interp(tuniv_hr,(Tuni/cc.Gyr_s-age)[::-1],SFp[:,1][::-1])
-    zh_hr_in = np.interp(tuniv_hr,(Tuni/cc.Gyr_s-age)[::-1],ZCp[:,1][::-1])
-    '''
 
     # Open summary;
     file = 'summary_' + ID0 + '_PA' + PA + '.fits'
@@ -1296,29 +1070,7 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     Avtmp = fd['Av0']
     uvtmp = fd['uv']
     vjtmp = fd['vj']
-    ax2.plot(vj[1],uv[1],color='gray',marker='s',ms=3)
-
-
-    '''
-    #
-    tau0 = inputs['TAU0']
-    tau0 = [float(x.strip()) for x in tau0.split(',')]
-    from lmfit import Parameters #, minimize, fit_report, Minimizer
-    lib_all = fnc.open_spec_fits(ID0, PA, fall=1, tau0=tau0)
-    fit_params = Parameters()
-    for aa in range(len(age)):
-        fit_params.add('A'+str(aa), value=fd['A%d'%(aa)][1], min=0, max=10000)
-    fit_params.add('Av', value=Avtmp[1], min=0, max=10)
-    for aa in range(len(age)):
-        fit_params.add('Z'+str(aa), value=fd['Z%d'%(aa)][1], min=-10, max=10)
-    model2, xm_tmp = fnc.tmp04(ID0, PA, fit_params, zbes, lib_all, tau0=tau0)
-    ax1.plot(xm_tmp/(1.+zbes),model2,linestyle='--',lw=1)
-    band0  = ['u','v','j']
-    lmconv,fconv = filconv(band0, xm_tmp/(1.+zbes), model2, fil_path) # flux in fnu
-    uv = -2.5*np.log10(fconv[0]/fconv[1])
-    vj = -2.5*np.log10(fconv[1]/fconv[2])
-    ax2.plot(vj,uv,'ks',ms=1)
-    '''
+    #ax2.plot(vj[1],uv[1],color='gray',marker='s',ms=3)
 
     # SFH
     file = DIR_TMP + 'obshist_' + ID0 + '_PA' + PA + '.fits'
@@ -1334,42 +1086,56 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     nr   = fd['colnum']
     uvall= age * 0 - 99
     vjall= age * 0 - 99
-    for ii in range(1,len(age),10):
+
+    delp = -10
+    flag = False
+    flag2= False
+    #for ii in range(1,len(age),10):
+    for ii in range(len(age)-1,-1,delp):
         flux = fd['fspec_%d'%(ii)]
         flux_att = madau_igm_abs(wave/(1.+zbes), flux, zbes)
         flux_d, xxd, nrd = dust_calz(wave/(1.+zbes), flux_att, 0.0, nr)
-        ax1.plot(xxd,flux_d,linestyle='-',lw=0.3+0.1*ii/len(age))
+        #ax1.plot(xxd,flux_d,linestyle='-',lw=0.3+0.1*ii/len(age))
         band0  = ['u','v','j']
         lmconv,fconv = filconv(band0, xxd, flux_d, fil_path) # flux in fnu
         uv = -2.5*np.log10(fconv[0]/fconv[1])
         vj = -2.5*np.log10(fconv[1]/fconv[2])
         uvall[ii] = uv
         vjall[ii] = vj
+        #ax2.plot(vjall[ii],uvall[ii],marker='s',ms=5,linestyle='-',zorder=5)
 
-        if ii == 1:
+        if flag and not flag2:
             flux_d, xxd, nrd = dust_calz(wave/(1.+zbes), flux_att, Avtmp[1], nr)
             lmconv,fconv = filconv(band0, xxd, flux_d, fil_path) # flux in fnu
             uv_av = -2.5*np.log10(fconv[0]/fconv[1])
             vj_av = -2.5*np.log10(fconv[1]/fconv[2])
             delvj, deluv = vj_av-vj, uv_av-uv
+            flag2 = True
+        flag = True
 
+    #import matplotlib.colormaps as cm
     conuvj = (vjall>-90)&(uvall>-90)
-    ax2.plot(vjall[conuvj],uvall[conuvj],color='k',ms=3,linestyle='-')
-    ax3.plot(age,np.log10(sfh),color='b', linewidth=1, linestyle='-')
-    ax3.plot(age,zh,color='r', linewidth=1, linestyle='-')
+    ax2.plot(vjall[conuvj],uvall[conuvj],marker='s',markeredgecolor='k',color='none',ms=5,zorder=4)
+    ax2.scatter(vjall[conuvj],uvall[conuvj],marker='s',c=age[conuvj],cmap='jet',s=8,zorder=5)
+    ax2.plot(vjall[conuvj],uvall[conuvj],marker='',color='k',ms=3,linestyle='-',zorder=3)
+    ax3.plot(age,np.log10(sfh),color='b', linewidth=1, linestyle='-',label=r'$\log$SFR$/M_\odot$yr$^{-1}$')
+    ax3.plot(age,zh,color='r', linewidth=1, linestyle='-',label=r'$\log Z_*/Z_\odot$')
 
+    '''
     ax1.set_xlim(1000,40000)
     ax1.set_xscale('log')
     ax1.set_ylim(1e-2,1e2)
     ax1.set_yscale('log')
-
-    ax2.set_xlim(-0.1,2.5)
-    ax2.set_ylim(-0.1,2.5)
-
     ax1.set_xlabel('Wavelength')
-    ax2.set_xlabel('$V-J$')
-    ax2.set_ylabel('$U-V$')
-    ax3.set_xlabel('Age')
+    '''
+
+    ax2.set_xlim(-0.3,2.3)
+    ax2.set_ylim(-0.3,2.3)
+
+    ax2.set_xlabel('$V-J\,$/ mag')
+    ax2.set_ylabel('$U-V\,$/ mag')
+    ax3.set_xlabel('age / Gyr')
+    #ax3.set_ylabel('$\log$SFR$/M_\odot$yr$^{-1}$ or $\log Z_*/Z_\odot$')
 
     ##
     prog_path = '/Users/tmorishita/GitHub/gsf/gsf/example/misc/'
@@ -1395,4 +1161,6 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     except:
         pass
 
-    plt.show()
+    ax3.legend(loc=3)
+    #plt.show()
+    plt.savefig('hist_' + ID0 + '_PA' + PA + '.pdf')

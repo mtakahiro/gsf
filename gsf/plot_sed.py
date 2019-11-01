@@ -17,6 +17,15 @@ from .basic_func import Basic
 from . import img_scale
 from . import corner
 
+import cosmolopy.distance as cd
+import cosmolopy.constants as cc
+cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
+cosmo = cd.set_omega_k_0(cosmo)
+Lsun = 3.839 * 1e33 #erg s-1
+c = 3e18
+Mpc_cm = 3.08568025e+24 # cm/Mpc
+m0set = 25.0
+
 #Zset  = [-0.40, 0.0, 0.4]#, 0.20, 0.35]
 #Zset  = [-0.30, -0.20]#, 0.20, 0.35]
 lcb = '#4682b4' # line color, blue
@@ -719,13 +728,7 @@ def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1,
     ACtmp= np.zeros(nplot, dtype='float32')
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-
     # Time bin
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
     Txmax = 4 # Max x value
     Tuni = cd.age(zbes, use_flat=True, **cosmo)
     Tuni0 = (Tuni/cc.Gyr_s - age[:])
@@ -1202,11 +1205,6 @@ def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.
 
 
     # Time bin
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
     Txmax = 4 # Max x value
     Tuni = cd.age(zbes, use_flat=True, **cosmo)
     Tuni0 = (Tuni/cc.Gyr_s - age[:])
@@ -2200,13 +2198,6 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     ####################
     # For cosmology
     ####################
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
-    Lsun = 3.839 * 1e33 #erg s-1
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
     DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
@@ -2357,7 +2348,6 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     ytmpmin = np.zeros(len(ysum), dtype='float32')
 
     # MUV;
-    Mpc_cm  = 3.08568025e+24 # cm/Mpc
     DL      = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(nmc2, dtype='float64') # For Muv
@@ -3023,16 +3013,8 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     ####################
     # For cosmology
     ####################
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-
-    Lsun = 3.839 * 1e33 #erg s-1
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
     DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
-
     dA     = cd.angular_diameter_distance(zbes, **cosmo)
     dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
     twokpc = 5.0/dkpc/0.06 # in pixel
@@ -3340,14 +3322,6 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc
-    cosmo = {'omega_M_0' : 0.3, 'omega_lambda_0' : 0.7, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
-    c = 3e18
-    pixelscale = 0.06 # arcsec/pixel
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
-    m0set = 25.0
 
 
     ###########################

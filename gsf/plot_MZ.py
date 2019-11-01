@@ -15,6 +15,13 @@ from .function_class import Func
 from .basic_func import Basic
 from . import img_scale
 
+import cosmolopy.distance as cd
+import cosmolopy.constants as cc
+cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
+cosmo = cd.set_omega_k_0(cosmo)
+Lsun = 3.839 * 1e33 #erg s-1
+Mpc_cm = 3.08568025e+24 # cm/Mpc
+
 lcb   = '#4682b4' # line color, blue
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -41,14 +48,14 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     import matplotlib.cm as cm
 
     flim = 0.01
-    
+
     lsfrl = -1 # log SFR low limit
     mmax  = 500
 
     Txmax = 4 # Max x value
 
     lmmin = 10.3
-    
+
     nage = np.arange(0,len(age),1)
     fnc  = Func(Z, nage) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
@@ -71,7 +78,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     fil_f160w = fil_path+"f160w.fil"
     fil_36 = fil_path+"3.6.fil"
     fil_45 = fil_path+"4.5.fil"
-    
+
     du = np.loadtxt(fil_u,comments="#")
     lu = du[:,1]
     fu = du[:,2]
@@ -87,7 +94,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     dj = np.loadtxt(fil_j,comments="#")
     lj = dj[:,1]
     fj = dj[:,2]
-    
+
     c      = 3.e18 # A/s
     chimax = 1.
     mag0   = 25.0
@@ -107,7 +114,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     #ax3t = ax3.twiny()
     #ax4t = ax4.twiny()
 
-    
+
     ##################
     # Fitting Results
     ##################
@@ -126,23 +133,14 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     for aa in range(len(A50)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         Asum += A50[aa]
-        
-    ####################
-    # For cosmology
-    ####################
-    import cosmolopy.distance as cd
-    import cosmolopy.constants as cc 
-    cosmo = {'omega_M_0' : 0.3, 'omega_lambda_0' : 0.7, 'h' : 0.72}
-    cosmo = cd.set_omega_k_0(cosmo)
 
-    Lsun = 3.839 * 1e33 #erg s-1
-    Mpc_cm = 3.08568025e+24 # cm/Mpc
+    # Cosmo;
     DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
     Tuni  = cd.age(zbes, use_flat=True, **cosmo) # age at zobs.
     Tuni0 = (Tuni/cc.Gyr_s - age[:])
-    
+
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
     delTu = np.zeros(len(age),dtype='float32')
@@ -150,7 +148,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     col = np.zeros((len(age),4),dtype='float32')
     for aa in range(len(age)):
         col[aa,:] = cm.nipy_spectral_r((aa+0.1)/(len(age)))
-        
+
     for aa in range(len(age)):
         if aa == 0:
             delTl[aa] = age[aa]
@@ -195,8 +193,8 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     except:
         print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
         return -1
-    
-    
+
+
     ######################
     # Mass-to-Light ratio.
     ######################
@@ -207,13 +205,13 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ZC = np.zeros((len(age), mmax), dtype='float32') # Cumulative Z.
     TC = np.zeros((len(age), mmax), dtype='float32') # Mass weighted T.
     ZMM = np.zeros((len(age), mmax), dtype='float32') # Mass weighted Z.
-    
+
     SF = np.zeros((len(age), mmax), dtype='float32') # SFR
 
     mm = 0
     while mm<mmax:
         mtmp  = np.random.randint(len(samples))# + Nburn
-        
+
         AAtmp = np.zeros(len(age), dtype='float32')
         ZZtmp = np.zeros(len(age), dtype='float32')
         mslist= np.zeros(len(age), dtype='float32')
@@ -222,7 +220,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
         f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
         sedpar = f0[1]
-        
+
         for aa in range(len(age)):
             AAtmp[aa] = samples['A'+str(aa)][mtmp]
             ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
@@ -245,9 +243,9 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
                 ACs        += AAtmp[bb] * mslist[bb]
 
             TC[aa, mm] /= ACs
-            
+
         mm += 1
-        
+
     #############
     # Plot
     #############
@@ -263,7 +261,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
        ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
        SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
 
-       
+
     ###################
     msize = np.zeros(len(age), dtype='float32')
     for aa in range(len(age)):
@@ -275,7 +273,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     #
     # M-SFR
     #
-    #ax1.fill_between(age[conA], np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA], linestyle='-', color='k', alpha=0.3)    
+    #ax1.fill_between(age[conA], np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA], linestyle='-', color='k', alpha=0.3)
     ax1.scatter(np.log10(ACp[:,1])[conA], np.log10(SFp[:,1])[conA], marker='o', c=col[:], s=msize[conA], edgecolors='k',zorder=2)
     ax1.errorbar(np.log10(ACp[:,1])[conA], np.log10(SFp[:,1])[conA], linestyle='--', color='k', lw=1., marker='', zorder=0, alpha=1.)
 
@@ -291,8 +289,8 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
         delSFR[ii]  = np.log10(SFp[ii,1]) - lSFRtmp
         delSFRl[ii] = np.log10(SFp[ii,0]) - lSFRtmp
         delSFRu[ii] = np.log10(SFp[ii,2]) - lSFRtmp
-    
-        
+
+
     #
     # t - delta SRF relation (right top)
     #
@@ -300,7 +298,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ax2.scatter(age[:][conA], delSFR[conA], marker='o', c=col[:], s=msize[conA], edgecolors='k',zorder=2)
     ax2.errorbar(age[:][conA], delSFR[:][conA], linestyle='--', fmt='--', color='k', lw=1., marker='', zorder=0, alpha=1.)
 
-    
+
     #
     # Mass - Z relation (left bottom)
     #
@@ -321,11 +319,11 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     lZ50 = np.asarray(lZ50)
     lZ16 = np.asarray(lZ16)
     lZ84 = np.asarray(lZ84)
-    
+
     ax3.errorbar(lM, lZ50, marker='', color='gray', ms=15, linestyle='-', lw=1, zorder=-2) #, yerr=[lZ50-lZ16, lZ84-lZ50]
     ax3.fill_between(lM, lZ16, lZ84, color='gray', linestyle='None', lw=1, alpha=0.4, zorder=-2)
 
-    
+
     #
     # Fundamental Metal
     #
@@ -334,7 +332,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ax4.scatter((np.log10(ACp[:,1]) + bsfr * np.log10(SFp[:,1]))[conA], ZCp[:,1][conA], marker='o', c=col[:], s=msize[conA], edgecolors='k',zorder=2)
     ax4.errorbar((np.log10(ACp[:,1]) + bsfr * np.log10(SFp[:,1]))[conA], ZCp[:,1][conA], linestyle='--', color='k', lw=1., zorder=0, alpha=1.)
 
-    
+
     for iic in range(len(A50)):
         if msize[iic]>10:
             lwe = 1.5
@@ -344,9 +342,9 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
             xerl_ax4 = np.sqrt((np.log10(ACp[iic,1])-np.log10(ACp[iic,0]))**2 + bsfr**2 * (np.log10(SFp[iic,1])-np.log10(SFp[iic,0]))**2)
             xeru_ax4 = np.sqrt((np.log10(ACp[iic,2])-np.log10(ACp[iic,1]))**2 + bsfr**2 * (np.log10(SFp[iic,2])-np.log10(SFp[iic,1]))**2)
-            
+
             ax4.errorbar((np.log10(ACp[iic,1]) + bsfr * np.log10(SFp[iic,1])), ZCp[iic,1], xerr=[[xerl_ax4],[xeru_ax4]], yerr=[[ZCp[iic,1]-ZCp[iic,0]],[ZCp[iic,2]-ZCp[iic,1]]], linestyle='-', color=col[iic], lw=lwe, label=ax2label, zorder=1)
-    
+
 
     #########################
     # Title
@@ -359,7 +357,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
     #############
     # Axis
-    #############    
+    #############
     #ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax1.set_ylabel('$\log \dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     #ax1.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
@@ -369,7 +367,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     lsfru = 2.8
     if np.max(np.log10(SFp[:,2]))>2.8:
         lsfru = np.max(np.log10(SFp[:,2]))+0.1
-        
+
     y2min, y2max = 9.5, 12.5
     ax1.set_xlim(y2min, y2max)
     ax1.set_ylim(lsfrl, lsfru)
@@ -389,7 +387,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ax2.set_ylim(-4, 2.5)
     ax2.set_xlim(0.008, 3.2)
     ax2.set_xscale('log')
-    
+
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
         dely2 *= 2.
@@ -398,17 +396,17 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     #ax2.set_yticks(y2ticks)
     #ax2.set_yticklabels(np.arange(y2min, y2max, 0.1), minor=False)
     #ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    
+
     ax3.set_xlim(y2min, y2max)
     ax3.set_ylim(y3min, y3max)
-    
+
     ax3.set_xlabel('$\log M_*/M_\odot$', fontsize=12)
     ax3.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
 
     #ax3.set_xscale('log')
     #ax2.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    
+
     # For redshift
     if zbes<2:
         zred  = [zbes, 2, 3, 6]
@@ -423,17 +421,17 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     elif zbes<6:
         zred  = [zbes, 6]
         zredl = ['$z_\mathrm{obs.}$', 6]
-        
+
     Tzz   = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
         if Tzz[zz] < 0.01:
             Tzz[zz] = 0.01
 
-            
+
     #ax3t.set_xscale('log')
     #ax3t.set_xlim(0.008, Txmax)
-    
+
     ax4.set_xlabel('$\log M_*/M_\odot - 0.32 \log \dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
 
@@ -444,15 +442,14 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ax4.set_ylim(y3min, y3max)
     #ax4.set_xscale('log')
     #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    
+
     ax3.yaxis.labelpad = -2
     ax4.yaxis.labelpad = -2
 
-    
+
     ####################
     ## Save
     ####################
     ax1.legend(loc=1, fontsize=11)
     ax2.legend(loc=3, fontsize=8)
     plt.savefig('MZ_' + ID0 + '_PA' + PA + '_pcl.pdf')
-
