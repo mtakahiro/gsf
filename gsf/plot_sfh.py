@@ -1161,6 +1161,9 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     except:
         pass
 
+    ax2.text(-0.1,2.1,'Quiescent',fontsize=11,color='orangered')
+    ax2.text(1.3,-0.2,'Starforming',fontsize=11,color='royalblue')
+
     ax3.legend(loc=3)
     #plt.show()
     plt.savefig('hist_' + ID0 + '_PA' + PA + '.pdf')
