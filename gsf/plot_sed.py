@@ -1746,7 +1746,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
 
-def plot_sed_Z(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
+def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
 f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, \
 save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     #
@@ -1773,8 +1773,8 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     #############
     # Plot.
     #############
-    fig = plt.figure(figsize=(5.,2.4))
-    fig.subplots_adjust(top=0.96, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+    fig = plt.figure(figsize=(5.,2.2))
+    fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
     ax1 = fig.add_subplot(111)
 
     ##################
@@ -2103,15 +2103,15 @@ save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/'):
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 2.
+    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.2
     #iix = np.argmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d)
     #print(fybb[iix],eybb[iix],xbb[iix])
 
     xboxl = 17000
     xboxu = 28000
 
-    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
-    ax1.set_ylabel('Flux ($10^{-18}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
+    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=12)
+    ax1.set_ylabel('Flux ($10^{-18}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)',fontsize=12,labelpad=-2)
 
     x1max = 22000
     if x1max < np.max(xbb[conbb_ymax]):

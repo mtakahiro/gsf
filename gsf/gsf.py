@@ -4,15 +4,6 @@
 # version 1.0.0
 ##########################
 
-#########################################
-# What do you need before running this?
-#
-# 1. Broadband photometry (ID + '_bb_ksirac.cat')
-# 2. Moffat parameters
-# (ID + '_PA' + PA + '_inp{0,1}_moffat.cat')
-# 3. Extracted spectra
-# (ID + '_PA' + PA + '_inp0_tmp3.cat')
-#########################################
 ################
 # Input
 ################
@@ -199,9 +190,9 @@ def main(parfile, fplt, mcmcplot=True):
 
     if fplt <= 3:
         from .plot_sfh import plot_sfh
-        from .plot_sed import plot_sed_Z
+        from .plot_sed import plot_sed
         plot_sfh(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs, dust_model=dust_model, DIR_TMP=DIR_TMP)
-        plot_sed_Z(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=1.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300, dust_model=dust_model, DIR_TMP=DIR_TMP)
+        plot_sed(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT, SNlim=1.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300, dust_model=dust_model, DIR_TMP=DIR_TMP)
 
     if fplt == 4:
         from .plot_sfh import get_evolv
@@ -210,7 +201,6 @@ def main(parfile, fplt, mcmcplot=True):
     if fplt == 5:
         from .plot_sfh import plot_evolv
         plot_evolv(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs, dust_model=dust_model, DIR_TMP=DIR_TMP, nmc=10)
-
 
     '''
     if fplt == 6:
