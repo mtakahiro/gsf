@@ -1154,12 +1154,13 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     y=data_uvj[:,1]
     ax2.plot(x,y,color="gray",lw=1,ls="-")
 
-    try:
-        av=np.array([1.2,0.,delvj,deluv])
-        X,Y,U,V=zip(av)
-        ax2.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1,linewidth=1,color="k")
-    except:
-        pass
+    #try:
+    av=np.array([1.2,0.,delvj,deluv])
+    X,Y,U,V=zip(av)
+    ax2.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1,linewidth=1,color="k")
+    ax2.text(1.2,0.45,'$A_V=%.1f$'%(Avtmp[1]),rotation=36,fontsize=9)
+    #except:
+    #    pass
 
     ax2.text(-0.1,2.1,'Quiescent',fontsize=11,color='orangered')
     ax2.text(1.3,-0.2,'Starforming',fontsize=11,color='royalblue')
