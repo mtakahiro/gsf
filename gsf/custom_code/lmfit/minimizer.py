@@ -327,7 +327,7 @@ class Minimizer(object):
 
     def __init__(self, userfcn, params, fcn_args=None, fcn_kws=None,
                  iter_cb=None, scale_covar=True, nan_policy='raise',
-                 reduce_fcn=None, f_disp=True, **kws):
+                 reduce_fcn=None, f_disp=True, **kws):#
         """
         Parameters
         ----------
@@ -1069,7 +1069,10 @@ class Minimizer(object):
             sampler_kwargs['args'] = lnprob_args
             sampler_kwargs['kwargs'] = lnprob_kwargs
 
-        sampler_kwargs['f_disp'] = self.f_disp
+        # TM updated for v3 emcee;
+        #sampler_kwargs['f_disp'] = self.f_disp
+        sampler_kwargs['moves'] = emcee.moves.DEMove(sigma=1e-05, gamma0=None)
+
 
         # set up the random number generator
         rng = _make_random_gen(seed)
@@ -1095,7 +1098,6 @@ class Minimizer(object):
             p0 *= var_arr
             self.sampler = emcee.EnsembleSampler(nwalkers, self.nvarys,
                                                  _lnpost, **sampler_kwargs)
-
         # user supplies an initialisation position for the chain
         # If you try to run the sampler with p0 of a wrong size then you'll get
         # a ValueError. Note, you can't initialise with a position if you are
@@ -1123,8 +1125,8 @@ class Minimizer(object):
             self.sampler.random_state = rng.get_state()
 
         # now do a production run, sampling all the time
-        output = self.sampler.run_mcmc(p0, steps)
-        self._lastpos = output[0]
+        output = self.sampler.run_mcmc(p0, steps, progress=self.f_disp)
+        #self._lastpos = output[0]
 
         # discard the burn samples and thin
         chain = self.sampler.chain[..., burn::thin, :]
