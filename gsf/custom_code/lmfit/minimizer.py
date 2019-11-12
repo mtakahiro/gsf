@@ -327,7 +327,7 @@ class Minimizer(object):
 
     def __init__(self, userfcn, params, fcn_args=None, fcn_kws=None,
                  iter_cb=None, scale_covar=True, nan_policy='raise',
-                 reduce_fcn=None, f_disp=True, **kws):#
+                 reduce_fcn=None, f_disp=True, f_move=False, **kws):#
         """
         Parameters
         ----------
@@ -433,6 +433,7 @@ class Minimizer(object):
         self.jacfcn = None
         self.nan_policy = nan_policy
         self.f_disp = f_disp
+        self.f_move = f_move
 
     @property
     def values(self):
@@ -1071,7 +1072,11 @@ class Minimizer(object):
 
         # TM updated for v3 emcee;
         #sampler_kwargs['f_disp'] = self.f_disp
-        sampler_kwargs['moves'] = emcee.moves.DEMove(sigma=1e-05, gamma0=None)
+        if self.f_move:
+            print('Move is set to DEMove')
+            sampler_kwargs['moves'] = emcee.moves.DEMove(sigma=1e-05, gamma0=None)
+        #else:
+        #    sampler_kwargs['moves'] = emcee.moves.DEMove(sigma=1e-05, gamma0=None)
 
 
         # set up the random number generator
