@@ -1,12 +1,15 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.0.0
+version 1.1.0
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (submitted) <https://arxiv.org/abs/1812.06980>`__.
+- The main purpose is to explore galaxy mass accumulation formation histories with a flexible form of SFH.
 - This uses FSPS templates generated via python-fsps.
-- Emission lines are currently not included in fitting, but masked in the current version.
-- Please use this code at your own risk.
+- Emission lines, generated in FSPS, can be included in fitting.
+- Broadband photometry data, without spectrum (despite the code's name), can be also fitted.
+- Far IR data set can be fitted simultaneously with a simple gray body spectrum.
+- Please use this code at one's own risk.
 ========================================================================================
 
 
@@ -20,8 +23,8 @@ Demonstration
 Pre-requirement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- lmfit
-- emcee
+- lmfit (may need a tweak; see custom_code directory)
+- emcee (ver.3)
 - corner
 - cosmolopy
 - python-fsps
