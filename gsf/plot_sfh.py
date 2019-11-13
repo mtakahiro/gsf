@@ -52,7 +52,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
     Txmax = 4 # Max x value
-    lmmin = 10.3
+    lmmin = 9.5 #10.3
 
     nage = np.arange(0,len(age),1)
     fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
@@ -477,7 +477,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Axis
     #############
     #ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
-    ax1.set_ylabel('$\log \dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
+    ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
     #ax1.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
 
     lsfru = 2.8
@@ -567,8 +567,8 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             zred  = [zbes, 6]
             zredl = ['$z_\mathrm{obs.}$', 6]
     else:
-        zred  = [zbes, 6, 7, 9, 15]
-        zredl = ['$z_\mathrm{obs.}$', 6, 7, 9, 15]
+        zred  = [zbes, 6, 7, 9]
+        zredl = ['$z_\mathrm{obs.}$', 6, 7, 9]
 
     Tzz   = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
@@ -1154,13 +1154,12 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     y=data_uvj[:,1]
     ax2.plot(x,y,color="gray",lw=1,ls="-")
 
-    #try:
-    av=np.array([1.2,0.,delvj,deluv])
-    X,Y,U,V=zip(av)
-    ax2.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1,linewidth=1,color="k")
-    ax2.text(1.2,0.45,'$A_V=%.1f$'%(Avtmp[1]),rotation=36,fontsize=9)
-    #except:
-    #    pass
+    try:
+        av=np.array([1.2,0.,delvj,deluv])
+        X,Y,U,V=zip(av)
+        ax2.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1,linewidth=1,color="k")
+    except:
+        pass
 
     ax2.text(-0.1,2.1,'Quiescent',fontsize=11,color='orangered')
     ax2.text(1.3,-0.2,'Starforming',fontsize=11,color='royalblue')

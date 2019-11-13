@@ -11,7 +11,7 @@ m0set  = 25.0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 class Func:
-    def __init__(self, ZZ, AA, dust_model='calz', DIR_TMP='./templates/'):
+    def __init__(self, ZZ, AA, dust_model=0, DIR_TMP='./templates/'):
         self.ZZ   = ZZ
         self.AA   = AA
         self.delZ = ZZ[1] - ZZ[0]
@@ -169,6 +169,7 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
+
 
     def tmp03(self, ID0, PA, A00, Av00, nmodel, Z, zgal, lib, tau0=[0.01,0.02,0.03]):
 
@@ -375,71 +376,3 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return yyd_sort, xxd_sort
-        
-    '''
-    def tmp04_samp(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
-
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
-
-        Av00      = par[len(AA)]
-        try:
-            zmc = par[len(AA)+1+len(AA)]
-        except:
-            zmc = zgal
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp  = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
-
-        for aa in range(len(AA)):
-            #nmodel = aa
-            A00  = par[aa] #AA00[aa] #par.params['A'+str(aa)].value
-            try:
-                Ztest= par[len(AA)+1+len(AA)] # instead of 'ZEVOL'
-                Z    = par[len(AA)+1+aa] # ZZ_tmp[aa] #par.params['Z'+str(aa)].value
-                NZ   = bfnc.Z2NZ(Z)
-                coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
-            except:
-                Z    = par[len(AA)+1] # ZZ_tmp[aa] #par.params['Z'+str(aa)].value
-                NZ   = bfnc.Z2NZ(Z)
-                coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA))
-
-            if aa == 0:
-                nr  = lib[:, 0]
-                xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy  = A00 * lib[:, coln]
-            else:
-                yy += A00 * lib[:, coln]
-
-        # How much does this cost in time?
-        if zmc != zgal:
-            xx_s = xx / (1+zgal) * (1+zmc)
-            yy_s = np.interp(xx_s, xx, yy)
-        else:
-            xx_s = xx
-            yy_s = yy
-
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        xxd *= (1.+zmc)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
-
-        return yyd_sort, xxd_sort
-    '''

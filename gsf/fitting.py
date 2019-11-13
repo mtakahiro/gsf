@@ -201,17 +201,11 @@ class Mainbody():
         con1 = (NR>=1000) & (NR<10000)
         fy1  = fy00[con1] * Cz1
         ey1  = ey00[con1] * Cz1
-        con2 = (NR>=10000) # BB
-        fy2  = fy00[con2]
-        ey2  = ey00[con2]
 
-        fy01 = np.append(fy0,fy1)
-        fy   = np.append(fy01,fy2)
-        ey01 = np.append(ey0,ey1)
-        ey   = np.append(ey01,ey2)
-
-        wht  = 1./np.square(ey)
-        sn   = fy/ey
+        # BB data in spec_obs are not in use.
+        #con2 = (NR>=10000) # BB
+        #fy2  = fy00[con2]
+        #ey2  = ey00[con2]
 
         ##############
         # Broadband
@@ -222,7 +216,18 @@ class Mainbody():
         fybb = dat[:, 2]
         eybb = dat[:, 3]
         exbb = dat[:, 4]
+        fy2 = fybb
+        ey2 = eybb
+
+        fy01 = np.append(fy0,fy1)
+        fy   = np.append(fy01,fy2)
+        ey01 = np.append(ey0,ey1)
+        ey   = np.append(ey01,ey2)
+
+        wht  = 1./np.square(ey)
         wht2 = check_line_man(fy, x, wht, fy, zprev, LW0)
+        sn   = fy/ey
+
 
         #####################
         # Function fo MCMC

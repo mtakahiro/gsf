@@ -293,7 +293,124 @@ def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
 
 # This function is much better than previous,
 # but is hard to impliment for the current version.
-def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
+def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
+    #
+    # For general purpose (Noll+09)
+    # lm (float array) : wavelength, at RF.
+    # fl (float array) : fnu
+    # Av (float)       : mag
+    # nr (int array)   : index, to be used for sorting.
+    # Rv: from Calzetti+00
+    # gamma:
+    # Eb:
+    # A difference from dust_gen is Eb is defined as a function of gamma.
+    #
+    Kl = np.zeros(len(lm), dtype='float32')
+
+    lmm  = lm/10000. # in micron
+    con1 = (lmm<=0.63)
+    con2 = (lmm>0.63)  & (lmm<=lmlimu)
+    con3 = (lmm>lmlimu)
+
+    Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
+    Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
+    Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
+
+    #nr0 = nr[con0]
+    nr1 = nr[con1]
+    nr2 = nr[con2]
+    nr3 = nr[con3]
+
+    #lmm0 = lmm[con0]
+    lmm1 = lmm[con1]
+    lmm2 = lmm[con2]
+    lmm3 = lmm[con3]
+
+    #fl0 = fl[con0]
+    fl1 = fl[con1]
+    fl2 = fl[con2]
+    fl3 = fl[con3]
+
+    Kl   = np.concatenate([Kl1,Kl2,Kl3])
+    nrd  = np.concatenate([nr1,nr2,nr3])
+    lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    flc  = np.concatenate([fl1,fl2,fl3])
+
+    # Bump;
+    lm0   = 2175 / 10000 # micron m by Noll et al. (2009)
+    dellm = 350 / 10000 # micron m by Noll et al. (2009)
+    D = Eb * (lmmc * dellm)**2 / ((lmmc**2-lm0**2)**2+(lmmc * dellm)**2)
+    #
+    Alam   = Av / Rv * (Kl + D) * (lmmc / lmv)**gamma
+    fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    if f_Alam:
+        return fl_cor, lmmc*10000., nrd, Alam
+    else:
+        return fl_cor, lmmc*10000., nrd
+
+
+def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
+    #
+    # From Kriek&Conroy13
+    # lm (float array) : wavelength, at RF.
+    # fl (float array) : fnu
+    # Av (float)       : mag
+    # nr (int array)   : index, to be used for sorting.
+    # Rv: from Calzetti+00
+    # gamma: See Eq.1
+    # A difference from dust_gen is Eb is defined as a function of gamma.
+    #
+    Kl = np.zeros(len(lm), dtype='float32')
+
+    lmm  = lm/10000. # in micron
+    con1 = (lmm<=0.63)
+    con2 = (lmm>0.63)  & (lmm<=lmlimu)
+    con3 = (lmm>lmlimu)
+
+    Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
+    Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
+    Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
+
+    #nr0 = nr[con0]
+    nr1 = nr[con1]
+    nr2 = nr[con2]
+    nr3 = nr[con3]
+
+    #lmm0 = lmm[con0]
+    lmm1 = lmm[con1]
+    lmm2 = lmm[con2]
+    lmm3 = lmm[con3]
+
+    #fl0 = fl[con0]
+    fl1 = fl[con1]
+    fl2 = fl[con2]
+    fl3 = fl[con3]
+
+    Kl   = np.concatenate([Kl1,Kl2,Kl3])
+    nrd  = np.concatenate([nr1,nr2,nr3])
+    lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    flc  = np.concatenate([fl1,fl2,fl3])
+
+    Eb = 0.85 - 1.9 * gamma
+    print('Eb is %.2f'%(Eb))
+
+    # Bump;
+    lm0   = 2175 / 10000 # micron m by Noll et al. (2009)
+    dellm = 350 / 10000 # micron m by Noll et al. (2009)
+    D = Eb * (lmmc * dellm)**2 / ((lmmc**2-lm0**2)**2+(lmmc * dellm)**2)
+    #
+    Alam   = Av / Rv * (Kl + D) * (lmmc / lmv)**gamma
+    fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    if f_Alam:
+        return fl_cor, lmmc*10000., nrd, Alam
+    else:
+        return fl_cor, lmmc*10000., nrd
+
+# This function is much better than previous,
+# but is hard to impliment for the current version.
+def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     #
     # lm (float array) : wavelength, at RF.
     # fl (float array) : fnu
@@ -334,29 +451,31 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
     flc  = np.concatenate([fl1,fl2,fl3])
 
     Alam   = Kl * Av / Rv
-    #fl_cor = flc * np.power(10,(-0.4*Alam))
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
-    return fl_cor, lmmc*10000., nrd
+    if f_Alam:
+        return fl_cor, lmmc*10000., nrd, Alam
+    else:
+        return fl_cor, lmmc*10000., nrd
 
-def dust_mw(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
+def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     #
     # lm (float array) : wavelength, at RF, in AA.
     # fl (float array) : fnu
     # Av (float)       : mag
     # nr (int array)   : index, to be used for sorting.
-    # Rv: from Calzetti+00
-    # lmlimu: Upperlimit. 2.2 in Calz+00
+    # Rv: =3.1 for MW.
     #
     Kl = np.zeros(len(lm), dtype='float32')
 
     lmm  = lm/10000. # into micron
     xx   = 1./lmm
-    con0 = (xx<1.1)
-    con1 = (xx>=1.1) & (xx<3.3)
+
+    con0 = (xx>=8.0)
+    con1 = (xx>=5.9) & (xx<8.0)
     con2 = (xx>=3.3) & (xx<5.9)
-    con3 = (xx>=5.9) & (xx<8.0)
-    con4 = (xx>=8.0)
+    con3 = (xx>=1.1) & (xx<3.3)
+    con4 = (xx<1.1)
 
     nr0 = nr[con0]
     nr1 = nr[con1]
@@ -376,28 +495,28 @@ def dust_mw(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
     fl3 = fl[con3]
     fl4 = fl[con4]
 
-    ax0 =  0.574 * (1./lmm0)**1.61
-    bx0 = -0.527 * (1./lmm0)**1.61
+    ax4 =  0.574 * (1./lmm4)**1.61
+    bx4 = -0.527 * (1./lmm4)**1.61
 
-    yy  = ((1./lmm1) - 1.82)
-    ax1 = 1. + 0.17699 * yy - 0.50447 * yy**2 - 0.02427 * yy**3 + 0.72085 * yy**4\
+    yy  = ((1./lmm3) - 1.82)
+    ax3 = 1. + 0.17699 * yy - 0.50447 * yy**2 - 0.02427 * yy**3 + 0.72085 * yy**4\
           + 0.01979 * yy**5 - 0.77530 * yy**6 + 0.32999 * yy**7
-    bx1 = 1.41338 * yy + 2.28305 * yy**2 + 1.07233 * yy**3 - 5.38434 * yy**4\
+    bx3 = 1.41338 * yy + 2.28305 * yy**2 + 1.07233 * yy**3 - 5.38434 * yy**4\
           - 0.62251 * yy**5 + 5.30260 * yy**6 - 2.09002 * yy**7
 
     Fax2 = Fbx2 = lmm2 * 0
     ax2  = 1.752 - 0.316 * (1./lmm2) - 0.104/(((1./lmm2)-4.67)**2+0.341) + Fax2
     bx2  = -3.090 + 1.825 * (1./lmm2) + 1.206/(((1./lmm2)-4.62)**2+0.263) + Fbx2
 
-    Fax3 = -0.04473 * ((1./lmm3) - 5.9)**2 - 0.009779 * ((1./lmm3) - 5.9)**3
-    Fbx3 = 0.2130 * ((1./lmm3) - 5.9)**2 + 0.1207 * ((1./lmm3) - 5.9)**3
-    ax3  = 1.752 - 0.316 * (1./lmm3) - 0.104/(((1./lmm3)-4.67)**2+0.341) + Fax3
-    bx3  = -3.090 + 1.825 * (1./lmm3) + 1.206/(((1./lmm3)-4.62)**2+0.263) + Fbx3
+    Fax1 = -0.04473 * ((1./lmm1) - 5.9)**2 - 0.009779 * ((1./lmm1) - 5.9)**3
+    Fbx1 = 0.2130 * ((1./lmm1) - 5.9)**2 + 0.1207 * ((1./lmm1) - 5.9)**3
+    ax1  = 1.752 - 0.316 * (1./lmm1) - 0.104/(((1./lmm1)-4.67)**2+0.341) + Fax1
+    bx1  = -3.090 + 1.825 * (1./lmm1) + 1.206/(((1./lmm1)-4.62)**2+0.263) + Fbx1
 
-    Fax4 = -0.04473 * ((1./lmm4) - 5.9)**2 - 0.009779 * ((1./lmm4) - 5.9)**3
-    Fbx4 = 0.2130 * ((1./lmm4) - 5.9)**2 + 0.1207 * ((1./lmm4) - 5.9)**3
-    ax4  = 1.752 - 0.316 * (1./lmm4) - 0.104/(((1./lmm4)-4.67)**2+0.341) + Fax4
-    bx4  = -3.090 + 1.825 * (1./lmm4) + 1.206/(((1./lmm4)-4.62)**2+0.263) + Fbx4
+    Fax0 = -0.04473 * ((1./lmm0) - 5.9)**2 - 0.009779 * ((1./lmm0) - 5.9)**3
+    Fbx0 = 0.2130 * ((1./lmm0) - 5.9)**2 + 0.1207 * ((1./lmm0) - 5.9)**3
+    ax0  = 1.752 - 0.316 * (1./lmm0) - 0.104/(((1./lmm0)-4.67)**2+0.341) + Fax0
+    bx0  = -3.090 + 1.825 * (1./lmm0) + 1.206/(((1./lmm0)-4.62)**2+0.263) + Fbx0
 
     nrd  = np.concatenate([nr0,nr1,nr2,nr3,nr4])
     lmmc = np.concatenate([lmm0,lmm1,lmm2,lmm3,lmm4])
@@ -406,69 +525,21 @@ def dust_mw(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115):
     bx   = np.concatenate([bx0,bx1,bx2,bx3,bx4])
 
     Alam   = Av * (ax + bx / Rv)
+
+    if False:
+        import matplotlib.pyplot as plt
+        plt.plot(1/lmmc,Alam/Av,linestyle='-')
+        plt.xlim(0,3)
+        plt.ylim(0,2.0)
+        plt.show()
+
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
-    return fl_cor, lmmc*10000., nrd
+    if f_Alam:
+        return fl_cor, lmmc*10000., nrd, Alam
+    else:
+        return fl_cor, lmmc*10000., nrd
 
-'''
-def dust_calz3(lm, fl, Av, nr): # input lm is at RF.
-    Rv = 4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
-    Kl = np.zeros(len(lm), dtype='float32')
-
-    lmm  = lm/10000. # in micron
-    con1 = (lmm<=0.63)
-    con2 = (lmm>0.63)  & (lmm<=lmlimu)
-    con3 = (lmm>lmlimu)
-
-    Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
-    Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
-    Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
-
-    #nr0 = nr[con0]
-    nr1 = nr[con1]
-    nr2 = nr[con2]
-    nr3 = nr[con3]
-
-    #lmm0 = lmm[con0]
-    lmm1 = lmm[con1]
-    lmm2 = lmm[con2]
-    lmm3 = lmm[con3]
-
-    #fl0 = fl[con0]
-    fl1 = fl[con1]
-    fl2 = fl[con2]
-    fl3 = fl[con3]
-
-    Kl   = np.concatenate([Kl1,Kl2,Kl3])
-    nrd  = np.concatenate([nr1,nr2,nr3])
-    lmmc = np.concatenate([lmm1,lmm2,lmm3])
-    flc  = np.concatenate([fl1,fl2,fl3])
-
-    Alam   = Kl * Av / Rv
-    #fl_cor = flc * np.power(10,(-0.4*Alam))
-    fl_cor = flc[:] * 10**(-0.4*Alam[:])
-
-    return fl_cor, lmmc*10000., nrd
-
-def dust_calz(lm, fl, Av): # input lm is at RF.
-    Rv = 4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
-    Kl = np.zeros(len(lm), dtype='float32')
-    for ii0 in range(len(Kl)):
-        lmm = lm[ii0]/10000. # in micron
-        if lmm<0.12:
-            Kl[ii0] = 2.659 * (-2.156 + 1.509/lmm - 0.198/lmm**2 + 0.011/lmm**3) + Rv
-        elif lmm>=0.12 and lmm<=0.63:
-            Kl[ii0] = 2.659 * (-2.156 + 1.509/lmm - 0.198/lmm**2 + 0.011/lmm**3) + Rv
-        elif lmm>0.63 and lmm<=lmlimu:
-            Kl[ii0] = 2.659 * (-1.857 + 1.040/lmm) + Rv
-        elif lmm>2.2:
-            Kl[ii0] = 2.659 * (-1.857 + 1.040/lmlimu) + Rv
-    Alam   = Kl * Av / Rv
-    fl_cor = fl * np.power(10,(-0.4*Alam))
-    return fl_cor
-'''
 
 def check_line(data,wave,wht,model):
     R_grs = 50

@@ -522,7 +522,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
             fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
             #fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
-            print('Somehow, this crazy scale is required...')
+            print('Somehow, crazy scale is required for FIR normalization...')
             fnu_d *= 1e40
             colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
             col03.append(colspec_d)
@@ -564,7 +564,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     lamliml = 0.
     lamlimu = 20000.
     ebblim  = 1e5
+    ncolbb  = 10000
     fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
     for ii in range(len(lm)):
         if fgrs[ii]==0: # G102
             if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
@@ -579,9 +581,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
     for ii in range(len(ltmpbb[0,:])):
         if  ebb[ii]>ebblim:
-            fw.write('%d %.5f 0 1000\n'%(ii+10000, ltmpbb[0,ii]))
+            fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
-            fw.write('%d %.5f %.5e %.5e\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii]))
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
 
     fw.close()
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
@@ -589,24 +591,24 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         nbblast = len(ltmpbb[0,:])
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
-                fw.write('%d %.5f 0 1000\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast]))
+                fw.write('%d %.5f 0 1000\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast]))
             else:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
+                fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
     fw.close()
 
     fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
         if ebb[ii]>ebblim:
-            fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000, ltmpbb[0,ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
-            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
 
     fw.close()
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
     if f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
-                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
+                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
             else:
-                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+10000+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
+                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
     fw.close()
