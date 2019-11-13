@@ -149,12 +149,18 @@ class Func:
         yy  = flamtonu(xx, yy0)
         lib[:,2] = yy[:]
 
-        if self.dust_model == 0:
+        if self.dust_model == 0: # Calzetti
             yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
-        elif self.dust_model == 1:
+        elif self.dust_model == 1: # MW
             yyd, xxd, nrd = dust_mw(xx, yy, Av00, nr)
+        elif self.dust_model == 2: # LMC
+            yyd, xxd, nrd = dust_gen(xx, yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+        elif self.dust_model == 3: # SMC
+            yyd, xxd, nrd = dust_gen(xx, yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
+            yyd, xxd, nrd = dust_kc(xx, yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
-            print('Dust model?')
+            print('No entry. Dust model is set to Calzetti')
             yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
 
         xxd *= (1.+zgal)
@@ -193,8 +199,16 @@ class Func:
             yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
         elif self.dust_model == 1:
             yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av00, nr)
+        elif self.dust_model == 2: # LMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+        elif self.dust_model == 3: # SMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
+            yyd, xxd, nrd = dust_kc(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
             yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
+
+
         xxd *= (1.+zgal)
 
         nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
@@ -263,6 +277,12 @@ class Func:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         elif self.dust_model == 1:
             yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 2: # LMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+        elif self.dust_model == 3: # SMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
+            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
@@ -361,6 +381,12 @@ class Func:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         elif self.dust_model == 1:
             yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 2: # LMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+        elif self.dust_model == 3: # SMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
+            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
