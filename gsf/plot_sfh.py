@@ -631,7 +631,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #plt.show()
     #ax1.legend(loc=2, fontsize=8)
     #ax2.legend(loc=3, fontsize=8)
-    plt.savefig('SFH_' + ID0 + '_PA' + PA + '_pcl.pdf')
+    plt.savefig('SFH_' + ID0 + '_PA' + PA + '_pcl.png')
     #if f_comp == 1:
     #    plt.savefig('SFH_' + ID0 + '_PA' + PA + '_comp.pdf')
     #else:
