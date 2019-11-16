@@ -74,7 +74,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Plot.
     #############
     fig = plt.figure(figsize=(8,2.8))
-    fig.subplots_adjust(top=0.88, bottom=0.16, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
+    fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
     ax1 = fig.add_subplot(131)
     ax2 = fig.add_subplot(132)
     #ax3 = fig.add_subplot(223)
@@ -504,13 +504,72 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #
     # Brief Summary
     #
-    #namax = 7
-    namax = int(len(age)-1)
-    fw = open('SFH_' + ID0 + '_PA' + PA + '_pcl.cat', 'w')
-    fw.write('%s %.5e %.5e %.3f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'
-    %(ID0, RA, DEC, zbes, ACp[0,1], ACp[0,1]-ACp[0,0], ACp[0,2]-ACp[0,1], ACp[namax,1]/ACp[0,1], ACp[namax,1]/ACp[0,1]-ACp[namax,0]/ACp[0,1], ACp[namax,2]/ACp[0,1]-ACp[namax,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16),
-    np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek, nn, qq, (erekl+ereku)/2., enn, eqq, np.percentile(TL[0,:],50), np.percentile(TL[0,:],50)-np.percentile(TL[0,:],16), np.percentile(TL[0,:],84)-np.percentile(TL[0,:],50), np.percentile(ZL[0,:],50), np.percentile(ZL[0,:],50)-np.percentile(ZL[0,:],16), np.percentile(ZL[0,:],84)-np.percentile(ZL[0,:],50)))
-    fw.close()
+    # Writing SED param in a fits file;
+    # Header
+    prihdr = fits.Header()
+    prihdr['ID']     = ID0
+    prihdr['PA']     = PA
+    prihdr['z']      = zbes
+    prihdr['RA']     = RA
+    prihdr['DEC']    = DEC
+    prihdr['Re_kpc'] = rek
+    prihdr['Ser_n']  = nn
+    prihdr['Axis_q'] = qq
+    prihdr['e_Re']   = (erekl+ereku)/2.
+    prihdr['e_n']    = enn
+    prihdr['e_q']    = eqq
+    prihdu = fits.PrimaryHDU(header=prihdr)
+
+    col01 = []
+    # Redshift
+    zmc = hdul[1].data['zmc']
+    col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
+    col01.append(col50)
+
+    # Stellar mass
+    ACP = [np.log10(ACp[0,0]), np.log10(ACp[0,1]), np.log10(ACp[0,2])]
+    col50 = fits.Column(name='Mstel', format='E', unit='logMsun', array=ACP[:])
+    col01.append(col50)
+
+    # Metallicity_MW
+    ZCP = [ZCp[0,0], ZCp[0,1], ZCp[0,2]]
+    col50 = fits.Column(name='Z_MW', format='E', unit='logZsun', array=ZCP[:])
+    col01.append(col50)
+
+    # Age_mw
+    para = [np.log10(np.percentile(TC[0,:],16)), np.log10(np.percentile(TC[0,:],50)), np.log10(np.percentile(TC[0,:],84))]
+    col50 = fits.Column(name='T_MW', format='E', unit='logGyr', array=para[:])
+    col01.append(col50)
+
+    # Metallicity_LW
+    ZCP = [ZL[0,0], ZL[0,1], ZL[0,2]]
+    col50 = fits.Column(name='Z_LW', format='E', unit='logZsun', array=ZCP[:])
+    col01.append(col50)
+
+    # Age_lw
+    para = [np.log10(np.percentile(TL[0,:],16)), np.log10(np.percentile(TL[0,:],50)), np.log10(np.percentile(TL[0,:],84))]
+    col50 = fits.Column(name='T_LW', format='E', unit='logGyr', array=para[:])
+    col01.append(col50)
+
+    # Dust
+    para = [Avtmp[0], Avtmp[1], Avtmp[2]]
+    col50 = fits.Column(name='AV', format='E', unit='mag', array=para[:])
+    col01.append(col50)
+
+    # U-V
+    para = [uv[0], uv[1], uv[2]]
+    col50 = fits.Column(name='U-V', format='E', unit='mag', array=para[:])
+    col01.append(col50)
+
+    # V-J
+    para = [vj[0], vj[1], vj[2]]
+    col50 = fits.Column(name='V-J', format='E', unit='mag', array=para[:])
+    col01.append(col50)
+
+    colms  = fits.ColDefs(col01)
+    dathdu = fits.BinTableHDU.from_columns(colms)
+    hdu    = fits.HDUList([prihdu, dathdu])
+    hdu.writeto('SFH_' + ID0 + '_PA' + PA + '_param.fits', overwrite=True)
 
 
     #
