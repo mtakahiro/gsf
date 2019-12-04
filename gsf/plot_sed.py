@@ -386,7 +386,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.2
+    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.4
     #iix = np.argmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d)
     #print(fybb[iix],eybb[iix],xbb[iix])
 
@@ -417,10 +417,14 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     # SED params in plot
     if f_label:
-        fd = fits.open('SFH_' + ID0 + '_PA' + PA + '_param.fits')[1].data
-        ax1.text(2300, ymax*0.4,\
-        'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-        %(ID0, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1]), fontsize=9)
+        try:
+            fd = fits.open('SFH_' + ID0 + '_PA' + PA + '_param.fits')[1].data
+            ax1.text(2300, ymax*0.4,\
+            'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+            %(ID0, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1]), fontsize=9)
+        except:
+            print('File is missing : _param.fits')
+            pass
 
     dely1 = 0.5
     while (ymax-0)/dely1>4:

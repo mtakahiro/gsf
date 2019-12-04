@@ -17,6 +17,59 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
+    #
+    # A Function to check rejuvenation;
+    #
+    # delMS: Scatter around MS. = 0.2 dex in default.
+    #
+    age_set = 1.0
+    con_old = (age>=age_set)
+    con_mid = (age<age_set) & (age>np.min(age))
+
+    f_quen  = 0
+    f_rejuv = 0.
+    t_quench= 10.0
+    t_rejuv = np.min(age)
+    if np.max(MS[con_old])>lm_old:
+
+        # Set the most recent quenching;
+        #for ii in range(len(age)-1,-1,-1): # 4 to 0.01
+        for ii in range(len(age)): # 0.01 to 4
+            #if (age[ii]<age_set) and (age[ii]>np.min(age)) and SF[ii,2]<SFMS_50[ii]-delMS:
+            if (age[ii]<age_set) and (age[ii]>np.min(age)) and SF[ii,2]<SFMS_50[ii]-delMS and f_rejuv == 0:
+                if ii>0 and f_quen==0:
+                    t_rejuv = age[ii-1]
+                f_quen  = 1
+            if f_quen==1 and SF[ii,2]>SFMS_50[ii]-delMS:
+                    t_quench = age[ii-1] # Time the most recent quenching has set.
+                    f_rejuv  = 1
+                    break
+
+    print(f_rejuv,t_quench,t_rejuv)
+    return f_rejuv,t_quench,t_rejuv
+
+
+def get_SFMS(red,age,mass,IMF=1):
+    # Based on Speagle+14;
+    # Chabrier IMF, default
+    from astropy.cosmology import WMAP9
+    cosmo = WMAP9
+
+    CIMF = 0
+    if IMF == 0:#
+        CIMF = 0.23
+    elif IMF == 2:
+        CIMF = 0.04
+
+    x  = np.log10(mass) - CIMF #np.arange(6,13,0.1)
+    tz = cosmo.age(z=red).value - age # in Gyr
+    y1 = (0.84 - 0.026*tz) * x -(6.51 - 0.11*tz)
+    #y1_1 = (0.84 - 0.026*tz) * x -(6.51 - 0.11*tz) - 0.2
+    #y1_2 = (0.84 - 0.026*tz) * x -(6.51 - 0.11*tz) + 0.2
+
+    return y1
+
 # Fitting. (Not sure)
 def fit_spec(lm, fobs, eobs, ftmp):
     s = np.sum(fobs*ftmp/eobs**2)/np.sum(ftmp**2/eobs**2)
@@ -393,7 +446,7 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     flc  = np.concatenate([fl1,fl2,fl3])
 
     Eb = 0.85 - 1.9 * gamma
-    print('Eb is %.2f'%(Eb))
+    #print('Eb is %.2f'%(Eb))
 
     # Bump;
     lm0   = 2175 / 10000 # micron m by Noll et al. (2009)

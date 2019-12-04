@@ -58,7 +58,7 @@ class Mainbody():
         LW  = LW0
         return LW, fLW
 
-    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=True, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01): # flag_m related to redshift error in redshift check func.
+    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=True, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01, f_move=False): # flag_m related to redshift error in redshift check func.
         #
         # sigz (float): confidence interval for redshift fit.
         # ezmin (float): minimum error in redshift.
@@ -757,7 +757,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(lnprob, out.params, fcn_args=[fy,wht2,f_dust], f_disp=True)
+            mini = Minimizer(lnprob, out.params, fcn_args=[fy,wht2,f_dust], f_disp=True, f_move=f_move)
             print('######################')
             print('### Starting emcee ###')
             print('######################')

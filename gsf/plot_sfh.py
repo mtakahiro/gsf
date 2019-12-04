@@ -44,7 +44,7 @@ def loadcpkl(cpklfile):
 
 
 ###############
-def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/'):
+def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False):
     #
     #
     #
@@ -349,33 +349,25 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.scatter(age[conA], np.log10(SFp[:,1])[conA], marker='.', c='k', s=msize[conA])
     ax1.errorbar(age[conA], np.log10(SFp[:,1])[conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[np.log10(SFp[:,1])[conA]-np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA]-np.log10(SFp[:,1])[conA]], linestyle='-', color='k', lw=0.5, marker='')
 
+    # Get SFMS;
+    IMF = int(inputs['NIMF'])
+    SFMS_16 = get_SFMS(zbes,age,ACp[:,0],IMF=IMF)
+    SFMS_50 = get_SFMS(zbes,age,ACp[:,1],IMF=IMF)
+    SFMS_84 = get_SFMS(zbes,age,ACp[:,2],IMF=IMF)
+
+    f_rejuv,t_quench,t_rejuv = check_rejuv(age,np.log10(SFp[:,:]),np.log10(ACp[:,:]),np.log10(SFMS_50))
+    #print(f_rejuv,t_quench,t_rejuv)
+
+    # Plot MS?
+    if f_SFMS:
+        #ax1.fill_between(age[conA], np.log10(SFMS_16)[conA], np.log10(SFMS_84)[conA], linestyle='-', color='b', alpha=0.3)
+        ax1.fill_between(age[conA], np.log10(SFMS_50)[conA]-0.2, np.log10(SFMS_50)[conA]+0.2, linestyle='-', color='b', alpha=0.3)
+        ax1.plot(age[conA], np.log10(SFMS_50)[conA], linestyle='--', color='b', alpha=0.5)
+
     #
     # Fit with delayed exponential??
     #
     minsfr = 1e-10
-    '''
-    def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1)):
-        sfr = np.zeros(len(tt), dtype='float32')+minsfr
-        sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
-        con = (tt[:]-t0<0)
-        sfr[:][con] = minsfr
-        return sfr
-
-    def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1)):
-        sfr = np.zeros(len(tt), dtype='float32')+minsfr
-        sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
-        con = (tt[:]-t0<0)
-        sfr[:][con] = minsfr
-        return sfr
-
-    def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1)):
-        sfr = np.zeros(len(tt), dtype='float32')+minsfr
-        sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
-        con = (tt[:]<t0) | (tt[:]>tau)
-        sfr[:][con] = minsfr
-        return sfr
-    '''
-
     if f_comp == 1:
         #
         # Plot exp model?
@@ -518,6 +510,10 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     prihdr['e_Re']   = (erekl+ereku)/2.
     prihdr['e_n']    = enn
     prihdr['e_q']    = eqq
+    # Add rejuv properties;
+    prihdr['f_rejuv']= f_rejuv
+    prihdr['t_quen'] = t_quench
+    prihdr['t_rejuv']= t_rejuv
     prihdu = fits.PrimaryHDU(header=prihdr)
 
     col01 = []
