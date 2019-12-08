@@ -159,6 +159,14 @@ def main(parfile, fplt, mcmcplot=True):
         except:
             ntemp = 1
 
+        try:
+            if int(inputs['DISP']) == 1:
+                f_disp = True
+            else:
+                f_disp = False
+        except:
+            f_disp = False
+
         ######################
         # Make basic templates
         if fplt == 0:
@@ -176,7 +184,7 @@ def main(parfile, fplt, mcmcplot=True):
         Czprev0 = Czrec0
         Czprev1 = Czrec1
 
-        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 0, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp, mcmcplot=mcmcplot)
+        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 0, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp, mcmcplot=mcmcplot, f_disp=f_disp)
         #flag_suc = 0
         while (flag_suc == 1):
             print('\n\n')
@@ -189,7 +197,7 @@ def main(parfile, fplt, mcmcplot=True):
             zprev     = zrecom # redshift from previous run
             Czprev0  *= Czrec0
             Czprev1  *= Czrec1
-            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 1, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp, mcmcplot=mcmcplot)
+            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(ID0, PA0, zrecom, 1, zprev, Czprev0, Czprev1, fzvis=fzvis, fneld=fneld, ntemp=ntemp, mcmcplot=mcmcplot, f_disp=f_disp)
 
         #
         # Total calculation time
@@ -201,7 +209,7 @@ def main(parfile, fplt, mcmcplot=True):
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
         plot_sfh(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT,
-        inputs=inputs, dust_model=dust_model, DIR_TMP=DIR_TMP)
+        inputs=inputs, dust_model=dust_model, DIR_TMP=DIR_TMP, f_SFMS=True)
         plot_sed(ID0, PA0, Z=Zall, age=age, tau0=tau0, fil_path=DIR_FILT,
         SNlim=1.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300,
         dust_model=dust_model, DIR_TMP=DIR_TMP, f_label = True)
