@@ -222,13 +222,14 @@ def main(parfile, fplt, mcmcplot=True):
         from .plot_sfh import plot_evolv
         plot_evolv(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT, inputs=inputs, dust_model=dust_model, DIR_TMP=DIR_TMP, nmc=10)
 
+    if fplt == 6:
+        from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
+        #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
+        plot_corner_physparam_summary(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
+        #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
+
 
     '''
-    if fplt == 6:
-        from .plot_Zevo import plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
-        plot_corner_tmp(ID0, PA0, Zall, age, tau0)
-        plot_corner_param2(ID0, PA0, Zall, age, tau0)
-
     if fplt == 8:
         from .plot_MZ import plot_mz
         plot_mz(ID0, PA0, Zall, age)

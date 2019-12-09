@@ -1112,9 +1112,11 @@ def make_rgb(id0,xcen,ycen):
     return rgb_array
 
 # Creat "cumulative" png for gif image.
-def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, out_ind=0, snlimbb=1.0):
+def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
     #
-    # Returns: plots.
+    #
+    # If you like to
+    # Creat temporal png for gif image.
     #
     # snlimbb: SN limit to show flux or up lim in SED.
     #
@@ -1177,8 +1179,7 @@ def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 
 
     # Repeat no.
     nplot = 1000
-
-    DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
+    #DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
     try:
         os.makedirs(DIR_OUT)
     except:
@@ -1316,8 +1317,10 @@ def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 
         for ss in range(len(age)):
             ii = int(len(II0) - ss - 1) # from old to young templates.
             AA_tmp = samples['A'+str(ii)][nr]
-            ZZ_tmp = samples['Z'+str(ii)][nr]
-
+            try:
+                ZZ_tmp = samples['Z'+str(ii)][nr]
+            except:
+                ZZ_tmp = samples['Z0'][nr]
             nZtmp      = bfnc.Z2NZ(ZZ_tmp)
             mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
             lmtmp[kk] += AA_tmp * mslist
@@ -1439,7 +1442,10 @@ def plot_corner_param(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 
     plt.close()
 
 # Creat temporal png for gif image.
-def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, out_ind=0):
+def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, DIR_OUT='./'):
+    #
+    # For summary. In the same format as plot_corner_physparam_frame.
+    #
     nage = np.arange(0,len(age),1)
     fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -1502,7 +1508,7 @@ def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1,
     nplot = 1000
     #nplot = 100
 
-    DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
+    #DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
     try:
         os.makedirs(DIR_OUT)
     except:
@@ -1740,7 +1746,10 @@ def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1,
         for ss in range(len(age)):
             ii = int(len(II0) - ss - 1) # from old to young templates.
             AA_tmp = samples['A'+str(ii)][nr]
-            ZZ_tmp = samples['Z'+str(ii)][nr]
+            try:
+                ZZ_tmp = samples['Z'+str(ii)][nr]
+            except:
+                ZZ_tmp = samples['Z0'][nr]
 
             nZtmp      = bfnc.Z2NZ(ZZ_tmp)
             mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
@@ -1933,8 +1942,11 @@ def plot_corner_param2(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1,
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
     plt.close()
 
-# Creat temporal png for gif image.
-def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None):
+def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
+    #
+    # If you like to
+    # Creat temporal png for gif image.
+    #
     nage = np.arange(0,len(age),1)
     fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -2199,7 +2211,10 @@ def plot_corner_tmp(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.
         for ss in range(len(age)):
             ii = int(len(II0) - ss - 1) # from old to young templates.
             AA_tmp = samples['A'+str(ii)][nr]
-            ZZ_tmp = samples['Z'+str(ii)][nr]
+            try:
+                ZZ_tmp = samples['Z'+str(ii)][nr]
+            except:
+                ZZ_tmp = samples['Z0'][nr]
 
             nZtmp      = bfnc.Z2NZ(ZZ_tmp)
             mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
@@ -3316,7 +3331,6 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     else:
         plt.savefig('SPEC_' + ID0 + '_PA' + PA + '_spec.png', dpi=150)
     plt.close()
-
 
 def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, figpdf=False):
     DIR_TMP = 'templates/'
