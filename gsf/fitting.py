@@ -316,8 +316,8 @@ class Mainbody():
         #####################
         try:
             Avmin = float(inputs['AVMIN'])
-            Avmax = float(inputs['AVMIN'])
-            fit_params.add('Av', value=0.2, min=Avmin, max=Avmax)
+            Avmax = float(inputs['AVMAX'])
+            fit_params.add('Av', value=Avmin, min=Avmin, max=Avmax)
         except:
             fit_params.add('Av', value=0.2, min=0, max=4.0)
 
