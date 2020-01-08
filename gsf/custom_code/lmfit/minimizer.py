@@ -1075,6 +1075,8 @@ class Minimizer(object):
         if self.f_move:
             print('Move is set to DEMove')
             sampler_kwargs['moves'] = emcee.moves.DEMove(sigma=1e-05, gamma0=None)
+        else:
+            sampler_kwargs['moves'] = emcee.moves.RedBlueMove(sigma=1e-05, gamma0=None)
         #else:
         #    sampler_kwargs['moves'] = emcee.moves.DEMove(sigma=1e-05, gamma0=None)
 
