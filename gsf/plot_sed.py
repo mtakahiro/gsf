@@ -67,8 +67,11 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #DIR_TMP  = './templates/'
     DIR_FILT = fil_path
     if inputs:
-        SFILT = inputs['FILTER'] # filter band string.
-        SFILT = [x.strip() for x in SFILT.split(',')]
+        try:
+            SFILT = inputs['FILTER'] # filter band string.
+            SFILT = [x.strip() for x in SFILT.split(',')]
+        except:
+            SFILT = []
     else:
         SFILT = []
 
@@ -188,13 +191,20 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     wht=1./np.square(ey)
 
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
-    NRbb = dat[:, 0]
-    xbb  = dat[:, 1]
-    fybb = dat[:, 2]
-    eybb = dat[:, 3]
-    exbb = dat[:, 4]
-    snbb = fybb/eybb
+    try:
+        dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+        NRbb = dat[:, 0]
+        xbb  = dat[:, 1]
+        fybb = dat[:, 2]
+        eybb = dat[:, 3]
+        exbb = dat[:, 4]
+        snbb = fybb/eybb
+    except:
+        xbb  = np.asarray([100.])
+        fybb = np.asarray([0.]) #np.append(fy01,fy2)
+        eybb = np.asarray([100.]) #np.append(ey01,ey2)
+        exbb = np.asarray([10.]) #np.append(ey01,ey2)
+        snbb = np.asarray([0.]) #fy/ey
 
     ######################
     # Weight by line
@@ -386,7 +396,11 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.4
+    try:
+        ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.4
+    except:
+        ymax = np.max(fy * c / np.square(xg) / d)
+
     #iix = np.argmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d)
     #print(fybb[iix],eybb[iix],xbb[iix])
 
@@ -397,8 +411,11 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.set_ylabel('Flux ($10^{-18}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)',fontsize=12,labelpad=-2)
 
     x1max = 22000
-    if x1max < np.max(xbb[conbb_ymax]):
-        x1max = np.max(xbb[conbb_ymax]) * 1.1
+    try:
+        if x1max < np.max(xbb[conbb_ymax]):
+            x1max = np.max(xbb[conbb_ymax]) * 1.1
+    except:
+        pass
     ax1.set_xlim(2200, x1max)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1,ymax)
