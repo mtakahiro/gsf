@@ -51,7 +51,7 @@ Example data set is stored in ./gsf/examples/
 
 flag
 ~~~~~~~~
-- 0: Start from generating z=0 templates. Then go to 1.
-- 1: Start with pre-existing z=0 templates. Then go to 2.
-- 2: Start with pre-existing z=z_input templates. Then go to 3.
+- 0: Generating z=0 templates (takes a while if MILES). Start from here if parameter in config file is changed. Then go to 1.
+- 1: Redshift template to z=z_input, using pre-existing z=0 templates (from step0). Then go to 2.
+- 2: Fitting part, using pre-existing z=z_input templates (from step1). Then go to 3.
 - 3: Only plot SFH and SED using existing result files.

@@ -202,32 +202,33 @@ class Mainbody():
         fy1  = fy00[con1] * Cz1
         ey1  = ey00[con1] * Cz1
 
-        # BB data in spec_obs are not in use.
-        #con2 = (NR>=10000) # BB
-        #fy2  = fy00[con2]
-        #ey2  = ey00[con2]
-
         ##############
         # Broadband
         ##############
-        dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
-        NRbb = dat[:, 0]
-        xbb  = dat[:, 1]
-        fybb = dat[:, 2]
-        eybb = dat[:, 3]
-        exbb = dat[:, 4]
-        fy2 = fybb
-        ey2 = eybb
+        try:
+            dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA0 + '.cat', comments='#')
+            NRbb = dat[:, 0]
+            xbb  = dat[:, 1]
+            fybb = dat[:, 2]
+            eybb = dat[:, 3]
+            exbb = dat[:, 4]
+            fy2 = fybb
+            ey2 = eybb
 
-        fy01 = np.append(fy0,fy1)
-        fy   = np.append(fy01,fy2)
-        ey01 = np.append(ey0,ey1)
-        ey   = np.append(ey01,ey2)
+            fy01 = np.append(fy0,fy1)
+            fy   = np.append(fy01,fy2)
+            ey01 = np.append(ey0,ey1)
+            ey   = np.append(ey01,ey2)
 
-        wht  = 1./np.square(ey)
-        wht2 = check_line_man(fy, x, wht, fy, zprev, LW0)
-        sn   = fy/ey
-
+            wht  = 1./np.square(ey)
+            wht2 = check_line_man(fy, x, wht, fy, zprev, LW0)
+            sn   = fy/ey
+        except: # if no BB;
+            xbb  = np.asarray([100.])
+            fy   = np.asarray([0.]) #np.append(fy01,fy2)
+            ey   = np.asarray([100.]) #np.append(ey01,ey2)
+            wht2 = np.asarray([0.]) #check_line_man(fy, x, wht, fy, zprev, LW0)
+            sn   = np.asarray([0.]) #fy/ey
 
         #####################
         # Function fo MCMC
@@ -316,8 +317,8 @@ class Mainbody():
         #####################
         try:
             Avmin = float(inputs['AVMIN'])
-            Avmax = float(inputs['AVMAX'])
-            fit_params.add('Av', value=Avmin, min=Avmin, max=Avmax)
+            Avmax = float(inputs['AVMIN'])
+            fit_params.add('Av', value=0.2, min=Avmin, max=Avmax)
         except:
             fit_params.add('Av', value=0.2, min=0, max=4.0)
 

@@ -82,9 +82,12 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     except:
         CAT_BB = False
 
-    SFILT  = inputs['FILTER'] # filter band string.
-    SFILT  = [x.strip() for x in SFILT.split(',')]
-    FWFILT = fil_fwhm(SFILT, DIR_FILT)
+    try:
+        SFILT  = inputs['FILTER'] # filter band string.
+        SFILT  = [x.strip() for x in SFILT.split(',')]
+        FWFILT = fil_fwhm(SFILT, DIR_FILT)
+    except:
+        SFILT = []
 
     # If FIR data;
     try:
