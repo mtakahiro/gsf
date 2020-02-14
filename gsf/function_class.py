@@ -257,6 +257,17 @@ class Func:
             A00 = par['A'+str(aa)]
             NZ  = bfnc.Z2NZ(Z)
             coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+            '''
+            # Just debbug purpose...
+            if len(lib[0,:])<coln:
+                print('################################################')
+                print('Something is wrong in tmp04 in function_class.py')
+                print('aa = %d out of '%(aa),AA)
+                print('NZ = %d out of '%(NZ),ZZ)
+                print('pp = %d'%(pp))
+                print('2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa must be <= %d'%(len(lib[0,:])))
+                print('################################################')
+            '''
             if aa == 0:
                 nr  = lib[:, 0]
                 xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal

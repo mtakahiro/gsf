@@ -138,7 +138,6 @@ def main(parfile, fplt, mcmcplot=True):
     except:
         dust_model = 0
 
-
     #
     # Redshift initial guess.
     #

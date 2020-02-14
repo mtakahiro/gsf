@@ -314,11 +314,21 @@ class Mainbody():
         # Add parameters
         ###############################
         fit_params = Parameters()
-        for aa in range(len(age)):
-            if age[aa] == 99 or age[aa]>agemax:
-                fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
-            else:
-                fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+        try:
+            age_fix = float(inputs['AGEFIX'])
+            aamin = np.argmin(np.abs(age_fix-np.asarray(age[:])))
+            print('AGEFIX is found. Age will be fixed to %.3fGyr'%(age[aamin]))
+            for aa in range(len(age)):
+                if aa != aamin:
+                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                else:
+                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+        except:
+            for aa in range(len(age)):
+                if age[aa] == 99 or age[aa]>agemax:
+                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                else:
+                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
 
         #####################
         # Dust attenuation
