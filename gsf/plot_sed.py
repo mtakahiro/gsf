@@ -1632,8 +1632,12 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
 
     if len(age) == 1:
         for aa in range(len(age)):
-            delTl[aa] = 0.01
-            delTu[aa] = 0.01
+            try:
+                tau_ssp = float(inputs['TAU_SSP'])
+            except:
+                tau_ssp = 0.01
+            delTl[aa] = tau_ssp/2
+            delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
     else:
         for aa in range(len(age)):

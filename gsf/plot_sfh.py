@@ -159,8 +159,12 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     delTu = np.zeros(len(age),dtype='float32')
     if len(age) == 1:
         for aa in range(len(age)):
-            delTl[aa] = 0.01
-            delTu[aa] = 0.01
+            try:
+                tau_ssp = float(inputs['TAU_SSP'])
+            except:
+                tau_ssp = 0.01
+            delTl[aa] = tau_ssp/2
+            delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
     else:
         for aa in range(len(age)):
