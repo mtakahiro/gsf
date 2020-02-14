@@ -87,16 +87,21 @@ class Mainbody():
         #
         # Metallicity
         #
-        if inputs['ZFIX']:
+        try:
             ZFIX = float(inputs['ZFIX'])
-            Zmin, Zmax = ZFIX, ZFIX+0.01
-            Zall = np.arange(Zmin, Zmax, 0.01) # in logZsun
-            delZtmp = 0.01
-        else:
+            delZ = 0.0001
+            Zmin, Zmax = ZFIX, ZFIX+delZ
+            Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
+        except:
             Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
             delZ = float(inputs['DELZ'])
-            Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
-            delZtmp = delZ
+            if Zmax == Zmin or delZ==0:
+                delZ  = 0.0001
+                Zmax = Zmin+delZ
+                Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
+            else:
+                Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
+
 
         # For z prior.
         delzz  = 0.001
@@ -337,13 +342,17 @@ class Mainbody():
                     fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
-        elif inputs['ZFIX']:
-            ZFIX = float(inputs['ZFIX'])
-            aa = 0
-            fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
         else:
-            aa = 0
-            fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
+            try:
+                ZFIX = float(inputs['ZFIX'])
+                aa = 0
+                fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
+            except:
+                aa = 0
+                if np.min(Zall)==np.max(Zall):
+                    fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall)+0.0001)
+                else:
+                    fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
 
         ####################################
         # Initial Metallicity Determination
@@ -355,8 +364,8 @@ class Mainbody():
         fwz.write('# ID Zini chi/nu AA Av Zbest\n')
         fwz.write('# FNELD = %d\n' % fneld)
 
-        nZtmp = int((Zmax-Zmin)/delZtmp)
-        ZZtmp = np.arange(Zmin,Zmax,delZtmp)
+        nZtmp = int((Zmax-Zmin)/delZ)
+        ZZtmp = np.arange(Zmin,Zmax,delZ)
 
         # How to get initial parameters?
         # Nelder;
@@ -413,7 +422,7 @@ class Mainbody():
         else:
             fit_name='powell'
             for zz in range(0,nZtmp,2):
-                ZZ = zz * delZtmp + np.min(Zall)
+                ZZ = zz * delZ + np.min(Zall)
                 if int(inputs['ZEVOL']) == 1:
                     for aa in range(len(age)):
                         fit_params['Z'+str(aa)].value = ZZ

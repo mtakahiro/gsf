@@ -39,13 +39,16 @@ class Analyze:
             except:
                 pass
 
-        if inputs['ZFIX']:
+        try:
             ZFIX = float(inputs['ZFIX'])
             Zmin, Zmax = ZFIX, ZFIX+0.0001
             self.ZALL = np.arange(Zmin, Zmax, 0.0001) # in logZsun
-        else:
+        except:
             Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
             delZ = float(inputs['DELZ'])
+            if Zmax == Zmin or delZ == 0:
+                delZ = 0.0001
+                Zmax = Zmin + delZ
             self.ZALL = np.arange(Zmin, Zmax, delZ) # in logZsun
 
         self.DIR_FILT = inputs['DIR_FILT']
