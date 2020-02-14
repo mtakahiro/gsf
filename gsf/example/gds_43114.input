@@ -28,8 +28,11 @@ SPEC_FILE	$ID_PA00_inp1_tmp3_err.cat,$ID_PA00_inp0_tmp3_err.cat # Make sure file
 AGE		0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0 #0.01,0.03,0.1,0.3,0.5,0.7,1.0,2.0,3.0
 ZMAX		0.624 # Max metalicity
 ZMIN		-0.8 # Min metalicity
-DELZ		0.2
+DELZ		0.2 # Delta in logZ. 
+#ZFIX		0.0 # If you want to fix logZ, comment out ZMAX,ZMIN,DELZ, and set this. 
 ZEVOL		1 # Evolution in Z; 1=yes, 2=no.
+AVMIN		0.0 # Minimum Av (Dust Attenuation) in mag.
+AVMAX		4.0 # Maximum Av (Dust Attenuation) in mag.
 ZMC		1 # redshift as a free parameter in mcmc.
 NIMF		0 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.
 NDIM		22 # ndim  = int(1 + len(age) * 2) # dust + age + Z(age)

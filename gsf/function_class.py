@@ -237,6 +237,7 @@ class Func:
             zmc = zgal
         #Cz0s  = vals['Cz0']
         #Cz1s  = vals['Cz1']
+
         if len(tau0)>1:
             pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
             pp  = int(pp0[0])
@@ -255,7 +256,6 @@ class Func:
                 Z   = par['Z0']
             A00 = par['A'+str(aa)]
             NZ  = bfnc.Z2NZ(Z)
-
             coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
             if aa == 0:
                 nr  = lib[:, 0]
