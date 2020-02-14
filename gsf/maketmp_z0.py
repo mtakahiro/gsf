@@ -58,13 +58,16 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin = 400, lammax = 80000, tau0 = [0.01,0.02,0.03], fneb=0, logU=-2.5, DIR_TMP='./templates/'):
+def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin=400, lammax=80000, tau0=[0.01,0.02,0.03], tau_ssp=0, fneb=0, logU=-2.5, DIR_TMP='./templates/'):
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
     # Z (array)  : Stellar phase metallicity in logZsun.
     # age (array): Age, in Gyr.
     # fneb (int) : flag for adding nebular emissionself.
     # logU (float): ionizing parameter, in logU.
+    # tau_ssp (float): Width of age bin. If you want to fix, put >0.01 (Gyr).
+    #  Otherwise, it would be either minimum value (=0.01; if one age bin), or
+    #  the width to the next age bin.
     #
     NZ = len(Z)
     Na = len(age)
@@ -78,23 +81,29 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     col05 = [] # For spectral indices.
     #col06 = [] # For weird templates for UVJ calculation;
     for zz in range(len(Z)):
-
         for pp in range(len(tau0)):
             spall = [] # For sps model
             ms = np.zeros(Na, dtype='float32')
             Ls = np.zeros(Na, dtype='float32')
             LICK = np.zeros((Na,len(INDICES)), dtype='float32')
-
             tau0_old = 0
             for ss in range(Na):
-                if ss > 0:
-                    tautmp = age[ss] - age[ss-1]
-                    if tau0[pp] > 0.0:
-                        tautmp = tau0[pp]
+                #
+                # Determining tau for each age bin;
+                #
+                if tau_ssp>0:
+                    tautmp = tau_ssp
                 else:
-                    tautmp = 0.01
+                    if ss > 0:
+                        tautmp = age[ss] - age[ss-1]
+                        if tau0[pp] > 0.0:
+                            tautmp = tau0[pp]
+                    else:
+                        tautmp = 0.01
 
-                # Short cut.
+                #
+                # Then, make sps.
+                #
                 if tautmp != tau0_old:
                     if tau0[pp] == 99:
                         tautmp = 0.01

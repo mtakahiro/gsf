@@ -50,9 +50,9 @@ def main(parfile, fplt, mcmcplot=True):
             break
         else:
             cols = str.split(line)
-            if cols[0] != '#':
-                input0.append(cols[0])
-                input1.append(cols[1])
+            if len(cols)>0 and cols[0] != '#':
+                    input0.append(cols[0])
+                    input1.append(cols[1])
     file.close()
 
     inputs = {}
@@ -140,14 +140,21 @@ def main(parfile, fplt, mcmcplot=True):
 
 
     #
-    flag_suc = 1
+    # Redshift initial guess.
+    #
     zrecom   = zgal
+    flag_suc = 1
+    #
+    # Grism spectrum normalization
+    #
     Czrec0   = Cz0
     Czrec1   = Cz1
 
+    #
+    # Then load Func and Basic with param range.
+    #
     fnc  = Func(Zall, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
-
 
     #
     # Make templates based on input redsfift.
@@ -167,7 +174,6 @@ def main(parfile, fplt, mcmcplot=True):
             ntemp = int(inputs['NTEMP'])
         except:
             ntemp = 1
-
         try:
             if int(inputs['DISP']) == 1:
                 f_disp = True
@@ -181,12 +187,30 @@ def main(parfile, fplt, mcmcplot=True):
         if fplt == 0:
             zmin   = 1.0
             lammax = 80000/(1.+zmin)
-            nimf = int(inputs['NIMF'])
-            make_tmp_z0(nimf, Zall, age, lammax = lammax, tau0=tau0, fneb=fneb, DIR_TMP=DIR_TMP)
+            # Age bin size;
+            try:
+                tau_ssp = float(inputs['TAU_SSP'])
+                if tau_ssp<0.01:
+                    print('tau_ssp = %.4f is too small. Set to default.'%(tau_ssp))
+                    tau_ssp = 0
+            except:
+                tau_ssp = 0
+            # IMF
+            try:
+                nimf = int(inputs['NIMF'])
+            except:
+                nimf = 0
+                print('Cannot find NIMF. Set to %d.'%(nimf))
+            #
+            # Then run;
+            #
+            make_tmp_z0(nimf, Zall, age, lammax=lammax, tau0=tau0, tau_ssp=tau_ssp, fneb=fneb, DIR_TMP=DIR_TMP)
 
-        ####################################
+
+        # ##################################
         # Start making redshifted templates.
         # Then, fit.
+        # ##################################
         if fplt != 2:
             maketemp(inputs, zrecom, Zall, age, fneb=fneb, DIR_TMP=DIR_TMP)
         zprev   = zrecom # redshift from previous run

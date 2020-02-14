@@ -1,4 +1,7 @@
+#
 # Input file
+#
+
 #
 # params for MCMC
 #
@@ -11,6 +14,7 @@ FNELD		0 #
 NTEMP		0 # Number of parallel tempering.
 NCPU		0 # Number of multiprocessing.
 TAU_COMP	1 # comparison between different tau for each ssp when plot.
+
 #
 # Params for data
 #
@@ -22,6 +26,7 @@ FILTER		f125w,f140w,f160w,f225w,f275w,f336w,f435w,f606w,f775w,f814w,f850w,f230w,
 MORP		moffat
 MORP_FILE	$ID_PA00_inp0_moffat_err.cat
 SPEC_FILE	$ID_PA00_inp1_tmp3_err.cat,$ID_PA00_inp0_tmp3_err.cat # Make sure files are ordered irw wavelength.
+
 #
 # Params for SED
 #
@@ -36,6 +41,7 @@ AVMAX		4.0 # Maximum Av (Dust Attenuation) in mag.
 ZMC		1 # redshift as a free parameter in mcmc.
 NIMF		0 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.
 NDIM		22 # ndim  = int(1 + len(age) * 2) # dust + age + Z(age)
+
 #
 # Params for target
 #

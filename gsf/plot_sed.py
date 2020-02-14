@@ -67,11 +67,8 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #DIR_TMP  = './templates/'
     DIR_FILT = fil_path
     if inputs:
-        try:
-            SFILT = inputs['FILTER'] # filter band string.
-            SFILT = [x.strip() for x in SFILT.split(',')]
-        except:
-            SFILT = []
+        SFILT = inputs['FILTER'] # filter band string.
+        SFILT = [x.strip() for x in SFILT.split(',')]
     else:
         SFILT = []
 
@@ -191,20 +188,13 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     wht=1./np.square(ey)
 
-    try:
-        dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
-        NRbb = dat[:, 0]
-        xbb  = dat[:, 1]
-        fybb = dat[:, 2]
-        eybb = dat[:, 3]
-        exbb = dat[:, 4]
-        snbb = fybb/eybb
-    except:
-        xbb  = np.asarray([100.])
-        fybb = np.asarray([0.]) #np.append(fy01,fy2)
-        eybb = np.asarray([100.]) #np.append(ey01,ey2)
-        exbb = np.asarray([10.]) #np.append(ey01,ey2)
-        snbb = np.asarray([0.]) #fy/ey
+    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    NRbb = dat[:, 0]
+    xbb  = dat[:, 1]
+    fybb = dat[:, 2]
+    eybb = dat[:, 3]
+    exbb = dat[:, 4]
+    snbb = fybb/eybb
 
     ######################
     # Weight by line
@@ -396,11 +386,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
-    try:
-        ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.4
-    except:
-        ymax = np.max(fy * c / np.square(xg) / d)
-
+    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.4
     #iix = np.argmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d)
     #print(fybb[iix],eybb[iix],xbb[iix])
 
@@ -411,11 +397,8 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.set_ylabel('Flux ($10^{-18}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)',fontsize=12,labelpad=-2)
 
     x1max = 22000
-    try:
-        if x1max < np.max(xbb[conbb_ymax]):
-            x1max = np.max(xbb[conbb_ymax]) * 1.1
-    except:
-        pass
+    if x1max < np.max(xbb[conbb_ymax]):
+        x1max = np.max(xbb[conbb_ymax]) * 1.1
     ax1.set_xlim(2200, x1max)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1,ymax)
@@ -1646,23 +1629,30 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
     delTu = np.zeros(len(age),dtype='float32')
-    for aa in range(len(age)):
-        if aa == 0:
-            delTl[aa] = age[aa]
-            delTu[aa] = (age[aa+1]-age[aa])/2.
+
+    if len(age) == 1:
+        for aa in range(len(age)):
+            delTl[aa] = 0.01
+            delTu[aa] = 0.01
             delT[aa]  = delTu[aa] + delTl[aa]
-        elif Tuni/cc.Gyr_s < age[aa]:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = 10.
-            delT[aa]  = delTu[aa] + delTl[aa]
-        elif aa == len(age)-1:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = Tuni/cc.Gyr_s - age[aa]
-            delT[aa]  = delTu[aa] + delTl[aa]
-        else:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = (age[aa+1]-age[aa])/2.
-            delT[aa]  = delTu[aa] + delTl[aa]
+    else:
+        for aa in range(len(age)):
+            if aa == 0:
+                delTl[aa] = age[aa]
+                delTu[aa] = (age[aa+1]-age[aa])/2.
+                delT[aa]  = delTu[aa] + delTl[aa]
+            elif Tuni/cc.Gyr_s < age[aa]:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = 10.
+                delT[aa]  = delTu[aa] + delTl[aa]
+            elif aa == len(age)-1:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+                delT[aa]  = delTu[aa] + delTl[aa]
+            else:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = (age[aa+1]-age[aa])/2.
+                delT[aa]  = delTu[aa] + delTl[aa]
 
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
@@ -1819,8 +1809,12 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
         # Total
         ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
         ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=.1, color='gray', zorder=-1, label='', alpha=0.1)
-        ax1.plot(age[:], SF[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
-        ax2.plot(age[:], ZC[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
+        if len(age)==1:
+            ax1.plot(age[:], SF[:], marker='.', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
+            ax2.plot(age[:], ZC[:], marker='.', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
+        else:
+            ax1.plot(age[:], SF[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
+            ax2.plot(age[:], ZC[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
 
         # Convert into log
         Ztmp[kk] /= ACtmp[kk]
@@ -1838,7 +1832,9 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
 
         #for kk in range(0,nplot,1):
         if kk == nplot-1:
+            #
             # Histogram
+            #
             for i, x in enumerate(Par):
                 ax = axes[i, i]
                 x1min, x1max = NPARmin[i], NPARmax[i]
@@ -1850,6 +1846,9 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
                 ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
                 ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
                 ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
+                ax.text(np.percentile(NPAR[i],16), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],16)), fontsize=9)
+                ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
+                ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
 
                 ax.set_xlim(x1min, x1max)
                 ax.set_yticklabels([])
