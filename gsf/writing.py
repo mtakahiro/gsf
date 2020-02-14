@@ -39,9 +39,15 @@ class Analyze:
             except:
                 pass
 
-        Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-        delZ = float(inputs['DELZ'])
-        self.ZALL = np.arange(Zmin, Zmax, delZ) # in logZsun
+        if inputs['ZFIX']:
+            ZFIX = float(inputs['ZFIX'])
+            Zmin, Zmax = ZFIX, ZFIX+0.0001
+            self.ZALL = np.arange(Zmin, Zmax, 0.0001) # in logZsun
+        else:
+            Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+            delZ = float(inputs['DELZ'])
+            self.ZALL = np.arange(Zmin, Zmax, delZ) # in logZsun
+
         self.DIR_FILT = inputs['DIR_FILT']
         self.DIR_TEMP = inputs['DIR_TEMP']
 
@@ -196,15 +202,20 @@ class Analyze:
                 xm_tmp = np.append(xm_tmp,xm_tmp_dust)
             '''
 
+            Dn4[mm]= calc_Dn4(xm_tmp, model2, zrecom) # Dust attenuation is not included?
             lmrest = xm_tmp / (1. + zrecom)
             band0  = ['u','b','v','j','sz']
-            lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # model2 in fnu
-
-            Dn4[mm]= calc_Dn4(xm_tmp, model2, zrecom) # Dust attenuation is not included?
-            uv[mm] = -2.5*np.log10(fconv[0]/fconv[2])
-            bv[mm] = -2.5*np.log10(fconv[1]/fconv[2])
-            vj[mm] = -2.5*np.log10(fconv[2]/fconv[3])
-            zj[mm] = -2.5*np.log10(fconv[4]/fconv[3])
+            try:
+                lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # model2 in fnu
+                uv[mm] = -2.5*np.log10(fconv[0]/fconv[2])
+                bv[mm] = -2.5*np.log10(fconv[1]/fconv[2])
+                vj[mm] = -2.5*np.log10(fconv[2]/fconv[3])
+                zj[mm] = -2.5*np.log10(fconv[4]/fconv[3])
+            except:
+                uv[mm] = 0
+                bv[mm] = 0
+                vj[mm] = 0
+                zj[mm] = 0
 
             '''
             AA_tmp_sum = 0

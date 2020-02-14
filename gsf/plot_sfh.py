@@ -157,23 +157,29 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
     delTu = np.zeros(len(age),dtype='float32')
-    for aa in range(len(age)):
-        if aa == 0:
-            delTl[aa] = age[aa]
-            delTu[aa] = (age[aa+1]-age[aa])/2.
+    if len(age) == 1:
+        for aa in range(len(age)):
+            delTl[aa] = 0.01
+            delTu[aa] = 0.01
             delT[aa]  = delTu[aa] + delTl[aa]
-        elif Tuni/cc.Gyr_s < age[aa]:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = delTl[aa] #10.
-            delT[aa]  = delTu[aa] + delTl[aa]
-        elif aa == len(age)-1:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = Tuni/cc.Gyr_s - age[aa]
-            delT[aa]  = delTu[aa] + delTl[aa]
-        else:
-            delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = (age[aa+1]-age[aa])/2.
-            delT[aa]  = delTu[aa] + delTl[aa]
+    else:
+        for aa in range(len(age)):
+            if aa == 0:
+                delTl[aa] = age[aa]
+                delTu[aa] = (age[aa+1]-age[aa])/2.
+                delT[aa]  = delTu[aa] + delTl[aa]
+            elif Tuni/cc.Gyr_s < age[aa]:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = delTl[aa] #10.
+                delT[aa]  = delTu[aa] + delTl[aa]
+            elif aa == len(age)-1:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+                delT[aa]  = delTu[aa] + delTl[aa]
+            else:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = (age[aa+1]-age[aa])/2.
+                delT[aa]  = delTu[aa] + delTl[aa]
 
 
     delT[:]  *= 1e9 # Gyr to yr
@@ -355,8 +361,11 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     SFMS_50 = get_SFMS(zbes,age,ACp[:,1],IMF=IMF)
     SFMS_84 = get_SFMS(zbes,age,ACp[:,2],IMF=IMF)
 
-    f_rejuv,t_quench,t_rejuv = check_rejuv(age,np.log10(SFp[:,:]),np.log10(ACp[:,:]),np.log10(SFMS_50))
-    #print(f_rejuv,t_quench,t_rejuv)
+    try:
+        f_rejuv,t_quench,t_rejuv = check_rejuv(age,np.log10(SFp[:,:]),np.log10(ACp[:,:]),np.log10(SFMS_50))
+    except:
+        print('Rejuvenation judge failed. (plot_sfh.py)')
+        f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
     if f_SFMS:

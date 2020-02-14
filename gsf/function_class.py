@@ -14,7 +14,10 @@ class Func:
     def __init__(self, ZZ, AA, dust_model=0, DIR_TMP='./templates/'):
         self.ZZ   = ZZ
         self.AA   = AA
-        self.delZ = ZZ[1] - ZZ[0]
+        try:
+            self.delZ = ZZ[1] - ZZ[0]
+        except:
+            self.delZ = 0.01
         self.dust_model = dust_model
         self.DIR_TMP    = DIR_TMP
 
@@ -36,7 +39,6 @@ class Func:
         elif fall == 1:
             app = 'all_'
 
-        #DIR_TMP = './templates/'
         DIR_TMP = self.DIR_TMP
         for pp in range(len(tau0)):
             for zz in range(len(ZZ)):
@@ -58,7 +60,6 @@ class Func:
                     coln = int(2 + aa)
 
                     colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
-                    #colnall = int(2 + aa*len(ZZ) + zz) # 2 takes account of wavelength and AV columns.
                     colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
 
                     lib[:,colnall] = hdu0.data[colname]
@@ -248,7 +249,7 @@ class Func:
         for aa in range(len(AA)):
             try:
                 Ztest = par['Z'+str(len(AA)-1)] # instead of 'ZEVOL'
-                Z   = par['Z'+str(aa)]
+                Z     = par['Z'+str(aa)]
             except:
                 # This is in the case with ZEVO=0.
                 Z   = par['Z0']

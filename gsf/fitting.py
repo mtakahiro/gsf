@@ -87,13 +87,16 @@ class Mainbody():
         #
         # Metallicity
         #
-        Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-        delZ = float(inputs['DELZ'])
-        Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
-
-        # For minimizer.
-        delZtmp = delZ
-        #delZtmp = 0.4 # to increase speed.
+        if inputs['ZFIX']:
+            ZFIX = float(inputs['ZFIX'])
+            Zmin, Zmax = ZFIX, ZFIX+0.01
+            Zall = np.arange(Zmin, Zmax, 0.01) # in logZsun
+            delZtmp = 0.01
+        else:
+            Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+            delZ = float(inputs['DELZ'])
+            Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
+            delZtmp = delZ
 
         # For z prior.
         delzz  = 0.001
@@ -317,9 +320,12 @@ class Mainbody():
         #####################
         try:
             Avmin = float(inputs['AVMIN'])
-            Avmax = float(inputs['AVMIN'])
-            fit_params.add('Av', value=0.2, min=Avmin, max=Avmax)
+            Avmax = float(inputs['AVMAX'])
+            if Avmin == Avmax:
+                Avmax += 0.001
+            fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
         except:
+            print('Dust is set in [0:4.0]/mag')
             fit_params.add('Av', value=0.2, min=0, max=4.0)
 
         #####################
@@ -332,10 +338,9 @@ class Mainbody():
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))
         elif inputs['ZFIX']:
-            #print('Z is fixed')
             ZFIX = float(inputs['ZFIX'])
             aa = 0
-            fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.01)
+            fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
         else:
             aa = 0
             fit_params.add('Z'+str(aa), value=0, min=np.min(Zall), max=np.max(Zall))

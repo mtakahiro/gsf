@@ -108,9 +108,14 @@ def main(parfile, fplt, mcmcplot=True):
     #
     # Metallicity
     #
-    Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-    delZ = float(inputs['DELZ'])
-    Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
+    if inputs['ZFIX']:
+        ZFIX = float(inputs['ZFIX'])
+        Zmin, Zmax = ZFIX, ZFIX+0.0001
+        Zall = np.arange(Zmin, Zmax, 0.0001) # in logZsun
+    else:
+        Zmax, Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+        delZ = float(inputs['DELZ'])
+        Zall = np.arange(Zmin, Zmax, delZ) # in logZsun
 
     #
     # Line

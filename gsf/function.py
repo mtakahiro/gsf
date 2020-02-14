@@ -46,7 +46,7 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
                     f_rejuv  = 1
                     break
 
-    print(f_rejuv,t_quench,t_rejuv)
+    #print(f_rejuv,t_quench,t_rejuv)
     return f_rejuv,t_quench,t_rejuv
 
 

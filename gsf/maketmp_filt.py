@@ -138,9 +138,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 print('File, %s, cannot be open.'%(spec_file))
                 pass
         # Constructing arrays.
-        lm   = np.zeros(np.sum(ninp0[:]),dtype='float32')
-        fobs = np.zeros(np.sum(ninp0[:]),dtype='float32')
-        eobs = np.zeros(np.sum(ninp0[:]),dtype='float32')
+        lm   = np.zeros(np.sum(ninp0[:]),dtype='float64')
+        fobs = np.zeros(np.sum(ninp0[:]),dtype='float64')
+        eobs = np.zeros(np.sum(ninp0[:]),dtype='float64')
         fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
         for ff, spec_file in enumerate(spec_files):
             try:
@@ -173,6 +173,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             id0 = fd0[:,0]
             ii0 = np.argmin(np.abs(id0[:]-int(ID)))
             if int(id0[ii0]) !=  int(ID):
+                print('Something is wrong with BB catalog!')
                 return -1
             fd  = fd0[ii0,:]
         except:
@@ -181,8 +182,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 return -1
             fd  = fd0[:]
         id  = fd[0]
-        fbb = np.zeros(len(SFILT), dtype='float32')
-        ebb = np.zeros(len(SFILT), dtype='float32')
+        fbb = np.zeros(len(SFILT), dtype='float64')
+        ebb = np.zeros(len(SFILT), dtype='float64')
         for ii in range(len(SFILT)):
             fbb[ii] = fd[ii*2+1]
             ebb[ii] = fd[ii*2+2]
@@ -214,8 +215,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             ebb  = ebb0
 
     else:
-        fbb = np.zeros(len(SFILT), dtype='float32')
-        ebb = np.zeros(len(SFILT), dtype='float32')
+        fbb = np.zeros(len(SFILT), dtype='float64')
+        ebb = np.zeros(len(SFILT), dtype='float64')
         for ii in range(len(SFILT)):
             fbb[ii] = 0
             ebb[ii] = -99 #1000
@@ -236,8 +237,8 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 return -1
             fd  = fdd[:]
         id  = fd[0]
-        fbb_d = np.zeros(len(DFILT), dtype='float32')
-        ebb_d = np.zeros(len(DFILT), dtype='float32')
+        fbb_d = np.zeros(len(DFILT), dtype='float64')
+        ebb_d = np.zeros(len(DFILT), dtype='float64')
         for ii in range(len(DFILT)):
             fbb_d[ii] = fd[ii*2+1]
             ebb_d[ii] = fd[ii*2+2]
@@ -358,7 +359,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
 
             Na      = len(age)
             Nz      = 1
-            param   = np.zeros((Na, 6), dtype='float32')
+            param   = np.zeros((Na, 6), dtype='float64')
             param[:,2] = 1e99
             Ntmp    = 1
             chi2    = np.zeros(Ntmp) + 1e99
@@ -375,28 +376,28 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 else:
                     spec0 = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
 
-            lmbest   = np.zeros((Ntmp, len(lm0)), dtype='float32')
-            fbest    = np.zeros((Ntmp, len(lm0)), dtype='float32')
-            lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float32')
-            fbestbb  = np.zeros((Ntmp, len(SFILT)), dtype='float32')
+            lmbest   = np.zeros((Ntmp, len(lm0)), dtype='float64')
+            fbest    = np.zeros((Ntmp, len(lm0)), dtype='float64')
+            lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float64')
+            fbestbb  = np.zeros((Ntmp, len(SFILT)), dtype='float64')
 
-            A = np.zeros(Na, dtype='float32') + 1
+            A = np.zeros(Na, dtype='float64') + 1
 
-            spec_mul = np.zeros((Na, len(lm0)), dtype='float32')
-            spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float32')
+            spec_mul = np.zeros((Na, len(lm0)), dtype='float64')
+            spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float64')
             spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype='float64')
 
-            ftmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
-            ltmpbb = np.zeros((Na, len(SFILT)), dtype='float32')
+            ftmpbb = np.zeros((Na, len(SFILT)), dtype='float64')
+            ltmpbb = np.zeros((Na, len(SFILT)), dtype='float64')
 
-            ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float32')
-            spec_av_tmp = np.zeros((Na, len(lm)), dtype='float32')
+            ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float64')
+            spec_av_tmp = np.zeros((Na, len(lm)), dtype='float64')
 
-            ms    = np.zeros(Na, dtype='float32')
-            Ls    = np.zeros(Na, dtype='float32')
+            ms    = np.zeros(Na, dtype='float64')
+            Ls    = np.zeros(Na, dtype='float64')
             ms[:] = mshdu.data['ms_'+str(zz)][:] # [:] is necessary.
             Ls[:] = mshdu.data['Ls_'+str(zz)][:]
-            Fuv   = np.zeros(Na, dtype='float32')
+            Fuv   = np.zeros(Na, dtype='float64')
 
             for ss in range(Na):
                 wave = spechdu.data['wavelength']
