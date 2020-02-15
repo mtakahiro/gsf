@@ -32,7 +32,7 @@ lcb = '#4682b4' # line color, blue
 col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
 
-def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
+def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
     #
     # Returns: plots.
     #
@@ -125,7 +125,6 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     # FIR Dust;
     try:
-    #if True:
         MD16 = hdul[1].data['MDUST'][0]
         MD50 = hdul[1].data['MDUST'][1]
         MD84 = hdul[1].data['MDUST'][2]
@@ -216,41 +215,43 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     conspec = (NR<10000) #& (fy/ey>1)
     ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
+    #conbb = (NR>=10000)
 
-    conbb = (NR>=10000)
-
-    #######################
+    #######################################
     # D.Kelson like Box for BB photometry
-    for ii in range(len(xbb)):
-        if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
-            xx = [xbb[ii]-exbb[ii],xbb[ii]-exbb[ii]]
-            yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
-            #ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-            xx = [xbb[ii]+exbb[ii],xbb[ii]+exbb[ii]]
-            yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
-            #ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-            xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
-            yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d]
-            #ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-            xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
-            yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
-            #ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-
-    try:
-        conbb_hs = (fybb/eybb>SNlim)
-        ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
-        yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-        ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
-        '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-    except:
-        pass
-    try:
-        conebb_ls = (fybb/eybb<=SNlim)
-        ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * SNlim, \
-        yerr=fybb[conebb_ls]*0+np.max(fybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d)*0.05, \
-        uplims=eybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
-    except:
-        pass
+    #######################################
+    f_bbbox = False
+    if f_bbbox:
+        for ii in range(len(xbb)):
+            if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
+                xx = [xbb[ii]-exbb[ii],xbb[ii]-exbb[ii]]
+                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+                xx = [xbb[ii]+exbb[ii],xbb[ii]+exbb[ii]]
+                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
+                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
+                yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+    else: # Normal BB plot;
+        try:
+            conbb_hs = (fybb/eybb>SNlim)
+            ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
+            yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
+            ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
+            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+        except:
+            pass
+        try:
+            conebb_ls = (fybb/eybb<=SNlim)
+            ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * SNlim, \
+            yerr=fybb[conebb_ls]*0+np.max(fybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d)*0.05, \
+            uplims=eybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4)
+        except:
+            pass
 
     #####################################
     # Open ascii file and stock to array.
@@ -415,7 +416,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
 
+    #
     # SED params in plot
+    #
     if f_label:
         try:
             fd = fits.open('SFH_' + ID0 + '_PA' + PA + '_param.fits')[1].data
@@ -507,9 +510,11 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     dlw   = R_grs * dw # Can affect the SFR.
     ldw   = 7
 
+    ###################################
     # To add lines in the plot,
     # ,manually edit the following file
     # so as Fcont50 have >0.
+    ###################################
     flw = open(ID0 + '_PA' + PA + '_lines_fit.txt', 'w')
     flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
     flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
@@ -605,9 +610,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         pass
     flw.close()
 
-    ############
-    # Zoom Line
-    ############
+    ##########################
+    # Zoom in Line regions
+    ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
         ax2t.fill_between(xg1/zscl, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
@@ -620,7 +625,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         print('Median SN at 3400-3800 is;', np.median((fy01/ey01)[con4000b]))
         print('Median SN at 4200-5000 is;', np.median((fy01/ey01)[con4000r]))
 
+    #
     # From MCMC chain
+    #
     file = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
     niter = 0
     data = loadcpkl(os.path.join('./'+file))
@@ -636,7 +643,6 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     samples  = res #.chain[:, :, :].reshape((-1, ndim))
 
-    #for kk in range(int(nmc/5)):
     ytmp = np.zeros((nmc2,len(ysum)), dtype='float32')
     ytmpmax = np.zeros(len(ysum), dtype='float32')
     ytmpmin = np.zeros(len(ysum), dtype='float32')
@@ -672,7 +678,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         else:
             ferr_tmp = 1.0
 
+        #
         # Dust component;
+        #
         if f_dust:
             if kk == 0:
                 par  = Parameters()
@@ -684,32 +692,51 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
-                ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float32')
+                #ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float32')
             model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
+            '''
             if f_grsm:
                 ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
             ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-            ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
             Fuv[kk]    = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
             Fuv28[kk]  = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
             Lir[kk]    = get_Fint(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
+            '''
         else:
+            x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-            ax1.plot(xm_tmp, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-            if f_grsm:
-                ax2t.plot(xm_tmp/zscl, fm_tmp * c/np.square(xm_tmp)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
-            Fuv[kk]   = get_Fuv(xm_tmp[:]/(1.+zbes), fm_tmp * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
-            Fuv28[kk] = get_Fuv(xm_tmp[:]/(1.+zbes), fm_tmp * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
-            Lir[kk]   = 0 #get_Fint(xm_tmp[:]/(1.+zbes), fm_tmp * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
+            ax1.plot(x1_tot, fm_tmp * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+        #
+        # Grism plot + Fuv flux + LIR.
+        #
+        if f_grsm:
+            ax2t.plot(x1_tot/zscl, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+        Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
+        Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
+        Lir[kk]   = 0 #get_Fint(xm_tmp[:]/(1.+zbes), fm_tmp * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
 
-    # plot BB model;
-    #from .maketmp_filt import filconv
+    #
+    # Plot Median SED;
+    #
+    ytmp16 = np.zeros(len(x1_tot), dtype='float32')
+    ytmp50 = np.zeros(len(x1_tot), dtype='float32')
+    ytmp84 = np.zeros(len(x1_tot), dtype='float32')
+    for kk in range(len(x1_tot[:])):
+        ytmp16[kk] = np.percentile(ytmp[:,kk],16)
+        ytmp50[kk] = np.percentile(ytmp[:,kk],50)
+        ytmp84[kk] = np.percentile(ytmp[:,kk],84)
+    ax1.plot(x1_tot, ytmp50, '-', lw=1., color='gray', zorder=-1, alpha=0.9)
+
+    #
+    # plot BB model from best template (blue squares)
+    #
     if f_dust:
         ALLFILT = np.append(SFILT,DFILT)
         #for ii in range(len(x1_tot)):
         #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
-        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, model_tot*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
         zorder=2, alpha=1.0, marker='s', s=10)
         ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
@@ -723,7 +750,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
                 fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],ALLFILT[ii]))
             fw.close()
     else:
-        lbb, fbb, lfwhm = filconv(SFILT, xm_tmp, fm_tmp*c/np.square(xm_tmp)/d, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='s', s=10)
         if save_sed == True:
             fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
@@ -736,13 +763,6 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     if save_sed == True:
         col00  = []
-        ytmp16 = np.zeros(len(xm_tmp), dtype='float32')
-        ytmp50 = np.zeros(len(xm_tmp), dtype='float32')
-        ytmp84 = np.zeros(len(xm_tmp), dtype='float32')
-        for kk in range(len(xm_tmp[:])):
-            ytmp16[kk] = np.percentile(ytmp[:,kk],16)
-            ytmp50[kk] = np.percentile(ytmp[:,kk],50)
-            ytmp84[kk] = np.percentile(ytmp[:,kk],84)
         col1  = fits.Column(name='wave_model', format='E', unit='AA', array=xm_tmp)
         col00.append(col1)
         col2  = fits.Column(name='f_model_16', format='E', unit='1e-18erg/s/cm2/AA', array=ytmp16[:])
@@ -866,6 +886,8 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ####################
     # Plot Different Z
     ####################
+    '''
+    # Deprecated;
     if f_Z_all == 1:
         fileZ = 'Z_' + ID0 + '_PA' + PA + '.cat'
         Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
@@ -896,6 +918,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
                 ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=%.2f$'%(Zini[jj])) # Z here is Zinitial.
             if f_grsm:
                 ax2t.plot(x0_r/zscl, ysum_Z * c/ np.square(x0_r) / d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.5)
+    '''
 
     ################
     # RGB
@@ -2669,7 +2692,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
 
-def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', figpdf=False):
+def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', figpdf=False):
 
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
@@ -3291,6 +3314,8 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     ####################
     # Plot Different Z
     ####################
+    '''
+    # Deprecated;
     if f_Z_all == 1:
         fileZ = 'Z_' + ID0 + '_PA' + PA + '.cat'
         Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
@@ -3320,7 +3345,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
             else:
                 ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=%.2f$'%(Zini[jj])) # Z here is Zinitial.
             ax2t.plot(x0_r/zscl, ysum_Z * c/ np.square(x0_r) / d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.5)
-
+    '''
 
     ################
     # RGB
@@ -3352,7 +3377,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
         plt.savefig('SPEC_' + ID0 + '_PA' + PA + '_spec.png', dpi=150)
     plt.close()
 
-def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3], flim=0.01, figpdf=False):
+def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, figpdf=False):
     DIR_TMP = 'templates/'
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
