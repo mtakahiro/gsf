@@ -88,6 +88,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
     except:
         SFILT = []
+        FWFILT= []
     if len(FWFILT)==0:
         print('########################')
         print('Filter is not detected!!')
