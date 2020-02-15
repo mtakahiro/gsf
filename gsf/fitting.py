@@ -315,11 +315,20 @@ class Mainbody():
         ###############################
         fit_params = Parameters()
         try:
-            age_fix = float(inputs['AGEFIX'])
-            aamin = np.argmin(np.abs(age_fix-np.asarray(age[:])))
-            print('AGEFIX is found. Age will be fixed to %.3fGyr'%(age[aamin]))
+        #if True:
+            age_fix = inputs['AGEFIX']
+            age_fix = [float(x.strip()) for x in age_fix.split(',')]
+            aamin = []
+            print('\n')
+            print('##########################')
+            print('AGEFIX is found.\nAge will be fixed to:')
+            for age_tmp in age_fix:
+                ageind = np.argmin(np.abs(age_tmp-np.asarray(age[:])))
+                aamin.append(ageind)
+                print('%6s Gyr'%(age[ageind]))
+            print('##########################')
             for aa in range(len(age)):
-                if aa != aamin:
+                if aa not in aamin:
                     fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
                 else:
                     fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
