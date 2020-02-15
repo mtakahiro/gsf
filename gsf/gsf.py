@@ -93,12 +93,6 @@ def main(parfile, fplt, mcmcplot=True):
         os.mkdir(DIR_TMP)
 
     #
-    # Tau for MCMC parameter; not as fitting parameters.
-    #
-    tau0 = inputs['TAU0']
-    tau0 = [float(x.strip()) for x in tau0.split(',')]
-
-    #
     # Age
     #
     age = inputs['AGE']
@@ -186,15 +180,16 @@ def main(parfile, fplt, mcmcplot=True):
         if fplt == 0:
             zmin   = 1.0
             lammax = 80000/(1.+zmin)
-            # Age bin size;
-            try:
-                tau_ssp = float(inputs['TAU_SSP'])
-                if tau_ssp<0.01:
-                    print('tau_ssp = %.4f is too small. Set to default.'%(tau_ssp))
-                    tau_ssp = 0
-            except:
-                tau_ssp = 0
+
+            #
+            # Tau for MCMC parameter; not as fitting parameters.
+            # = Age bin size;
+            #
+            tau0 = inputs['TAU0']
+            tau0 = [float(x.strip()) for x in tau0.split(',')]
+            #
             # IMF
+            #
             try:
                 nimf = int(inputs['NIMF'])
             except:
@@ -203,7 +198,7 @@ def main(parfile, fplt, mcmcplot=True):
             #
             # Then run;
             #
-            make_tmp_z0(nimf, Zall, age, lammax=lammax, tau0=tau0, tau_ssp=tau_ssp, fneb=fneb, DIR_TMP=DIR_TMP)
+            make_tmp_z0(nimf, Zall, age, lammax=lammax, tau0=tau0, fneb=fneb, DIR_TMP=DIR_TMP)
 
 
         # ##################################
