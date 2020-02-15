@@ -88,6 +88,11 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
     except:
         SFILT = []
+    if len(FWFILT)==0:
+        print('########################')
+        print('Filter is not detected!!')
+        print('Make sure your \nfilter directory is correct.')
+        print('########################')
 
     # If FIR data;
     try:
@@ -220,7 +225,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         for ii in range(len(SFILT)):
             fbb[ii] = 0
             ebb[ii] = -99 #1000
-
 
     # Dust flux;
     if f_dust:
