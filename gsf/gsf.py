@@ -132,6 +132,22 @@ def main(parfile, fplt, mcmcplot=True):
     except:
         dust_model = 0
 
+
+    #
+    # Tau for MCMC parameter; not as fitting parameters.
+    # = Age bin size;
+    #
+    tau0 = inputs['TAU0']
+    tau0 = [float(x.strip()) for x in tau0.split(',')]
+    #
+    # IMF
+    #
+    try:
+        nimf = int(inputs['NIMF'])
+    except:
+        nimf = 0
+        print('Cannot find NIMF. Set to %d.'%(nimf))
+
     #
     # Redshift initial guess.
     #
@@ -175,21 +191,6 @@ def main(parfile, fplt, mcmcplot=True):
         except:
             f_disp = False
 
-
-        #
-        # Tau for MCMC parameter; not as fitting parameters.
-        # = Age bin size;
-        #
-        tau0 = inputs['TAU0']
-        tau0 = [float(x.strip()) for x in tau0.split(',')]
-        #
-        # IMF
-        #
-        try:
-            nimf = int(inputs['NIMF'])
-        except:
-            nimf = 0
-            print('Cannot find NIMF. Set to %d.'%(nimf))
 
         ######################
         # Make basic templates
