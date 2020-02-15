@@ -58,14 +58,14 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin=400, lammax=80000, tau0=[0.01,0.02,0.03], tau_ssp=0, fneb=0, logU=-2.5, DIR_TMP='./templates/'):
+def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin=400, lammax=80000, tau0=[0.01,0.02,0.03], fneb=0, logU=-2.5, DIR_TMP='./templates/'):
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
     # Z (array)  : Stellar phase metallicity in logZsun.
     # age (array): Age, in Gyr.
     # fneb (int) : flag for adding nebular emissionself.
     # logU (float): ionizing parameter, in logU.
-    # tau_ssp (float): Width of age bin. If you want to fix, put >0.01 (Gyr).
+    # tau0 (float array): Width of age bin. If you want to fix, put >0.01 (Gyr).
     #  Otherwise, it would be either minimum value (=0.01; if one age bin), or
     #  the width to the next age bin.
     #
@@ -92,38 +92,38 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 #
                 # Determining tau for each age bin;
                 #
-                if tau_ssp>0:
-                    tautmp = tau_ssp
-                else:
-                    if ss > 0:
+                if tau0[pp] == 99:
+                    if ss>0:
                         tautmp = age[ss] - age[ss-1]
-                        if tau0[pp] > 0.0:
-                            tautmp = tau0[pp]
                     else:
-                        tautmp = 0.01
+                        tautmp = age[ss]
+                elif tau0[pp] > 0.0:
+                    tautmp = tau0[pp]
+                else: # =Negative tau;
+                    tautmp = 0.01
 
                 #
                 # Then, make sps.
                 #
                 if tautmp != tau0_old:
                     if tau0[pp] == 99:
-                        tautmp = 0.01
-                        print('SSP is applied.')
+                        print('CSP is applied.')
+                        print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
+                        sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
+                        if fneb == 1:
+                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
+                    elif tau0[pp] > 0.0:
+                        print('At t=%.3f, fixed tau, %.3f, is applied.'%(age[ss],tautmp))
+                        sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
+                        if fneb == 1:
+                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
+                    else: # =Negative tau;
+                        print('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
                         sptmp  = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
                         if fneb == 1:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1)
-                    elif tau0[pp] > 0.0:
-                        print('Fixed tau, %.3f, is applied.'%(tau0[pp]))
-                        sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
-                        if fneb == 1:
-                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
-                    else:
-                        print('CSP is applied.')
-                        print('tau is %.2f Gyr' % tautmp)
-                        sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
-                        if fneb == 1:
-                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
                 else:
+                    print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
                     print('Skip fsps, by using previous library.')
 
                 tau0_old = tautmp
