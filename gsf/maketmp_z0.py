@@ -13,6 +13,10 @@ import fsps
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import os
+import cosmolopy.distance as cd
+import cosmolopy.constants as cc
+cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
+cosmo = cd.set_omega_k_0(cosmo)
 
 ######################
 # Fixed Parameters
@@ -72,15 +76,19 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     NZ = len(Z)
     Na = len(age)
 
+    # Current age in Gyr;
+    age_univ = cd.age(0, use_flat=True, **cosmo)/cc.Gyr_s
+
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
     print('#######################################')
-
     col01 = [] # For M/L ratio.
     col02 = [] # For templates
     col05 = [] # For spectral indices.
     #col06 = [] # For weird templates for UVJ calculation;
     print('tau is width of each age bin.')
+    tau_age = np.zeros(Na,dtype='float64')
+    age_age = np.zeros(Na,dtype='float64')
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
             spall = [] # For sps model
@@ -93,14 +101,27 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 # Determining tau for each age bin;
                 #
                 if tau0[pp] == 99:
-                    if ss>0:
-                        tautmp = age[ss] - age[ss-1]
-                    else:
+                    if ss==0:
                         tautmp = age[ss]
+                        agetmp = age[ss]/2.
+                    # This does not make sense.
+                    #elif ss == Na-1:
+                    #    # This could be very big tau...
+                    #    tautmp = age_univ - age[ss-1]
+                    #    agetmp = (age_univ+age[ss-1])/2.
+                    else:
+                        tautmp = age[ss] - age[ss-1]
+                        agetmp = (age[ss]+age[ss-1])/2.
                 elif tau0[pp] > 0.0:
                     tautmp = tau0[pp]
+                    agetmp = age[ss]
                 else: # =Negative tau;
                     tautmp = 0.01
+                    agetmp = age[ss]
+
+                # Keep tau in header;
+                tau_age[ss] = tautmp
+                age_age[ss] = agetmp
 
                 #
                 # Then, make sps.
@@ -202,8 +223,12 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
     if fneb == 1:
         hdr['logU'] = logU
-    for pp in range(len(tau0)):
-        hdr['Tau%d'%(pp)] = tau0[pp]
+    #for pp in range(len(tau0)):
+    #    hdr['Tau%d'%(pp)] = tau0[pp]
+    for aa in range(len(age)):
+        hdr['realtau%d(Gyr)'%(aa)] = tau_age[aa]
+    for aa in range(len(age)):
+        hdr['realage%d(Gyr)'%(aa)] = age_age[aa]
 
     colspec = fits.ColDefs(col02)
     hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)
