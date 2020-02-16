@@ -376,114 +376,13 @@ class Mainbody():
         ####################################
         # Initial Metallicity Determination
         ####################################
-        chidef = 1e5
-        Zbest  = 0
-
-        fwz = open('Z_' + ID0 + '_PA' + PA0 + '.cat', 'w')
-        fwz.write('# ID Zini chi/nu AA Av Zbest\n')
-        fwz.write('# FNELD = %d\n' % fneld)
-
-        nZtmp = int((Zmax-Zmin)/delZ)
+        #nZtmp = int((Zmax-Zmin)/delZ)
         ZZtmp = np.arange(Zmin,Zmax,delZ)
 
-        # How to get initial parameters?
-        # Nelder;
-        if fneld == 1:
-            fit_name = 'nelder'
-            for zz in range(len(ZZtmp)):
-                ZZ = ZZtmp[zz]
-                if int(inputs['ZEVOL']) == 1:
-                    for aa in range(len(age)):
-                        fit_params['Z'+str(aa)].value = ZZ
-                else:
-                    aa = 0
-                    fit_params['Z'+str(aa)].value = ZZ
-
-                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # nelder is the most efficient.
-                keys = fit_report(out_tmp).split('\n')
-                csq  = 99999
-                rcsq = 99999
-                for key in keys:
-                    if key[4:7] == 'chi':
-                        skey = key.split(' ')
-                        csq  = float(skey[14])
-                    if key[4:7] == 'red':
-                        skey = key.split(' ')
-                        rcsq = float(skey[7])
-
-                fitc = [csq, rcsq] # Chi2, Reduced-chi2
-
-                fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
-
-                AA_tmp = np.zeros(len(age), dtype='float32')
-                ZZ_tmp = np.zeros(len(age), dtype='float32')
-                for aa in range(len(age)):
-                    AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
-                    fwz.write(' %.5f'%(AA_tmp[aa]))
-
-                Av_tmp = out_tmp.params['Av'].value
-                fwz.write(' %.5f'%(Av_tmp))
-                if int(inputs['ZEVOL']) == 1:
-                    for aa in range(len(age)):
-                        ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                        fwz.write(' %.5f'%(ZZ_tmp[aa]))
-                else:
-                    aa = 0
-                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
-
-                fwz.write('\n')
-                if fitc[1]<chidef:
-                    chidef = fitc[1]
-                    out    = out_tmp
-        # Or
-        # Powell;
-        else:
-            fit_name='powell'
-            for zz in range(0,nZtmp,2):
-                ZZ = zz * delZ + np.min(Zall)
-                if int(inputs['ZEVOL']) == 1:
-                    for aa in range(len(age)):
-                        fit_params['Z'+str(aa)].value = ZZ
-                else:
-                    aa = 0
-                    fit_params['Z'+str(aa)].value = ZZ
-
-                out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # powel is the more accurate.
-                keys = fit_report(out_tmp).split('\n')
-                csq  = 99999
-                rcsq = 99999
-                for key in keys:
-                    if key[4:7] == 'chi':
-                        skey = key.split(' ')
-                        csq  = float(skey[14])
-                    if key[4:7] == 'red':
-                        skey = key.split(' ')
-                        rcsq = float(skey[7])
-
-                fitc = [csq, rcsq] # Chi2, Reduced-chi2
-                fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
-
-                AA_tmp = np.zeros(len(age), dtype='float32')
-                ZZ_tmp = np.zeros(len(age), dtype='float32')
-                for aa in range(len(age)):
-                    AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
-                    fwz.write(' %.5f'%(AA_tmp[aa]))
-
-                Av_tmp = out_tmp.params['Av'].value
-                fwz.write(' %.5f'%(Av_tmp))
-                if int(inputs['ZEVOL']) == 1:
-                    for aa in range(len(age)):
-                        ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                        fwz.write(' %.5f'%(ZZ_tmp[aa]))
-                else:
-                    aa = 0
-                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
-
-                fwz.write('\n')
-                if fitc[1]<chidef:
-                    chidef = fitc[1]
-                    out    = out_tmp
+        #
+        # Get initial parameters
+        #
+        out,chidef,Zbest = get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0)
 
         #
         # Best fit
@@ -498,7 +397,6 @@ class Mainbody():
                 rcsq = float(skey[7])
 
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
-        #fitc = fit_report_chi(out) # Chi2, Reduced-chi2
         ZZ   = Zbest # This is really important/does affect lnprob/residual.
 
         print('\n\n')
@@ -507,7 +405,6 @@ class Mainbody():
         print('Params are;',fit_report(out))
         print('#####################################')
         print('\n\n')
-        fwz.close()
 
         Av_tmp = out.params['Av'].value
         AA_tmp = np.zeros(len(age), dtype='float32')
@@ -730,6 +627,10 @@ class Mainbody():
                     wht2= check_line_man(fy, x, wht, fy, zprev, LW0)
 
                 # Then, minimize again.
+                if fneld == 1:
+                    fit_name = 'nelder'
+                else:
+                    fit_name = 'powell'
                 out = minimize(residual, fit_params, args=(fy, wht2, f_dust), method=fit_name) # It needs to define out with redshift constrain.
                 print(fit_report(out))
 

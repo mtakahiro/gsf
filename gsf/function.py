@@ -17,6 +17,119 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
+    #
+    # Get initial parameters
+    #
+    from lmfit import Model, Parameters, minimize, fit_report, Minimizer
+    chidef = 1e5
+    Zbest  = 0
+
+    fwz = open('Z_' + ID0 + '_PA' + PA0 + '.cat', 'w')
+    fwz.write('# ID Zini chi/nu AA Av Zbest\n')
+    fwz.write('# FNELD = %d\n' % fneld)
+
+    # Nelder;
+    if fneld == 1:
+        fit_name = 'nelder'
+        for zz in range(len(ZZtmp)):
+            ZZ = ZZtmp[zz]
+            if int(inputs['ZEVOL']) == 1:
+                for aa in range(len(age)):
+                    fit_params['Z'+str(aa)].value = ZZ
+            else:
+                aa = 0
+                fit_params['Z'+str(aa)].value = ZZ
+
+            out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # nelder is the most efficient.
+            keys = fit_report(out_tmp).split('\n')
+            csq  = 99999
+            rcsq = 99999
+            for key in keys:
+                if key[4:7] == 'chi':
+                    skey = key.split(' ')
+                    csq  = float(skey[14])
+                if key[4:7] == 'red':
+                    skey = key.split(' ')
+                    rcsq = float(skey[7])
+
+            fitc = [csq, rcsq] # Chi2, Reduced-chi2
+
+            fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
+
+            AA_tmp = np.zeros(len(age), dtype='float32')
+            ZZ_tmp = np.zeros(len(age), dtype='float32')
+            for aa in range(len(age)):
+                AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
+                fwz.write(' %.5f'%(AA_tmp[aa]))
+
+            Av_tmp = out_tmp.params['Av'].value
+            fwz.write(' %.5f'%(Av_tmp))
+            if int(inputs['ZEVOL']) == 1:
+                for aa in range(len(age)):
+                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
+            else:
+                aa = 0
+                ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                fwz.write(' %.5f'%(ZZ_tmp[aa]))
+
+            fwz.write('\n')
+            if fitc[1]<chidef:
+                chidef = fitc[1]
+                out    = out_tmp
+    # Or
+    # Powell;
+    else:
+        fit_name='powell'
+        for zz in range(len(ZZtmp)):
+            ZZ = ZZtmp[zz]
+            if int(inputs['ZEVOL']) == 1:
+                for aa in range(len(age)):
+                    fit_params['Z'+str(aa)].value = ZZ
+            else:
+                aa = 0
+                fit_params['Z'+str(aa)].value = ZZ
+
+            out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # powel is the more accurate.
+            keys = fit_report(out_tmp).split('\n')
+            csq  = 99999
+            rcsq = 99999
+            for key in keys:
+                if key[4:7] == 'chi':
+                    skey = key.split(' ')
+                    csq  = float(skey[14])
+                if key[4:7] == 'red':
+                    skey = key.split(' ')
+                    rcsq = float(skey[7])
+
+            fitc = [csq, rcsq] # Chi2, Reduced-chi2
+            fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
+
+            AA_tmp = np.zeros(len(age), dtype='float32')
+            ZZ_tmp = np.zeros(len(age), dtype='float32')
+            for aa in range(len(age)):
+                AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
+                fwz.write(' %.5f'%(AA_tmp[aa]))
+
+            Av_tmp = out_tmp.params['Av'].value
+            fwz.write(' %.5f'%(Av_tmp))
+            if int(inputs['ZEVOL']) == 1:
+                for aa in range(len(age)):
+                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
+            else:
+                aa = 0
+                fwz.write(' %.5f'%(ZZ_tmp[aa]))
+
+            fwz.write('\n')
+            if fitc[1]<chidef:
+                chidef = fitc[1]
+                out    = out_tmp
+
+    fwz.close()
+    return out,chidef,Zbest
+
 def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
     #
     # A Function to check rejuvenation;
@@ -234,115 +347,6 @@ def savecpkl(data, cpklfile, verbose=True):
     f = open(cpklfile,'wb')
     cPickle.dump(data, f, 2)
     f.close()
-
-'''
-def dust_MW(lm, fl, Av): # input lm is at RF.
-    # By Cardelli89
-    Rv = 3.1 #\pm0.80 from Calzetti+00
-    Alam = np.zeros(len(lm), dtype='float32')
-    for ii0 in range(len(Alam)):
-        lmm = lm[ii0]/10000. # in micron
-        xx  = 1./lmm
-        if xx<=1.1:
-            ax = 0.574 * xx**1.61
-            bx = -0.527 * xx**1.61
-            Alam[ii0] = Av * (ax + bx / Rv)
-            #Kl[ii0] = 2.659 * (-2.156 + 1.509/lmm - 0.198/lmm**2 + 0.011/lmm**3) + Rv
-        elif xx>1.1 and xx<=3.3:
-            yy = (xx - 1.82)
-            ax = 1. + 0.17699 * yy - 0.50447 * yy**2 - 0.02427 * yy**3 + 0.72085 * yy**4\
-                 + 0.01979 * yy**5 - 0.77530 * yy**6 + 0.32999 * yy**7
-            bx = 1.41338 * yy + 2.28305 * yy**2 + 1.07233 * yy**3 - 5.38434 * yy**4\
-                 - 0.62251 * yy**5 + 5.30260 * yy**6 - 2.09002 * yy**7
-            Alam[ii0] = Av * (ax + bx / Rv)
-        elif xx>3.3 and xx<=8.0:
-            if xx>5.9 and xx<=8.0:
-                Fax = -0.04473 * (xx - 5.9)**2 - 0.009779 * (xx - 5.9)**3
-                Fbx = 0.2130 * (xx - 5.9)**2 + 0.1207 * (xx - 5.9)**3
-            else:
-                Fax = Fbx = 0
-            ax = 1.752 - 0.316 * xx - 0.104/((xx-4.67)**2+0.341) + Fax
-            bx = -3.090 + 1.825 * xx + 1.206/((xx-4.62)**2+0.263) + Fbx
-            Alam[ii0] = Av * (ax + bx / Rv)
-        elif xx>8.0:
-            Fax = -0.04473 * (xx - 5.9)**2 - 0.009779 * (xx - 5.9)**3
-            Fbx = 0.2130 * (xx - 5.9)**2 + 0.1207 * (xx - 5.9)**3
-            ax = 1.752 - 0.316 * xx - 0.104/((xx-4.67)**2+0.341) + Fax
-            bx = -3.090 + 1.825 * xx + 1.206/((xx-4.62)**2+0.263) + Fbx
-            Alam[ii0] = Av * (ax + bx / Rv)
-        else:
-            Alam[ii0] = 99.
-            print('Error in dust attenuation. at', xx, lm[ii0], lmm)
-    fl_cor = fl * np.power(10,(-0.4*Alam))
-    return fl_cor
-# This function is much better than previous,
-# but is hard to impliment for the current version.
-def dust_MW2(lm, fl, Av, nr): # input lm is at RF.
-    Rv = 3.1 #4.05 #\pm0.80 from Calzetti+00
-    lmlimu = 3.115 # Upperlimit. 2.2 in Calz+00
-
-    lmm  = lm/10000. # in micron
-    xx   = 1./lmm
-    con0 = (xx<1.1)
-    con1 = (xx>=1.1) & (xx<3.3)
-    con2 = (xx>=3.3) & (xx<5.9)
-    con3 = (xx>=5.9) & (xx<8.0)
-    con4 = (xx>=8.0)
-
-    nr0 = nr[con0]
-    nr1 = nr[con1]
-    nr2 = nr[con2]
-    nr3 = nr[con3]
-    nr4 = nr[con4]
-
-    lmm0 = lmm[con0]
-    lmm1 = lmm[con1]
-    lmm2 = lmm[con2]
-    lmm3 = lmm[con3]
-    lmm4 = lmm[con4]
-
-    fl0 = fl[con0]
-    fl1 = fl[con1]
-    fl2 = fl[con2]
-    fl3 = fl[con3]
-    fl4 = fl[con3]
-
-    ax0 =  0.574 * (1./lmm0)**1.61
-    bx0 = -0.527 * (1./lmm0)**1.61
-
-    yy  = ((1./lmm1) - 1.82)
-    ax1 = 1. + 0.17699 * yy - 0.50447 * yy**2 - 0.02427 * yy**3 + 0.72085 * yy**4\
-          + 0.01979 * yy**5 - 0.77530 * yy**6 + 0.32999 * yy**7
-    bx1 = 1.41338 * yy + 2.28305 * yy**2 + 1.07233 * yy**3 - 5.38434 * yy**4\
-          - 0.62251 * yy**5 + 5.30260 * yy**6 - 2.09002 * yy**7
-
-    Fax2 = Fbx2 = 0
-    ax2  = 1.752 - 0.316 * (1./lmm2) - 0.104/(((1./lmm2)-4.67)**2+0.341) + Fax2
-    bx2  = -3.090 + 1.825 * (1./lmm2) + 1.206/(((1./lmm2)-4.62)**2+0.263) + Fbx2
-
-    Fax3 = -0.04473 * ((1./lmm3) - 5.9)**2 - 0.009779 * ((1./lmm3) - 5.9)**3
-    Fbx3 = 0.2130 * ((1./lmm3) - 5.9)**2 + 0.1207 * ((1./lmm3) - 5.9)**3
-    ax3  = 1.752 - 0.316 * (1./lmm3) - 0.104/(((1./lmm3)-4.67)**2+0.341) + Fax3
-    bx3  = -3.090 + 1.825 * (1./lmm3) + 1.206/(((1./lmm3)-4.62)**2+0.263) + Fbx3
-
-    Fax4 = -0.04473 * ((1./lmm4) - 5.9)**2 - 0.009779 * ((1./lmm4) - 5.9)**3
-    Fbx4 = 0.2130 * ((1./lmm4) - 5.9)**2 + 0.1207 * ((1./lmm4) - 5.9)**3
-    ax4  = 1.752 - 0.316 * (1./lmm4) - 0.104/(((1./lmm4)-4.67)**2+0.341) + Fax4
-    bx4  = -3.090 + 1.825 * (1./lmm4) + 1.206/(((1./lmm4)-4.62)**2+0.263) + Fbx4
-
-
-    #Kl   = np.concatenate([Kl0,Kl1,Kl2,Kl3,Kl4])
-    nrd  = np.concatenate([nr0,nr1,nr2,nr3,nr4])
-    lmmc = np.concatenate([lmm0,lmm1,lmm2,lmm3,lmm4])
-    flc  = np.concatenate([fl0,fl1,fl2,fl3,fl4])
-    ax   = np.concatenate([ax0,ax1,ax2,ax3,ax4])
-    bx   = np.concatenate([bx0,bx1,bx2,bx3,bx4])
-
-    Alam   = Av * (ax + bx / Rv)
-    fl_cor = flc * np.power(10,(-0.4*Alam))
-
-    return fl_cor, lmmc*10000., nrd
-'''
 
 # This function is much better than previous,
 # but is hard to impliment for the current version.
