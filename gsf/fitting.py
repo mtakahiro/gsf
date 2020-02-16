@@ -349,8 +349,9 @@ class Mainbody():
                 Avmax += 0.001
             fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
         except:
-            print('Dust is set in [0:4.0]/mag')
-            fit_params.add('Av', value=0.2, min=0, max=4.0)
+            Avini = 0.5
+            print('Dust is set in [0:4.0]/mag. Initial value is set to %.1f'%(Avini))
+            fit_params.add('Av', value=Avini, min=0, max=4.0)
 
         #####################
         # Metallicity
