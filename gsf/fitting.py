@@ -334,7 +334,10 @@ class Mainbody():
                     fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
         except:
             for aa in range(len(age)):
-                if age[aa] == 99 or age[aa]>agemax:
+                if age[aa] == 99:
+                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                elif age[aa]>agemax:
+                    print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
                     fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
                 else:
                     fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
@@ -349,9 +352,11 @@ class Mainbody():
                 Avmax += 0.001
             fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
         except:
+            Avmin = 0.0
+            Avmax = 4.0
             Avini = 0.5
-            print('Dust is set in [0:4.0]/mag. Initial value is set to %.1f'%(Avini))
-            fit_params.add('Av', value=Avini, min=0, max=4.0)
+            print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
+            fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
 
         #####################
         # Metallicity
