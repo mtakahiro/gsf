@@ -86,7 +86,7 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     col02 = [] # For templates
     col05 = [] # For spectral indices.
     #col06 = [] # For weird templates for UVJ calculation;
-    print('tau is width of each age bin.')
+    print('tau is the width of each age bin.')
     tau_age = np.zeros(Na,dtype='float64')
     age_age = np.zeros(Na,dtype='float64')
     for zz in range(len(Z)):
