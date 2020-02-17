@@ -81,6 +81,7 @@ def main(parfile, fplt, mcmcplot=True):
             logU = -2.5
     except:
         fneb = 0
+        logU = 0
 
     DIR_TMP  = inputs['DIR_TEMP']
     DIR_FILT = inputs['DIR_FILT']
