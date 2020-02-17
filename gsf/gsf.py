@@ -75,6 +75,10 @@ def main(parfile, fplt, mcmcplot=True):
         DIR_EXTR = False
     try:
         fneb = int(inputs['ADD_NEBULAE'])
+        try:
+            logU = float(inputs['logU'])
+        except:
+            logU = -2.5
     except:
         fneb = 0
 
@@ -200,7 +204,7 @@ def main(parfile, fplt, mcmcplot=True):
             #
             # Then run;
             #
-            make_tmp_z0(nimf, Zall, age, lammax=lammax, tau0=tau0, fneb=fneb, DIR_TMP=DIR_TMP)
+            make_tmp_z0(nimf, Zall, age, lammax=lammax, tau0=tau0, fneb=fneb, logU=logU, DIR_TMP=DIR_TMP)
 
 
         # ##################################
