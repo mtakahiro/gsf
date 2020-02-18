@@ -314,7 +314,8 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ################
     from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
     from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    from mpl_toolkits.axes_grid.inset_locator import inset_axes
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
     if f_grsm:
         ax2t = inset_axes(ax1, width="40%", height="30%", loc=2)
 

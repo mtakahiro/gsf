@@ -172,15 +172,16 @@ def get_SFMS(red,age,mass,IMF=1):
     CIMF = 0
     if IMF == 0:#
         CIMF = 0.23
+        print('SFMS is shifted to Salpeter IMF.')
     elif IMF == 2:
         CIMF = 0.04
+        print('SFMS is shifted to Kroupa IMF.')
 
     x  = np.log10(mass) - CIMF #np.arange(6,13,0.1)
     tz = cosmo.age(z=red).value - age # in Gyr
-    y1 = (0.84 - 0.026*tz) * x -(6.51 - 0.11*tz)
-    #y1_1 = (0.84 - 0.026*tz) * x -(6.51 - 0.11*tz) - 0.2
-    #y1_2 = (0.84 - 0.026*tz) * x -(6.51 - 0.11*tz) + 0.2
-
+    y1 = (0.84 - 0.026*tz) * x - (6.51 - 0.11*tz)
+    con = (y1<=0)
+    y1[con] = 1e-10
     return y1
 
 # Fitting. (Not sure)
