@@ -358,7 +358,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.errorbar(age[conA], np.log10(SFp[:,1])[conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[np.log10(SFp[:,1])[conA]-np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA]-np.log10(SFp[:,1])[conA]], linestyle='-', color='k', lw=0.5, marker='')
 
     #############
-    # Get SFMS;
+    # Get SFMS in log10;
     #############
     IMF = int(inputs['NIMF'])
     SFMS_16 = get_SFMS(zbes,age,ACp[:,0],IMF=IMF)
@@ -366,15 +366,15 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     SFMS_84 = get_SFMS(zbes,age,ACp[:,2],IMF=IMF)
 
     try:
-        f_rejuv,t_quench,t_rejuv = check_rejuv(age,np.log10(SFp[:,:]),np.log10(ACp[:,:]),np.log10(SFMS_50))
+        f_rejuv,t_quench,t_rejuv = check_rejuv(age,np.log10(SFp[:,:]),np.log10(ACp[:,:]),SFMS_50)
     except:
         print('Rejuvenation judge failed. (plot_sfh.py)')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
     if f_SFMS:
-        ax1.fill_between(age[conA], np.log10(SFMS_50)[conA]-0.2, np.log10(SFMS_50)[conA]+0.2, linestyle='-', color='b', alpha=0.3)
-        ax1.plot(age[conA], np.log10(SFMS_50)[conA], linestyle='--', color='b', alpha=0.5)
+        ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3)
+        ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='b', alpha=0.5)
 
     #
     # Fit with delayed exponential??

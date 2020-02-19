@@ -164,7 +164,7 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
 
 
 def get_SFMS(red,age,mass,IMF=1):
-    # Based on Speagle+14;
+    # From Speagle+14 Eq28;
     # Chabrier IMF, default
     from astropy.cosmology import WMAP9
     cosmo = WMAP9
@@ -179,9 +179,9 @@ def get_SFMS(red,age,mass,IMF=1):
 
     x  = np.log10(mass) - CIMF #np.arange(6,13,0.1)
     tz = cosmo.age(z=red).value - age # in Gyr
-    y1 = (0.84 - 0.026*tz) * x - (6.51 - 0.11*tz)
+    y1 = (0.84 - 0.026*tz) * x - (6.51 - 0.11*tz) # in log Msun/yr
     con = (y1<=0)
-    y1[con] = 1e-10
+    y1[con] = -10
     return y1
 
 # Fitting. (Not sure)
