@@ -717,6 +717,12 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
     ax1.plot(x1_tot, ytmp50, '-', lw=1., color='gray', zorder=-1, alpha=0.9)
+    '''
+    if f_dust:
+        l50_bb, ytmp50_bb, l50_fwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
+    else:
+        l50_bb, ytmp50_bb, l50_fwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
+    '''
 
     #####################
     # Chi2 calculation
@@ -741,7 +747,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
 
     #####################
-    # Calculate real chi2
+    # Calculate non-det chi2
     # based on Sawick12
     #####################
     def func_tmp(xint,eobs,fmodel):
@@ -783,7 +789,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         ALLFILT = np.append(SFILT,DFILT)
         #for ii in range(len(x1_tot)):
         #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
-        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50*c/np.square(x1_tot)/d, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
         zorder=2, alpha=1.0, marker='s', s=10)
         ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
