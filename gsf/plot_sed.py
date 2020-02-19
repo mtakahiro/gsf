@@ -185,7 +185,10 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     fy   = np.append(fy01,fg2)
     ey   = np.append(ey01,eg2)
 
+    # Weight is set to zero for those no data (ey<0).
     wht=1./np.square(ey)
+    con_wht = (ey<0)
+    wht[con_wht] = 0
 
     dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
     NRbb = dat[:, 0]
@@ -381,9 +384,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         #print(np.max(y0d * c/ np.square(x0d) / d))
         #plt.show()
 
-    conw = (wht3>0)
-    chi2 = sum((np.square(fy-ysump)*wht3)[conw])
-    print('chi2/nu is %.2f'%(chin))
+
     #############
     # Main result
     #############
@@ -404,7 +405,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.set_xlim(2200, x1max)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1,ymax)
-    ax1.text(2200,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+    ax1.text(2300,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
     #import matplotlib.ticker as ticker
     import matplotlib
@@ -416,19 +417,6 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '1000']
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
-
-    #
-    # SED params in plot
-    #
-    if f_label:
-        try:
-            fd = fits.open('SFH_' + ID0 + '_PA' + PA + '_param.fits')[1].data
-            ax1.text(2300, ymax*0.4,\
-            'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID0, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1]), fontsize=9)
-        except:
-            print('File is missing : _param.fits')
-            pass
 
     dely1 = 0.5
     while (ymax-0)/dely1>4:
@@ -730,6 +718,64 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
     ax1.plot(x1_tot, ytmp50, '-', lw=1., color='gray', zorder=-1, alpha=0.9)
 
+    #####################
+    # Chi2 calculation
+    # Based on Sawick+12
+    #####################
+    nparam = ndim
+    try:
+        ZFIX = float(inputs['ZFIX'])
+        nparam -= 1
+    except:
+        ZMAX = float(inputs['ZMAX'])
+        ZMIN = float(inputs['ZMIN'])
+        DELZ = float(inputs['DELZ'])
+        if ZMAX-ZMIN < DELZ:
+            nparam -= 1
+
+    try:
+        AGEFIX  = float(inputs['AGEFIX'])
+        nparam -= int(len(age)-1)
+    except:
+        pass
+
+
+    #####################
+    # Calculate real chi2
+    # based on Sawick12
+    #####################
+    def func_tmp(xint,eobs,fmodel):
+        int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
+        return int_tmp
+
+    conw = (wht3>0)
+    chi2 = sum((np.square(fy-ysump)*wht3)[conw])
+    #chi2 = sum((np.square(fy-ysump)/fy)[conw])
+    nod  = int(len(wht3[conw])-nparam)
+    con_up = (ey>0)&(fy/ey<=SNlim)
+
+    f_chind = False
+    if f_chind:
+        # Chi2 for non detection;
+        import scipy.integrate as integrate
+        import scipy.special as special
+        chi_nd = 0
+        for nn in range(len(ey[con_up])):
+            result = integrate.quad(lambda xint: func_tmp(xint,ey[con_up][nn]/SNlim,ysump[con_up][nn]), 0 * ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim)
+            chi_nd+= np.log(result[0])
+    else:
+        chi_nd = 0
+
+    fin_chi2 = (chi2 - 2 * chi_nd) / nod
+    print('chi2               : %.2f'%(chi2))
+    if f_chind:
+        print('No-of-non-det      : %d'%(len(ey[con_up])))
+        print('chi2 for non-det   : %.2f'%(chi_nd))
+    print('No-of-data points  : %d'%(len(wht3[conw])))
+    print('No-of-params       : %d'%(nparam))
+    print('Degrees-of-freedom : %d'%(nod))
+    print('Final chi2/nu      : %.2f'%(fin_chi2))
+
     #
     # plot BB model from best template (blue squares)
     #
@@ -783,6 +829,15 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         hdr['redshift'] = zbes
         hdr['id'] = ID0
 
+        # Chi square:
+        hdr['chi2']     = chi2
+        hdr['No-of-effective-data-points']    = len(wht3[conw])
+        hdr['No-of-nondetectioin'] = len(ey[con_up])
+        hdr['Chi2-of-nondetection']   = chi_nd
+        hdr['No-of-params']  = nparam
+        hdr['Degree-of-freedom']  = nod
+        hdr['reduced-chi2']  = fin_chi2
+
         # Muv
         MUV = -2.5 * np.log10(Fuv[:]) + 25.0
         hdr['MUV16'] = np.percentile(MUV[:],16)
@@ -803,6 +858,21 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         colspec = fits.ColDefs(col00)
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
         hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID0), overwrite=True)
+
+
+    ######################
+    # SED params in plot
+    #
+    if f_label:
+        try:
+            fd = fits.open('SFH_' + ID0 + '_PA' + PA + '_param.fits')[1].data
+            ax1.text(2300, ymax*0.3,\
+            'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID0, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
+            fontsize=9)
+        except:
+            print('File is missing : _param.fits')
+            pass
 
     #######################################
     ax1.xaxis.labelpad = -3
@@ -3627,7 +3697,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
             ax2.plot(lm0[con2], flam[con2]/Cnorm + (len(age)-aa), color=col[aa], linewidth=1., zorder=2)
 
     ymax = np.max(spec0)
-    NDIM = 19
+    #NDIM = 19
 
     #ax1.text(12000, ymax*0.9, '%s'%(ID0), fontsize=10, color='k')
     xboxl = 17000
