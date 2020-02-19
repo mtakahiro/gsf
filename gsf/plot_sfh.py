@@ -266,21 +266,26 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         eAv= 0
 
     mm = 0
-    #while mm<mmax:
+
+    #####################
+    # Get SED based SFR
+    #####################
+    tset_SFR_SED = 0.03 # Gyr
+    SFR_SED = np.zeros(mmax,dtype='float32')
+
+    # base files opened.
+    f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
+    f1     = fits.open(DIR_TMP + 'ms.fits')
+    sedpar = f0[1]
+    mloss  = f1[1].data
+    AAtmp = np.zeros(len(age), dtype='float32')
+    ZZtmp = np.zeros(len(age), dtype='float32')
+    mslist= np.zeros(len(age), dtype='float32')
     for mm in range(mmax):
+        delt_tot = 0
         mtmp  = np.random.randint(len(samples))# + Nburn
 
-        AAtmp = np.zeros(len(age), dtype='float32')
-        ZZtmp = np.zeros(len(age), dtype='float32')
-        mslist= np.zeros(len(age), dtype='float32')
-
         Av_tmp = samples['Av'][mtmp]
-
-        f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
-        sedpar = f0[1]
-        f1     = fits.open(DIR_TMP + 'ms.fits')
-        mloss  = f1[1].data
-
         Avrand = np.random.uniform(-eAv, eAv)
         if Av_tmp + Avrand<0:
             Av[mm] = 0
@@ -307,6 +312,13 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             ZM[aa, mm] = ZZtmp[aa] + Zrand
             ZMM[aa, mm]= (10 ** ZZtmp[aa]) * AAtmp[aa] * mslist[aa] * 10**Zrand
             ZML[aa, mm]= ZMM[aa, mm] / mslist[aa]
+
+            # SFR from SED.
+            if age[aa]<=tset_SFR_SED:
+                SFR_SED[mm] += SF[aa, mm] * delT[aa]
+                delt_tot += delT[aa]
+
+        SFR_SED[mm] /= delt_tot
 
         for aa in range(len(age)):
             AC[aa, mm] = np.sum(AM[aa:, mm])
@@ -345,6 +357,13 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
        ZMp[aa,:] = np.percentile(ZM[aa,:], [16,50,84])
        ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
        SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
+    SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
+    f_SFRSED_plot = False
+    if f_SFRSED_plot:
+        #ax1.plot(delt_tot/2./1e9, np.log10(SFR_SED_med[1]), color='k', marker='*',ms=10)
+        ax1.errorbar(delt_tot/2./1e9, np.log10(SFR_SED_med[1]), xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
+        yerr=[[np.log10(SFR_SED_med[1])-np.log10(SFR_SED_med[0])],[np.log10(SFR_SED_med[2])-np.log10(SFR_SED_med[1])]], \
+        linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
 
     ###################
     msize = np.zeros(len(age), dtype='float32')
@@ -445,14 +464,12 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     if (y2max-y2min)<0.2:
         y2min -= 0.2
 
-
     #
     # Total Metal
     #
     ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.3)
     ax4.scatter(age[conA], ZCp[:,1][conA], marker='.', c='k', s=msize[conA])
     ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
-
 
     fw_sfr = open('SFH_' + ID0 + '_PA' + PA + '.txt', 'w')
     fw_sfr.write('# time_l time_u SFR SFR16 SFR84\n')
@@ -527,6 +544,9 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     prihdr['f_rejuv']= f_rejuv
     prihdr['t_quen'] = t_quench
     prihdr['t_rejuv']= t_rejuv
+    # SFR
+    prihdr['tset_SFR']= tset_SFR_SED
+
     prihdu = fits.PrimaryHDU(header=prihdr)
 
     col01 = []
@@ -538,6 +558,10 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Stellar mass
     ACP = [np.log10(ACp[0,0]), np.log10(ACp[0,1]), np.log10(ACp[0,2])]
     col50 = fits.Column(name='Mstel', format='E', unit='logMsun', array=ACP[:])
+    col01.append(col50)
+
+    # SFR based on SED
+    col50 = fits.Column(name='SFR', format='E', unit='Msun/yr', array=SFR_SED_med[:])
     col01.append(col50)
 
     # Metallicity_MW
