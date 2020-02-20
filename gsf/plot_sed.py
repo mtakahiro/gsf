@@ -789,32 +789,53 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         ALLFILT = np.append(SFILT,DFILT)
         #for ii in range(len(x1_tot)):
         #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
-        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-        zorder=2, alpha=1.0, marker='s', s=10)
+        lbb, fbb, lfwhm   = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
+        lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
+        lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
+
+        # plot FIR range;
         ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
         zorder=2, alpha=1.0, marker='s', s=10)
-        if save_sed == True:
-            fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
-            fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
-            fw.write('# wave fnu       filt_width No.Filt\n')
-            fw.write('# (AA) (m0=25.0) (AA)       ()\n')
-            for ii in range(len(lbb)):
-                fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],ALLFILT[ii]))
-            fw.close()
+
     else:
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
+        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
+        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
         ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='s', s=10)
-        if save_sed == True:
-            fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
-            fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
-            fw.write('# wave fnu       filt_width No.Filt\n')
-            fw.write('# (AA) (m0=25.0) (AA)       ()\n')
-            for ii in range(len(lbb)):
-                fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],SFILT[ii]))
-            fw.close()
 
+    # plot opt-NIR range;
+    ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
+    zorder=2, alpha=1.0, marker='s', s=10)
     if save_sed == True:
+        # Save BB model;
+        col_sed = []
+        coltmp = fits.Column(name='wave', format='E', unit='AA', array=lbb)
+        col_sed.append(coltmp)
+
+        fbb16_nu = flamtonu(lbb, fbb16*1e-18, m0set=25.0)
+        coltmp = fits.Column(name='fnu_16', format='E', unit='fnu(m0=25)', array=fbb16_nu)
+        col_sed.append(coltmp)
+
+        fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
+        coltmp = fits.Column(name='fnu_50', format='E', unit='fnu(m0=25)', array=fbb_nu)
+        col_sed.append(coltmp)
+
+        fbb84_nu = flamtonu(lbb, fbb84*1e-18, m0set=25.0)
+        coltmp = fits.Column(name='fnu_84', format='E', unit='fnu(m0=25)', array=fbb84_nu)
+        col_sed.append(coltmp)
+        '''
+        fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
+        fw.write('# wave fnu_16 fnu_50 fnu_84 filt_width filter_no\n')
+        fw.write('# (AA) (m0=25.0) (AA)       ()\n')
+        for ii in range(len(lbb)):
+            fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],ALLFILT[ii]))
+        fw.close()
+        '''
+        col  = fits.ColDefs(col_sed)
+        hdu0 = fits.BinTableHDU.from_columns(col)#, header=hdr)
+        hdu0.writeto(ID0 + '_PA' + PA + '_sed.fits', overwrite=True)
+
+        # Then save full spectrum;
         col00  = []
         col1  = fits.Column(name='wave_model', format='E', unit='AA', array=xm_tmp)
         col00.append(col1)
@@ -864,7 +885,6 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         colspec = fits.ColDefs(col00)
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
         hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID0), overwrite=True)
-
 
     ######################
     # SED params in plot
