@@ -94,9 +94,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     print('Total stellar mass is %.2e'%(M50))
 
     # Amplitude MC
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -110,9 +110,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     Av84 = hdul[1].data['Av'+str(aa)][2]
     AAv = [Av50]
 
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
@@ -209,7 +209,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ######################
     # Mass-to-Light ratio.
     ######################
-    ms     = np.zeros(len(age), dtype='float32')
+    ms     = np.zeros(len(age), dtype='float64')
     f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):
@@ -430,10 +430,10 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #############
     # Plot
     #############
-    eAAl = np.zeros(len(age),dtype='float32')
-    eAAu = np.zeros(len(age),dtype='float32')
-    eAMl = np.zeros(len(age),dtype='float32')
-    eAMu = np.zeros(len(age),dtype='float32')
+    eAAl = np.zeros(len(age),dtype='float64')
+    eAAu = np.zeros(len(age),dtype='float64')
+    eAMl = np.zeros(len(age),dtype='float64')
+    eAMu = np.zeros(len(age),dtype='float64')
     MSsum = np.sum(ms)
     Asum = np.sum(A50)
     A50 /= Asum
@@ -538,8 +538,8 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
                 eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
                 yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
 
-                flux = np.zeros(len(xxs), dtype='float32')
-                efl  = np.zeros(len(xxs), dtype='float32')
+                flux = np.zeros(len(xxs), dtype='float64')
+                efl  = np.zeros(len(xxs), dtype='float64')
                 for ff in range(len(xxs)):
                     flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
                     efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
@@ -632,9 +632,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     samples  = res #.chain[:, :, :].reshape((-1, ndim))
 
-    ytmp = np.zeros((nmc2,len(ysum)), dtype='float32')
-    ytmpmax = np.zeros(len(ysum), dtype='float32')
-    ytmpmin = np.zeros(len(ysum), dtype='float32')
+    ytmp = np.zeros((nmc2,len(ysum)), dtype='float64')
+    ytmpmax = np.zeros(len(ysum), dtype='float64')
+    ytmpmin = np.zeros(len(ysum), dtype='float64')
 
     # MUV;
     DL      = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
@@ -681,7 +681,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
-                #ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float32')
+                #ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float64')
             model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
@@ -709,9 +709,9 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #
     # Plot Median SED;
     #
-    ytmp16 = np.zeros(len(x1_tot), dtype='float32')
-    ytmp50 = np.zeros(len(x1_tot), dtype='float32')
-    ytmp84 = np.zeros(len(x1_tot), dtype='float32')
+    ytmp16 = np.zeros(len(x1_tot), dtype='float64')
+    ytmp50 = np.zeros(len(x1_tot), dtype='float64')
+    ytmp84 = np.zeros(len(x1_tot), dtype='float64')
     for kk in range(len(x1_tot[:])):
         ytmp16[kk] = np.percentile(ytmp[:,kk],16)
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
@@ -743,8 +743,24 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         AGEFIX  = float(inputs['AGEFIX'])
         nparam -= int(len(age)-1)
     except:
+        agemax = cd.age(zbes, use_flat=True, **cosmo)/cc.Gyr_s
+        for aa in range(len(age)):
+            if age[aa]>agemax:
+                nparam -= 1
         pass
 
+    try:
+        AVFIX   = float(inputs['AVFIX'])
+        nparam -= 1
+    except:
+        try:
+            AVMAX = float(inputs['AVMAX'])
+            AVMIN = float(inputs['AVMIN'])
+            if AVMAX-AVMIN < 0.1:
+                nparam -= 1
+        except:
+            pass
+        pass
 
     #####################
     # Calculate non-det chi2
@@ -988,8 +1004,8 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     if f_Z_all == 1:
         fileZ = 'Z_' + ID0 + '_PA' + PA + '.cat'
         Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
-        Atmp  = np.zeros((len(age),len(Zini)), 'float32')
-        Ztmp  = np.zeros((len(age),len(Zini)), 'float32')
+        Atmp  = np.zeros((len(age),len(Zini)), 'float64')
+        Ztmp  = np.zeros((len(age),len(Zini)), 'float64')
         for aa in range(len(age)):
             Atmp[aa,:] = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[3+aa])
             Ztmp[aa,:] = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[3+len(age)+1+aa])
@@ -1097,11 +1113,11 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nmc, dtype='float32')
-    Avtmp= np.zeros(nmc, dtype='float32')
-    Ztmp = np.zeros(nmc, dtype='float32')
-    Ttmp = np.zeros(nmc, dtype='float32')
-    ACtmp= np.zeros(nmc, dtype='float32')
+    Ntmp = np.zeros(nmc, dtype='float64')
+    Avtmp= np.zeros(nmc, dtype='float64')
+    Ztmp = np.zeros(nmc, dtype='float64')
+    Ttmp = np.zeros(nmc, dtype='float64')
+    ACtmp= np.zeros(nmc, dtype='float64')
 
 
     for kk in range(0,5000,1):
@@ -1264,9 +1280,9 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -1277,9 +1293,9 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     Av50 = hdul[1].data['Av'+str(aa)][1]
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -1416,12 +1432,12 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float32')
-    lmtmp= np.zeros(nplot, dtype='float32')
-    Avtmp= np.zeros(nplot, dtype='float32')
-    Ztmp = np.zeros(nplot, dtype='float32')
-    Ttmp = np.zeros(nplot, dtype='float32')
-    ACtmp= np.zeros(nplot, dtype='float32')
+    Ntmp = np.zeros(nplot, dtype='float64')
+    lmtmp= np.zeros(nplot, dtype='float64')
+    Avtmp= np.zeros(nplot, dtype='float64')
+    Ztmp = np.zeros(nplot, dtype='float64')
+    Ttmp = np.zeros(nplot, dtype='float64')
+    ACtmp= np.zeros(nplot, dtype='float64')
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     files = [] # For movie
@@ -1590,9 +1606,9 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -1603,9 +1619,9 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
     Av50 = hdul[1].data['Av'+str(aa)][1]
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -1734,21 +1750,21 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float32')
-    lmtmp= np.zeros(nplot, dtype='float32')
-    Avtmp= np.zeros(nplot, dtype='float32')
-    Ztmp = np.zeros(nplot, dtype='float32')
-    Ttmp = np.zeros(nplot, dtype='float32')
-    ACtmp= np.zeros(nplot, dtype='float32')
+    Ntmp = np.zeros(nplot, dtype='float64')
+    lmtmp= np.zeros(nplot, dtype='float64')
+    Avtmp= np.zeros(nplot, dtype='float64')
+    Ztmp = np.zeros(nplot, dtype='float64')
+    Ttmp = np.zeros(nplot, dtype='float64')
+    ACtmp= np.zeros(nplot, dtype='float64')
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     # Time bin
     Txmax = 4 # Max x value
     Tuni = cd.age(zbes, use_flat=True, **cosmo)
     Tuni0 = (Tuni/cc.Gyr_s - age[:])
-    delT  = np.zeros(len(age),dtype='float32')
-    delTl = np.zeros(len(age),dtype='float32')
-    delTu = np.zeros(len(age),dtype='float32')
+    delT  = np.zeros(len(age),dtype='float64')
+    delTl = np.zeros(len(age),dtype='float64')
+    delTu = np.zeros(len(age),dtype='float64')
 
     if len(age) == 1:
         for aa in range(len(age)):
@@ -1840,7 +1856,7 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
         zred  = [zbes, 6]
         zredl = ['$z_\mathrm{obs.}$', 6]
 
-    Tzz   = np.zeros(len(zred), dtype='float32')
+    Tzz   = np.zeros(len(zred), dtype='float64')
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
         if Tzz[zz] < 0.01:
@@ -1866,11 +1882,11 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
         #Asum = 0
         #for ss in range(len(age)):
         #Asum += np.sum(samples['A'+str(ss)][nr])
-        ZMM = np.zeros((len(age)), dtype='float32') # Mass weighted Z.
-        ZM  = np.zeros((len(age)), dtype='float32') # Light weighted T.
-        ZC  = np.zeros((len(age)), dtype='float32') # Light weighted T.
-        SF  = np.zeros((len(age)), dtype='float32') # SFR
-        AM  = np.zeros((len(age)), dtype='float32') # Light weighted T.
+        ZMM = np.zeros((len(age)), dtype='float64') # Mass weighted Z.
+        ZM  = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        ZC  = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        SF  = np.zeros((len(age)), dtype='float64') # SFR
+        AM  = np.zeros((len(age)), dtype='float64') # Light weighted T.
 
 
         II0   = nage #[0,1,2,3] # Number for templates
@@ -2111,9 +2127,9 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -2124,9 +2140,9 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     Av50 = hdul[1].data['Av'+str(aa)][1]
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -2235,12 +2251,12 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float32')
-    lmtmp= np.zeros(nplot, dtype='float32')
-    Avtmp= np.zeros(nplot, dtype='float32')
-    Ztmp = np.zeros(nplot, dtype='float32')
-    Ttmp = np.zeros(nplot, dtype='float32')
-    ACtmp= np.zeros(nplot, dtype='float32')
+    Ntmp = np.zeros(nplot, dtype='float64')
+    lmtmp= np.zeros(nplot, dtype='float64')
+    Avtmp= np.zeros(nplot, dtype='float64')
+    Ztmp = np.zeros(nplot, dtype='float64')
+    Ttmp = np.zeros(nplot, dtype='float64')
+    ACtmp= np.zeros(nplot, dtype='float64')
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
 
@@ -2248,9 +2264,9 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     Txmax = 4 # Max x value
     Tuni = cd.age(zbes, use_flat=True, **cosmo)
     Tuni0 = (Tuni/cc.Gyr_s - age[:])
-    delT  = np.zeros(len(age),dtype='float32')
-    delTl = np.zeros(len(age),dtype='float32')
-    delTu = np.zeros(len(age),dtype='float32')
+    delT  = np.zeros(len(age),dtype='float64')
+    delTl = np.zeros(len(age),dtype='float64')
+    delTu = np.zeros(len(age),dtype='float64')
     for aa in range(len(age)):
         if aa == 0:
             delTl[aa] = age[aa]
@@ -2340,11 +2356,11 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
         #Asum = 0
         #for ss in range(len(age)):
         #Asum += np.sum(samples['A'+str(ss)][nr])
-        ZMM = np.zeros((len(age)), dtype='float32') # Mass weighted Z.
-        ZM  = np.zeros((len(age)), dtype='float32') # Light weighted T.
-        ZC  = np.zeros((len(age)), dtype='float32') # Light weighted T.
-        SF  = np.zeros((len(age)), dtype='float32') # SFR
-        AM  = np.zeros((len(age)), dtype='float32') # Light weighted T.
+        ZMM = np.zeros((len(age)), dtype='float64') # Mass weighted Z.
+        ZM  = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        ZC  = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        SF  = np.zeros((len(age)), dtype='float64') # SFR
+        AM  = np.zeros((len(age)), dtype='float64') # Light weighted T.
 
 
         II0   = nage #[0,1,2,3] # Number for templates
@@ -2445,7 +2461,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             zred  = [zbes, 6]
             zredl = ['$z_\mathrm{obs.}$', 6]
 
-        Tzz   = np.zeros(len(zred), dtype='float32')
+        Tzz   = np.zeros(len(zred), dtype='float64')
         for zz in range(len(zred)):
             Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
             if Tzz[zz] < 0.01:
@@ -2592,7 +2608,7 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     #
     label = []
     title = []
-    truth = np.zeros(len(age)*2+1, dtype='float32')
+    truth = np.zeros(len(age)*2+1, dtype='float64')
 
     file_sum = 'summary_' + ID + '_PA' + PA + '.fits'
     hdu      = fits.open(file_sum) # open a FITS file
@@ -2667,8 +2683,8 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     hdu0 = fits.open(file) # open a FITS file
 
     Avin = float(hdu0[0].header['AV'])
-    Ain  = np.zeros(len(age), dtype='float32')
-    Zin  = np.zeros(len(age), dtype='float32')
+    Ain  = np.zeros(len(age), dtype='float64')
+    Zin  = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         Ain[aa] = hdu0[0].header['A'+str(aa)]
         Zin[aa] = hdu0[0].header['Z'+str(aa)]
@@ -2691,9 +2707,9 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -2706,9 +2722,9 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av84 = hdul[1].data['Av'+str(aa)][2]
 
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -2732,7 +2748,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ## Plot
     ####################
     flim  = 0.1
-    msize = np.zeros(len(age), dtype='float32')
+    msize = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         if Ain[aa]/Ainsum>flim: # if >1%
             msize[aa] = 150 * A50[aa]/Asum
@@ -2840,9 +2856,9 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -2856,9 +2872,9 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     Av84 = hdul[1].data['Av'+str(aa)][2]
     AAv = [Av50]
 
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -2950,7 +2966,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     ######################
     # Mass-to-Light ratio.
     ######################
-    ms     = np.zeros(len(age), dtype='float32')
+    ms     = np.zeros(len(age), dtype='float64')
     f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):
@@ -3111,10 +3127,10 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     #############
     # Plot
     #############
-    eAAl = np.zeros(len(age),dtype='float32')
-    eAAu = np.zeros(len(age),dtype='float32')
-    eAMl = np.zeros(len(age),dtype='float32')
-    eAMu = np.zeros(len(age),dtype='float32')
+    eAAl = np.zeros(len(age),dtype='float64')
+    eAAu = np.zeros(len(age),dtype='float64')
+    eAMl = np.zeros(len(age),dtype='float64')
+    eAMu = np.zeros(len(age),dtype='float64')
 
     MSsum = np.sum(ms)
 
@@ -3228,8 +3244,8 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
                 eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
                 yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
 
-                flux = np.zeros(len(xxs), dtype='float32')
-                efl  = np.zeros(len(xxs), dtype='float32')
+                flux = np.zeros(len(xxs), dtype='float64')
+                efl  = np.zeros(len(xxs), dtype='float64')
                 for ff in range(len(xxs)):
                     flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
                     efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
@@ -3318,9 +3334,9 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
     #for kk in range(int(nmc/5)):
     nmc2 = 300
-    ytmp = np.zeros((nmc2,len(ysum)), dtype='float32')
-    ytmpmax = np.zeros(len(ysum), dtype='float32')
-    ytmpmin = np.zeros(len(ysum), dtype='float32')
+    ytmp = np.zeros((nmc2,len(ysum)), dtype='float64')
+    ytmpmax = np.zeros(len(ysum), dtype='float64')
+    ytmpmin = np.zeros(len(ysum), dtype='float64')
     for kk in range(0,nmc2,1):
         nr = np.random.randint(len(samples))
         Av_tmp = samples['Av'][nr]
@@ -3416,8 +3432,8 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     if f_Z_all == 1:
         fileZ = 'Z_' + ID0 + '_PA' + PA + '.cat'
         Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
-        Atmp  = np.zeros((len(age),len(Zini)), 'float32')
-        Ztmp  = np.zeros((len(age),len(Zini)), 'float32')
+        Atmp  = np.zeros((len(age),len(Zini)), 'float64')
+        Ztmp  = np.zeros((len(age),len(Zini)), 'float64')
         for aa in range(len(age)):
             Atmp[aa,:] = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[3+aa])
             Ztmp[aa,:] = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[3+len(age)+1+aa])
@@ -3497,8 +3513,8 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     Cnorm = float(hdu0[0].header['Cnorm'])
 
     Avin = float(hdu0[0].header['AV'])
-    Ain  = np.zeros(len(age), dtype='float32')
-    Zin  = np.zeros(len(age), dtype='float32')
+    Ain  = np.zeros(len(age), dtype='float64')
+    Zin  = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         Ain[aa] = hdu0[0].header['A'+str(aa)]
         Zin[aa] = hdu0[0].header['Z'+str(aa)]
@@ -3581,9 +3597,9 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float32')
-    A16 = np.zeros(len(age), dtype='float32')
-    A84 = np.zeros(len(age), dtype='float32')
+    A50 = np.zeros(len(age), dtype='float64')
+    A16 = np.zeros(len(age), dtype='float64')
+    A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -3597,9 +3613,9 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     Av84 = hdul[1].data['Av'+str(aa)][2]
     AAv = [Av50]
 
-    Z50 = np.zeros(len(age), dtype='float32')
-    Z16 = np.zeros(len(age), dtype='float32')
-    Z84 = np.zeros(len(age), dtype='float32')
+    Z50 = np.zeros(len(age), dtype='float64')
+    Z16 = np.zeros(len(age), dtype='float64')
+    Z84 = np.zeros(len(age), dtype='float64')
     NZbest = np.zeros(len(age), dtype='int')
 
     for aa in range(len(age)):
@@ -3640,7 +3656,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
             Na  = len(age)
             Nz  = 1
 
-            param = np.zeros((Na, 6), dtype='float32')
+            param = np.zeros((Na, 6), dtype='float64')
             param[:,2] = 1e99
 
             Ntmp  = 1
@@ -3687,7 +3703,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ######################
     # Mass-to-Light ratio.
     ######################
-    ms     = np.zeros(len(age), dtype='float32')
+    ms     = np.zeros(len(age), dtype='float64')
     f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):

@@ -111,23 +111,19 @@ class Mainbody():
         agemax = cd.age(zgal, use_flat=True, **cosmo)/cc.Gyr_s
 
         # N of param:
-        try:
-            ndim = int(inputs['NDIM'])
+        if int(inputs['ZEVOL']) == 1:
+            ndim = int(len(nage) * 2 + 1)
+            print('Metallicity evolution is on.')
+            if int(inputs['ZMC']) == 1:
+                ndim += 1
             print('No of params are : %d'%(ndim))
-        except:
-            if int(inputs['ZEVOL']) == 1:
-                ndim = int(len(nage) * 2 + 1)
-                print('Metallicity evolution is on.')
-                if int(inputs['ZMC']) == 1:
-                    ndim += 1
-                print('No of params are : %d'%(ndim))
-            else:
-                ndim = int(len(nage) + 1 + 1)
-                print('Metallicity evolution is off.')
-                if int(inputs['ZMC']) == 1:
-                    ndim += 1
-                print('No of params are : %d'%(ndim))
-            pass
+        else:
+            ndim = int(len(nage) + 1 + 1)
+            print('Metallicity evolution is off.')
+            if int(inputs['ZMC']) == 1:
+                ndim += 1
+            print('No of params are : %d'%(ndim))
+        pass
 
         #
         # Line
@@ -413,8 +409,8 @@ class Mainbody():
         print('\n\n')
 
         Av_tmp = out.params['Av'].value
-        AA_tmp = np.zeros(len(age), dtype='float32')
-        ZZ_tmp = np.zeros(len(age), dtype='float32')
+        AA_tmp = np.zeros(len(age), dtype='float64')
+        ZZ_tmp = np.zeros(len(age), dtype='float64')
         fm_tmp, xm_tmp = fnc.tmp04_val(ID0, PA0, out, zprev, lib, tau0=tau0)
 
         ########################
@@ -741,21 +737,21 @@ class Mainbody():
 
             Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
             #Zmc  = np.percentile(res.flatchain['Z'], [16,50,84])
-            Avpar = np.zeros((1,3), dtype='float32')
+            Avpar = np.zeros((1,3), dtype='float64')
             Avpar[0,:] = Avmc
 
             out = res
             ####################
             # Best parameters
             ####################
-            Amc  = np.zeros((len(age),3), dtype='float32')
-            Ab   = np.zeros(len(age), dtype='float32')
-            Zmc  = np.zeros((len(age),3), dtype='float32')
-            Zb   = np.zeros(len(age), dtype='float32')
+            Amc  = np.zeros((len(age),3), dtype='float64')
+            Ab   = np.zeros(len(age), dtype='float64')
+            Zmc  = np.zeros((len(age),3), dtype='float64')
+            Zb   = np.zeros(len(age), dtype='float64')
             NZbest = np.zeros(len(age), dtype='int')
             f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
             sedpar = f0[1]
-            ms     = np.zeros(len(age), dtype='float32')
+            ms     = np.zeros(len(age), dtype='float64')
             for aa in range(len(age)):
                 Ab[aa]    = out.params['A'+str(aa)].value
                 Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)], [16,50,84])
@@ -771,8 +767,8 @@ class Mainbody():
             Avb = out.params['Av'].value
 
             if f_dust:
-                Mdust_mc = np.zeros(3, dtype='float32')
-                Tdust_mc = np.zeros(3, dtype='float32')
+                Mdust_mc = np.zeros(3, dtype='float64')
+                Tdust_mc = np.zeros(3, dtype='float64')
                 Mdust_mc[:] = np.percentile(res.flatchain['MDUST'], [16,50,84])
                 Tdust_mc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
                 print(Mdust_mc)

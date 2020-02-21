@@ -57,8 +57,8 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
 
             fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-            AA_tmp = np.zeros(len(age), dtype='float32')
-            ZZ_tmp = np.zeros(len(age), dtype='float32')
+            AA_tmp = np.zeros(len(age), dtype='float64')
+            ZZ_tmp = np.zeros(len(age), dtype='float64')
             for aa in range(len(age)):
                 AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
                 fwz.write(' %.5f'%(AA_tmp[aa]))
@@ -106,8 +106,8 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
             fitc = [csq, rcsq] # Chi2, Reduced-chi2
             fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-            AA_tmp = np.zeros(len(age), dtype='float32')
-            ZZ_tmp = np.zeros(len(age), dtype='float32')
+            AA_tmp = np.zeros(len(age), dtype='float64')
+            ZZ_tmp = np.zeros(len(age), dtype='float64')
             for aa in range(len(age)):
                 AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
                 fwz.write(' %.5f'%(AA_tmp[aa]))
@@ -199,21 +199,21 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
 
 # SFH
 def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr = np.zeros(len(tt), dtype='float64')+minsfr
     sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
 def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr = np.zeros(len(tt), dtype='float64')+minsfr
     sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
 def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr = np.zeros(len(tt), dtype='float64')+minsfr
     sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]<t0) | (tt[:]>tau)
     sfr[:][con] = minsfr
@@ -363,7 +363,7 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
     # Eb:
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -419,7 +419,7 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     # gamma: See Eq.1
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -477,7 +477,7 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     # Rv: from Calzetti+00
     # lmlimu: Upperlimit. 2.2 in Calz+00
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -524,7 +524,7 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     # nr (int array)   : index, to be used for sorting.
     # Rv: =3.1 for MW.
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # into micron
     xx   = 1./lmm
@@ -649,8 +649,8 @@ def check_line(data,wave,wht,model):
 # Convolution of templates with filter response curves.
 def filconv_cen(band0, l0, f0): # f0 in fnu
     DIR = 'FILT/'
-    fnu  = np.zeros(len(band0), dtype='float32')
-    lcen = np.zeros(len(band0), dtype='float32')
+    fnu  = np.zeros(len(band0), dtype='float64')
+    lcen = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + 'f' + str(band0[ii]) + 'w.fil', comments='#')
         lfil = fd[:,1]
@@ -734,14 +734,14 @@ def fil_fwhm(band0, DIR): # f0 in fnu
     #
     # FWHM
     #
-    fwhm = np.zeros(len(band0), dtype='float32')
+    fwhm = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
 
         fsum = np.sum(ffil)
-        fcum = np.zeros(len(ffil), dtype='float32')
+        fcum = np.zeros(len(ffil), dtype='float64')
         lam0,lam1 = 0,0
 
         for jj in range(len(ffil)):
