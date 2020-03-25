@@ -13,6 +13,7 @@
 # 3. Extracted spectra
 # (ID + '_PA' + PA + '_inp0_tmp3.cat')
 #########################################
+
 ################
 # Input
 ################
@@ -239,7 +240,7 @@ def main(parfile, fplt, mcmcplot=True):
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
 
-    if fplt <= 3:
+    if fplt <= 3 and flag_suc == 0:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
         plot_sfh(ID0, PA0, Zall, age, f_comp=ftaucomp, fil_path=DIR_FILT,
@@ -258,8 +259,8 @@ def main(parfile, fplt, mcmcplot=True):
 
     if fplt == 6:
         from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
-        #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
         plot_corner_physparam_summary(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
+        #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
         #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
 
 

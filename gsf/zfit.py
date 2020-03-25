@@ -53,16 +53,15 @@ def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu,
         s_z    = 1 #pars['f_cz']
         resid *= 1 / s_z
         resid *= resid
-
         nzz   = int(z/delzz)
+        # Something unacceptable;
         if nzz<0 or z<zliml:
              return -np.inf
         else:
             respr = np.log(prior[nzz])
-
         resid += np.log(2 * np.pi * s_z**2) + respr
-
         return -0.5 * np.sum(resid)
+
     #################################
 
     out_cz  = minimize(residual_z, fit_par_cz, method='nelder')

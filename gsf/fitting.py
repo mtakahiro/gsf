@@ -128,8 +128,11 @@ class Mainbody():
         #
         # Line
         #
-        LW0 = inputs['LINE']
-        LW0 = [float(x.strip()) for x in LW0.split(',')]
+        try:
+            LW0 = inputs['LINE']
+            LW0 = [float(x.strip()) for x in LW0.split(',')]
+        except:
+            LW0 = []
 
         #
         # Params for MCMC
@@ -428,11 +431,6 @@ class Mainbody():
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
 
-        if fzvis==1:
-            plt.plot(x_cz/(1+zprev)*(1.+zrecom),fm_s,'gray', linestyle='--', linewidth=0.5, label='Default ($z=%.5f$)'%(zprev)) # Model based on input z.
-            plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
-            plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
-
         if flag_m == 0:
             dez = 0.5
         else:
@@ -441,26 +439,40 @@ class Mainbody():
         #
         # For Eazy
         #
-        '''
-        dprob = np.loadtxt(eaz_path + 'photz_' + str(int(ID0)) + '.pz', comments='#')
-        zprob = dprob[:,0]
-        cprob = dprob[:,1]
+        try:
+            eaz_pz = inputs['EAZY_PZ']
+            f_eazy = True
+        except:
+            f_eazy = False
+        if f_eazy:
+            dprob = np.loadtxt(eaz_pz, comments='#')
+            zprob = dprob[:,0]
+            cprob = dprob[:,1]
+            # Then interpolate to a common grid;
+            zz_prob = np.arange(0,13,delzz)
+            cprob_s = np.interp(zz_prob, zprob, cprob)
+            prior_s = np.exp(-0.5 * cprob_s)
+            prior_s /= np.sum(prior_s)
+            '''
+            plt.close()
+            plt.plot(zz_prob,prior_s,linestyle='-')
+            plt.show()
+            '''
+        else:
+            zz_prob  = np.arange(0,13,delzz)
+            prior_s  = zz_prob * 0 + 1.
+            prior_s /= np.sum(prior_s)
 
-        zz_prob = np.arange(0,13,delzz)
-        cprob_s = np.interp(zz_prob, zprob, cprob)
-        prior_s = 1/cprob_s
-        prior_s /= np.sum(prior_s)
-        '''
-
-        zz_prob  = np.arange(0,13,delzz)
-        prior_s  = zz_prob * 0 + 1.
-        prior_s /= np.sum(prior_s)
-
+        # Plot;
+        if fzvis==1:
+            plt.plot(x_cz/(1+zprev)*(1.+zrecom),fm_s,'gray', linestyle='--', linewidth=0.5, label='Default ($z=%.5f$)'%(zprev)) # Model based on input z.
+            plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
+            plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
         try:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp,xm_tmp/(1+zprev), zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+zprev), zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, nmc_cz, nwalk_cz)
             z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -501,18 +513,7 @@ class Mainbody():
             scl_cz1 = [1.,1.,1.]
             Czrec0  = scl_cz0[1]
             Czrec1  = scl_cz1[1]
-        '''
-        try:
-            # lets try the normal distribution first
-            m, s  = stats.norm.fit(ser) # get mean and standard deviation
-            pdf_g = stats.norm.pdf(lnspc, m, s) # now get theoretical values in our interval
-            z_cz[:]    = [m-s, m, m+s]
-            zrecom     = z_cz[1]
-            f_fitgauss = 1
-        except:
-            print('Guassian fitting to z distribution failed.')
-            f_fitgauss=0
-        '''
+
         f_fitgauss=0
 
         xm_s = xm_tmp / (1+zprev) * (1+zrecom)
@@ -834,5 +835,6 @@ class Mainbody():
             else:
                 print('\n\n')
                 print('There is nothing to do.')
+                print('Terminating process.')
                 print('\n\n')
-                return 0, zprev, Czrec0, Czrec1
+                return -1, zprev, Czrec0, Czrec1
