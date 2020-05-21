@@ -22,6 +22,10 @@ Demonstration
 Pre-requirement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- numpy
+- astropy
+- Pandas
+- multiprocess
 - lmfit (no less than ver1.0.0)
 - emcee (no less than ver3.0.0)
 - corner

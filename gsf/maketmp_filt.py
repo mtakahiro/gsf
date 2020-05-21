@@ -469,9 +469,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     col01 = [col3, col4]
 
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
-                colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_ap)
+                colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=spec_ap)#, disp='%s'%(age[ss])
                 col00.append(colspec)
-                colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_mul_nu_conv[ss,:])
+                colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=spec_mul_nu_conv[ss,:])#, disp='%s'%(age[ss])
                 col01.append(colspec_all)
 
             #########################
