@@ -153,29 +153,32 @@ def run_gsf(parfile, fplt, mcmcplot=True):
     if fplt <= 3 and flag_suc >= 0:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
-        plot_sfh(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
-        inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
-        #plot_sed(MB, MB.ID, MB.PA, Z=MB.Zall, age=MB.age, tau0=MB.tau0, fil_path=MB.DIR_FILT,
-        #SNlim=1.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300,
-        #dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label = True)
+        #plot_sfh(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
+        #inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
+        plot_sed(MB, MB.ID, MB.PA, Z=MB.Zall, age=MB.age, tau0=MB.tau0, fil_path=MB.DIR_FILT,
+        SNlim=1.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300,
+        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label = True)
 
     if fplt == 4:
         from .plot_sfh import get_evolv
-        get_evolv(MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP)
+        get_evolv(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP)
 
     if fplt == 5:
         from .plot_sfh import plot_evolv
-        plot_evolv(MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, nmc=10)
+        plot_evolv(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, nmc=10)
 
     if fplt == 6:
         from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
-        plot_corner_physparam_summary(MB.ID, MB.PA, MB.Zall, MB.age, MB.tau0, dust_model=MB.dust_model)
+        plot_corner_physparam_summary(MB, MB.ID, MB.PA, MB.Zall, MB.age, MB.tau0, dust_model=MB.dust_model)
         #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
         #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
 
     if fplt == 8:
+        '''
+        See MZ evolution
+        '''
         from .plot_MZ import plot_mz
-        plot_mz(MB.ID, MB.PA, MB.Zall, MB.age)
+        plot_mz(MB, MB.ID, MB.PA, MB.Zall, MB.age)
 
 
 

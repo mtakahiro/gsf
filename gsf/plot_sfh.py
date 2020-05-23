@@ -19,9 +19,9 @@ from . import img_scale
 lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False):
-    #
-    #
-    #
+    '''
+
+    '''
 
     flim = 0.01
     lsfrl = -1 # log SFR low limit
@@ -691,27 +691,30 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
     ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     ax2.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ####################
-    ## Save
-    ####################
+    # Save
     #plt.show()
     #ax1.legend(loc=2, fontsize=8)
     #ax2.legend(loc=3, fontsize=8)
     plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png')
-    #if f_comp == 1:
-    #    plt.savefig('SFH_' + ID + '_PA' + PA + '_comp.pdf')
-    #else:
-    #    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.pdf')
 
-###############
-def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01):
+
+def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01):
+    '''
+    Purpose:
+    =========
+    Reprocess output files to get spectra, UV color, and SFH at higher resolution.
+
+    Input:
+    =========
     #
     # delt_sfh (float): delta t of input SFH in Gyr.
     #
     # Returns: SED as function of age, based on SF and Z histories;
     #
-    print('This function may take a while.')
-    flim = 0.01
+    '''
+
+    print('This function may take a while as it runs fsps.')
+    flim  = 0.01
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
     Txmax = 4 # Max x value
@@ -726,9 +729,9 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # RF colors.
     import os.path
     home = os.path.expanduser('~')
-    c      = 3.e18 # A/s
+    c      = MB.c #3.e18 # A/s
+    m0set  = MB.m0set #25.0
     chimax = 1.
-    m0set   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     ###########################
@@ -788,7 +791,7 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ####################
     # For cosmology
     ####################
-    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * MB.Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
     Tuni = MB.cosmo.age(zbes).value
@@ -889,8 +892,6 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         eAv= 0
 
     mm = 0
-    #mmax = 10
-    #print('mmax is set to 10')
     for mm in range(mmax):
         mtmp  = np.random.randint(len(samples))# + Nburn
         AAtmp = np.zeros(len(age), dtype='float32')
@@ -1002,15 +1003,14 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     t_get = tuniv_hr[con_sfh]
 
     for ss in range(len(t_get)):
-        wave0, flux0 = sp.get_spectrum(tage=t_get[ss], peraa=True) # if peraa=True, in unit of L/AA
+        wave0, flux0 = sp.get_spectrum(tage=t_get[ss], peraa=True)
         if ss == 0:
             spec_mul_nu_conv = np.zeros((len(t_get),len(wave0)),dtype='float32')
-        #ax2.plot(wave0, flux0, linestyle='-', color='b')
-        #plt.show()
-        print('Template %d is done.'%(ss))
+
+        print('Template %d is processed.'%(ss))
         wavetmp  = wave0*(1.+zbes)
         spec_mul_nu = flamtonu(wavetmp, flux0) # Conversion from Flambda to Fnu.
-        Lsun = 3.839 * 1e33 #erg s-1
+        Lsun = MB.Lsun #3.839 * 1e33 #erg s-1
         stmp_common = 1e10 # 1 tmp is in 1e10Lsun
 
         spec_mul_nu_conv[ss,:] = spec_mul_nu[:]
@@ -1021,7 +1021,7 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         consave = (wavetmp/(1.+zbes)<20000) # AA
         if ss == 0:
             nd_ap  = np.arange(0,len(wave0),1)
-            col1   = fits.Column(name='wavelength', format='E', unit='AA', disp='obs', array=wavetmp[consave])
+            col1   = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp[consave])#, disp='obs'
             col2   = fits.Column(name='colnum', format='K', unit='', array=nd_ap[consave])
             col00  = [col1, col2]
             col3   = fits.Column(name='age', format='E', unit='Gyr', array=t_get)
@@ -1029,7 +1029,7 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             col5   = fits.Column(name='zh', format='E', unit='Zsun', array=zh_hr_in[con_sfh])
             col01  = [col3,col4,col5]
 
-        colspec_all = fits.Column(name='fspec_'+str(ss), format='E', unit='Fnu', disp='%s'%(t_get[ss]), array=spec_mul_nu_conv[ss,:][consave])
+        colspec_all = fits.Column(name='fspec_'+str(ss), format='E', unit='Fnu', array=spec_mul_nu_conv[ss,:][consave])#, disp='%s'%(t_get[ss])
         col00.append(colspec_all)
 
     coldefs_spec = fits.ColDefs(col00)
@@ -1041,8 +1041,7 @@ def get_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     hdu.writeto(DIR_TMP + 'obshist_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
 
-###############
-def plot_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
+def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
     #
     # delt_sfh (float): delta t of input SFH in Gyr.
     #
@@ -1123,7 +1122,7 @@ def plot_evolv(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
         Asum += A50[aa]
 
     # Cosmo;
-    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * MB.Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
     Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
     Tuni0 = (Tuni - age[:])

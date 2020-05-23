@@ -14,53 +14,33 @@ from .function import *
 from .function_class import Func
 from .basic_func import Basic
 from . import img_scale
-
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-Lsun = 3.839 * 1e33 #erg s-1
-Mpc_cm = 3.08568025e+24 # cm/Mpc
-
 lcb   = '#4682b4' # line color, blue
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-def loadcpkl(cpklfile):
-    """
-    Load cpkl files.
-    """
-    if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
-    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
 
-    if sys.version_info.major == 2:
-        data = pickle.load(f)
-    elif sys.version_info.major == 3:
-        data = pickle.load(f, encoding='latin-1')
+def get_logSFMS(logM, T, delm=0.):
+    '''
+    Steinhurt+14
+    '''
+    logSFR = (0.84 - 0.026 * T) * (logM - delm) - (6.51 - 0.11 * T)
+    return logSFR
 
-    f.close()
-    return data
-
-
-###############
-def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
-
+def plot_mz(MB, ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
+    '''
+    '''
     #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
     import matplotlib.cm as cm
 
     flim = 0.01
-
     lsfrl = -1 # log SFR low limit
     mmax  = 500
-
     Txmax = 4 # Max x value
-
     lmmin = 10.3
 
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage) # Set up the number of Age/ZZ
-    bfnc = Basic(Z)
-
     age = np.asarray(age)
+    nage = np.arange(0,len(age),1)
+    fnc  = MB.fnc #Func(Z, nage) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
+
 
 
     ################
@@ -68,7 +48,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     import os.path
     home = os.path.expanduser('~')
     #fil_path = '/Users/tmorishita/eazy-v1.01/PROG/FILT/'
-    fil_path = home + '/Dropbox/FILT/'
+    fil_path = MB.DIR_FILT #home + '/Dropbox/FILT/'
     fil_u = fil_path+'u.fil'
     fil_b = fil_path+'b.fil'
     fil_v = fil_path+"v.fil"
@@ -95,9 +75,9 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     lj = dj[:,1]
     fj = dj[:,2]
 
-    c      = 3.e18 # A/s
+    c      = MB.c #3.e18 # A/s
+    mag0   = MB.m0set #25.0
     chimax = 1.
-    mag0   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
     #d = 10**(-73.6/2.5) # From [ergs/s/cm2/Hz] to [ergs/s/cm2/A]
 
@@ -135,11 +115,11 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
         Asum += A50[aa]
 
     # Cosmo;
-    DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * MB.Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
-    Tuni  = cd.age(zbes, use_flat=True, **cosmo) # age at zobs.
-    Tuni0 = (Tuni/cc.Gyr_s - age[:])
+    Tuni  = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo) # age at zobs.
+    Tuni0 = (Tuni - age[:])
 
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
@@ -154,13 +134,13 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
             delTl[aa] = age[aa]
             delTu[aa] = (age[aa+1]-age[aa])/2.
             delT[aa]  = delTu[aa] + delTl[aa]
-        elif Tuni/cc.Gyr_s < age[aa]:
+        elif Tuni < age[aa]:
             delTl[aa] = (age[aa]-age[aa-1])/2.
             delTu[aa] = 10.
             delT[aa]  = delTu[aa] + delTl[aa]
         elif aa == len(age)-1:
             delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+            delTu[aa] = Tuni - age[aa]
             delT[aa]  = delTu[aa] + delTl[aa]
         else:
             delTl[aa] = (age[aa]-age[aa-1])/2.
@@ -205,7 +185,6 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ZC = np.zeros((len(age), mmax), dtype='float32') # Cumulative Z.
     TC = np.zeros((len(age), mmax), dtype='float32') # Mass weighted T.
     ZMM = np.zeros((len(age), mmax), dtype='float32') # Mass weighted Z.
-
     SF = np.zeros((len(age), mmax), dtype='float32') # SFR
 
     mm = 0
@@ -223,7 +202,10 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
         for aa in range(len(age)):
             AAtmp[aa] = samples['A'+str(aa)][mtmp]
-            ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
+            try:
+                ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
+            except:
+                ZZtmp[aa] = samples['Z0'][mtmp]
 
             nZtmp      = bfnc.Z2NZ(ZZtmp[aa])
             mslist[aa] = sedpar.data['ML_'+str(nZtmp)][aa]
@@ -271,7 +253,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     conA = (msize>=0)
 
     #
-    # M-SFR
+    # 1.M-SFR
     #
     #ax1.fill_between(age[conA], np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA], linestyle='-', color='k', alpha=0.3)
     ax1.scatter(np.log10(ACp[:,1])[conA], np.log10(SFp[:,1])[conA], marker='o', c=col[:], s=msize[conA], edgecolors='k',zorder=2)
@@ -281,10 +263,15 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     delSFR  = np.zeros(len(age), dtype='float32')
     delSFRl = np.zeros(len(age), dtype='float32')
     delSFRu = np.zeros(len(age), dtype='float32')
-    for ii in range(len(Tuni0)):
-        lSFR = (0.84 - 0.026 * Tuni0[ii])*(lM-0.19) - (6.51 - 0.11 * Tuni0[ii])
-        ax1.fill_between(lM, lSFR-0.1, lSFR+0.1, linestyle='None', lw=0.5, zorder=-5, alpha=0.5, color=col[ii]) # 0.19 is for Kroupa to Salpeter.
 
+    # Plot Main sequence
+    delm = 0
+    if MB.nimf == 0:
+        # 0.19 is for Kroupa to Salpeter.
+        delm = 0.19
+    for ii in range(len(Tuni0)):
+        lSFR = get_logSFMS(lM, Tuni0[ii], delm=delm)
+        ax1.fill_between(lM, lSFR-0.1, lSFR+0.1, linestyle='None', lw=0.5, zorder=-5, alpha=0.5, color=col[ii])
         lSFRtmp = (0.84 - 0.026 * Tuni0[ii]) * np.log10(ACp[ii,1]) - (6.51 - 0.11 * Tuni0[ii])
         delSFR[ii]  = np.log10(SFp[ii,1]) - lSFRtmp
         delSFRl[ii] = np.log10(SFp[ii,0]) - lSFRtmp
@@ -292,7 +279,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
 
     #
-    # t - delta SRF relation (right top)
+    # 2.t - delta SRF relation (right top)
     #
     #ax2.plot(age[:][conA], delSFR[conA], marker='', c='k',zorder=1, lw=1, linestyle='-')
     ax2.scatter(age[:][conA], delSFR[conA], marker='o', c=col[:], s=msize[conA], edgecolors='k',zorder=2)
@@ -300,7 +287,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
 
     #
-    # Mass - Z relation (left bottom)
+    # 3.Mass - Z relation (left bottom)
     #
     ax2label = ''
     #ax2.fill_between(age[conA], np.log10(ACp[:,0])[conA], np.log10(ACp[:,2])[conA], linestyle='-', color='k', alpha=0.3)
@@ -325,7 +312,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
 
     #
-    # Fundamental Metal
+    # 4.Fundamental Metal
     #
     bsfr = -0.32 # From Mannucci+10
     #ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.3)
@@ -362,7 +349,8 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
     ax1.set_ylabel('$\log \dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     #ax1.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
 
-    y3min, y3max = np.min(Z), np.max(Z)
+    #y3min, y3max = np.min(Z), np.max(Z)
+    y3min, y3max = -0.8, 0.4 #np.min(Z), np.max(Z)
 
     lsfru = 2.8
     if np.max(np.log10(SFp[:,2]))>2.8:
@@ -424,7 +412,7 @@ def plot_mz(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.
 
     Tzz   = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
-        Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
+        Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
         if Tzz[zz] < 0.01:
             Tzz[zz] = 0.01
 

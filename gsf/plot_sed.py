@@ -1547,11 +1547,14 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=200)
     plt.close()
 
-# Creat temporal png for gif image.
-def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, DIR_OUT='./'):
+def plot_corner_physparam_summary(MB, ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, DIR_OUT='./'):
+    '''
+    # Creat temporal png for gif image.
     #
     # For summary. In the same format as plot_corner_physparam_frame.
     #
+    '''
+
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -1609,12 +1612,9 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
     zbes  = hdul[0].header['z']
     zscl = (1.+zbes)
 
-
     # Repeat no.
     nplot = 1000
-    #nplot = 100
 
-    #DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
     try:
         os.makedirs(DIR_OUT)
     except:
@@ -2067,6 +2067,7 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
 
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
     plt.close()
+
 
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
     #
