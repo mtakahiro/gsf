@@ -29,7 +29,6 @@ Pre-requirement
 - lmfit (no less than ver1.0.0)
 - emcee (no less than ver3.0.0)
 - corner
-- cosmolopy
 - python-fsps (ver0.3.0)
 - fsps
 
