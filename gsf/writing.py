@@ -10,12 +10,12 @@ class Analyze:
     def __init__(self, inputs):
         self.inputs = inputs
         try:
-            self.ID0 = inputs['ID_SIM']
+            self.ID = inputs['ID_SIM']
         except:
-            self.ID0 = inputs['ID']
+            self.ID = inputs['ID']
             pass
 
-        self.PA0 = inputs['PA']
+        self.PA = inputs['PA']
         self.NMC = int(inputs['NMC'])
         self.NWALK = int(inputs['NWALK'])
 
@@ -82,14 +82,14 @@ class Analyze:
         print('### Writing parameters ###')
         print('##########################')
 
-        ID0 = self.ID0
-        PA0 = self.PA0
+        ID0 = self.ID
+        PA0 = self.PA
 
         age  = self.AGE
         nage = np.arange(0,len(age),1)
         Zall = self.ZALL
 
-        fnc  = Func(Zall, nage) # Set up the number of Age/ZZ
+        fnc  = Func(ID0, PA0, Zall, nage) # Set up the number of Age/ZZ
         bfnc = Basic(Zall)
 
         DIR_TMP = self.DIR_TEMP

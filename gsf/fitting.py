@@ -17,11 +17,6 @@ from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, save
 from .zfit import check_redshift
 from .plot_sed import *
 
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-
 ############################
 py_v = (sys.version_info[0])
 if py_v > 2:
@@ -46,12 +41,181 @@ LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 65
 fLW = np.zeros(len(LW), dtype='int') # flag.
 
 
-#####################
-# Function fo MCMC
-#####################
 class Mainbody():
-    def __init__(self, inputs):
+
+    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
+        '''
+        INPUT:
+        ==========
+        inputs: Dictionary for input params.
+
+         Mpc_cm : cm/Mpc
+         pixelscale : arcsec/pixel
+
+        '''
+
         self.inputs = inputs
+        self.c = c
+        self.Mpc_cm = Mpc_cm
+        self.m0set  = m0set
+        self.pixelscale = pixelscale
+        self.Lsun = Lsun #erg s-1
+
+        if cosmo == None:
+            from astropy.cosmology import WMAP9 as cosmo
+            self.cosmo = cosmo
+        else:
+            self.cosmo = cosmo
+
+        self.ID   = inputs['ID']
+        self.PA   = inputs['PA']
+        self.zgal = float(inputs['ZGAL'])
+        self.Cz0  = float(inputs['CZ0'])
+        self.Cz1  = float(inputs['CZ1'])
+
+        try:
+            self.DIR_EXTR = inputs['DIR_EXTR']
+        except:
+            self.DIR_EXTR = False
+
+        # Nebular emission;
+        try:
+            self.fneb = int(inputs['ADD_NEBULAE'])
+            try:
+                self.logU = float(inputs['logU'])
+            except:
+                self.logU = -2.5
+        except:
+            self.fneb = 0
+            self.logU = 0
+
+        # Data directory;
+        self.DIR_TMP  = inputs['DIR_TEMP']
+        self.DIR_FILT = inputs['DIR_FILT']
+
+        # Tau comparison?
+        try:
+            self.ftaucomp = inputs['TAU_COMP']
+        except:
+            print('No entry: TAU_COMP')
+            self.ftaucomp = 0
+            print('set to %d' % self.ftaucomp)
+            pass
+
+        # Age
+        self.age = [float(x.strip()) for x in inputs['AGE'].split(',')]
+        self.nage = np.arange(0,len(self.age),1)
+
+        # Redshift as a param;
+        try:
+            self.fzmc = int(inputs['ZMC'])
+        except:
+            self.fzmc = 0
+
+
+        # Metallicity
+        try:
+            self.ZFIX = float(inputs['ZFIX'])
+            self.delZ = 0.0001
+            self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
+            self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+        except:
+            self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+            self.delZ = float(inputs['DELZ'])
+            if self.Zmax == self.Zmin or self.delZ==0:
+                self.delZ = 0.0001
+                self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ) # in logZsun
+            else:
+                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+
+        # N of param:
+        if int(inputs['ZEVOL']) == 1:
+            self.ndim = int(len(self.nage) * 2 + 1)
+            print('Metallicity evolution is on.')
+            if int(inputs['ZMC']) == 1:
+                self.ndim += 1
+            print('No of params are : %d'%(self.ndim))
+        else:
+            self.ndim = int(len(self.nage) + 1 + 1)
+            print('Metallicity evolution is off.')
+            if int(inputs['ZMC']) == 1:
+                self.ndim += 1
+            print('No of params are : %d'%(self.ndim))
+        pass
+
+        try:
+            self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
+        except:
+            self.age_fix = []
+
+        # Line
+        try:
+            self.LW0 = [float(x.strip()) for x in inputs['LINE'].split(',')]
+        except:
+            self.LW0 = []
+
+        # Dust model specification;
+        try:
+            self.dust_model = int(inputs['DUST_MODEL'])
+        except:
+            self.dust_model = 0
+
+        # If FIR data;
+        try:
+            DT0 = float(inputs['TDUST_LOW'])
+            DT1 = float(inputs['TDUST_HIG'])
+            dDT = float(inputs['TDUST_DEL'])
+            self.Temp= np.arange(DT0,DT1,dDT)
+            self.f_dust = True
+            print('FIR fit is on.')
+        except:
+            self.f_dust = False
+            pass
+
+
+        # Tau for MCMC parameter; not as fitting parameters.
+        self.tau0 = [float(x.strip()) for x in inputs['TAU0'].split(',')]
+
+        # IMF
+        try:
+            self.nimf = int(inputs['NIMF'])
+        except:
+            self.nimf = 0
+            print('Cannot find NIMF. Set to %d.'%(self.nimf))
+
+        # MCMC;
+        self.nmc      = int(inputs['NMC'])
+        self.nwalk    = int(inputs['NWALK'])
+        self.nmc_cz   = int(inputs['NMCZ'])
+        self.nwalk_cz = int(inputs['NWALKZ'])
+        self.Zevol  = int(inputs['ZEVOL'])
+        self.fzvis    = int(inputs['ZVIS'])
+        self.fneld    = int(inputs['FNELD'])
+        try:
+            self.ntemp = int(inputs['NTEMP'])
+        except:
+            self.ntemp = 1
+
+        try:
+            if int(inputs['DISP']) == 1:
+                self.f_disp = True
+            else:
+                self.f_disp = False
+        except:
+            self.f_disp = False
+
+        # And class;
+        from .function_class import Func
+        from .basic_func import Basic
+        self.fnc  = Func(self.ID, self.PA, self.Zall, self.nage, dust_model=self.dust_model, DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
+        self.bfnc = Basic(self.Zall)
+
+        # Spectral library;
+        self.lib = self.fnc.open_spec_fits(self.ID, self.PA, fall=0, tau0=self.tau0)
+        self.lib_all = self.fnc.open_spec_fits(self.ID, self.PA, fall=1, tau0=self.tau0)
+        if self.f_dust:
+            self.lib_dust     = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=0, tau0=self.tau0)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=1, tau0=self.tau0)
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
@@ -76,6 +240,9 @@ class Mainbody():
 
         # For error parameter
         ferr = 0
+
+        # This needs to be defined here.
+        self.zprev = zprev
 
         #
         # Age
@@ -108,7 +275,7 @@ class Mainbody():
         zlimu  = 6.
         snlim  = 1
         zliml  = zgal - 0.5
-        agemax = cd.age(zgal, use_flat=True, **cosmo)/cc.Gyr_s
+        agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
 
         # N of param:
         if int(inputs['ZEVOL']) == 1:
@@ -176,19 +343,26 @@ class Mainbody():
         except:
             dust_model = 0
 
-        from .function_class import Func
-        from .basic_func import Basic
-        fnc  = Func(Zall, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
-        bfnc = Basic(Zall)
+        #from .function_class import Func
+        #from .basic_func import Basic
+        fnc  = self.fnc  #Func(Zall, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
+        bfnc = self.bfnc #Basic(Zall)
 
         # Open ascii file and stock to array.
         #lib = open_spec(ID0, PA0)
-        lib     = fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
-        lib_all = fnc.open_spec_fits(ID0, PA0, fall=1, tau0=tau0)
+        lib     = self.lib #= fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
+        lib_all = self.lib_all #= fnc.open_spec_fits(ID0, PA0, fall=1, tau0=tau0)
 
         if f_dust:
-            lib_dust     = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=0, tau0=tau0)
-            lib_dust_all = fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=1, tau0=tau0)
+            lib_dust     = self.lib_dust #= fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=0, tau0=tau0)
+            lib_dust_all = self.lib_dust_all #= fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=1, tau0=tau0)
+
+        # Error parameter
+        try:
+            self.ferr = int(inputs['F_ERR'])
+        except:
+            self.ferr = 0
+            pass
 
         #################
         # Observed Data
@@ -237,77 +411,10 @@ class Mainbody():
             wht2 = np.asarray([0.]) #check_line_man(fy, x, wht, fy, zprev, LW0)
             sn   = np.asarray([0.]) #fy/ey
 
-        #####################
-        # Function fo MCMC
-        #####################
-        def residual(pars, fy, wht2, f_fir, out=False): # x, y, wht are taken from out of the definition.
-            #
-            # Returns: residual of model and data.
-            # out: model as second output. For lnprob func.
-            # f_fir: syntax. If dust component is on or off.
-            vals = pars.valuesdict()
-            model, x1 = fnc.tmp04(ID0, PA0, vals, zprev, lib, tau0=tau0)
-            if f_fir:
-                model_dust, x1_dust = fnc.tmp04_dust(ID0, PA0, vals, zprev, lib_dust, tau0=tau0)
-                n_optir = len(model)
-                # Add dust flux to opt/IR grid.
-                model[:]+= model_dust[:n_optir]
-                #print(model_dust)
-                # then append only FIR flux grid.
-                model = np.append(model,model_dust[n_optir:])
-                x1    = np.append(x1,x1_dust[n_optir:])
-                #plt.plot(x1,model,'r.')
-                #plt.show()
 
-            if ferr == 1:
-                f = vals['f']
-            else:
-                f = 0 # temporary... (if f is param, then take from vals dictionary.)
-            con_res = (model>0) & (wht2>0) #& (fy>0)
-            sig     = np.sqrt(1./wht2+f**2*model**2)
-
-            '''
-            contmp = x1>1e6 & (wht2>0)
-            try:
-                print(x1[contmp],model[contmp],fy[contmp],np.log10(vals['MDUST']))
-            except:
-                pass
-            '''
-
-            if not out:
-                if fy is None:
-                    print('Data is none')
-                    return model[con_res]
-                else:
-                    return (model - fy)[con_res] / sig[con_res] # i.e. residual/sigma. Because is_weighted = True.
-            if out:
-                if fy is None:
-                    print('Data is none')
-                    return model[con_res], model
-                else:
-                    return (model - fy)[con_res] / sig[con_res], model # i.e. residual/sigma. Because is_weighted = True.
-
-        def lnprob(pars,fy,wht2,f_fir):
-            #
-            # Returns: posterior.
-            #
-            vals   = pars.valuesdict()
-            if ferr == 1:
-                f = vals['f']
-            else:
-                f = 0 # temporary... (if f is param, then take from vals dictionary.)
-            resid, model = residual(pars, fy, wht2, f_fir, out=True)
-            con_res = (model>0) & (wht2>0)
-            sig     = np.sqrt(1./wht2+f**2*model**2)
-            lnlike  = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig[con_res]**2))
-            #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
-            #Av   = vals['Av']
-            #if Av<0:
-            #     return -np.inf
-            #else:
-            #    respr = 0 #np.log(1)
-            respr = 0 # Flat prior...
-            return lnlike + respr
+        from .posterior_flexible import Post
+        class_post = Post(self)
+        #from posterior_flexible import residual,lnprob
 
         ###############################
         # Add parameters
@@ -387,7 +494,7 @@ class Mainbody():
         #
         # Get initial parameters
         #
-        out,chidef,Zbest = get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0)
+        out,chidef,Zbest = get_leastsq(inputs,ZZtmp,fneld,age,fit_params,class_post.residual,fy,wht2,ID0,PA0)
 
         #
         # Best fit
@@ -596,6 +703,7 @@ class Mainbody():
                 #sigz = 1.0 #3.0
                 fit_params.add('zmc', value=zrecom, min=zrecom-(z_cz[1]-z_cz[0])*sigz, max=zrecom+(z_cz[2]-z_cz[1])*sigz)
                 #print(zrecom,zrecom-(z_cz[1]-z_cz[0])*sigz,zrecom+(z_cz[2]-z_cz[1])*sigz)
+
                 #####################
                 # Error parameter
                 #####################
@@ -634,7 +742,7 @@ class Mainbody():
                     fit_name = 'nelder'
                 else:
                     fit_name = 'powell'
-                out = minimize(residual, fit_params, args=(fy, wht2, f_dust), method=fit_name) # It needs to define out with redshift constrain.
+                out = minimize(class_post.residual, fit_params, args=(fy, wht2, f_dust), method=fit_name) # It needs to define out with redshift constrain.
                 print(fit_report(out))
 
                 # Fix params to what we had before.
@@ -695,7 +803,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(lnprob, out.params, fcn_args=[fy,wht2,f_dust], f_disp=f_disp, f_move=f_move)
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[fy,wht2,f_dust], f_disp=f_disp, f_move=f_move)
             print('######################')
             print('### Starting emcee ###')
             print('######################')

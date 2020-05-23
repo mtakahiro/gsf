@@ -13,29 +13,20 @@ import fsps
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import os
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-
-######################
-# Fixed Parameters
-######################
-c      = 3e18
-Mpc_cm = 3.08568025e+24 # cm/Mpc
-m0set  = 25.0
-pixelscale = 0.06 # arcsec/pixel
 
 #######################
 # Path
 #######################
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
-#
-# Get Lick index
-# for input input
-#
 def get_ind(wave,flux):
+    '''
+    #
+    # Get Lick index
+    # for input input
+    #
+    '''
+
     lml     = [4268, 5143, 5233, 5305, 5862, 4828, 4628, 4985, 5669, 5742, 4895, 4895, 5818, 6068]
     lmcl    = [4283, 5161, 5246, 5312, 5879, 4848, 4648, 5005, 5689, 5762, 5069, 5154, 5938, 6191]
     lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
@@ -62,7 +53,8 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], lammin=400, lammax=80000, tau0=[0.01,0.02,0.03], fneb=0, logU=-2.5, DIR_TMP='./templates/'):
+def make_tmp_z0(MB, lammin=400, lammax=80000):
+    '''
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
     # Z (array)  : Stellar phase metallicity in logZsun.
@@ -73,11 +65,20 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     #  Otherwise, it would be either minimum value (=0.01; if one age bin), or
     #  the width to the next age bin.
     #
+    '''
+    nimf = MB.nimf
+    Z    = MB.Zall #np.arange(-1.2,0.4249,0.05)
+    age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
+    tau0 = MB.tau0 #[0.01,0.02,0.03],
+    fneb = MB.fneb #0,
+    logU = MB.logU #-2.5,
+    DIR_TMP= MB.DIR_TMP #'./templates/'
+
     NZ = len(Z)
     Na = len(age)
 
     # Current age in Gyr;
-    age_univ = cd.age(0, use_flat=True, **cosmo)/cc.Gyr_s
+    age_univ = MB.cosmo.age(0).value
 
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
@@ -217,8 +218,9 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
                 col01.append(col1)
                 col01.append(col2)
 
-    # ##############
+    #
     # Create header;
+    #
     hdr = fits.Header()
     hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
     if fneb == 1:
@@ -238,11 +240,6 @@ def make_tmp_z0(nimf=0, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     hdu5   = fits.BinTableHDU.from_columns(colind, header=hdr)
     hdu5.writeto(DIR_TMP + 'index.fits', overwrite=True)
 
-    #colspec6 = fits.ColDefs(col06)
-    #hdu6     = fits.BinTableHDU.from_columns(colspec6, header=hdr)
-    #hdu6.writeto(DIR_TMP + 'spec_all_inv_'+str(zz)+'.fits', overwrite=True)
-
-    #
     col6 = fits.Column(name='tA', format='E', unit='Gyr', array=age[:])
     col01.append(col6)
 

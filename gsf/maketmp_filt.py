@@ -12,15 +12,6 @@ from scipy.integrate import simps
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
 
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-c = 3e18 # speed of light in AA/s
-pixelscale = 0.06 # arcsec/pixel
-Mpc_cm = 3.08568025e+24 # cm/Mpc
-#m0set = 25.0
-
 # Custom package
 from .function import *
 from .function_class import Func
@@ -30,14 +21,16 @@ from .function_igm import *
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
 
-###################################################
-### SIMULATION of SPECTRA.
-###################################################
 def sim_spec(lmin, fin, sn):
+    '''
+    ###################################################
+    ### SIMULATION of SPECTRA.
+    ###################################################
     #
     # wave_obs, wave_temp, flux_temp, sn_obs
     # Return: frand, erand
     #
+    '''
     frand = fin * 0
     erand = fin * 0
     for ii in range(len(lmin)):
@@ -49,10 +42,11 @@ def sim_spec(lmin, fin, sn):
             frand[ii] = np.random.normal(fin[ii],erand[ii],1)
     return frand, erand
 
-###################################################
-# Make SPECTRA at given z and filter set.
-###################################################
-def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fneb=0, DIR_TMP='./templates/'):
+def maketemp(MB, zbest):
+    '''
+    ###################################################
+    # Make SPECTRA at given z and filter set.
+    ###################################################
     #
     # inputs      : Configuration file.
     # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
@@ -60,12 +54,19 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     # age (array) : Age, in Gyr.
     # fneb (int)  : flag for adding nebular emissionself.
     #
+    '''
+    inputs = MB.inputs
+    ID = MB.ID #inputs['ID']
+    PA = MB.PA #inputs['PA']
+    age = MB.age #=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
+    Z  = MB.Zall #=np.arange(-1.2,0.45,0.1),
+    fneb = MB.fneb
+    DIR_TMP = MB.DIR_TMP# './templates/'
+
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
-    ID = inputs['ID']
-    PA = inputs['PA']
     try:
         DIR_EXTR = inputs['DIR_EXTR']
         if len(DIR_EXTR)==0:
@@ -371,7 +372,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             snorm   = np.zeros(Ntmp)
             agebest = np.zeros(Ntmp)
             avbest  = np.zeros(Ntmp)
-            age_univ= cd.age(zbest, use_flat=True, **cosmo)
+            age_univ= MB.cosmo.age(zbest).value #, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
                 lm0    = spechdu.data['wavelength']
@@ -427,7 +428,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
                 spec_sum = 0*spec_mul[0] # This is dummy file.
-                DL = cd.luminosity_distance(zbest, **cosmo) * Mpc_cm # Luminositydistance in cm
+                DL = MB.cosmo.luminosity_distance(zbest).value * Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
                 #spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
                 #ftmp_int = data_int(lm, wavetmp, spec_av)

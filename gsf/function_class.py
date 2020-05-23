@@ -11,7 +11,9 @@ m0set  = 25.0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 class Func:
-    def __init__(self, ZZ, AA, dust_model=0, DIR_TMP='./templates/'):
+    def __init__(self, ID, PA, ZZ, AA, dust_model=0, DIR_TMP='./templates/'):
+        self.ID   = ID
+        self.PA   = PA
         self.ZZ   = ZZ
         self.AA   = AA
         try:

@@ -4,6 +4,7 @@ import numpy as np
 import sys
 from scipy.integrate import simps
 import pickle as cPickle
+import os
 
 #
 c = 3.e18 # A/s
@@ -17,10 +18,31 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+
+def loadcpkl(cpklfile):
+    """
+    Load cpkl files.
+    """
+    import pickle
+    if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
+    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
+
+    if sys.version_info.major == 2:
+        data = pickle.load(f)
+    elif sys.version_info.major == 3:
+        data = pickle.load(f, encoding='latin-1')
+
+    f.close()
+    return data
+
+
 def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
     #
     # Get initial parameters
     #
+    #from .posterior_flexible import Post
+    #class_post = Post(fnc)
+
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
     chidef = 1e5
     Zbest  = 0
@@ -295,7 +317,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
     fit_params.add('tau', value=.1, min=0, max=100)
     fit_params.add('A', value=1, min=0, max=5000)
 
-    def residual(pars):
+    def residual_tmp(pars):
         vals  = pars.valuesdict()
         t0_tmp, tau_tmp, A_tmp = vals['t0'],vals['tau'],vals['A']
 
@@ -320,7 +342,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
         return resid
 
 
-    out = minimize(residual, fit_params, method='powell')
+    out = minimize(residual_tmp, fit_params, method='powell')
     #out = minimize(residual, fit_params, method='nelder')
     print(fit_report(out))
 

@@ -17,22 +17,10 @@ from .basic_func import Basic
 from . import img_scale
 from . import corner
 
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-Lsun = 3.839 * 1e33 #erg s-1
-c = 3e18
-Mpc_cm = 3.08568025e+24 # cm/Mpc
-m0set = 25.0
-
-#Zset  = [-0.40, 0.0, 0.4]#, 0.20, 0.35]
-#Zset  = [-0.30, -0.20]#, 0.20, 0.35]
 lcb = '#4682b4' # line color, blue
 col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-
-def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
+def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
     #
     # Returns: plots.
     #
@@ -41,18 +29,19 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
     ################
     # RF colors.
     import os.path
     home = os.path.expanduser('~')
-    c      = 3.e18 # A/s
+    c      = MB.c
     chimax = 1.
-    mag0   = 25.0
+    m0set  = MB.m0set
+    Mpc_cm = MB.Mpc_cm
+
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
-    #d = 10**(-73.6/2.5) # From [ergs/s/cm2/Hz] to [ergs/s/cm2/A]
 
     #############
     # Plot.
@@ -79,7 +68,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -154,7 +143,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ###############################
     # Data taken from
     ###############################
-    dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR   = dat[:, 0]
     x    = dat[:, 1]
     fy00 = dat[:, 2]
@@ -190,7 +179,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     con_wht = (ey<0)
     wht[con_wht] = 0
 
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NRbb = dat[:, 0]
     xbb  = dat[:, 1]
     fybb = dat[:, 2]
@@ -210,7 +199,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Mass-to-Light ratio.
     ######################
     ms     = np.zeros(len(age), dtype='float64')
-    f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):
         ms[aa] = sedpar.data['ML_' +  str(int(NZbest[aa]))][aa]
@@ -258,34 +247,34 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
     #####################################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID0, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID0, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
+    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp= np.arange(DT0,DT1,dDT)
-        lib_dust     = fnc.open_spec_dust_fits(ID0, PA, Temp, fall=0, tau0=tau0)
-        lib_dust_all = fnc.open_spec_dust_fits(ID0, PA, Temp, fall=1, tau0=tau0)
+        lib_dust     = fnc.open_spec_dust_fits(ID, PA, Temp, fall=0, tau0=tau0)
+        lib_dust_all = fnc.open_spec_dust_fits(ID, PA, Temp, fall=1, tau0=tau0)
 
     II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(II0)-1
 
-    fwuvj = open(ID0 + '_PA' + PA + '_uvj.txt', 'w')
+    fwuvj = open(ID + '_PA' + PA + '_uvj.txt', 'w')
     fwuvj.write('# age uv vj\n')
     Asum = np.sum(A50[:])
     for jj in range(len(II0)):
         ii = int(len(II0) - jj - 1) # from old to young templates.
         if jj == 0:
-            y0, x0   = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-            y0p, x0p = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
+            y0, x0   = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
+            y0p, x0p = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
             ysump = y0p
             ysum  = y0
             if A50[ii]/Asum > flim:
                 ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
         else:
-            y0_r, x0_tmp = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-            y0p, x0p     = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
+            y0_r, x0_tmp = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
+            y0p, x0p     = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
             ysump += y0p
             ysum  += y0_r
             if A50[ii]/Asum > flim:
@@ -297,7 +286,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             nn = int(len(II0) - ii - 1)
 
             nZ = bfnc.Z2NZ(Z50[tt])
-            y0_wid, x0_wid = fnc.open_spec_fits_dir(ID0, PA, tt, nZ, nn, AAv[0], zbes, A50[tt], tau0=tau0)
+            y0_wid, x0_wid = fnc.open_spec_fits_dir(ID, PA, tt, nZ, nn, AAv[0], zbes, A50[tt], tau0=tau0)
             ysum_wid += y0_wid
 
         lmrest_wid = x0_wid/(1.+zbes)
@@ -330,7 +319,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         par.add('MDUST',value=MD50)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
-        y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        y0d, x0d = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
@@ -340,19 +329,19 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         # 16;
         par['MDUST'].value=MD16
         par['TDUST'].value=nTD16
-        y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        y0d, x0d = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         # 84
         par['MDUST'].value=MD84
         par['TDUST'].value=nTD84
-        y0d, x0d = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        y0d, x0d = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         '''
         #ax1.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
         #ax3t.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
         # data;
-        ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+        ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', comments='#')
         NRbbd = ddat[:, 0]
         xbbd  = ddat[:, 1]
         fybbd = ddat[:, 2]
@@ -468,7 +457,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
 
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR = dat[:, 0]
     x  = dat[:, 1]
     fy = dat[:, 2]
@@ -484,10 +473,10 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ####################
     # For cosmology
     ####################
-    DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm #, **cosmo) # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
-    dA     = cd.angular_diameter_distance(zbes, **cosmo)
+    dA     = MB.cosmo.angular_diameter_distance(zbes).value
     dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
     twokpc = 5.0/dkpc/0.06 # in pixel
 
@@ -504,7 +493,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # ,manually edit the following file
     # so as Fcont50 have >0.
     ###################################
-    flw = open(ID0 + '_PA' + PA + '_lines_fit.txt', 'w')
+    flw = open(ID + '_PA' + PA + '_lines_fit.txt', 'w')
     flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
     flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
     flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
@@ -512,7 +501,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
     flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
     try:
-        fl = np.loadtxt('table_' + ID0 + '_PA' + PA + '_lines.txt', comments='#')
+        fl = np.loadtxt('table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
         LW      = fl[:,2]
         Fcont50 = fl[:,3]
         Fline50 = fl[:,6]
@@ -617,7 +606,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #
     # From MCMC chain
     #
-    file = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
+    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
     niter = 0
     data = loadcpkl(os.path.join('./'+file))
     try:
@@ -637,12 +626,12 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ytmpmin = np.zeros(len(ysum), dtype='float64')
 
     # MUV;
-    DL      = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(nmc2, dtype='float64') # For Muv
     Fuv28   = np.zeros(nmc2, dtype='float64') # For Fuv(1500-2800)
     Lir     = np.zeros(nmc2, dtype='float64') # For L(8-1000um)
-    Cmznu   = 10**((48.6+mag0)/(-2.5)) # Conversion from m0_25 to fnu
+    Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     for kk in range(0,nmc2,1):
         nr = np.random.randint(len(samples))
@@ -656,10 +645,10 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
                 ZZ_tmp = samples['Z0'][nr]
 
             if ss == 0:
-                mod0_tmp, xm_tmp = fnc.tmp03(ID0, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                mod0_tmp, xm_tmp = fnc.tmp03(ID, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
                 fm_tmp = mod0_tmp
             else:
-                mod0_tmp, xx_tmp = fnc.tmp03(ID0, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                mod0_tmp, xx_tmp = fnc.tmp03(ID, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
                 fm_tmp += mod0_tmp
 
         if f_err == 1:
@@ -677,7 +666,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
                 par.add('TDUST',value=samples['TDUST'][nr])
             par['MDUST'].value = samples['MDUST'][nr]
             par['TDUST'].value = samples['TDUST'][nr]
-            model_dust, x1_dust = fnc.tmp04_dust(ID0, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+            model_dust, x1_dust = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
@@ -743,7 +732,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         AGEFIX  = float(inputs['AGEFIX'])
         nparam -= int(len(age)-1)
     except:
-        agemax = cd.age(zbes, use_flat=True, **cosmo)/cc.Gyr_s
+        agemax = MB.cosmo.age(zbes).value
         for aa in range(len(age)):
             if age[aa]>agemax:
                 nparam -= 1
@@ -840,7 +829,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         coltmp = fits.Column(name='fnu_84', format='E', unit='fnu(m0=25)', array=fbb84_nu)
         col_sed.append(coltmp)
         '''
-        fw = open(ID0 + '_PA' + PA + '_sed.txt', 'w')
+        fw = open(ID + '_PA' + PA + '_sed.txt', 'w')
         fw.write('# wave fnu_16 fnu_50 fnu_84 filt_width filter_no\n')
         fw.write('# (AA) (m0=25.0) (AA)       ()\n')
         for ii in range(len(lbb)):
@@ -849,7 +838,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         '''
         col  = fits.ColDefs(col_sed)
         hdu0 = fits.BinTableHDU.from_columns(col)#, header=hdr)
-        hdu0.writeto(ID0 + '_PA' + PA + '_sed.fits', overwrite=True)
+        hdu0.writeto(ID + '_PA' + PA + '_sed.fits', overwrite=True)
 
         # Then save full spectrum;
         col00  = []
@@ -870,7 +859,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
         hdr = fits.Header()
         hdr['redshift'] = zbes
-        hdr['id'] = ID0
+        hdr['id'] = ID
 
         # Chi square:
         hdr['chi2']     = chi2
@@ -900,17 +889,17 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         # Write;
         colspec = fits.ColDefs(col00)
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
-        hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID0), overwrite=True)
+        hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID), overwrite=True)
 
     ######################
     # SED params in plot
     #
     if f_label:
         try:
-            fd = fits.open('SFH_' + ID0 + '_PA' + PA + '_param.fits')[1].data
+            fd = fits.open('SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
             ax1.text(2300, ymax*0.3,\
             'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID0, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
+            %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
             fontsize=9)
         except:
             print('File is missing : _param.fits')
@@ -1002,7 +991,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     '''
     # Deprecated;
     if f_Z_all == 1:
-        fileZ = 'Z_' + ID0 + '_PA' + PA + '.cat'
+        fileZ = 'Z_' + ID + '_PA' + PA + '.cat'
         Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
         Atmp  = np.zeros((len(age),len(Zini)), 'float64')
         Ztmp  = np.zeros((len(age),len(Zini)), 'float64')
@@ -1013,11 +1002,11 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         for jj in range(len(Zini)):
             for aa in range(len(age)):
                 if aa == 0:
-                    y0_r, x0_r    = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rp, x0_rp  = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
+                    y0_r, x0_r    = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
+                    y0_rp, x0_rp  = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
                 else:
-                    y0_rr, x0_r     = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rrp, x0_rrp  = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
+                    y0_rr, x0_r     = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
+                    y0_rrp, x0_rrp  = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
                     y0_r  += y0_rr
                     y0_rp += y0_rrp
 
@@ -1038,7 +1027,7 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ################
     try:
         from scipy import misc
-        rgb_array = misc.imread('/Users/tmorishita/Box Sync/Research/M18_rgb/rgb_'+str(int(ID0))+'.png')
+        rgb_array = misc.imread('/Users/tmorishita/Box Sync/Research/M18_rgb/rgb_'+str(int(ID))+'.png')
         axicon = fig.add_axes([0.68, 0.53, 0.4, 0.4])
         axicon.imshow(rgb_array, interpolation='nearest', origin='upper')
         axicon.set_xticks([])
@@ -1051,38 +1040,19 @@ def plot_sed(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #plt.show()
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig('SPEC_' + ID0 + '_PA' + PA + '_spec.pdf', dpi=300)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=300)
     else:
-        plt.savefig('SPEC_' + ID0 + '_PA' + PA + '_spec.png', dpi=150)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=150)
 
-###############
-import pickle
-def loadcpkl(cpklfile):
-    """
-    Load cpkl files.
-    """
-    if not os.path.isfile(cpklfile):
-        raise ValueError(' ERR: cannot find the input file')
-    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
-
-    if sys.version_info.major == 2:
-        data = pickle.load(f)
-    elif sys.version_info.major == 3:
-        data = pickle.load(f, encoding='latin-1')
-
-    f.close()
-    return data
 
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
 
     fig = plt.figure(figsize=(3,3))
     fig.subplots_adjust(top=0.96, bottom=0.14, left=0.2, right=0.96, hspace=0.15, wspace=0.25)
     ax1 = fig.add_subplot(111)
-    #ax2 = fig.add_subplot(132)
-    #ax3 = fig.add_subplot(133)
 
     DIR_TMP = './templates/'
     ####################
@@ -1171,7 +1141,7 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     plt.savefig('TZ_' + ID + '_PA' + PA + '_corner.pdf')
     plt.close()
 
-def make_rgb(id0,xcen,ycen):
+def make_rgb(ID,xcen,ycen):
     fits_dir = '/Volumes/EHDD1/3DHST/IMG/'
     blue_fn  = fits_dir + 'goodsn/goodsn_3dhst.v4.0.F850LP_orig_sci.fits'
     green_fn = fits_dir + 'goodsn/goodsn_3dhst.v4.0.F125W_orig_sci.fits'
@@ -1257,7 +1227,7 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     # snlimbb: SN limit to show flux or up lim in SED.
     #
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
 
     ###########################
@@ -1583,7 +1553,7 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
     # For summary. In the same format as plot_corner_physparam_frame.
     #
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
 
     ###########################
@@ -1760,8 +1730,8 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
 
     # Time bin
     Txmax = 4 # Max x value
-    Tuni = cd.age(zbes, use_flat=True, **cosmo)
-    Tuni0 = (Tuni/cc.Gyr_s - age[:])
+    Tuni = MB.cosmo.age(zbes).value
+    Tuni0 = (Tuni - age[:])
     delT  = np.zeros(len(age),dtype='float64')
     delTl = np.zeros(len(age),dtype='float64')
     delTu = np.zeros(len(age),dtype='float64')
@@ -1781,13 +1751,13 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
                 delTl[aa] = age[aa]
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 delT[aa]  = delTu[aa] + delTl[aa]
-            elif Tuni/cc.Gyr_s < age[aa]:
+            elif Tuni < age[aa]:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = 10.
                 delT[aa]  = delTu[aa] + delTl[aa]
             elif aa == len(age)-1:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
-                delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+                delTu[aa] = Tuni - age[aa]
                 delT[aa]  = delTu[aa] + delTl[aa]
             else:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
@@ -1858,7 +1828,7 @@ def plot_corner_physparam_summary(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=
 
     Tzz   = np.zeros(len(zred), dtype='float64')
     for zz in range(len(zred)):
-        Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
+        Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value) #/ cc.Gyr_s
         if Tzz[zz] < 0.01:
             Tzz[zz] = 0.01
 
@@ -2104,7 +2074,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     # Creat temporal png for gif image.
     #
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
 
     ###########################
@@ -2262,8 +2232,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
 
     # Time bin
     Txmax = 4 # Max x value
-    Tuni = cd.age(zbes, use_flat=True, **cosmo)
-    Tuni0 = (Tuni/cc.Gyr_s - age[:])
+    Tuni = MB.cosmo.age(zbes).value
+    Tuni0 = (Tuni - age[:])
     delT  = np.zeros(len(age),dtype='float64')
     delTl = np.zeros(len(age),dtype='float64')
     delTu = np.zeros(len(age),dtype='float64')
@@ -2272,13 +2242,13 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             delTl[aa] = age[aa]
             delTu[aa] = (age[aa+1]-age[aa])/2.
             delT[aa]  = delTu[aa] + delTl[aa]
-        elif Tuni/cc.Gyr_s < age[aa]:
+        elif Tuni < age[aa]:
             delTl[aa] = (age[aa]-age[aa-1])/2.
             delTu[aa] = 10.
             delT[aa]  = delTu[aa] + delTl[aa]
         elif aa == len(age)-1:
             delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+            delTu[aa] = Tuni - age[aa]
             delT[aa]  = delTu[aa] + delTl[aa]
         else:
             delTl[aa] = (age[aa]-age[aa-1])/2.
@@ -2463,7 +2433,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
 
         Tzz   = np.zeros(len(zred), dtype='float64')
         for zz in range(len(zred)):
-            Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
+            Tzz[zz] = (Tuni - MB.cosmo.age(zbes).value)
             if Tzz[zz] < 0.01:
                 Tzz[zz] = 0.01
 
@@ -2583,7 +2553,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
 
 def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  mcmcplot=1, flim=0.05):
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
 
     ####################
@@ -2648,15 +2618,15 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         fig1.savefig('SPEC_' + ID + '_PA' + PA + '_corner.pdf')
         plt.close()
 
-def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3]):
+def plot_sim_comp(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  f_Z_all=0, tau0=[0.1,0.2,0.3]):
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
     c      = 3.e18 # A/s
     chimax = 1.
-    mag0   = 25.0
+    m0set   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
     #d = 10**(-73.6/2.5) # From [ergs/s/cm2/Hz] to [ergs/s/cm2/A]
 
@@ -2679,7 +2649,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ###########################
     # Open input file
     ###########################
-    file = DIR_TMP + 'sim_param_' + ID0 + '_PA' + PA + '.fits'
+    file = DIR_TMP + 'sim_param_' + ID + '_PA' + PA + '.fits'
     hdu0 = fits.open(file) # open a FITS file
 
     Avin = float(hdu0[0].header['AV'])
@@ -2694,7 +2664,7 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -2803,14 +2773,14 @@ def plot_sim_comp(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ax1.legend(loc=4, fontsize=11)
     ax2.legend(loc=4, fontsize=11)
 
-    plt.savefig('SIM' + ID0 + '_PA' + PA + '_comp.pdf', dpi=300)
+    plt.savefig('SIM' + ID + '_PA' + PA + '_comp.pdf', dpi=300)
 
-def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', figpdf=False):
+def plot_sed_Z_sim(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', figpdf=False):
 
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
     ################
@@ -2822,7 +2792,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
     c      = 3.e18 # A/s
     chimax = 1.
-    mag0   = 25.0
+    m0set   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
     #d = 10**(-73.6/2.5) # From [ergs/s/cm2/Hz] to [ergs/s/cm2/A]
 
@@ -2842,7 +2812,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -2896,7 +2866,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     ###############################
     # Data taken from
     ###############################
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR = dat[:, 0]
     x  = dat[:, 1]
     fy00 = dat[:, 2]
@@ -2922,7 +2892,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
     wht=1./np.square(ey)
 
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NRbb = dat[:, 0]
     xbb  = dat[:, 1]
     fybb = dat[:, 2]
@@ -2932,12 +2902,12 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
 
     # Original spectrum:
-    filepar = DIR_TMP + 'sim_param_' + ID0 + '_PA' + PA + '.fits'
+    filepar = DIR_TMP + 'sim_param_' + ID + '_PA' + PA + '.fits'
     hdupar  = fits.open(filepar) # open a FITS file
     Cnorm   = hdupar[0].header['cnorm']
 
     '''
-    file_org = DIR_TMP + 'specorg_' + ID0 + '_PA' + PA + '.fits'
+    file_org = DIR_TMP + 'specorg_' + ID + '_PA' + PA + '.fits'
     hduorg = fits.open(file_org)
     waveorg = hduorg[1].data['wavelength'] # observed.
     fluxorg = hduorg[1].data['fspec_av'] * Cnorm
@@ -2945,7 +2915,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     print(fluxorg)
     ax1.plot(waveorg, fluxorg * c / np.square(waveorg) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='k', label='')
 
-    file_org = DIR_TMP + 'specorg_pix_' + ID0 + '_PA' + PA + '.fits'
+    file_org = DIR_TMP + 'specorg_pix_' + ID + '_PA' + PA + '.fits'
     hduorg = fits.open(file_org)
     waveorg = hduorg[1].data['wavelength'] # observed.
     fluxorg = hduorg[1].data['fspec_av'] * Cnorm
@@ -2967,7 +2937,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     # Mass-to-Light ratio.
     ######################
     ms     = np.zeros(len(age), dtype='float64')
-    f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):
         ms[aa] = sedpar.data['ML_' +  str(int(NZbest[aa]))][aa]
@@ -3001,23 +2971,23 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
     ################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID0, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID0, PA, fall=1, tau0=tau0)
-    #lib_wid = fnc.open_spec_fits_wid(ID0, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
+    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
+    #lib_wid = fnc.open_spec_fits_wid(ID, PA, fall=1, tau0=tau0)
 
     II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(II0)-1
 
 
-    fwuvj = open(ID0 + '_PA' + PA + '_uvj.txt', 'w')
+    fwuvj = open(ID + '_PA' + PA + '_uvj.txt', 'w')
     fwuvj.write('# age uv vj\n')
 
     Asum = np.sum(A50[:])
     for jj in range(len(II0)):
         ii = int(len(II0) - jj - 1) # from old to young templates.
         if jj == 0:
-            y0, x0   = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-            y0p, x0p = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
+            y0, x0   = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
+            y0p, x0p = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
             ysump = y0p
             ysum  = y0
 
@@ -3025,8 +2995,8 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
                 ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
 
         else:
-            y0_r, x0_tmp = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-            y0p, x0p     = fnc.tmp03(ID0, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
+            y0_r, x0_tmp = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
+            y0p, x0p     = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
 
             ysump += y0p
             ysum  += y0_r
@@ -3043,7 +3013,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
             nn = int(len(II0) - ii - 1)
 
             nZ = bfnc.Z2NZ(Z50[tt])
-            y0_wid, x0_wid = fnc.open_spec_fits_dir(ID0, PA, tt, nZ, nn, AAv[0], zbes, A50[tt], tau0=tau0)
+            y0_wid, x0_wid = fnc.open_spec_fits_dir(ID, PA, tt, nZ, nn, AAv[0], zbes, A50[tt], tau0=tau0)
             ysum_wid += y0_wid
 
 
@@ -3070,9 +3040,9 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     fj_cnv = fconv[2]
     f140_cnv = fconv[3]
 
-    flw = open(ID0 + '_PA' + PA + '_mag.txt', 'w')
+    flw = open(ID + '_PA' + PA + '_mag.txt', 'w')
     flw.write('# ID PA flux_u flux_v flux_j flux_f140w\n')
-    flw.write('%s %s %.5f %.5f %.5f %.5f\n'%(ID0, PA, fu_cnv, fv_cnv, fj_cnv, f140_cnv))
+    flw.write('%s %s %.5f %.5f %.5f %.5f\n'%(ID, PA, fu_cnv, fv_cnv, fj_cnv, f140_cnv))
     flw.close()
 
     uvtmp = -2.5*log10(fu_cnv/fv_cnv)
@@ -3094,7 +3064,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
     #######################
 
-    #ax1.text(12000, ymax*0.9, '%s'%(ID0), fontsize=10, color='k')
+    #ax1.text(12000, ymax*0.9, '%s'%(ID), fontsize=10, color='k')
     xboxl = 17000
     xboxu = 28000
 
@@ -3168,7 +3138,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
 
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR = dat[:, 0]
     x  = dat[:, 1]
     fy = dat[:, 2]
@@ -3192,9 +3162,9 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     ####################
     # For cosmology
     ####################
-    DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
-    dA     = cd.angular_diameter_distance(zbes, **cosmo)
+    dA     = MB.cosmo.angular_diameter_distance(zbes).value
     dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
     twokpc = 5.0/dkpc/0.06 # in pixel
 
@@ -3209,7 +3179,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     # To add lines in the plot,
     # ,manually edit the following file
     # so as Fcont50 have >0.
-    flw = open(ID0 + '_PA' + PA + '_lines_fit.txt', 'w')
+    flw = open(ID + '_PA' + PA + '_lines_fit.txt', 'w')
     flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
     flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
     flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
@@ -3217,7 +3187,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
     flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
     try:
-        fl = np.loadtxt('table_' + ID0 + '_PA' + PA + '_lines.txt', comments='#')
+        fl = np.loadtxt('table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
         LW      = fl[:,2]
         Fcont50 = fl[:,3]
         Fline50 = fl[:,6]
@@ -3317,7 +3287,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
 
 
     # From MCMC chain
-    file = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
+    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
     niter = 0
     data = loadcpkl(os.path.join('./'+file))
     try:
@@ -3345,10 +3315,10 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
             ZZ_tmp = samples['Z'+str(ss)][nr]
 
             if ss == 0:
-                mod0_tmp, xm_tmp = fnc.tmp03(ID0, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                mod0_tmp, xm_tmp = fnc.tmp03(ID, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
                 fm_tmp = mod0_tmp
             else:
-                mod0_tmp, xx_tmp = fnc.tmp03(ID0, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                mod0_tmp, xx_tmp = fnc.tmp03(ID, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
                 fm_tmp += mod0_tmp
 
         ytmp[kk,:] = fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
@@ -3430,7 +3400,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     '''
     # Deprecated;
     if f_Z_all == 1:
-        fileZ = 'Z_' + ID0 + '_PA' + PA + '.cat'
+        fileZ = 'Z_' + ID + '_PA' + PA + '.cat'
         Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
         Atmp  = np.zeros((len(age),len(Zini)), 'float64')
         Ztmp  = np.zeros((len(age),len(Zini)), 'float64')
@@ -3441,11 +3411,11 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
         for jj in range(len(Zini)):
             for aa in range(len(age)):
                 if aa == 0:
-                    y0_r, x0_r    = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rp, x0_rp  = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
+                    y0_r, x0_r    = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
+                    y0_rp, x0_rp  = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
                 else:
-                    y0_rr, x0_r     = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rrp, x0_rrp  = fnc.tmp03(ID0, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
+                    y0_rr, x0_r     = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
+                    y0_rrp, x0_rrp  = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
                     y0_r  += y0_rr
                     y0_rp += y0_rrp
 
@@ -3466,7 +3436,7 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     try:
     #if 1>0:
         from scipy import misc
-        rgb_array = misc.imread('/Users/tmorishita/Box Sync/Research/M18_rgb/rgb_'+str(int(ID0))+'.png')
+        rgb_array = misc.imread('/Users/tmorishita/Box Sync/Research/M18_rgb/rgb_'+str(int(ID))+'.png')
         axicon = fig.add_axes([0.68, 0.53, 0.4, 0.4])
         axicon.imshow(rgb_array, interpolation='nearest', origin='upper')
         axicon.set_xticks([])
@@ -3474,9 +3444,9 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
         #xxl = np.arange(0, twokpc, 0.01)
         #axicon.errorbar(xxl + 0.2, xxl*0+0.2, lw=1., color='w', zorder=1, alpha=1., capsize=0)
         #axicon.text(0.1, 1.5, '5kpc', color='w', fontsize=12)
-        #axicon.text(10, 10.0, '%s'%(ID0), color='w', fontsize=14)
-        #axicon.text(11, 10.0, '%s'%(ID0), color='w', fontsize=14)
-        #axicon.text(10, 11.0, '%s'%(ID0), color='w', fontsize=14)
+        #axicon.text(10, 10.0, '%s'%(ID), color='w', fontsize=14)
+        #axicon.text(11, 10.0, '%s'%(ID), color='w', fontsize=14)
+        #axicon.text(10, 11.0, '%s'%(ID), color='w', fontsize=14)
     except:
         pass
     ####################
@@ -3485,12 +3455,12 @@ def plot_sed_Z_sim(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 
     #plt.show()
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig('SPEC_' + ID0 + '_PA' + PA + '_spec.pdf', dpi=300)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=300)
     else:
-        plt.savefig('SPEC_' + ID0 + '_PA' + PA + '_spec.png', dpi=150)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=150)
     plt.close()
 
-def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, figpdf=False):
+def plot_sed_demo(ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, figpdf=False):
     DIR_TMP = 'templates/'
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
@@ -3499,7 +3469,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     from .function_class import Func
     from .basic_func import Basic
 
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
 
 
@@ -3507,7 +3477,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ###########################
     # Open input file
     ###########################
-    file = DIR_TMP + 'sim_param_' + ID0 + '_PA' + PA + '.fits'
+    file = DIR_TMP + 'sim_param_' + ID + '_PA' + PA + '.fits'
     hdu0 = fits.open(file) # open a FITS file
 
     Cnorm = float(hdu0[0].header['Cnorm'])
@@ -3562,7 +3532,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     c      = 3.e18 # A/s
     chimax = 1.
-    mag0   = 25.0
+    m0set   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
     #d = 10**(-73.6/2.5) # From [ergs/s/cm2/Hz] to [ergs/s/cm2/A]
 
@@ -3584,7 +3554,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -3704,7 +3674,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     # Mass-to-Light ratio.
     ######################
     ms     = np.zeros(len(age), dtype='float64')
-    f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):
         ms[aa]    = sedpar.data['ML_' +  str(int(NZbest[aa]))][aa]
@@ -3712,8 +3682,8 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     ################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID0, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID0, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
+    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
 
     II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(II0)-1
@@ -3725,8 +3695,8 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         return flam
 
     for aa in range(len(II0)):
-        y0, x0   = fnc.tmp03(ID0, PA, 1, 0, aa, 0, zbes, lib_all, tau0=tau0)
-        #y0p, x0p = fnc.tmp03(ID0, PA, 1, 0, aa, 0, zbes, lib, tau0=tau0)
+        y0, x0   = fnc.tmp03(ID, PA, 1, 0, aa, 0, zbes, lib_all, tau0=tau0)
+        #y0p, x0p = fnc.tmp03(ID, PA, 1, 0, aa, 0, zbes, lib, tau0=tau0)
 
         lm0   = x0/(1.+zbes)
         con   = (lm0>4800) & (lm0<5200)
@@ -3741,7 +3711,7 @@ def plot_sed_demo(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ymax = np.max(spec0)
     #NDIM = 19
 
-    #ax1.text(12000, ymax*0.9, '%s'%(ID0), fontsize=10, color='k')
+    #ax1.text(12000, ymax*0.9, '%s'%(ID), fontsize=10, color='k')
     xboxl = 17000
     xboxu = 28000
 
