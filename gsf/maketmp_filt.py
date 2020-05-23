@@ -415,7 +415,7 @@ def maketemp(MB, zbest):
                 ###################
                 # IGM attenuation.
                 ###################
-                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
+                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest, cosmo=MB.cosmo)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
                 if len(lm)>0:
                     try:
