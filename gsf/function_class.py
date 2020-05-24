@@ -18,6 +18,7 @@ class Func:
         self.ID   = MB.ID
         self.PA   = MB.PA
         self.ZZ   = MB.Zall
+        self.age  = MB.age
         self.AA   = MB.nage
         self.tau0 = MB.tau0
         self.MB   = MB
@@ -198,6 +199,75 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
+
+
+    def get_template(self, lib, Amp=1.0, T=1.0, Av=0.0, Z=0.0, zgal=1.0):
+        '''
+        Purpose:
+        =========
+        Gets an element template given a set of parameters.
+        Not necessarily the most efficient way, but easy to use.
+
+        Input:
+        =========
+        lib : library dictionary.
+        Amp : Amplitude of template. Note that each template has Lbol = 1e10Lsun.
+        T   : Age, in Gyr.
+        Av  : Dust attenuation in mag.
+        Z   : Metallicity in log(Z/Zsun).
+        zgal: Redshift.
+
+        Return:
+        ========
+        flux, wavelength
+
+        '''
+
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        DIR_TMP = self.MB.DIR_TMP #'./templates/'
+        NZ  = bfnc.Z2NZ(Z)
+
+        pp0 = np.random.uniform(low=0, high=len(self.tau0), size=(1,))
+        pp  = int(pp0[0])
+        if pp>=len(self.tau0):
+            pp += -1
+
+        nmodel = np.argmin(np.abs(T-self.age[:]))
+        if T - self.age[nmodel] != 0:
+            print('T=%.2 is not found in age library. T=%.2 is used.'%(T,self.age[nmodel]))
+
+        coln= int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + nmodel)
+        nr  = lib[:, 0]
+        xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+        yy  = lib[:, coln]
+
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av, nr)
+        elif self.dust_model == 2: # LMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+        elif self.dust_model == 3: # SMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
+            yyd, xxd, nrd = dust_kc(xx/(1.+zgal), yy, Av, nr, Rv=4.05, gamma=-0.2)
+        else:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av, nr)
+
+        xxd *= (1.+zgal)
+
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+        nrd_yyd[:,0] = nrd[:]
+        nrd_yyd[:,1] = yyd[:]
+        nrd_yyd[:,2] = xxd[:]
+
+        b = nrd_yyd
+        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+        yyd_sort     = nrd_yyd_sort[:,1]
+        xxd_sort     = nrd_yyd_sort[:,2]
+
+        return Amp * yyd_sort, xxd_sort
+
 
     def tmp03(self, A00, Av00, nmodel, Z, zgal, lib):
         '''

@@ -24,11 +24,13 @@ start = timeit.default_timer()
 
 def run_gsf_template(parfile, fplt, mcmcplot=True):
     '''
+    Purpose:
+    ==========
     This is only for 0 and 1, to get templates.
     Not for fitting, nor plotting.
+
     '''
     MB = Mainbody(parfile, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
-
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
 
@@ -38,16 +40,18 @@ def run_gsf_template(parfile, fplt, mcmcplot=True):
     #
     # 0. Make basic templates
     #
-    lammax = 40000 * (1.+MB.zgal) # AA
-    if MB.f_bpass == 1:
-        make_tmp_z0_bpass(MB, lammax=lammax)
-    else:
-        make_tmp_z0(MB, lammax=lammax)
+    if fplt<1:
+        lammax = 80000 / (1.+MB.zgal) # AA
+        if MB.f_bpass == 1:
+            make_tmp_z0_bpass(MB, lammax=lammax)
+        else:
+            make_tmp_z0(MB, lammax=lammax)
 
     #
     # 1. Start making redshifted templates.
     #
-    maketemp(MB)
+    if fplt<2:
+        maketemp(MB)
 
     #
     # 2. Load templates
@@ -59,8 +63,12 @@ def run_gsf_template(parfile, fplt, mcmcplot=True):
         MB.lib_dust_all = MB.fnc.open_spec_dust_fits(MB, fall=1)
 
     # How to get SED?
-    #y0, x0 = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-
+    y0, x0 = MB.fnc.get_template(MB.lib_all, Amp=1.0, T=0.1, Av=0.0, Z=0.0, zgal=MB.zgal)
+    import matplotlib.pyplot as plt
+    plt.plot(x0/(1.+MB.zgal),y0,linestyle='-',color='r',lw=1.0)
+    plt.xlim(600,20000)
+    plt.xscale('log')
+    plt.show()
 
     return MB
 

@@ -118,7 +118,7 @@ class Mainbody():
             pass
 
         # Age
-        self.age = [float(x.strip()) for x in inputs['AGE'].split(',')]
+        self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
         self.nage = np.arange(0,len(self.age),1)
 
         # Redshift as a param;
