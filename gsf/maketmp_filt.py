@@ -428,7 +428,7 @@ def maketemp(MB, zbest):
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
                 spec_sum = 0*spec_mul[0] # This is dummy file.
-                DL = MB.cosmo.luminosity_distance(zbest).value * Mpc_cm # Luminositydistance in cm
+                DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
                 #spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
                 #ftmp_int = data_int(lm, wavetmp, spec_av)
