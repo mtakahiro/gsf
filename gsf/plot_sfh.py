@@ -23,16 +23,18 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
 
     '''
 
+
     flim = 0.01
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
     Txmax = 4 # Max x value
     lmmin = 9.5 #10.3
 
-    nage = np.arange(0,len(age),1)
+    age  = MB.age
+    nage = MB.nage
+    age = np.asarray(age)
     fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
-    age = np.asarray(age)
 
     ################
     # RF colors.
@@ -140,7 +142,17 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
-    else:
+
+    elif MB.f_bpass == 1:
+        file_all = MB.DIR_TMP + 'spec_all.fits'
+        hd = fits.open(file_all)[1].header
+        for aa in range(len(age)):
+            tau_ssp   = hd['realtau%d(Gyr)'%(aa)]
+            delT[aa]  = tau_ssp
+            delTl[aa] = tau_ssp/2
+            delTu[aa] = tau_ssp/2
+
+    else:# This is only true when CSP...
         for aa in range(len(age)):
             if aa == 0:
                 delTl[aa] = age[aa]
@@ -163,7 +175,6 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
-    #print(age, delT, delTu, delTl)
     ##############################
     # Load Pickle
     ##############################
@@ -252,9 +263,11 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
     f1     = fits.open(DIR_TMP + 'ms.fits')
     sedpar = f0[1]
     mloss  = f1[1].data
+
     AAtmp = np.zeros(len(age), dtype='float32')
     ZZtmp = np.zeros(len(age), dtype='float32')
     mslist= np.zeros(len(age), dtype='float32')
+
     for mm in range(mmax):
         delt_tot = 0
         mtmp  = np.random.randint(len(samples))# + Nburn
@@ -280,9 +293,10 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
 
             Arand = np.random.uniform(-eA[aa],eA[aa])
             Zrand = np.random.uniform(-eZ[aa],eZ[aa])
+
             AM[aa, mm] = AAtmp[aa] * mslist[aa] * 10**Arand
             AL[aa, mm] = AM[aa, mm] / mslist[aa]
-            SF[aa, mm] = AAtmp[aa] * mslist[aa] / delT[aa] / ml * 10**Arand
+            SF[aa, mm] = AAtmp[aa] * mslist[aa] / delT[aa] * 10**Arand # / ml
             ZM[aa, mm] = ZZtmp[aa] + Zrand
             ZMM[aa, mm]= (10 ** ZZtmp[aa]) * AAtmp[aa] * mslist[aa] * 10**Zrand
             ZML[aa, mm]= ZMM[aa, mm] / mslist[aa]
@@ -293,7 +307,6 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
                 delt_tot += delT[aa]
 
         SFR_SED[mm] /= delt_tot
-
         for aa in range(len(age)):
             AC[aa, mm] = np.sum(AM[aa:, mm])
             ZC[aa, mm] = np.log10(np.sum(ZMM[aa:, mm])/AC[aa, mm])
@@ -314,7 +327,6 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
             TC[aa, mm] /= ACs
             TL[aa, mm] /= ALs
 
-    #Avtmp  = np.percentile(samples['Av'][:],[16,50,84])
     Avtmp  = np.percentile(Av[:],[16,50,84])
 
     #############
@@ -331,6 +343,7 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
        ZMp[aa,:] = np.percentile(ZM[aa,:], [16,50,84])
        ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
        SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
+
     SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
     f_SFRSED_plot = False
     if f_SFRSED_plot:

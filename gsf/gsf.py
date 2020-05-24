@@ -16,6 +16,7 @@ from .function_class import Func
 from .basic_func import Basic
 from .maketmp_filt import maketemp
 from .maketmp_z0 import make_tmp_z0
+from .maketmp_z0 import make_tmp_z0_bpass
 
 import timeit
 start = timeit.default_timer()
@@ -115,7 +116,11 @@ def run_gsf(parfile, fplt, mcmcplot=True):
         if fplt == 0:
             zmin   = 1.0
             lammax = 80000/(1.+zmin)
-            make_tmp_z0(MB, lammax=lammax)
+
+            if MB.f_bpass == 1:
+                make_tmp_z0_bpass(MB, lammax=lammax)
+            else:
+                make_tmp_z0(MB, lammax=lammax)
 
 
         #
@@ -123,6 +128,7 @@ def run_gsf(parfile, fplt, mcmcplot=True):
         #
         if fplt != 2:
             maketemp(MB, zrecom)
+
 
         #
         # 2. Mian fitting part.
@@ -153,8 +159,8 @@ def run_gsf(parfile, fplt, mcmcplot=True):
     if fplt <= 3 and flag_suc >= 0:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
-        #plot_sfh(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
-        #inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
+        plot_sfh(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
+        inputs=inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
         plot_sed(MB, MB.ID, MB.PA, Z=MB.Zall, age=MB.age, tau0=MB.tau0, fil_path=MB.DIR_FILT,
         SNlim=1.0, figpdf=False, save_sed=True, inputs=inputs, nmc2=300,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label = True)

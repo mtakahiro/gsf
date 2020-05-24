@@ -177,6 +177,13 @@ class Mainbody():
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
 
+        # Binary template
+        try:
+            self.f_bpass = int(inputs['BPASS'])
+        except:
+            self.f_bpass = 0
+
+
         # MCMC;
         self.nmc      = int(inputs['NMC'])
         self.nwalk    = int(inputs['NWALK'])
@@ -198,18 +205,6 @@ class Mainbody():
         except:
             self.f_disp = False
 
-        # And class;
-        from .function_class import Func
-        from .basic_func import Basic
-        self.fnc  = Func(self.ID, self.PA, self.Zall, self.nage, dust_model=self.dust_model, DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
-        self.bfnc = Basic(self.Zall)
-
-        # Spectral library;
-        self.lib = self.fnc.open_spec_fits(self.ID, self.PA, fall=0, tau0=self.tau0)
-        self.lib_all = self.fnc.open_spec_fits(self.ID, self.PA, fall=1, tau0=self.tau0)
-        if self.f_dust:
-            self.lib_dust     = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=0, tau0=self.tau0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=1, tau0=self.tau0)
 
 
     def get_lines(self, LW0):
@@ -579,6 +574,20 @@ class Mainbody():
         self.zprev = zprev
         self.Cz0 = Cz0
         self.Cz1 = Cz1
+
+        # And class;
+        from .function_class import Func
+        from .basic_func import Basic
+        self.fnc  = Func(self.ID, self.PA, self.Zall, self.nage, dust_model=self.dust_model, DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
+        self.bfnc = Basic(self.Zall)
+
+        # Spectral library;
+        self.lib = self.fnc.open_spec_fits(self.ID, self.PA, fall=0, tau0=self.tau0)
+        self.lib_all = self.fnc.open_spec_fits(self.ID, self.PA, fall=1, tau0=self.tau0)
+        if self.f_dust:
+            self.lib_dust     = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=0, tau0=self.tau0)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=1, tau0=self.tau0)
+
 
         #
         # Dust model specification;

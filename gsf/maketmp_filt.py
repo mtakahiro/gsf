@@ -434,12 +434,12 @@ def maketemp(MB, zbest):
                 #ftmp_int = data_int(lm, wavetmp, spec_av)
 
                 Lsun = 3.839 * 1e33 #erg s-1
-                stmp_common = 1e10 # 1 tmp is in 1e10Lsun
-                #ftmpbb[ss,:]           *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                #ftmpbb[ss,:]      *= (1./Ls[ss])*stmp_common
+                stmp_common = 1e10 # so 1 template is in 1e10Lsun
+
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss]                 *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
+
                 if f_spec:
                     ftmp_nu_int[ss,:]      = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
