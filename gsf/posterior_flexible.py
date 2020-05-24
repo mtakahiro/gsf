@@ -4,10 +4,11 @@ import sys
 from .function import *
 
 class Post:
+    '''
     #####################
-    # Function fo MCMC
+    # Function for MCMC
     #####################
-
+    '''
     def __init__(self, mainbody):
         self.mb = mainbody
 
@@ -21,9 +22,9 @@ class Post:
         '''
 
         vals = pars.valuesdict()
-        model, x1 = self.mb.fnc.tmp04(self.mb.ID, self.mb.PA, vals, self.mb.zprev, self.mb.lib, tau0=self.mb.tau0)
+        model, x1 = self.mb.fnc.tmp04(vals, self.mb.zprev, self.mb.lib)
         if self.mb.f_dust:
-            model_dust, x1_dust = self.mb.fnc.tmp04_dust(self.mb.ID, self.mb.PA, vals, self.mb.zprev, self.mb.lib_dust, tau0=self.mb.tau0)
+            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zprev, self.mb.lib_dust)
             n_optir = len(model)
 
             # Add dust flux to opt/IR grid.
@@ -52,7 +53,6 @@ class Post:
                 return model[con_res], model
             else:
                 return (model - fy)[con_res] / sig[con_res], model # i.e. residual/sigma. Because is_weighted = True.
-
 
     def lnprob(self, pars, fy, wht2, f_fir):
         '''

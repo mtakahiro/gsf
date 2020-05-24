@@ -17,18 +17,26 @@ from .basic_func import Basic
 from . import img_scale
 from . import corner
 
-def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
+
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
+    '''
     #
     # Returns: plots.
     #
     # snlimbb: SN limit to show flux or up lim in SED.
     #
+    '''
     lcb = '#4682b4' # line color, blue
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
-    bfnc = Basic(Z)
+    nage = MB.nage #np.arange(0,len(age),1)
+    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
+    ID   = MB.ID
+    PA   = MB.PA
+    Z    = MB.Zall
+    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    tau0 = MB.tau0 #[0.1,0.2,0.3]
 
     ################
     # RF colors.
@@ -39,7 +47,7 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
     m0set  = MB.m0set
     Mpc_cm = MB.Mpc_cm
 
-    d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     #############
     # Plot.
@@ -245,15 +253,15 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
 
     #####################################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(MB,fall=0)
+    lib_all = fnc.open_spec_fits(MB,fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp= np.arange(DT0,DT1,dDT)
-        lib_dust     = fnc.open_spec_dust_fits(ID, PA, Temp, fall=0, tau0=tau0)
-        lib_dust_all = fnc.open_spec_dust_fits(ID, PA, Temp, fall=1, tau0=tau0)
+        lib_dust     = fnc.open_spec_dust_fits(MB,fall=0)
+        lib_dust_all = fnc.open_spec_dust_fits(MB,fall=1)
 
     II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(II0)-1
@@ -267,15 +275,15 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
     for jj in range(len(II0)):
         ii = int(len(II0) - jj - 1) # from old to young templates.
         if jj == 0:
-            y0, x0   = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-            y0p, x0p = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
+            y0, x0   = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysump = y0p
             ysum  = y0
             if A50[ii]/Asum > flim:
                 ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
         else:
-            y0_r, x0_tmp = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, tau0=tau0)
-            y0p, x0p     = fnc.tmp03(ID, PA, A50[ii], AAv[0], ii, Z50[ii], zbes, lib, tau0=tau0)
+            y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysump += y0p
             ysum  += y0_r
             if A50[ii]/Asum > flim:
@@ -283,13 +291,12 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
         ysum_wid = ysum * 0
 
         try:
-            # Requires additional templates from maketmp_z0.py
             for kk in range(0,ii+1,1):
                 tt = int(len(II0) - kk - 1)
                 nn = int(len(II0) - ii - 1)
 
                 nZ = bfnc.Z2NZ(Z50[tt])
-                y0_wid, x0_wid = fnc.open_spec_fits_dir(ID, PA, tt, nZ, nn, AAv[0], zbes, A50[tt], tau0=tau0)
+                y0_wid, x0_wid = fnc.open_spec_fits_dir(MB, tt, nZ, nn, AAv[0], zbes, A50[tt])
                 ysum_wid += y0_wid
 
             lmrest_wid = x0_wid/(1.+zbes)
@@ -325,7 +332,7 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
         par.add('MDUST',value=MD50)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
-        y0d, x0d = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
@@ -335,14 +342,15 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
         # 16;
         par['MDUST'].value=MD16
         par['TDUST'].value=nTD16
-        y0d, x0d = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         # 84
         par['MDUST'].value=MD84
         par['TDUST'].value=nTD84
-        y0d, x0d = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         '''
+
         #ax1.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
         #ax3t.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
@@ -375,18 +383,11 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
         except:
             pass
 
-        #print(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d)
-        #print(np.max(y0d * c/ np.square(x0d) / d))
-        #plt.show()
-
-
     #############
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.4
-    #iix = np.argmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d)
-    #print(fybb[iix],eybb[iix],xbb[iix])
 
     xboxl = 17000
     xboxu = 28000
@@ -651,10 +652,10 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
                 ZZ_tmp = samples['Z0'][nr]
 
             if ss == 0:
-                mod0_tmp, xm_tmp = fnc.tmp03(ID, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp = mod0_tmp
             else:
-                mod0_tmp, xx_tmp = fnc.tmp03(ID, PA, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp += mod0_tmp
 
         if f_err == 1:
@@ -672,14 +673,15 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
                 par.add('TDUST',value=samples['TDUST'][nr])
             par['MDUST'].value = samples['MDUST'][nr]
             par['TDUST'].value = samples['TDUST'][nr]
-            model_dust, x1_dust = fnc.tmp04_dust(ID, PA, par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
+            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
-                #ytmp   = np.zeros((nmc2,len(x1_tot)), dtype='float64')
+
             model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
+
             '''
             if f_grsm:
                 ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
@@ -688,6 +690,7 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
             Fuv28[kk]  = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
             Lir[kk]    = get_Fint(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
             '''
+
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
@@ -699,7 +702,7 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
             ax2t.plot(x1_tot/zscl, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
         Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
-        Lir[kk]   = 0 #get_Fint(xm_tmp[:]/(1.+zbes), fm_tmp * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
+        Lir[kk]   = 0
 
     #
     # Plot Median SED;
@@ -769,17 +772,17 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
 
         # plot FIR range;
         ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-        zorder=2, alpha=1.0, marker='s', s=10)
+        zorder=2, alpha=1.0, marker='d', s=20)
 
     else:
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
-        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='s', s=10)
+        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='d', s=20)
 
     # plot opt-NIR range;
     ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-    zorder=2, alpha=1.0, marker='s', s=10)
+    zorder=2, alpha=1.0, marker='d', s=20)
     if save_sed == True:
         # Save BB model;
         col_sed = []
@@ -972,11 +975,11 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
         for jj in range(len(Zini)):
             for aa in range(len(age)):
                 if aa == 0:
-                    y0_r, x0_r    = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rp, x0_rp  = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
+                    y0_r, x0_r    = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
+                    y0_rp, x0_rp  = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
                 else:
-                    y0_rr, x0_r     = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rrp, x0_rrp  = fnc.tmp03(ID, PA, Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
+                    y0_rr, x0_r     = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
+                    y0_rrp, x0_rrp  = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
                     y0_r  += y0_rr
                     y0_rp += y0_rrp
 
@@ -990,7 +993,6 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
                 ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=%.2f$'%(Zini[jj])) # Z here is Zinitial.
             if f_grsm:
                 ax2t.plot(x0_r/zscl, ysum_Z * c/ np.square(x0_r) / d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.5)
-    '''
 
     ################
     # RGB
@@ -1004,6 +1006,8 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
         axicon.set_yticks([])
     except:
         pass
+    '''
+
     ####################
     ## Save
     ####################
@@ -1016,6 +1020,8 @@ def plot_sed(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
 
 
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
+    '''
+    '''
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -1111,6 +1117,7 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     plt.savefig('TZ_' + ID + '_PA' + PA + '_corner.pdf')
     plt.close()
 
+
 def make_rgb(ID,xcen,ycen):
     fits_dir = '/Volumes/EHDD1/3DHST/IMG/'
     blue_fn  = fits_dir + 'goodsn/goodsn_3dhst.v4.0.F850LP_orig_sci.fits'
@@ -1205,8 +1212,8 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     # Open result file
     ###########################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(ID, PA, fall=0)
+    lib_all = fnc.open_spec_fits(ID, PA, fall=1)
 
     file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
@@ -1408,15 +1415,15 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0   = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump = y0p #* 1e18
                 ysum  = y0  #* 1e18
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
             else:
-                y0_r, x0_tmp = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
@@ -1519,7 +1526,7 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     plt.close()
 
 
-def plot_corner_physparam_summary(MB, ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, DIR_OUT='./'):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     '''
     # Creat temporal png for gif image.
     #
@@ -1527,16 +1534,22 @@ def plot_corner_physparam_summary(MB, ID, PA, Zall=np.arange(-1.2,0.4249,0.05), 
     #
     '''
 
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Zall)
+    nage = MB.nage #np.arange(0,len(age),1)
+    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
+    ID   = MB.ID
+    PA   = MB.PA
+    Z    = MB.Zall
+    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    tau0 = MB.tau0 #[0.1,0.2,0.3]
+    dust_model = MB.dust_model
 
     ###########################
     # Open result file
     ###########################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(MB,fall=0)
+    lib_all = fnc.open_spec_fits(MB,fall=1)
 
     file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
@@ -1855,38 +1868,24 @@ def plot_corner_physparam_summary(MB, ID, PA, Zall=np.arange(-1.2,0.4249,0.05), 
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0   = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
+                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
                 ysump = y0p #* 1e18
                 ysum  = y0  #* 1e18
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.1)
-                #ax1.plot(age[ii], SF[ii], marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
-                #ax1.errorbar(age[ii], SF[ii], xerr=[[delTl[ii]/1e9], [delTu[ii]/1e9]], ms=10, marker='', lw=.1, color=col[ii], zorder=1, label='', alpha=0.1)
-                #xx1 = np.arange(age[ii]-delTl[ii]/1e9, age[ii]+delTu[ii]/1e9, 0.01)
-                #ax1.fill_between(xx1, xx1*0, xx1*0+SF[ii], lw=.1, facecolor=col[ii], zorder=1, label='', alpha=0.1)
-                #ax2.plot(age[ii], ZM[ii], marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
             else:
-                y0_r, x0_tmp = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
+                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.1)
-                #ax1.plot(age[ii], SF[ii], marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
-                #ax1.errorbar(age[ii], SF[ii], xerr=[[delTl[ii]/1e9], [delTu[ii]/1e9]], ms=10, marker='', lw=.1, color=col[ii], zorder=1, label='', alpha=0.1)
-                #xx1 = np.arange(age[ii]-delTl[ii]/1e9, age[ii]+delTu[ii]/1e9, 0.01)
-                #ax1.fill_between(xx1, xx1*0, xx1*0+SF[ii], lw=.1, facecolor=col[ii], zorder=1, label='', alpha=0.1)
-                #ax2.plot(age[ii], ZM[ii], marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
 
         for ss in range(len(age)):
-            #ii = int(len(II0) - ss - 1) # from old to young templates.
             ii = ss # from old to young templates.
             AC = np.sum(AM[ss:])
             ZC[ss] = np.log10(np.sum(ZMM[ss:])/AC)
-            #ax2.errorbar(age[ii], ZC[ii], xerr=[[delTl[ii]/1e9], [delTu[ii]/1e9]], ms=10*(SF[ii]/np.sum(SF[:]))+1, marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
-            #ax2.errorbar(age[ii], ZC[ii], xerr=[[delTl[ii]/1e9], [delTu[ii]/1e9]], ms=10*(AC/np.sum(AM[:]))+1, marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
-            #ax2.errorbar(age[ii], ZC[ii], xerr=[[delTl[ii]/1e9], [delTu[ii]/1e9]], ms=1, marker='', lw=.1, color=col[ii], zorder=1, label='', alpha=0.1)
 
         # Total
         ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
@@ -1907,9 +1906,6 @@ def plot_corner_physparam_summary(MB, ID, PA, Zall=np.arange(-1.2,0.4249,0.05), 
         Ztmp[kk]  = np.log10(Ztmp[kk])
         Ttmp[kk]  = np.log10(Ttmp[kk])
 
-        #NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
-        #NPAR    = [lmtmp[kk-10:kk+1], Ttmp[kk-10:kk+1], Avtmp[kk-10:kk+1], Ztmp[kk-10:kk+1]]
-        #NPAR    = [lmtmp[kk], Ttmp[kk], Avtmp[kk], Ztmp[kk]]
         NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
         #for kk in range(0,nplot,1):
@@ -2034,18 +2030,18 @@ def plot_corner_physparam_summary(MB, ID, PA, Zall=np.arange(-1.2,0.4249,0.05), 
     ax2t.tick_params(axis='x', labelcolor='k')
     ax2t.xaxis.set_ticks_position('none')
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
-    #print(x, x1min, x1max)
-    #ax0.text('')
 
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
     plt.close()
 
 
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
+    '''
     #
     # If you like to
     # Creat temporal png for gif image.
     #
+    '''
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -2054,8 +2050,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     # Open result file
     ###########################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID, PA, fall=0, tau0=tau0)
-    lib_all = fnc.open_spec_fits(ID, PA, fall=1, tau0=tau0)
+    lib     = fnc.open_spec_fits(fall=0, tau0=tau0)
+    lib_all = fnc.open_spec_fits(fall=1, tau0=tau0)
 
     file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
@@ -2330,8 +2326,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0   = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump = y0p #* 1e18
                 ysum  = y0  #* 1e18
                 if AA_tmp/Asum > flim:
@@ -2342,8 +2338,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
                 ax1.fill_between(xx1, xx1*0, xx1*0+SF[ii], lw=1, facecolor=col[ii], zorder=1, label='', alpha=0.5)
                 #ax2.plot(age[ii], ZM[ii], marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
             else:
-                y0_r, x0_tmp = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(ID, PA, AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
@@ -2524,7 +2520,10 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             #files.append(fname)
             plt.close()
 
+
 def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  mcmcplot=1, flim=0.05):
+    '''
+    '''
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)

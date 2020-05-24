@@ -18,11 +18,10 @@ from . import img_scale
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False):
+def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False):
     '''
 
     '''
-
 
     flim = 0.01
     lsfrl = -1 # log SFR low limit
@@ -30,11 +29,16 @@ def plot_sfh(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7
     Txmax = 4 # Max x value
     lmmin = 9.5 #10.3
 
-    age  = MB.age
-    nage = MB.nage
+    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
+    ID   = MB.ID
+    PA   = MB.PA
+    Z    = MB.Zall
+    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    nage = MB.nage #np.arange(0,len(age),1)
+    tau0 = MB.tau0 #[0.1,0.2,0.3]
+
     age = np.asarray(age)
-    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Z)
 
     ################
     # RF colors.

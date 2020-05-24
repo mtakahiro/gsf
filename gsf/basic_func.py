@@ -1,9 +1,9 @@
 import numpy as np
 # Function which is also used in function_class.py
 class Basic:
-    def __init__(self, ZZ):
-        self.ZZ = ZZ
-        self.NZ = len(ZZ)
+    def __init__(self, MB):
+        self.ZZ = MB.Zall
+        self.NZ = len(self.ZZ)
         try:
             self.delZ = ZZ[1] - ZZ[0]
         except:

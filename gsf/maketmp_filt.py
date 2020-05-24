@@ -12,15 +12,11 @@ from scipy.integrate import simps
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
 
-# Custom package
+# Custom modules
 from .function import *
-from .function_class import Func
-from .basic_func import Basic
 from .function_igm import *
 
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
-
-
 def sim_spec(lmin, fin, sn):
     '''
     ###################################################
@@ -42,7 +38,8 @@ def sim_spec(lmin, fin, sn):
             frand[ii] = np.random.normal(fin[ii],erand[ii],1)
     return frand, erand
 
-def maketemp(MB, zbest):
+
+def maketemp(MB):
     '''
     ###################################################
     # Make SPECTRA at given z and filter set.
@@ -58,14 +55,15 @@ def maketemp(MB, zbest):
     inputs = MB.inputs
     ID = MB.ID #inputs['ID']
     PA = MB.PA #inputs['PA']
-    age = MB.age #=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
+    age  = MB.age #=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
+    nage = MB.nage #np.arange(0,len(age),1)
     Z  = MB.Zall #=np.arange(-1.2,0.45,0.1),
     fneb = MB.fneb
     DIR_TMP = MB.DIR_TMP# './templates/'
+    zbest = MB.zgal
 
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
-    bfnc = Basic(Z)
+    fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
 
     try:
         DIR_EXTR = inputs['DIR_EXTR']

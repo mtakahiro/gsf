@@ -37,17 +37,38 @@ fLW = np.zeros(len(LW), dtype='int') # flag.
 
 class Mainbody():
 
-    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
+    def __init__(self, parfile, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
         '''
         INPUT:
         ==========
-        inputs: Dictionary for input params.
+        parfile: Ascii file that lists parameters for everything.
 
-         Mpc_cm : cm/Mpc
-         pixelscale : arcsec/pixel
+        Mpc_cm : cm/Mpc
+        pixelscale : arcsec/pixel
 
         '''
 
+        #
+        # Get info from param file.
+        #
+        input0 = []
+        input1 = []
+        file = open(parfile,'r')
+        while 1:
+            line = file.readline()
+            if not line:
+                break
+            else:
+                cols = str.split(line)
+                if len(cols)>0 and cols[0] != '#':
+                        input0.append(cols[0])
+                        input1.append(cols[1])
+        file.close()
+        inputs = {}
+        for i in range(len(input0)):
+            inputs[input0[i]]=input1[i]
+
+        # Then register;
         self.inputs = inputs
         self.c = c
         self.Mpc_cm = Mpc_cm
@@ -163,6 +184,7 @@ class Mainbody():
             self.f_dust = True
             print('FIR fit is on.')
         except:
+            self.Temp = []
             self.f_dust = False
             pass
 
@@ -189,7 +211,7 @@ class Mainbody():
         self.nwalk    = int(inputs['NWALK'])
         self.nmc_cz   = int(inputs['NMCZ'])
         self.nwalk_cz = int(inputs['NWALKZ'])
-        self.Zevol  = int(inputs['ZEVOL'])
+        self.Zevol    = int(inputs['ZEVOL'])
         self.fzvis    = int(inputs['ZVIS'])
         self.fneld    = int(inputs['FNELD'])
         try:
@@ -213,10 +235,10 @@ class Mainbody():
         return LW, fLW
 
 
-    def read_data(self, Cz0, Cz1, zprev, add_fir=False):
+    def read_data(self, Cz0, Cz1, zgal, add_fir=False):
         '''
-        Cz0, Cz1: Normalization coeffs for grism spectra.
-        zprev   : Current redshift estimate.
+        Cz0, Cz1 : Normalization coeffs for grism spectra.
+        zgal     : Current redshift estimate.
 
         Note:
         =======
@@ -260,7 +282,7 @@ class Mainbody():
             ey   = np.append(ey01,ey2)
 
             wht  = 1./np.square(ey)
-            wht2 = check_line_man(fy, x, wht, fy, zprev, self.LW0)
+            wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
             sn   = fy/ey
         except: # if no BB;
             xbb  = np.asarray([100.])
@@ -279,7 +301,7 @@ class Mainbody():
             fy = np.append(fy,fy_d)
             x  = np.append(x,x_d)
             wht= np.append(wht,1./np.square(ey_d))
-            wht2= check_line_man(fy, x, wht, fy, zprev, self.LW0)
+            wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
 
         # Into dict
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'xbb':xbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
@@ -290,14 +312,16 @@ class Mainbody():
     def fit_redshift(self, dict, xm_tmp, fm_tmp, flag_m=0, delzz=0.01, ezmin=0.01):
         '''
         Can be used for any SFH
+
         '''
+
         # For z prior.
         delzz  = 0.001
         zlimu  = 6.
         snlim  = 1
         zliml  = self.zgal - 0.5
 
-        zrecom = self.zprev
+        #z = self.zprev
 
         # Observed data.
         con_cz = (dict['NR']<10000) #& (sn>snlim)
@@ -306,7 +330,7 @@ class Mainbody():
         x_cz   = dict['x'][con_cz] # Observed range
         NR_cz  = dict['NR'][con_cz]
 
-        xm_s = xm_tmp / (1+self.zprev) * (1+zrecom)
+        xm_s = xm_tmp #/ (1+self.zprev) * (1+self.zgal)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
 
         if flag_m == 0:
@@ -340,7 +364,7 @@ class Mainbody():
 
         # Plot;
         if self.fzvis==1:
-            plt.plot(x_cz/(1+self.zprev)*(1.+zrecom),fm_s,'gray', linestyle='--', linewidth=0.5, label='Default ($z=%.5f$)'%(self.zprev)) # Model based on input z.
+            plt.plot(x_cz,fm_s,'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
@@ -349,7 +373,7 @@ class Mainbody():
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zprev), self.zprev, dez, prior_s, NR_cz, zliml, zlimu, delzz, self.nmc_cz, self.nwalk_cz)
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, dez, prior_s, NR_cz, zliml, zlimu, delzz, self.nmc_cz, self.nwalk_cz)
             z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -362,11 +386,13 @@ class Mainbody():
             # find minimum and maximum of xticks, so we know
             # where we should compute theoretical distribution
             ser = res_cz.flatchain['z']
-            xmin, xmax = self.zprev-0.2, self.zprev+0.2
+            xmin, xmax = self.zgal-0.2, self.zgal+0.2
             lnspc = np.linspace(xmin, xmax, len(ser))
             print('\n\n')
             print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, self.Cz0 * Czrec0, self.Cz1 * Czrec1, fitc_cz[1]))
             print('\n\n')
+
+            fit_label = 'Proposed model'
 
         except:
         #else:
@@ -383,7 +409,7 @@ class Mainbody():
                 ezl = ezmin
                 ezu = ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
-            z_cz    = [self.zprev-ezl,self.zprev,self.zprev+ezu]
+            z_cz    = [self.zprev-ezl, self.zprev, self.zprev+ezu]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
@@ -391,7 +417,9 @@ class Mainbody():
             Czrec1  = scl_cz1[1]
             res_cz  = None
 
-        xm_s = xm_tmp / (1+self.zprev) * (1+zrecom)
+            fit_label = 'Previous model'
+
+        xm_s = xm_tmp / (1+self.zgal) * (1+zrecom)
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
         whtl = 1/np.square(ey_cz)
         try:
@@ -405,7 +433,7 @@ class Mainbody():
             #
             # Ask interactively;
             #
-            plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='Updated model ($z=%.5f$)'%(zrecom)) # Model based on recomended z.
+            plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
 
             # Plot lines for reference
@@ -414,10 +442,10 @@ class Mainbody():
                     conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
                     yline = np.max(ypoly[conpoly])
                     yy    = np.arange(yline/1.02, yline*1.1)
-                    xxpre = yy * 0 + LW[ll] * (1.+self.zprev)
+                    xxpre = yy * 0 + LW[ll] * (1.+self.zgal)
                     xx    = yy * 0 + LW[ll] * (1.+zrecom)
                     plt.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
-                    plt.text(LW[ll] * (1.+self.zprev), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
+                    plt.text(LW[ll] * (1.+self.zgal), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
                     plt.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
                     plt.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
                 except:
@@ -441,8 +469,8 @@ class Mainbody():
             plt.ylabel('$F_\\nu$ (arb.)')
             plt.legend(loc=0)
 
-            zzsigma  = ((z_cz[2] - z_cz[0])/2.)/self.zprev
-            zsigma   = np.abs(self.zprev-zrecom) / (self.zprev)
+            zzsigma  = ((z_cz[2] - z_cz[0])/2.)/self.zgal
+            zsigma   = np.abs(self.zgal-zrecom) / (self.zgal)
             C0sigma  = np.abs(Czrec0-self.Cz0)/self.Cz0
             eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
             C1sigma  = np.abs(Czrec1-self.Cz1)/self.Cz1
@@ -456,7 +484,7 @@ class Mainbody():
             print('Error is %.3f per cent.'%(eC1sigma*100))
             plt.show()
 
-            flag_z = raw_input('Do you want to continue with original redshift, Cz0 and Cz1, %.5f %.5f %.5f? ([y]/n/m) '%(self.zprev, self.Cz0, self.Cz1))
+            flag_z = raw_input('Do you want to continue with the input redshift, Cz0 and Cz1, %.5f %.5f %.5f? ([y]/n/m) '%(self.zgal, self.Cz0, self.Cz1))
         else:
             flag_z = 'y'
 
@@ -495,7 +523,7 @@ class Mainbody():
             ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
             xx = yy * 0 + self.z_cz[2]
             ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
-            xx = yy * 0 + self.zprev
+            xx = yy * 0 + self.zgal
             ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
             ax1.set_xlabel('Redshift')
             ax1.set_ylabel('$dn/dz$')
@@ -519,7 +547,7 @@ class Mainbody():
 
         # Redshift
         if self.fzmc == 1:
-            fit_params.add('zmc', value=self.zprev, min=self.zprev-(self.z_cz[1]-self.z_cz[0])*sigz, max=self.zprev+(self.z_cz[2]-self.z_cz[1])*sigz)
+            fit_params.add('zmc', value=self.zgal, min=self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz, max=self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz)
             #self.ndim += 1 # Already added.
             f_add = True
 
@@ -541,19 +569,20 @@ class Mainbody():
             fit_params.add('MDUST', value=1e6, min=0, max=1e10)
             self.ndim += 2
 
-            dict = read_data(self.Cz0, self.Cz1, self.zprev, add_fir=True)
+            dict = read_data(self.Cz0, self.Cz1, self.zgal, add_fir=True)
 
             f_add = True
 
         return f_add
 
 
-    def main(self, ID0, PA0, zgal, flag_m, zprev, Cz0, Cz1, mcmcplot=True, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_disp=False):
+    def main(self, zgal, flag_m, Cz0, Cz1, mcmcplot=True, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_disp=False):
         '''
         Input:
         ========
         flag_m : related to redshift error in redshift check func.
         ferr   : For error parameter
+        zgal   : Input redshift.
         #
         #
         # sigz (float): confidence interval for redshift fit.
@@ -566,27 +595,25 @@ class Mainbody():
         print('########################')
         start = timeit.default_timer()
 
+        ID0 = self.ID
+        PA0 = self.PA
+
         inputs = self.inputs
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
 
-        # This needs to be defined here.
-        self.zprev = zprev
-        self.Cz0 = Cz0
-        self.Cz1 = Cz1
-
         # And class;
-        from .function_class import Func
-        from .basic_func import Basic
-        self.fnc  = Func(self.ID, self.PA, self.Zall, self.nage, dust_model=self.dust_model, DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
-        self.bfnc = Basic(self.Zall)
+        #from .function_class import Func
+        #from .basic_func import Basic
+        #self.fnc  = Func(self.ID, self.PA, self.Zall, self.nage, dust_model=self.dust_model, DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
+        #self.bfnc = Basic(self.Zall)
 
-        # Spectral library;
-        self.lib = self.fnc.open_spec_fits(self.ID, self.PA, fall=0, tau0=self.tau0)
-        self.lib_all = self.fnc.open_spec_fits(self.ID, self.PA, fall=1, tau0=self.tau0)
+        # Load Spectral library;
+        self.lib = self.fnc.open_spec_fits(self, fall=0)
+        self.lib_all = self.fnc.open_spec_fits(self, fall=1)
         if self.f_dust:
-            self.lib_dust     = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=0, tau0=self.tau0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(self.ID, self.PA, self.Temp, fall=1, tau0=self.tau0)
+            self.lib_dust     = self.fnc.open_spec_dust_fits(self, fall=0)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
 
 
         #
@@ -617,7 +644,7 @@ class Mainbody():
         #################
         # Observed Data
         #################
-        dict = self.read_data(self.Cz0, self.Cz1, self.zprev)
+        dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
 
         # Call likelihood/prior/posterior function;
         from .posterior_flexible import Post
@@ -721,7 +748,7 @@ class Mainbody():
         Av_tmp = out.params['Av'].value
         AA_tmp = np.zeros(len(self.age), dtype='float64')
         ZZ_tmp = np.zeros(len(self.age), dtype='float64')
-        fm_tmp, xm_tmp = fnc.tmp04_val(ID0, PA0, out, self.zprev, self.lib, tau0=self.tau0)
+        fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
 
         ########################
         # Check redshift
@@ -755,7 +782,7 @@ class Mainbody():
                 print(fit_report(out))
 
                 # Fix params to what we had before.
-                out.params['zmc'].value = self.zprev
+                out.params['zmc'].value = self.zgal
                 out.params['Av'].value  = out_keep.params['Av'].value
                 for aa in range(len(self.age)):
                     out.params['A'+str(aa)].value = out_keep.params['A'+str(aa)].value
@@ -875,28 +902,38 @@ class Mainbody():
             stop  = timeit.default_timer()
             tcalc = stop - start
 
-            # Load writing package;
-            #from .writing import Analyze
-            #wrt = Analyze(self.inputs) # Set up for input
-
+            # Then writing;
             start_mc = timeit.default_timer()
-            #wrt.get_param(res, self.lib_all, self.zprev, self.Cz0, self.Cz1, self.z_cz, self.scl_cz0, self.scl_cz1, fitc, tau0=self.tau0, tcalc=tcalc)
             from .writing import get_param
             get_param(self, res, fitc, tcalc=tcalc)
-
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
             print('##############################################')
             print('### Writing params tp file took %.1f sec ###'%(tcalc_mc))
             print('##############################################')
 
-            return 0, self.zprev, self.Cz0, self.Cz1
+            return 0, self.zgal, self.Cz0, self.Cz1
 
 
         elif flag_z == 'm':
-            zrecom = float(raw_input('What is your manual input for redshift? '))
-            Czrec0 = float(raw_input('What is your manual input for Cz0? '))
-            Czrec1 = float(raw_input('What is your manual input for Cz1? '))
+            zrecom = raw_input('What is your manual input for redshift? [%.3f] '%(self.zgal))
+            if zrecom != '':
+                zrecom = float(zrecom)
+            else:
+                zrecom = self.zgal
+
+            Czrec0 = raw_input('What is your manual input for Cz0? [%.3f] '%(self.Cz0))
+            if Czrec0 != '':
+                Czrec0 = float(Czrec0)
+            else:
+                Czrec0 = self.Cz0
+
+            Czrec1 = raw_input('What is your manual input for Cz1? [%.3f] '%(self.Cz1))
+            if Czrec1 != '':
+                Czrec1 = float(Czrec1)
+            else:
+                Czrec1 = self.Cz1
+
             print('\n\n')
             print('Generate model templates with input redshift and Scale.')
             print('\n\n')
@@ -917,4 +954,4 @@ class Mainbody():
                 print('There is nothing to do.')
                 print('Terminating process.')
                 print('\n\n')
-                return -1, self.zprev, self.Czrec0, self.Czrec1
+                return -1, self.zgal, self.Czrec0, self.Czrec1

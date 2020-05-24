@@ -3,6 +3,8 @@ from astropy.io import fits
 from .function import filconv, calc_Dn4
 
 def get_param(self, res, fitc, tcalc=1.):
+    '''
+    '''
     print('##########################')
     print('### Writing parameters ###')
     print('##########################')
@@ -27,9 +29,6 @@ def get_param(self, res, fitc, tcalc=1.):
 
     DIR_TMP = self.DIR_TMP
 
-    # Filters
-    import os.path
-    home = os.path.expanduser('~')
     fil_path = self.DIR_FILT
     nmc  = self.nmc
     ndim = self.ndim
@@ -54,7 +53,6 @@ def get_param(self, res, fitc, tcalc=1.):
     G4300= np.zeros(int(mmax), dtype='float32')
     NaD  = np.zeros(int(mmax), dtype='float32')
     Hb   = np.zeros(int(mmax), dtype='float32')
-    #Muv  = np.zeros(int(mmax), dtype='float32')
 
     samples = res.chain[:, :, :].reshape((-1, ndim)) # Already burned.
 
@@ -104,7 +102,6 @@ def get_param(self, res, fitc, tcalc=1.):
     #
     # Get mcmc model templates, plus some indicies.
     #
-    #print(res.flatchain['Av'][0])
     from lmfit import Parameters
     fit_params = Parameters()
     for mm in range(0,mmax,1):
@@ -118,7 +115,7 @@ def get_param(self, res, fitc, tcalc=1.):
                 fit_params.add('Z'+str(aa), value=res.flatchain['Z%d'%(aa)][rn], min=-10, max=10)
             except:
                 pass
-        model2, xm_tmp = fnc.tmp04(ID0, PA0, fit_params, zrecom, lib_all, tau0=tau0)
+        model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
 
         '''
         # not necessary here.

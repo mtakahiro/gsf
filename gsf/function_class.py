@@ -11,17 +11,25 @@ m0set  = 25.0
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 class Func:
-    def __init__(self, ID, PA, ZZ, AA, dust_model=0, DIR_TMP='./templates/'):
-        self.ID   = ID
-        self.PA   = PA
-        self.ZZ   = ZZ
-        self.AA   = AA
+    def __init__(self, MB, dust_model=0):
+        '''
+        dust_model : Int. 0 for Calzetti.
+        '''
+        self.ID   = MB.ID
+        self.PA   = MB.PA
+        self.ZZ   = MB.Zall
+        self.AA   = MB.nage
+        self.tau0 = MB.tau0
+        self.MB   = MB
         try:
             self.delZ = ZZ[1] - ZZ[0]
         except:
             self.delZ = 0.01
         self.dust_model = dust_model
-        self.DIR_TMP    = DIR_TMP
+        self.DIR_TMP    = MB.DIR_TMP
+
+        if MB.f_dust:
+            self.Temp = MB.Temp
 
     def demo(self):
         ZZ = self.ZZ
@@ -31,11 +39,17 @@ class Func:
     #############################
     # Load template in obs range.
     #############################
-    def open_spec_fits(self, ID0, PA0, fall=0, tau0=[0.01,0.02,0.03]):
+    def open_spec_fits(self, MB, fall=0):
+        '''
+        '''
+        ID0 = MB.ID
+        PA0 = MB.PA
+        tau0= MB.tau0 #[0.01,0.02,0.03]
+
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
+        bfnc = self.MB.bfnc #Basic(ZZ)
         if fall == 0:
             app = ''
         elif fall == 1:
@@ -68,15 +82,20 @@ class Func:
 
         return lib
 
+    def open_spec_dust_fits(self, MB, fall=0):
+        '''
+        ##################################
+        # Load dust template in obs range.
+        ##################################
+        '''
+        ID0 = MB.ID
+        PA0 = MB.PA
+        tau0= MB.tau0 #[0.01,0.02,0.03]
 
-    ##################################
-    # Load dust template in obs range.
-    ##################################
-    def open_spec_dust_fits(self, ID0, PA0, Temp, fall=0, tau0=[0.01,0.02,0.03]):
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
+        bfnc = self.MB.bfnc #Basic(ZZ)
 
         if fall == 0:
             app = ''
@@ -89,11 +108,11 @@ class Func:
         nr   = hdu0.data['colnum']
         xx   = hdu0.data['wavelength']
 
-        lib  = np.zeros((len(nr), 2+len(Temp)), dtype='float32')
+        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float32')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
-        for aa in range(len(Temp)):
+        for aa in range(len(self.Temp)):
             coln    = int(2 + aa)
             colname = 'fspec_' + str(aa)
             colnall = int(2 + aa) # 2 takes account of wavelength and AV columns.
@@ -101,21 +120,22 @@ class Func:
             if fall==1 and False:
                 import matplotlib.pyplot as plt
                 plt.close()
-                print(Temp[aa])
                 plt.plot(lib[:,1],lib[:,coln],linestyle='-')
                 plt.show()
         return lib
 
-
-    #############################
-    # Load template in obs range.
-    # But for weird template.
-    #############################
-    def open_spec_fits_dir(self, ID0, PA0, nage, nz, kk, Av00, zgal, A00, tau0=[0.01,0.02,0.03]):
+    def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
+        '''
+        #############################
+        # Load template in obs range.
+        # But for weird template.
+        #############################
+        '''
         from astropy.io import fits
+        tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
+        bfnc = self.MB.bfnc #Basic(ZZ)
         app = 'all'
         DIR_TMP = self.DIR_TMP #'./templates/'
 
@@ -179,13 +199,14 @@ class Func:
 
         return A00 * yyd_sort, xxd_sort
 
-
-    def tmp03(self, ID0, PA, A00, Av00, nmodel, Z, zgal, lib, tau0=[0.01,0.02,0.03]):
-
+    def tmp03(self, A00, Av00, nmodel, Z, zgal, lib):
+        '''
+        '''
+        tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        DIR_TMP = self.MB.DIR_TMP #'./templates/'
         NZ  = bfnc.Z2NZ(Z)
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
@@ -226,13 +247,16 @@ class Func:
 
         return A00 * yyd_sort, xxd_sort
 
-    # Making model template with a given param setself.
-    # Also dust attenuation.
-    def tmp04(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
+    def tmp04(self, par, zgal, lib):
+        '''
+        # Making model template with a given param setself.
+        # Also dust attenuation.
+        '''
+        tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        DIR_TMP = self.MB.DIR_TMP #'./templates/'
         try:
             zmc = par.params['zmc'].value
         except:
@@ -313,13 +337,16 @@ class Func:
 
         return yyd_sort, xxd_sort
 
-    # Making model template with a given param setself.
-    # Also dust attenuation.
-    def tmp04_dust(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
+    def tmp04_dust(self, par, zgal, lib):
+        '''
+        # Making model template with a given param setself.
+        # Also dust attenuation.
+        '''
+        tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        DIR_TMP = self.MB.DIR_TMP #'./templates/'
 
         m_dust = par['MDUST']
         t_dust = par['TDUST']
@@ -342,12 +369,14 @@ class Func:
             yy_s = yy
         return yy_s, xx_s
 
-    def tmp04_val(self, ID0, PA, par, zgal, lib, tau0=[0.01,0.02,0.03]):
-
+    def tmp04_val(self, par, zgal, lib):
+        '''
+        '''
+        tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = Basic(ZZ)
-        DIR_TMP = './templates/'
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        DIR_TMP = self.MB.DIR_TMP #'./templates/'
 
         try:
             zmc = par.params['zmc'].value
