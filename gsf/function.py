@@ -19,6 +19,52 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
+def get_input():
+    '''
+    This returns somewhat a common default input dictionary.
+
+    '''
+
+    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':1, \
+    'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
+    'ZFIX':0.0, 'NIMF':0}
+
+    return inputs
+
+def read_input(parfile):
+    '''
+    Purpose:
+    ==========
+    #
+    # Get info from param file.
+    #
+
+    Return:
+    ===========
+    Input dictionary.
+
+    '''
+
+    input0 = []
+    input1 = []
+    file = open(parfile,'r')
+    while 1:
+        line = file.readline()
+        if not line:
+            break
+        else:
+            cols = str.split(line)
+            if len(cols)>0 and cols[0] != '#':
+                    input0.append(cols[0])
+                    input1.append(cols[1])
+    file.close()
+    inputs = {}
+    for i in range(len(input0)):
+        inputs[input0[i]]=input1[i]
+
+    return inputs
+
+
 def loadcpkl(cpklfile):
     """
     Load cpkl files.

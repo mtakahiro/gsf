@@ -22,7 +22,7 @@ from astropy.cosmology import WMAP9 as cosmo
 import timeit
 start = timeit.default_timer()
 
-def run_gsf_template(parfile, fplt, mcmcplot=True):
+def run_gsf_template(inputs, fplt=0):
     '''
     Purpose:
     ==========
@@ -30,7 +30,8 @@ def run_gsf_template(parfile, fplt, mcmcplot=True):
     Not for fitting, nor plotting.
 
     '''
-    MB = Mainbody(parfile, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
+
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
 
@@ -63,11 +64,14 @@ def run_gsf_template(parfile, fplt, mcmcplot=True):
         MB.lib_dust_all = MB.fnc.open_spec_dust_fits(MB, fall=1)
 
     # How to get SED?
-    y0, x0 = MB.fnc.get_template(MB.lib_all, Amp=1.0, T=0.1, Av=0.0, Z=0.0, zgal=MB.zgal)
     import matplotlib.pyplot as plt
-    plt.plot(x0/(1.+MB.zgal),y0,linestyle='-',color='r',lw=1.0)
-    plt.xlim(600,20000)
-    plt.xscale('log')
+    for T in MB.age[:1]:
+        y0, x0 = MB.fnc.get_template(MB.lib_all, Amp=1.0, T=T, Av=0.0, Z=-1.0, zgal=MB.zgal)
+        plt.plot(x0/(1.+MB.zgal),y0,linestyle='-',lw=1.0, label='$T=%.2f$\n$z=%.2f$'%(T,MB.zgal))
+        plt.xlim(600,20000)
+        plt.xlabel('Rest frame wavelength')
+        plt.xscale('log')
+    plt.legend(loc=0)
     plt.show()
 
     return MB
@@ -90,7 +94,10 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
     ######################
     # Read from Input file
     ######################
-    MB = Mainbody(parfile, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
+    from .function import read_input
+    inputs = read_input(parfile)
+
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)

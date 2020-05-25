@@ -301,7 +301,6 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     col02 = [] # For templates
     col05 = [] # For spectral indices.
     #col06 = [] # For weird templates for UVJ calculation;
-    print('tau is the width of each age bin.')
     tau_age = np.zeros(Na,dtype='float64')
     age_age = np.zeros(Na,dtype='float64')
     for zz in range(len(Z)):
@@ -332,6 +331,7 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
         lage_temp = (6+0.1*(nage_temp-2))
         age_temp  = 10**(6+0.1*(nage_temp-2)) # in yr
 
+        # 'tau is the width of each age bin.'
         for pp in range(len(tau0)):
             spall = [] # For sps model
             ms = np.zeros(Na, dtype='float32')
@@ -408,8 +408,6 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                 # Then. add flux if tau > 0.
                 con   = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
-
-                plt.plot(wave,flux,linestyle='-')
 
                 Ls[ss]     = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)

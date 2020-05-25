@@ -61,6 +61,8 @@ def maketemp(MB):
     fneb = MB.fneb
     DIR_TMP = MB.DIR_TMP# './templates/'
     zbest = MB.zgal
+    tau0 = MB.tau0
+    #tau0 = [float(x.strip()) for x in tau0.split(',')]
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -110,11 +112,6 @@ def maketemp(MB):
         f_dust = False
         pass
 
-    #
-    # Tau for MCMC parameter; not as fitting parameters.
-    #
-    tau0 = inputs['TAU0']
-    tau0 = [float(x.strip()) for x in tau0.split(',')]
 
     print('############################')
     print('Making templates at %.4f'%(zbest))

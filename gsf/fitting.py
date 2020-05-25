@@ -32,12 +32,12 @@ if py_v > 2:
 ################
 LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
-fLW = np.zeros(len(LW), dtype='int') # flag.
+fLW = np.zeros(len(LW), dtype='int')
 
 
 class Mainbody():
 
-    def __init__(self, parfile, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
+    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
         '''
         INPUT:
         ==========
@@ -47,26 +47,6 @@ class Mainbody():
         pixelscale : arcsec/pixel
 
         '''
-
-        #
-        # Get info from param file.
-        #
-        input0 = []
-        input1 = []
-        file = open(parfile,'r')
-        while 1:
-            line = file.readline()
-            if not line:
-                break
-            else:
-                cols = str.split(line)
-                if len(cols)>0 and cols[0] != '#':
-                        input0.append(cols[0])
-                        input1.append(cols[1])
-        file.close()
-        inputs = {}
-        for i in range(len(input0)):
-            inputs[input0[i]]=input1[i]
 
         # Then register;
         self.inputs = inputs
@@ -167,19 +147,24 @@ class Mainbody():
 
 
         # N of param:
-        if int(inputs['ZEVOL']) == 1:
-            self.ndim = int(len(self.nage) * 2 + 1)
-            print('Metallicity evolution is on.')
-            if int(inputs['ZMC']) == 1:
-                self.ndim += 1
-            print('No of params are : %d'%(self.ndim))
-        else:
-            self.ndim = int(len(self.nage) + 1 + 1)
-            print('Metallicity evolution is off.')
-            if int(inputs['ZMC']) == 1:
-                self.ndim += 1
-            print('No of params are : %d'%(self.ndim))
-        pass
+        try:
+            if int(inputs['ZEVOL']) == 1:
+                self.ZEVOL = 1
+                self.ndim = int(len(self.nage) * 2 + 1)
+                print('Metallicity evolution is on.')
+                if int(inputs['ZMC']) == 1:
+                    self.ndim += 1
+                print('No of params are : %d'%(self.ndim))
+            else:
+                self.ZEVOL = 0
+                self.ndim = int(len(self.nage) + 1 + 1)
+                print('Metallicity evolution is off.')
+                if int(inputs['ZMC']) == 1:
+                    self.ndim += 1
+                print('No of params are : %d'%(self.ndim))
+        except:
+            self.ZEVOL = 0
+            pass
 
         try:
             self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
@@ -212,8 +197,11 @@ class Mainbody():
             pass
 
 
-        # Tau for MCMC parameter; not as fitting parameters.
-        self.tau0 = [float(x.strip()) for x in inputs['TAU0'].split(',')]
+        try:
+            # Length of each ssp templates.
+            self.tau0 = np.asarray([float(x.strip()) for x in inputs['TAU0'].split(',')])
+        except:
+            self.tau0 = np.asarray([-1.0])
 
         # IMF
         try:
@@ -221,28 +209,6 @@ class Mainbody():
         except:
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
-
-
-        # MCMC;
-        self.nmc      = int(inputs['NMC'])
-        self.nwalk    = int(inputs['NWALK'])
-        self.nmc_cz   = int(inputs['NMCZ'])
-        self.nwalk_cz = int(inputs['NWALKZ'])
-        self.Zevol    = int(inputs['ZEVOL'])
-        self.fzvis    = int(inputs['ZVIS'])
-        self.fneld    = int(inputs['FNELD'])
-        try:
-            self.ntemp = int(inputs['NTEMP'])
-        except:
-            self.ntemp = 1
-
-        try:
-            if int(inputs['DISP']) == 1:
-                self.f_disp = True
-            else:
-                self.f_disp = False
-        except:
-            self.f_disp = False
 
 
 
@@ -632,6 +598,26 @@ class Mainbody():
             self.lib_dust     = self.fnc.open_spec_dust_fits(self, fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
 
+        # For MCMC;
+        self.nmc      = int(self.inputs['NMC'])
+        self.nwalk    = int(self.inputs['NWALK'])
+        self.nmc_cz   = int(self.inputs['NMCZ'])
+        self.nwalk_cz = int(self.inputs['NWALKZ'])
+        self.Zevol    = int(self.inputs['ZEVOL'])
+        self.fzvis    = int(self.inputs['ZVIS'])
+        self.fneld    = int(self.inputs['FNELD'])
+        try:
+            self.ntemp = int(self.inputs['NTEMP'])
+        except:
+            self.ntemp = 1
+
+        try:
+            if int(inputs['DISP']) == 1:
+                self.f_disp = True
+            else:
+                self.f_disp = False
+        except:
+            self.f_disp = False
 
         #
         # Dust model specification;
