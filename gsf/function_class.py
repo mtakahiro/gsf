@@ -22,10 +22,10 @@ class Func:
         self.AA   = MB.nage
         self.tau0 = MB.tau0
         self.MB   = MB
-        try:
-            self.delZ = ZZ[1] - ZZ[0]
-        except:
-            self.delZ = 0.01
+        #try:
+        #    self.delZ = ZZ[1] - ZZ[0]
+        #except:
+        #    self.delZ = 0.01
         self.dust_model = dust_model
         self.DIR_TMP    = MB.DIR_TMP
 
@@ -59,9 +59,8 @@ class Func:
         DIR_TMP = self.DIR_TMP
         for pp in range(len(tau0)):
             for zz in range(len(ZZ)):
-                Z    = ZZ[zz]
-                NZ   = bfnc.Z2NZ(Z)
-
+                Z   = ZZ[zz]
+                NZ  = bfnc.Z2NZ(Z)
                 if zz == 0 and pp == 0:
                     f0   = fits.open(DIR_TMP + 'spec_' + app + ID0 + '_PA' + PA0 + '.fits')
                     hdu0 = f0[1]

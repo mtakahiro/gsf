@@ -93,6 +93,12 @@ class Mainbody():
         except:
             self.DIR_EXTR = False
 
+        # BPASS Binary template
+        try:
+            self.f_bpass = int(inputs['BPASS'])
+        except:
+            self.f_bpass = 0
+
         # Nebular emission;
         try:
             self.fneb = int(inputs['ADD_NEBULAE'])
@@ -127,21 +133,38 @@ class Mainbody():
         except:
             self.fzmc = 0
 
-
         # Metallicity
-        try:
-            self.ZFIX = float(inputs['ZFIX'])
-            self.delZ = 0.0001
-            self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
-            self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
-        except:
-            self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-            self.delZ = float(inputs['DELZ'])
-            if self.Zmax == self.Zmin or self.delZ==0:
+        if self.f_bpass == 0:
+            try:
+                self.ZFIX = float(inputs['ZFIX'])
                 self.delZ = 0.0001
-                self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ) # in logZsun
-            else:
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+            except:
+                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                self.delZ = float(inputs['DELZ'])
+                if self.Zmax == self.Zmin or self.delZ==0:
+                    self.delZ = 0.0001
+                    self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ) # in logZsun
+                else:
+                    self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+        else:
+            self.Zsun= 0.020
+            Zbpass   = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
+            Zbpass   = np.log10(np.asarray(Zbpass)/self.Zsun)
+            try:
+                iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
+                if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
+                    print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
+                self.ZFIX = Zbpass[iiz]
+                self.delZ = 0.0001
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
+                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+            except:
+                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                con_z     = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
+                self.Zall = Zbpass[con_z]
+
 
         # N of param:
         if int(inputs['ZEVOL']) == 1:
@@ -198,12 +221,6 @@ class Mainbody():
         except:
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
-
-        # Binary template
-        try:
-            self.f_bpass = int(inputs['BPASS'])
-        except:
-            self.f_bpass = 0
 
 
         # MCMC;

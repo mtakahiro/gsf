@@ -1,22 +1,9 @@
-# Last update;
-# 2017.12.29
-#
-# This is for the preparation of
-# default template, with FSPS, at z=0.
-#
-# Should be run before SED fitting.
-#
-# Parameters are; IMF, metallicity (list), SFH (SSP default)
-#
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import os
 from astropy.io import ascii
 
-#######################
-# Path
-#######################
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
 def get_ind(wave,flux):
@@ -55,6 +42,18 @@ def get_ind(wave,flux):
 
 def make_tmp_z0(MB, lammin=400, lammax=80000):
     '''
+    Purpose:
+    ==========
+    #
+    # This is for the preparation of
+    # default template, with FSPS, at z=0.
+    #
+    # Should be run before SED fitting.
+    #
+    #
+
+    Input:
+    ==========
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
     # Z (array)  : Stellar phase metallicity in logZsun.
@@ -293,6 +292,8 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     # Current age in Gyr;
     age_univ = MB.cosmo.age(0).value
 
+    #import matplotlib.pyplot as plt
+
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
     print('#######################################')
@@ -308,9 +309,11 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
         # open spectral file;
         #
         if 10**(Z[zz])*Zsun>1e-4:
-            zstrtmp  = 10**(Z[zz])*Zsun/10
-            zstrtmp2 = '%.6s'%zstrtmp
-            z_str    = zstrtmp2[2:]
+            zstrtmp  = round(10**(Z[zz])*Zsun/10,5)
+            zstrtmp2 = '%.6s'%(zstrtmp)
+            z_str    = zstrtmp2[3:]
+            if len(z_str)<3:
+                z_str = z_str+'0'
         elif 10**(Z[zz])*Zsun>1e-5:
             z_str    = 'em4'
         else:
@@ -321,12 +324,11 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
         fd_sed = ascii.read(file_sed)
         fd_stm = ascii.read(file_stm)
 
-        wave0 = fd_sed['col1']
-        flux0 = np.zeros(len(wave0),'float')
-        ms    = np.zeros(len(wave0),'float')
+        wave0   = fd_sed['col1']
+        age_stm = fd_stm['col1']
 
         ncols = 52
-        nage_temp = np.arange(2,53,1)
+        nage_temp = np.arange(2,ncols+1,1)
         lage_temp = (6+0.1*(nage_temp-2))
         age_temp  = 10**(6+0.1*(nage_temp-2)) # in yr
 
@@ -338,26 +340,27 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
             tau0_old = 0
 
             for ss in range(Na):
-                iis = np.argmin(np.abs(age[ss] - age_temp[:]/1e9))
+                flux0 = np.zeros(len(wave0),'float')
                 #
                 # Determining tau for each age bin;
                 #
                 if tau0[pp] == 99:
-                    #print('CSP is assumed.')
                     if ss==0:
                         tautmp = age[ss]
                         agetmp = age[ss]/2.
                         con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>0))
-                        for sstmp in con_tau[0]:
+                        for sstmp in con_tau[0][-1:]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
+                            #print(age[ss],age_temp[sstmp]/1e9,sstmp+2)
                     else:
                         tautmp = age[ss] - age[ss-1]
                         agetmp = age[ss] - (age[ss]-age[ss-1])/2.
                         con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>age[ss-1]*1e9))
-                        for sstmp in con_tau[0]:
+                        for sstmp in con_tau[0][-1:]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
+                            #print(age[ss],age_temp[sstmp]/1e9,sstmp+2)
 
                 elif tau0[pp] > 0.0:
                     if ss==0 and age[ss]<tau0[pp]:
@@ -385,23 +388,30 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                             ms[ss] += fd_stm['col2'][sstmp]
 
                 else: # =Negative tau; SSP
+                    iis   = np.argmin(np.abs(age[ss] - age_temp[:]/1e9))
+                    iistm = np.argmin(np.abs(age[ss] - 10**age_stm[:]/1e9))
                     if ss==0:
                         tautmp = 10**6.05 / 1e9 # in Gyr
                         agetmp = age[ss]/2.
                     else:
-                        tautmp = (10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05)) / 1e9 # Gyr
+                        tautmp = ( 10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05) ) / 1e9 # Gyr
                         agetmp = (age[ss]+age[ss-1])/2.
+
+                    flux0  = fd_sed['col%d'%(iis+2)] #sp.get_spectrum(tage=age[ss], peraa=True)
+                    ms[ss] = fd_stm['col2'][iistm]
+                    #print(age[ss],age_temp[iis]/1e9,iis+2)
 
                 # Keep tau in header;
                 tau_age[ss] = tautmp
                 age_age[ss] = agetmp
 
                 # Then. add flux if tau > 0.
-                flux0 = fd_sed['col%d'%iis] #sp.get_spectrum(tage=age[ss], peraa=True)
-                con = (wave0>lammin) & (wave0<lammax)
+                con   = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
 
-                Ls[ss]  = np.sum(flux0) # BPASS sed is in Lsun.
+                plt.plot(wave,flux,linestyle='-')
+
+                Ls[ss]     = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if ss == 0 and pp == 0 and zz == 0:
@@ -456,6 +466,7 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                 col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
                 col01.append(col1)
                 col01.append(col2)
+
 
     #
     # Create header;

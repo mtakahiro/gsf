@@ -146,17 +146,17 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
-
-    elif MB.f_bpass == 1:
-        file_all = MB.DIR_TMP + 'spec_all.fits'
-        hd = fits.open(file_all)[1].header
-        for aa in range(len(age)):
-            tau_ssp   = hd['realtau%d(Gyr)'%(aa)]
-            delT[aa]  = tau_ssp
-            delTl[aa] = tau_ssp/2
-            delTu[aa] = tau_ssp/2
-
-    else:# This is only true when CSP...
+        """
+        elif MB.f_bpass == 1:
+            file_all = MB.DIR_TMP + 'spec_all.fits'
+            hd = fits.open(file_all)[1].header
+            for aa in range(len(age)):
+                tau_ssp   = hd['realtau%d(Gyr)'%(aa)]
+                delT[aa]  = tau_ssp
+                delTl[aa] = tau_ssp/2
+                delTu[aa] = tau_ssp/2
+        """    
+    else: # This is only true when CSP...
         for aa in range(len(age)):
             if aa == 0:
                 delTl[aa] = age[aa]
