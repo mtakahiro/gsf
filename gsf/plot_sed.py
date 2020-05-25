@@ -771,18 +771,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
 
         # plot FIR range;
-        ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-        zorder=2, alpha=1.0, marker='d', s=20)
+        ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='blue', \
+        zorder=2, alpha=1.0, marker='d', s=40)
 
     else:
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
-        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', zorder=2, alpha=1.0, marker='d', s=20)
+        ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='blue', zorder=2, alpha=1.0, marker='d', s=40)
 
     # plot opt-NIR range;
-    ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='b', \
-    zorder=2, alpha=1.0, marker='d', s=20)
+    ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='blue', \
+    zorder=2, alpha=1.0, marker='d', s=40)
     if save_sed == True:
         # Save BB model;
         col_sed = []

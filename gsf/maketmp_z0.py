@@ -263,6 +263,7 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     #  the width to the next age bin.
     #
     '''
+
     nimf = MB.nimf
     if nimf == 0: # Salpeter
         imf_str = '135all_100'
@@ -321,6 +322,9 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
         fd_stm = ascii.read(file_stm)
 
         wave0 = fd_sed['col1']
+        flux0 = np.zeros(len(wave0),'float')
+        ms    = np.zeros(len(wave0),'float')
+
         ncols = 52
         nage_temp = np.arange(2,53,1)
         lage_temp = (6+0.1*(nage_temp-2))
@@ -339,10 +343,47 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                 # Determining tau for each age bin;
                 #
                 if tau0[pp] == 99:
-                    print('CSP is assumed.')
+                    #print('CSP is assumed.')
+                    if ss==0:
+                        tautmp = age[ss]
+                        agetmp = age[ss]/2.
+                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>0))
+                        for sstmp in con_tau[0]:
+                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
+                            ms[ss] += fd_stm['col2'][sstmp]
+                    else:
+                        tautmp = age[ss] - age[ss-1]
+                        agetmp = age[ss] - (age[ss]-age[ss-1])/2.
+                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>age[ss-1]*1e9))
+                        for sstmp in con_tau[0]:
+                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
+                            ms[ss] += fd_stm['col2'][sstmp]
+
                 elif tau0[pp] > 0.0:
-                    tautmp = tau0[pp]
-                    agetmp = age[ss]
+                    if ss==0 and age[ss]<tau0[pp]:
+                        tautmp = age[ss]
+                        agetmp = age[ss]/2.
+                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>0))
+                        for sstmp in con_tau[0]:
+                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
+                            ms[ss] += fd_stm['col2'][sstmp]
+
+                    elif (age[ss]-age[ss-1]) < tau0[pp]:
+                        tautmp = age[ss] - age[ss-1]
+                        agetmp = age[ss] - (age[ss]-age[ss-1])/2.
+                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>age[ss-1]*1e9))
+                        for sstmp in con_tau[0]:
+                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
+                            ms[ss] += fd_stm['col2'][sstmp]
+
+                    else:
+                        tautmp = tau0[pp]
+                        agetmp = age[ss] - tau0[pp]/2.
+                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>(age[ss] - tau0[pp])*1e9))
+                        for sstmp in con_tau[0]:
+                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
+                            ms[ss] += fd_stm['col2'][sstmp]
+
                 else: # =Negative tau; SSP
                     if ss==0:
                         tautmp = 10**6.05 / 1e9 # in Gyr
@@ -355,53 +396,11 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                 tau_age[ss] = tautmp
                 age_age[ss] = agetmp
 
-
-                '''
-                #
-                # Then, make sps.
-                #
-                if tautmp != tau0_old:
-                    if tau0[pp] == 99:
-                        print('CSP is applied.')
-                        print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
-                        sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
-                        if fneb == 1:
-                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
-                    elif tau0[pp] > 0.0:
-                        print('At t=%.3f, fixed tau, %.3f, is applied.'%(age[ss],tautmp))
-                        sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
-                        if fneb == 1:
-                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
-                    else: # =Negative tau;
-                        print('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
-                        sptmp  = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
-                        if fneb == 1:
-                            esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1)
-                else:
-                    print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
-                    print('Skip fsps, by using previous library.')
-                tau0_old = tautmp
-                sp  = sptmp
-                '''
-
-
+                # Then. add flux if tau > 0.
                 flux0 = fd_sed['col%d'%iis] #sp.get_spectrum(tage=age[ss], peraa=True)
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
 
-                '''
-                if fneb == 1:
-                    esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
-                    esptmp.params['gas_logu'] = logU # ionization parameter
-                    esp = esptmp
-                    print('Nebular lines are also added, with logU=%.2f.'%(logU))
-                    ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
-                    con = (ewave0>lammin) & (ewave0<lammax)
-                    eflux = eflux0[con]
-                '''
-
-                # Mass-Luminosity
-                ms[ss]  = fd_stm['col2'][iis-2] # Remant stellar mass in Msun.
                 Ls[ss]  = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
 
