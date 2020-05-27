@@ -279,9 +279,9 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     DIR_TMP= MB.DIR_TMP #'./templates/'
 
     # binary?
-    #f_bin = MB.f_bin
-    f_bin = True
-    if f_bin:
+    f_bin = MB.f_bin
+    #f_bin = True
+    if f_bin==1:
         bin_str = 'bin'
     else:
         bin_str = 'str'

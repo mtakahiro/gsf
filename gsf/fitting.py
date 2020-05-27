@@ -76,6 +76,10 @@ class Mainbody():
         # BPASS Binary template
         try:
             self.f_bpass = int(inputs['BPASS'])
+            try:
+                self.f_bin = int(inputs['BINARY'])
+            except:
+                self.f_bin = 1
         except:
             self.f_bpass = 0
 
@@ -92,6 +96,10 @@ class Mainbody():
 
         # Data directory;
         self.DIR_TMP  = inputs['DIR_TEMP']
+        if not os.path.exists(self.DIR_TMP):
+            os.mkdir(self.DIR_TMP)
+
+        # Filter response curve directory
         self.DIR_FILT = inputs['DIR_FILT']
 
         # Tau comparison?
