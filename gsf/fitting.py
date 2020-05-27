@@ -559,7 +559,7 @@ class Mainbody():
         return f_add
 
 
-    def main(self, zgal, flag_m, Cz0, Cz1, mcmcplot=True, fzvis=1, specplot=1, fneld=0, ntemp=5, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_disp=False):
+    def main(self, zgal, flag_m, Cz0, Cz1, mcmcplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Input:
         ========
@@ -606,6 +606,7 @@ class Mainbody():
         self.Zevol    = int(self.inputs['ZEVOL'])
         self.fzvis    = int(self.inputs['ZVIS'])
         self.fneld    = int(self.inputs['FNELD'])
+
         try:
             self.ntemp = int(self.inputs['NTEMP'])
         except:
@@ -805,7 +806,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['wht'],self.f_dust], f_disp=f_disp, f_move=f_move)
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['wht'],self.f_dust], f_disp=self.f_disp, f_move=f_move)
             print('######################')
             print('### Starting emcee ###')
             print('######################')

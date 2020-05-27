@@ -136,7 +136,7 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
 
-        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 0, MB.Cz0, MB.Cz1, fzvis=MB.fzvis, fneld=MB.fneld, ntemp=MB.ntemp, mcmcplot=mcmcplot, f_disp=MB.f_disp)
+        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 0, MB.Cz0, MB.Cz1, mcmcplot=mcmcplot)
 
         while (flag_suc == 1):
             # In case of repeating fit;
