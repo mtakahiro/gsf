@@ -266,6 +266,8 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     nimf = MB.nimf
     if nimf == 0: # Salpeter
         imf_str = '135all_100'
+    elif nimf == 1:
+        imf_str = '_chab100'
     else:
         imf_str = ''
 
