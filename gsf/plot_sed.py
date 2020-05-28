@@ -1,11 +1,10 @@
-#!/usr/bin/env python
-#<examples/doc_nistgauss.py>
 import numpy as np
-#from lmfit.models import GaussianModel, ExponentialModel, ExpressionModel
 import sys
 import os
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-#import lmfit
+
 from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
@@ -32,7 +31,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     '''
 
     lcb = '#4682b4' # line color, blue
-    col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
+    #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
+    col  = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
     nage = MB.nage #np.arange(0,len(age),1)
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
@@ -293,11 +293,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysump += y0p
             ysum  += y0_r
-            #if A50[ii]/Asum > flim:
-            #    ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-            ax1.fill_between(x0, (ysum - y0_r) * c/ np.square(x0) / d, ysum * c/ np.square(x0) / d, linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
-        ysum_wid = ysum * 0
+            if A50[ii]/Asum > flim:
+                #ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+                ax1.fill_between(x0, (ysum - y0_r) * c/ np.square(x0) / d, ysum * c/ np.square(x0) / d, linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
 
+        ysum_wid = ysum * 0
         try:
             for kk in range(0,ii+1,1):
                 tt = int(len(II0) - kk - 1)
@@ -738,11 +738,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
 
-    conw = (wht3>0)
+    conw = (wht3>0) #& (fy/ey>=SNlim)
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
 
     nod  = int(len(wht3[conw])-MB.ndim)
-    con_up = (ey>0)&(fy/ey<=SNlim)
+    con_up = (ey>0)&(fy/ey<SNlim)
 
     f_chind = False
     if f_chind:

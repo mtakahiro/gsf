@@ -1,8 +1,10 @@
-#!/usr/bin/env python
-#<examples/doc_nistgauss.py>
 import numpy as np
 import sys
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
 from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
@@ -463,28 +465,14 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
     ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
 
     fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
-    fw_sfr.write('# time_l time_u SFR SFR16 SFR84 Mstel Mstel16 Mstel84\n')
-    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)\n')
-
-    fw_met = open('ZH_' + ID + '_PA' + PA + '.txt', 'w')
-    fw_met.write('# time_l time_u logZ logZ16 logZ84\n')
-    fw_met.write('# (Gyr)  (Gyr)  (logZsun) (logZsun) (logZsun)\n')
+    fw_sfr.write('# time_l time_u SFR SFR16 SFR84 Mstel Mstel16 Mstel84 logZ logZ16 logZ84\n')
+    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
 
     for ii in range(len(age)-1,0-1,-1):
         t0 = Tuni - age[ii]
-        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
-        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2]))
-        fw_met.write('%.2f %.2f %.2f %.2f %.2f\n'%(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
+        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
+        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
     fw_sfr.close()
-    fw_met.close()
-
-    #########################
-    # Title
-    #########################
-    #ax1.set_title('Each $t$-bin', fontsize=12)
-    #ax2.set_title('Net system', fontsize=12)
-    #ax3.set_title('Each $t$-bin', fontsize=12)
-    #ax4.set_title('Net system', fontsize=12)
 
 
     #############
@@ -632,9 +620,9 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
     #ax3.set_xscale('log')
     #ax3.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    fwt = open('T_' + ID + '_PA' + PA + '_sfh.cat', 'w')
-    fwt.write('%s %.3f %.3f %.3f'%(ID, np.percentile(TC[0,:],50), np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)))
-    fwt.close()
+    #fwt = open('T_' + ID + '_PA' + PA + '_sfh.cat', 'w')
+    #fwt.write('%s %.3f %.3f %.3f'%(ID, np.percentile(TC[0,:],50), np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)))
+    #fwt.close()
 
     # For redshift
     if zbes<4:
