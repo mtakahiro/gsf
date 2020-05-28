@@ -20,12 +20,17 @@ from . import corner
 
 def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
     '''
-    #
-    # Returns: plots.
-    #
-    # snlimbb: SN limit to show flux or up lim in SED.
-    #
+    Input:
+    ============
+
+    snlimbb: SN limit to show flux or up lim in SED.
+
+    Returns:
+    ============
+    plots
+
     '''
+
     lcb = '#4682b4' # line color, blue
     col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
@@ -280,14 +285,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             ysump = y0p
             ysum  = y0
             if A50[ii]/Asum > flim:
-                ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+                #ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+                ax1.fill_between(x0, ysum * 0, ysum * c/ np.square(x0) / d, linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
+
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysump += y0p
             ysum  += y0_r
-            if A50[ii]/Asum > flim:
-                ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+            #if A50[ii]/Asum > flim:
+            #    ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+            ax1.fill_between(x0, (ysum - y0_r) * c/ np.square(x0) / d, ysum * c/ np.square(x0) / d, linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
         ysum_wid = ysum * 0
 
         try:
