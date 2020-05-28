@@ -155,7 +155,7 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
                 delT[aa]  = tau_ssp
                 delTl[aa] = tau_ssp/2
                 delTu[aa] = tau_ssp/2
-        """    
+        """
     else: # This is only true when CSP...
         for aa in range(len(age)):
             if aa == 0:
@@ -463,8 +463,8 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
     ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
 
     fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
-    fw_sfr.write('# time_l time_u SFR SFR16 SFR84\n')
-    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)\n')
+    fw_sfr.write('# time_l time_u SFR SFR16 SFR84 Mstel Mstel16 Mstel84\n')
+    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)\n')
 
     fw_met = open('ZH_' + ID + '_PA' + PA + '.txt', 'w')
     fw_met.write('# time_l time_u logZ logZ16 logZ84\n')
@@ -472,7 +472,8 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
 
     for ii in range(len(age)-1,0-1,-1):
         t0 = Tuni - age[ii]
-        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f\n'%(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2]))
+        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
+        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2]))
         fw_met.write('%.2f %.2f %.2f %.2f %.2f\n'%(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
     fw_sfr.close()
     fw_met.close()
@@ -602,6 +603,7 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
     zzall = np.arange(1.,12,0.01)
     Tall  = MB.cosmo.age(zzall).value # , use_flat=True, **cosmo)
 
+    '''
     fw = open('SFH_' + ID + '_PA' + PA + '_sfh.cat', 'w')
     fw.write('%s'%(ID))
     for mm in range(len(age)):
@@ -610,7 +612,7 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
         fw.write(' %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f'%(zztmp, Tuni0[mm], np.log10(ACp[mm,1]), (np.log10(ACp[mm,1])-np.log10(ACp[mm,0])), (np.log10(ACp[mm,2])-np.log10(ACp[mm,1])), ZCp[mm,1], ZCp[mm,1]-ZCp[mm,0], ZCp[mm,2]-ZCp[mm,1], SFp[mm,1], SFp[mm,1]-SFp[mm,0], SFp[mm,2]-SFp[mm,1]))
     fw.write('\n')
     fw.close()
-    #print('%s & $%.5e$ & $%.5e$ & $%.3f$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.1f$ & $%.1f$ & $%.2f$\\\\'%(ID, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek))
+    '''
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
