@@ -8,7 +8,6 @@ import os
 
 #
 c = 3.e18 # A/s
-chimax = 1.
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 ################
@@ -27,9 +26,11 @@ def get_input():
 
     inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':1, \
     'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
-    'ZFIX':0.0, 'NIMF':0}
+    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':100, 'NWALKZ':50,\
+    'ZEVOL':0, 'ZVIS':1, 'FNELD':0}
 
     return inputs
+
 
 def read_input(parfile):
     '''

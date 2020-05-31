@@ -126,7 +126,7 @@ def maketemp(MB):
     #ninp2 = 0
     f_spec = False
     try:
-        spec_files = inputs['SPEC_FILE'].replace('$ID','%s'%(ID))
+        spec_files = inputs['SPEC_FILE'] #.replace('$ID','%s'%(ID))
         spec_files = [x.strip() for x in spec_files.split(',')]
         ninp0 = np.zeros(len(spec_files), dtype='int')
         for ff, spec_file in enumerate(spec_files):
@@ -137,7 +137,7 @@ def maketemp(MB):
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
             except Exception:
-                print('File, %s, cannot be open.'%(spec_file))
+                print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
         lm   = np.zeros(np.sum(ninp0[:]),dtype='float64')
@@ -342,11 +342,10 @@ def maketemp(MB):
     else:
         lm = []
 
+
     ####################################
     # Start generating templates
     ####################################
-    #DIR_TMP = './templates/'
-    #DIR_TMP = inputs['DIR_TEMP']
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
     col00 = []

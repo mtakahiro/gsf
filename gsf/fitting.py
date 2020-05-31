@@ -278,9 +278,13 @@ class Mainbody():
         except: # if no BB;
             xbb  = np.asarray([100.])
             fy   = np.asarray([0.]) #np.append(fy01,fy2)
-            ey   = np.asarray([100.]) #np.append(ey01,ey2)
+            ey   = np.asarray([-99]) #np.append(ey01,ey2)
+            wht  = np.asarray([0.]) #check_line_man(fy, x, wht, fy, zprev, LW0)
             wht2 = np.asarray([0.]) #check_line_man(fy, x, wht, fy, zprev, LW0)
             sn   = np.asarray([0.]) #fy/ey
+            fybb = np.asarray([0])
+            eybb = np.asarray([-99])
+            exbb = np.asarray([100])
 
         # Append data;
         if add_fir:
@@ -355,6 +359,8 @@ class Mainbody():
 
         # Plot;
         if self.fzvis==1:
+            import matplotlib as mpl
+            mpl.use('TkAgg')
             plt.plot(x_cz,fm_s,'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
@@ -967,3 +973,202 @@ class Mainbody():
                 print('Terminating process.')
                 print('\n\n')
                 return -1, self.zgal, self.Czrec0, self.Czrec1
+
+
+
+    def quick_fit(self, zgal, flag_m, Cz0, Cz1, mcmcplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+        '''
+        Purpose:
+        ==========
+        Fit input data with a prepared template library, to get a chi-min result.
+
+        Input:
+        ==========
+        flag_m : related to redshift error in redshift check func.
+        ferr   : For error parameter
+        zgal   : Input redshift.
+        #
+        #
+        # sigz (float): confidence interval for redshift fit.
+        # ezmin (float): minimum error in redshift.
+        #
+        '''
+
+        print('########################')
+        print('### Fitting Function ###')
+        print('########################')
+        start = timeit.default_timer()
+
+        ID0 = self.ID
+        PA0 = self.PA
+
+        inputs = self.inputs
+        if not os.path.exists(self.DIR_TMP):
+            os.mkdir(self.DIR_TMP)
+
+        # Load Spectral library;
+        self.lib = self.fnc.open_spec_fits(self, fall=0)
+        self.lib_all = self.fnc.open_spec_fits(self, fall=1)
+        if self.f_dust:
+            self.lib_dust     = self.fnc.open_spec_dust_fits(self, fall=0)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
+
+        # For MCMC;
+        self.nmc      = int(self.inputs['NMC'])
+        self.nwalk    = int(self.inputs['NWALK'])
+        self.nmc_cz   = int(self.inputs['NMCZ'])
+        self.nwalk_cz = int(self.inputs['NWALKZ'])
+        self.Zevol    = int(self.inputs['ZEVOL'])
+        self.fzvis    = int(self.inputs['ZVIS'])
+        self.fneld    = int(self.inputs['FNELD'])
+
+        try:
+            self.ntemp = int(self.inputs['NTEMP'])
+        except:
+            self.ntemp = 1
+
+        try:
+            if int(inputs['DISP']) == 1:
+                self.f_disp = True
+            else:
+                self.f_disp = False
+        except:
+            self.f_disp = False
+
+        #
+        # Dust model specification;
+        #
+        try:
+            dust_model = int(inputs['DUST_MODEL'])
+        except:
+            dust_model = 0
+
+        fnc  = self.fnc  #Func(Zall, nage, dust_model=dust_model, self.DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
+        bfnc = self.bfnc #Basic(Zall)
+
+        # Error parameter
+        try:
+            self.ferr = int(inputs['F_ERR'])
+        except:
+            self.ferr = 0
+            pass
+
+        #################
+        # Observed Data
+        #################
+        dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
+
+        # Call likelihood/prior/posterior function;
+        from .posterior_flexible import Post
+        class_post = Post(self)
+
+        ###############################
+        # Add parameters
+        ###############################
+        agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
+        fit_params = Parameters()
+        try:
+            age_fix = inputs['AGEFIX']
+            age_fix = [float(x.strip()) for x in age_fix.split(',')]
+            aamin = []
+            print('\n')
+            print('##########################')
+            print('AGEFIX is found.\nAge will be fixed to:')
+            for age_tmp in age_fix:
+                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
+                aamin.append(ageind)
+                print('%6s Gyr'%(self.age[ageind]))
+            print('##########################')
+            for aa in range(len(self.age)):
+                if aa not in aamin:
+                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                else:
+                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+        except:
+            for aa in range(len(self.age)):
+                if self.age[aa] == 99:
+                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                elif self.age[aa]>agemax:
+                    print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
+                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                else:
+                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+
+        #####################
+        # Dust attenuation
+        #####################
+        try:
+            Avmin = float(inputs['AVMIN'])
+            Avmax = float(inputs['AVMAX'])
+            if Avmin == Avmax:
+                Avmax += 0.001
+            fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+        except:
+            Avmin = 0.0
+            Avmax = 4.0
+            Avini = 0.5
+            print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
+            fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
+
+        #####################
+        # Metallicity
+        #####################
+        if int(inputs['ZEVOL']) == 1:
+            for aa in range(len(self.age)):
+                if self.age[aa] == 99 or self.age[aa]>agemax:
+                    fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
+                else:
+                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
+        else:
+            try:
+                ZFIX = float(inputs['ZFIX'])
+                aa = 0
+                fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
+            except:
+                aa = 0
+                if np.min(self.Zall)==np.max(self.Zall):
+                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall)+0.0001)
+                else:
+                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
+
+        ####################################
+        # Initial Metallicity Determination
+        ####################################
+        # Get initial parameters
+        print('Start quick fit;')
+        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['wht2'],self.ID,self.PA)
+
+        # Best fit
+        keys = fit_report(out).split('\n')
+        for key in keys:
+            if key[4:7] == 'chi':
+                skey = key.split(' ')
+                csq  = float(skey[14])
+            if key[4:7] == 'red':
+                skey = key.split(' ')
+                rcsq = float(skey[7])
+
+        fitc = [csq, rcsq] # Chi2, Reduced-chi2
+        ZZ   = Zbest # This is really important/does affect lnprob/residual.
+
+        print('\n\n')
+        print('#####################################')
+        print('Zbest, chi are;',Zbest,chidef)
+        print('Params are;',fit_report(out))
+        print('#####################################')
+        print('\n\n')
+
+        Av_tmp = out.params['Av'].value
+        AA_tmp = np.zeros(len(self.age), dtype='float64')
+        ZZ_tmp = np.zeros(len(self.age), dtype='float64')
+        fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
+
+        ########################
+        # Check redshift
+        ########################
+        if self.fzvis:
+            import matplotlib as mpl
+            mpl.use('TkAgg')
+            flag_z = self.fit_redshift(dict, xm_tmp, fm_tmp)
+
+        return out, fm_tmp, xm_tmp

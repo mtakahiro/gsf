@@ -64,15 +64,16 @@ def run_gsf_template(inputs, fplt=0):
         MB.lib_dust_all = MB.fnc.open_spec_dust_fits(MB, fall=1)
 
     # How to get SED?
-    import matplotlib.pyplot as plt
-    for T in MB.age[:1]:
-        y0, x0 = MB.fnc.get_template(MB.lib_all, Amp=1.0, T=T, Av=0.0, Z=-1.0, zgal=MB.zgal)
-        plt.plot(x0/(1.+MB.zgal),y0,linestyle='-',lw=1.0, label='$T=%.2f$\n$z=%.2f$'%(T,MB.zgal))
-        plt.xlim(600,20000)
-        plt.xlabel('Rest frame wavelength')
-        plt.xscale('log')
-    plt.legend(loc=0)
-    plt.show()
+    if False:
+        import matplotlib.pyplot as plt
+        for T in MB.age[:1]:
+            y0, x0 = MB.fnc.get_template(MB.lib_all, Amp=1.0, T=T, Av=0.0, Z=-1.0, zgal=MB.zgal)
+            plt.plot(x0/(1.+MB.zgal),y0,linestyle='-',lw=1.0, label='$T=%.2f$\n$z=%.2f$'%(T,MB.zgal))
+            plt.xlim(600,20000)
+            plt.xlabel('Rest frame wavelength')
+            plt.xscale('log')
+        plt.legend(loc=0)
+        plt.show()
 
     return MB
 
@@ -153,7 +154,7 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 1, MB.Cz0, MB.Cz1, fzvis=MB.fzvis, fneld=MB.fneld, ntemp=MB.ntemp, mcmcplot=mcmcplot, f_disp=MB.f_disp)
+            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 1, MB.Cz0, MB.Cz1, mcmcplot=mcmcplot)
 
         # Total calculation time
         stop = timeit.default_timer()
@@ -163,8 +164,8 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
     if fplt <= 3 and flag_suc >= 0:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
-        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
-        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
+        #plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
+        #inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
         plot_sed(MB, fil_path=MB.DIR_FILT,
         SNlim=1.0, figpdf=False, save_sed=True, inputs=MB.inputs, nmc2=300,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label = True)
