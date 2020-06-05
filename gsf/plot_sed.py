@@ -18,7 +18,7 @@ from . import img_scale
 from . import corner
 
 
-def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False):
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False):
     '''
     Input:
     ============
@@ -44,6 +44,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
     tau0 = MB.tau0 #[0.1,0.2,0.3]
 
+    nstep_plot = 1
+    if MB.f_bpass:
+        nstep_plot = 30
+
+
     ################
     # RF colors.
     import os.path
@@ -52,8 +57,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     chimax = 1.
     m0set  = MB.m0set
     Mpc_cm = MB.Mpc_cm
-
     d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+
 
     #############
     # Plot.
@@ -99,8 +104,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     A16 = np.zeros(len(age), dtype='float64')
     A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
-        A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
+        A50[aa] = hdul[1].data['A'+str(aa)][1]
         A84[aa] = hdul[1].data['A'+str(aa)][2]
 
     Asum  = np.sum(A50)
@@ -224,7 +229,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     #######################################
     # D.Kelson like Box for BB photometry
     #######################################
-    f_bbbox = False
     if f_bbbox:
         for ii in range(len(xbb)):
             if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
@@ -278,28 +282,30 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     fwuvj = open(ID + '_PA' + PA + '_uvj.txt', 'w')
     fwuvj.write('# age uv vj\n')
     Asum = np.sum(A50[:])
+
     for jj in range(len(II0)):
         ii = int(len(II0) - jj - 1) # from old to young templates.
         if jj == 0:
             y0, x0   = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
-            ysump = y0p
             ysum  = y0
-            if A50[ii]/Asum > flim:
-                #ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-                ax1.fill_between(x0, ysum * 0, ysum * c/ np.square(x0) / d, linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
+            ysump = y0p
+            #if A50[ii]/Asum > flim:
+            #    #ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+            ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
 
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
-            ysump += y0p
             ysum  += y0_r
-            if A50[ii]/Asum > flim:
-                #ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-                ax1.fill_between(x0, (ysum - y0_r) * c/ np.square(x0) / d, ysum * c/ np.square(x0) / d, linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
+            ysump += y0p
+            #if A50[ii]/Asum > flim:
+            #    #ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
+            ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
 
-        ysum_wid = ysum * 0
+
         try:
+            ysum_wid = ysum * 0
             for kk in range(0,ii+1,1):
                 tt = int(len(II0) - kk - 1)
                 nn = int(len(II0) - ii - 1)
@@ -321,7 +327,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             pass
 
     fwuvj.close()
-
 
     ################
     # Set the inset.
@@ -460,6 +465,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         eAMu[ii] = AM84[ii] - AM50[ii]
         AC50[ii] = np.sum(AM50[ii:])
 
+
     ################
     # Lines
     ################
@@ -496,113 +502,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
     twokpc = 5.0/dkpc/0.06 # in pixel
 
-    ####################
-    # LINES
-    ####################
-    R_grs = 45
-    dw    = 4
-    dlw   = R_grs * dw # Can affect the SFR.
-    ldw   = 7
 
-    ###################################
-    # To add lines in the plot,
-    # ,manually edit the following file
-    # so as Fcont50 have >0.
-    ###################################
-    flw = open(ID + '_PA' + PA + '_lines_fit.txt', 'w')
-    flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
-    flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
-    flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
-    flw.write('# If EW=-99, it means gaussian fit failed.\n')
-    flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
-    flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
-    try:
-        fl = np.loadtxt('table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
-        LW      = fl[:,2]
-        Fcont50 = fl[:,3]
-        Fline50 = fl[:,6]
-        for ii in range(len(LW)):
-            if Fcont50[ii] > 0:
-                WL = LW[ii] * (1.+zbes)
-                if ii == 7:
-                    contmp = (x > WL - dlw) & (x < WL + dlw*1.5)
-                else:
-                    contmp = (x > WL - dlw) & (x < WL + dlw)
-                FLW[ii] = 1
+    if f_grsm:
+        print('This function (write_lines) needs to be revised.')
+        write_lines(ID,PA,zbes)
 
-                xx   = x[contmp]
-                yy   = (fy - ysum_cut)[contmp]
-                eyy  = ey[contmp]
-                yy2  = (ysum_cut)[contmp]
-
-                xyzip = zip(xx,yy,eyy,yy2)
-                xyzip = sorted(xyzip)
-
-                xxs  = np.array([p1 for p1,p2,p3,p4 in xyzip])
-                yys  = np.array([p2 for p1,p2,p3,p4 in xyzip])
-                eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
-                yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
-
-                flux = np.zeros(len(xxs), dtype='float64')
-                efl  = np.zeros(len(xxs), dtype='float64')
-                for ff in range(len(xxs)):
-                    flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
-                    efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
-
-                fmed = np.median(flux) # Median of continuum, model flux
-                esum = np.sqrt(simps(efl, xxs))
-
-                try:
-                    popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL,10],sigma=eyys)
-                    xxss = xxs/zscl
-
-                    if ii == 7:
-                        popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL+20,10],sigma=eyys)
-                        xxss = xxs/zscl
-
-                    if f_grsm:
-                        ax2t.plot(xxs/zscl, (gaus(xxs,*popt)+yy2s) * c/np.square(xxs)/d, '#4682b4', linestyle='-', linewidth=1, alpha=0.8, zorder=20)
-
-                    I1 = simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
-                    I2 = I1 - simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
-                    fline = I1
-
-                    Flum = fline*Cons*1e-18 # luminosity in erg/s.
-                    elum = esum *Cons*1e-18 # luminosity in erg/s.
-                    SFR  = Flum * 6.58*1e-42
-                    print('SFR is', SFR/umag)
-                    EW_tmp   = simps( ((gaus(xxs,*popt)) * c/np.square(xxs)/d)/yy2s, xxs)
-                    EW_tmp_u = simps( ((gaus(xxs,*popt) + eyys/np.sqrt(len(xxs))) * c/np.square(xxs)/d)/yy2s, xxs)
-
-                    if ii == 7:
-                        contmp2 = (xxs/zscl>4320.) & (xxs/zscl<4380.)
-                        popt,pcov = curve_fit(gaus,xxs[contmp2], yys[contmp2], p0=[Fline50[ii],WL,10], sigma=eyys[contmp2])
-
-                        I1 = simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
-                        I2 = I1 - simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
-                        fline = I1
-
-                        Flum = fline*Cons*1e-18 # luminosity in erg/s.
-                        elum = esum *Cons*1e-18 # luminosity in erg/s.
-                        SFR  = Flum * 6.58*1e-42
-                        print('SFR, update, is', SFR/umag)
-                        EW_tmp   = simps( ((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
-                        EW_tmp_u = simps( ((gaus(xxs[contmp2],*popt) + eyys[contmp2]/np.sqrt(len(xxs[contmp2]))) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
-
-                    flw.write('%d %.2f %.2f %.2f %.2f %.2f %.2e %.2e %.2f\n'%(LW[ii],fline/umag, esum/umag, fmed/umag, EW_tmp,(EW_tmp_u-EW_tmp), Flum*1e-18/umag, elum*1e-18/umag, SFR/umag))
-
-                except Exception:
-                    fsum = np.zeros(len(xxs))
-                    for ff in range(len(fsum)):
-                        fsum[ff] = (yys[ff]+yy2s[ff])/np.square(xxs[ff])
-
-                    fline = np.sum(fsum) / d*c
-                    flw.write('%d %.2f %.2f %.2f %d %d %d %d %d\n'%(LW[ii],fline,esum,fmed, -99, 0, -99, 0, 0))
-                    pass
-
-    except:
-        pass
-    flw.close()
 
     ##########################
     # Zoom in Line regions
@@ -618,6 +522,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         con4000r = (xg01/zscl>4200) & (xg01/zscl<5000) & (fy01>0) & (ey01>0)
         print('Median SN at 3400-3800 is;', np.median((fy01/ey01)[con4000b]))
         print('Median SN at 4200-5000 is;', np.median((fy01/ey01)[con4000r]))
+
 
     #
     # From MCMC chain
@@ -663,9 +568,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             if ss == 0:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp = mod0_tmp
+                #if kk == nmc2-1:
+                #    ax1.fill_between(xm_tmp, fm_tmp * 0, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color=col[ss], zorder=-2, alpha=0.5)
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp += mod0_tmp
+                #if kk == nmc2-1:
+                #    ax1.fill_between(xm_tmp, (fm_tmp-mod0_tmp) * c/ np.square(xm_tmp) / d, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color=col[ss], zorder=-2, alpha=0.5)
+
 
         if f_err == 1:
             ferr_tmp = samples['f'][nr]
@@ -703,7 +613,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-            ax1.plot(x1_tot, fm_tmp * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+
         #
         # Grism plot + Fuv flux + LIR.
         #
@@ -723,7 +634,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         ytmp16[kk] = np.percentile(ytmp[:,kk],16)
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
-    ax1.plot(x1_tot, ytmp50, '-', lw=1., color='gray', zorder=-1, alpha=0.9)
+    ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=1., color='gray', zorder=-1, alpha=0.9)
+
     '''
     if f_dust:
         l50_bb, ytmp50_bb, l50_fwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
@@ -1533,6 +1445,115 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
 
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=200)
     plt.close()
+
+
+def write_lines(ID,PA,zbes,R_grs,umag=1.0):
+    '''
+    '''
+    R_grs = 45
+    dw    = 4
+    dlw   = R_grs * dw # Can affect the SFR.
+    ldw   = 7
+
+    ###################################
+    # To add lines in the plot,
+    # ,manually edit the following file
+    # so as Fcont50 have >0.
+    ###################################
+    flw = open(ID + '_PA' + PA + '_lines_fit.txt', 'w')
+    flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
+    flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
+    flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
+    flw.write('# If EW=-99, it means gaussian fit failed.\n')
+    flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
+    flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
+    try:
+        fl = np.loadtxt('table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
+        LW      = fl[:,2]
+        Fcont50 = fl[:,3]
+        Fline50 = fl[:,6]
+        for ii in range(len(LW)):
+            if Fcont50[ii] > 0:
+                WL = LW[ii] * (1.+zbes)
+                if ii == 7:
+                    contmp = (x > WL - dlw) & (x < WL + dlw*1.5)
+                else:
+                    contmp = (x > WL - dlw) & (x < WL + dlw)
+                FLW[ii] = 1
+
+                xx   = x[contmp]
+                yy   = (fy - ysum_cut)[contmp]
+                eyy  = ey[contmp]
+                yy2  = (ysum_cut)[contmp]
+
+                xyzip = zip(xx,yy,eyy,yy2)
+                xyzip = sorted(xyzip)
+
+                xxs  = np.array([p1 for p1,p2,p3,p4 in xyzip])
+                yys  = np.array([p2 for p1,p2,p3,p4 in xyzip])
+                eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
+                yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
+
+                flux = np.zeros(len(xxs), dtype='float64')
+                efl  = np.zeros(len(xxs), dtype='float64')
+                for ff in range(len(xxs)):
+                    flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
+                    efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
+
+                fmed = np.median(flux) # Median of continuum, model flux
+                esum = np.sqrt(simps(efl, xxs))
+
+                try:
+                    popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL,10],sigma=eyys)
+                    xxss = xxs/zscl
+
+                    if ii == 7:
+                        popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL+20,10],sigma=eyys)
+                        xxss = xxs/zscl
+
+                    if f_grsm:
+                        ax2t.plot(xxs/zscl, (gaus(xxs,*popt)+yy2s) * c/np.square(xxs)/d, '#4682b4', linestyle='-', linewidth=1, alpha=0.8, zorder=20)
+
+                    I1 = simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
+                    I2 = I1 - simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
+                    fline = I1
+
+                    Flum = fline*Cons*1e-18 # luminosity in erg/s.
+                    elum = esum *Cons*1e-18 # luminosity in erg/s.
+                    SFR  = Flum * 6.58*1e-42
+                    print('SFR is', SFR/umag)
+                    EW_tmp   = simps( ((gaus(xxs,*popt)) * c/np.square(xxs)/d)/yy2s, xxs)
+                    EW_tmp_u = simps( ((gaus(xxs,*popt) + eyys/np.sqrt(len(xxs))) * c/np.square(xxs)/d)/yy2s, xxs)
+
+                    if ii == 7:
+                        contmp2 = (xxs/zscl>4320.) & (xxs/zscl<4380.)
+                        popt,pcov = curve_fit(gaus,xxs[contmp2], yys[contmp2], p0=[Fline50[ii],WL,10], sigma=eyys[contmp2])
+
+                        I1 = simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
+                        I2 = I1 - simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
+                        fline = I1
+
+                        Flum = fline*Cons*1e-18 # luminosity in erg/s.
+                        elum = esum *Cons*1e-18 # luminosity in erg/s.
+                        SFR  = Flum * 6.58*1e-42
+                        print('SFR, update, is', SFR/umag)
+                        EW_tmp   = simps( ((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
+                        EW_tmp_u = simps( ((gaus(xxs[contmp2],*popt) + eyys[contmp2]/np.sqrt(len(xxs[contmp2]))) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
+
+                    flw.write('%d %.2f %.2f %.2f %.2f %.2f %.2e %.2e %.2f\n'%(LW[ii],fline/umag, esum/umag, fmed/umag, EW_tmp,(EW_tmp_u-EW_tmp), Flum*1e-18/umag, elum*1e-18/umag, SFR/umag))
+
+                except Exception:
+                    fsum = np.zeros(len(xxs))
+                    for ff in range(len(fsum)):
+                        fsum[ff] = (yys[ff]+yy2s[ff])/np.square(xxs[ff])
+
+                    fline = np.sum(fsum) / d*c
+                    flw.write('%d %.2f %.2f %.2f %d %d %d %d %d\n'%(LW[ii],fline,esum,fmed, -99, 0, -99, 0, 0))
+                    pass
+
+    except:
+        pass
+    flw.close()
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
