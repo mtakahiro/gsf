@@ -233,8 +233,10 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
 
 
 def get_SFMS(red,age,mass,IMF=1):
+    '''
     # From Speagle+14 Eq28;
     # Chabrier IMF, default
+    '''
     from astropy.cosmology import WMAP9
     cosmo = WMAP9
 

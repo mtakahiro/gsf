@@ -4,7 +4,6 @@ import numpy as np
 import scipy
 import sys
 import os
-import fsps
 
 from astropy.io import fits
 from scipy.integrate import simps
