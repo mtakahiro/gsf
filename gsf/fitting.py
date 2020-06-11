@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
 import sys
-import matplotlib.pyplot as plt
 from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 from numpy import log10
 from scipy.integrate import simps
@@ -359,6 +358,7 @@ class Mainbody():
 
         # Plot;
         if self.fzvis==1:
+            import matplotlib.pyplot as plt
             import matplotlib as mpl
             mpl.use('TkAgg')
             plt.plot(x_cz,fm_s,'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
@@ -430,6 +430,7 @@ class Mainbody():
             #
             # Ask interactively;
             #
+            import matplotlib.pyplot as plt
             plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
 
