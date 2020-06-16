@@ -17,7 +17,6 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
-
 def get_input():
     '''
     This returns somewhat a common default input dictionary.
@@ -233,10 +232,8 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
 
 
 def get_SFMS(red,age,mass,IMF=1):
-    '''
     # From Speagle+14 Eq28;
     # Chabrier IMF, default
-    '''
     from astropy.cosmology import WMAP9
     cosmo = WMAP9
 
@@ -896,7 +893,19 @@ def check_line_cz(ycont,xcont,wycont,model,zgal):
     return wht2, ypoly
 
 
-def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0):
+def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
+    '''
+    Input:
+    ========
+    LW : List for emission lines to be masked.
+
+    Returns:
+    ========
+    wht   : Processed weight, where wavelength at line exists is masked.
+    ypoly : Fitted continuum flux.
+
+    '''
+
     er   = 1./np.sqrt(wycont)
     try:
         wht2, flag_l = detect_line_man(xcont, ycont, wycont, zgal, LW, model)
@@ -905,7 +914,7 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0):
         wht2 = wycont
         pass
 
-    z     = np.polyfit(xcont, ycont, 5, w=wht2)
+    z     = np.polyfit(xcont, ycont, norder, w=wht2)
     p     = np.poly1d(z)
     ypoly = p(xcont)
 

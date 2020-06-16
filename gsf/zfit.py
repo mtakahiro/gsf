@@ -1,10 +1,30 @@
 import numpy as np
 from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-
 from .function import check_line_cz_man
 
-########################################
-def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu, delzz=0.01, nmc_cz=100, nwalk_cz=10):
+
+def check_redshift(fobs, eobs, xobs, fm_tmp,xm_tmp, zbest, prior, NR, zliml, zlimu, \
+delzz=0.01, nmc_cz=100, nwalk_cz=10):
+    '''
+    Purpose:
+    =========
+    Fit observed flux with a template to get redshift probability.
+
+    Input:
+    =========
+
+    zbest : Initial value for redshift.
+    prior : Prior for redshift determination. E.g., Eazy z-probability.
+    zliml : Lowest redshift for fitting range.
+    zlimu : Highest redshift for fitting range.
+
+    Return:
+    =========
+
+    res_cz  :
+    fitc_cz :
+
+    '''
 
     fit_par_cz = Parameters()
     fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu)
@@ -64,11 +84,10 @@ def check_redshift(fobs,eobs,xobs,fm_tmp,xm_tmp,zbest,dez,prior,NR,zliml, zlimu,
 
     #################################
 
-    out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
-
     #
     # Best fit
     #
+    out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
     keys = fit_report(out_cz).split('\n')
     for key in keys:
         if key[4:7] == 'chi':

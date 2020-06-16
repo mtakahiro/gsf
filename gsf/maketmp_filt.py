@@ -254,20 +254,18 @@ def maketemp(MB):
                 f_morp = True
                 try:
                     mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                    fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                    #Amp   = fm[0]
-                    #gamma = fm[1]
-                    Amp   = fm[2]
-                    gamma = fm[4]
+                    #fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
+                    from astropy.io import ascii
+                    fm    = ascii.read(DIR_EXTR + mor_file)
+                    Amp   = fm['A']
+                    gamma = fm['gamma']
                     if inputs['MORP'] == 'moffat':
-                        #alp   = fm[2]
-                        alp   = fm[5]
+                        alp   = fm['alp']
                     else:
                         alp   = 0
                 except Exception:
                     print('Error in reading morphology params.')
                     print('No morphology convolution.')
-                    #return -1
                     pass
             else:
                 print('MORP Keywords does not match.')

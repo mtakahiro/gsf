@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 from numpy import log10
 from scipy.integrate import simps
@@ -303,19 +304,165 @@ class Mainbody():
         return dict
 
 
-    def fit_redshift(self, dict, xm_tmp, fm_tmp, flag_m=0, delzz=0.01, ezmin=0.01):
+
+
+    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None):
         '''
-        Can be used for any SFH
+        Purpose:
+        =========
+        Search redshift space to find the best redshift and probability distribution.
+
+
+        Input:
+        =========
+
+        fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
+        xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].
+
+        zbest : Initial value for redshift.
+        prior : Prior for redshift determination. E.g., Eazy z-probability.
+        zliml : Lowest redshift for fitting range.
+        zlimu : Highest redshift for fitting range.
+
+        Return:
+        =========
+
+        zspace :
+        chi2s  :
+
+        '''
+
+        zspace = np.arange(zliml,zlimu,delzz)
+        chi2s  = np.zeros((len(zspace),2), 'float32')
+        if prior == None:
+            prior = zspace[:] * 0 + 1.0
+
+        # Observed data points;
+        NR   = dict['NR']
+        con0 = (NR<1000)
+        fy0  = dict['fy'][con0] #* Cz0s
+        ey0  = dict['ey'][con0] #* Cz0s
+        x0   = dict['x'][con0]
+        con1 = (NR>=1000) & (NR<10000)
+        fy1  = dict['fy'][con1] #* Cz1s
+        ey1  = dict['ey'][con1] #* Cz1s
+        x1   = dict['x'][con1]
+        con2 = (NR>=10000) # BB
+        fy2  = dict['fy'][con2]
+        ey2  = dict['ey'][con2]
+        x2   = dict['x'][con2]
+
+        fy01 = np.append(fy0,fy1)
+        fcon = np.append(fy01,fy2)
+        ey01 = np.append(ey0,ey1)
+        eycon= np.append(ey01,ey2)
+        x01  = np.append(x0,x1)
+        xobs = np.append(x01,x2)
+
+        wht = 1./np.square(eycon)
+        if lines:
+            wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+        else:
+            wht2 = wht
+
+        # Set parameters;
+        fit_par_cz = Parameters()
+        for nn in range(len(fm_tmp[:,0])):
+            fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
+
+        # Start redshift search;
+        for zz in range(len(zspace)):
+
+            ##############################
+            def residual_z(pars):
+                vals  = pars.valuesdict()
+                z     = zspace[zz]
+
+                xm_s = xm_tmp * (1+z)
+                fm_s = np.zeros(len(xm_tmp),'float32')
+
+                for nn in range(len(fm_tmp[:,0])):
+                    fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
+
+                # This has the same grid as observed spectrum (fcon,xobs)
+                fm_int = np.interp(xobs, xm_s, fm_s)
+
+                if fcon is None:
+                    print('Data is none')
+                    return fm_int
+                else:
+                    return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
+
+            def lnprob_cz(pars):
+                resid  = residual_z(pars) # i.e. (data - model) * wht
+                z      = zspace[zz] #pars['z']
+                s_z    = 1 #pars['f_cz']
+                resid *= 1 / s_z
+                resid *= resid
+                nzz   = int(z/delzz)
+                # Something unacceptable;
+                if nzz<0 or z<zliml:
+                     return -np.inf
+                else:
+                    respr = np.log(prior[nzz])
+                resid += np.log(2 * np.pi * s_z**2) + respr
+                return -0.5 * np.sum(resid)
+            ###############################
+
+            # Best fit
+            out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
+            keys = fit_report(out_cz).split('\n')
+            for key in keys:
+                if key[4:7] == 'chi':
+                    skey = key.split(' ')
+                    csq  = float(skey[14])
+                if key[4:7] == 'red':
+                    skey = key.split(' ')
+                    rcsq = float(skey[7])
+
+            fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
+
+            '''
+            #zrecom  = out_cz.params['z'].value
+            Czrec0  = out_cz.params['Cz0'].value
+            Czrec1  = out_cz.params['Cz1'].value
+            mini_cz = Minimizer(lnprob_cz, out_cz.params)
+            res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=10, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
+            '''
+            #return fitc_cz
+            chi2s[zz,0] = csq
+            chi2s[zz,1] = rcsq
+
+        self.zspace = zspace
+        self.chi2s  = chi2s
+        return zspace, chi2s
+
+
+
+    def fit_redshift(self, dict, xm_tmp, fm_tmp, flag_m=0, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=1):
+        '''
+        Purpose:
+        ==========
+        Find an optimal redshift, before going into a giant fitting, by using several templates.
+
+        Input:
+        ==========
+        flag_m :
+        delzz  : Delta z in redshift search space
+        ezmin  : Minimum redshift uncertainty.
+        zliml  :
+        zlimu  :
+        snlim  :
+
+
+        Note:
+        ==========
+        Can be used for any SFH.
 
         '''
 
         # For z prior.
-        delzz  = 0.001
-        zlimu  = 6.
-        snlim  = 1
         zliml  = self.zgal - 0.5
-
-        #z = self.zprev
 
         # Observed data.
         con_cz = (dict['NR']<10000) #& (sn>snlim)
@@ -345,7 +492,7 @@ class Mainbody():
             dprob = np.loadtxt(eaz_pz, comments='#')
             zprob = dprob[:,0]
             cprob = dprob[:,1]
-            # Then interpolate to a common grid;
+            # Then interpolate to a common z grid;
             zz_prob = np.arange(0,13,delzz)
             cprob_s = np.interp(zz_prob, zprob, cprob)
             prior_s = np.exp(-0.5 * cprob_s)
@@ -358,7 +505,6 @@ class Mainbody():
 
         # Plot;
         if self.fzvis==1:
-            import matplotlib.pyplot as plt
             import matplotlib as mpl
             mpl.use('TkAgg')
             plt.plot(x_cz,fm_s,'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
@@ -370,7 +516,7 @@ class Mainbody():
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, dez, prior_s, NR_cz, zliml, zlimu, delzz, self.nmc_cz, self.nwalk_cz)
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, prior_s, NR_cz, zliml, zlimu, delzz, self.nmc_cz, self.nwalk_cz)
             z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -406,6 +552,7 @@ class Mainbody():
                 ezl = ezmin
                 ezu = ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
+
             z_cz    = [self.zprev-ezl, self.zprev, self.zprev+ezu]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
@@ -420,7 +567,7 @@ class Mainbody():
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
         whtl = 1/np.square(ey_cz)
         try:
-            wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, self.LW0)
+            wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW=self.LW0)
         except:
             wht3, ypoly = whtl, fy_cz
         con_line = (wht3==0)
@@ -430,7 +577,6 @@ class Mainbody():
             #
             # Ask interactively;
             #
-            import matplotlib.pyplot as plt
             plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
 
@@ -505,7 +651,9 @@ class Mainbody():
         Note:
         =======
         Can be used for any SFH
+
         '''
+
         try: # if spectrum;
             fig = plt.figure(figsize=(6.5,2.5))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
@@ -664,6 +812,7 @@ class Mainbody():
         # Observed Data
         #################
         dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
+        self.dict = dict
 
         # Call likelihood/prior/posterior function;
         from .posterior_flexible import Post
