@@ -82,16 +82,17 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
+def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0, chidef=1e5, Zbest=0):
+    '''
     #
     # Get initial parameters
     #
-    #from .posterior_flexible import Post
-    #class_post = Post(fnc)
-
+    '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-    chidef = 1e5
-    Zbest  = 0
+
+    if len(fy)<2:
+        print('Not enough data for quick fit. Exiting.')
+        return False
 
     fwz = open('Z_' + ID0 + '_PA' + PA0 + '.cat', 'w')
     fwz.write('# ID Zini chi/nu AA Av Zbest\n')
@@ -197,6 +198,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
 
     fwz.close()
     return out,chidef,Zbest
+
 
 def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
     #

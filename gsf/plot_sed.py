@@ -17,6 +17,8 @@ from .basic_func import Basic
 from . import img_scale
 from . import corner
 
+col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+#col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
 def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False):
     '''
@@ -31,9 +33,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
 
     '''
 
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     lcb = '#4682b4' # line color, blue
-    #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
-    col  = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
     nage = MB.nage #np.arange(0,len(age),1)
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
@@ -502,7 +503,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
     twokpc = 5.0/dkpc/0.06 # in pixel
 
-
     if f_grsm:
         print('This function (write_lines) needs to be revised.')
         write_lines(ID,PA,zbes)
@@ -756,12 +756,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
 
         # Chi square:
         hdr['chi2']     = chi2
-        hdr['No-of-effective-data-points'] = len(wht3[conw])
-        hdr['No-of-nondetectioin'] = len(ey[con_up])
-        hdr['Chi2-of-nondetection'] = chi_nd
-        hdr['No-of-params']  = MB.ndim
-        hdr['Degree-of-freedom']  = nod
-        hdr['reduced-chi2']  = fin_chi2
+        hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
+        hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
+        hdr['hierarch Chi2-of-nondetection'] = chi_nd
+        hdr['hierarch No-of-params']  = MB.ndim
+        hdr['hierarch Degree-of-freedom']  = nod
+        hdr['hierarch reduced-chi2']  = fin_chi2
 
         # Muv
         MUV = -2.5 * np.log10(Fuv[:]) + 25.0
@@ -943,6 +943,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
     '''
     '''
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -1039,84 +1040,8 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     plt.close()
 
 
-def make_rgb(ID,xcen,ycen):
-    fits_dir = '/Volumes/EHDD1/3DHST/IMG/'
-    blue_fn  = fits_dir + 'goodsn/goodsn_3dhst.v4.0.F850LP_orig_sci.fits'
-    green_fn = fits_dir + 'goodsn/goodsn_3dhst.v4.0.F125W_orig_sci.fits'
-    red_fn   = fits_dir + 'goodsn_3dhst_v4.0_f160w/goodsn_3dhst_v4.0_f160w/goodsn_3dhst.v4.0.F160W_orig_sci.fits'
-
-    # Parameters
-    sig_fract = 5.0
-    per_fract = 5.0-4
-    max_iter = 5e1
-    min_val = 0.
-    max_val = .8
-    non_linear_fact = .01
-    axis_tag = True
-
-    Rsq = 20.
-
-    mb0 = 25.
-    mg0 = 25.
-    mr0 = 25.
-
-    ymin = int(ycen - Rsq)
-    ymax = int(ycen + Rsq)
-    xmin = int(xcen - Rsq)
-    xmax = int(xcen + Rsq)
-
-    # Blue image
-    hdulist = fits.open(blue_fn)
-    img_header = hdulist[0].header
-    img_data = hdulist[0].data[ymin:ymax +1,xmin:xmax +1]
-    hdulist.close()
-    width=img_data.shape[0]
-    height=img_data.shape[1]
-    #print "Blue file = ", blue_fn, "(", width, ",", height, ")"
-    img_data_b = np.array(img_data, dtype=float)
-    sky, num_iter = img_scale.sky_median_sig_clip(img_data_b, sig_fract, per_fract, max_iter, low_cut=False, high_cut=True)
-    img_data_b = img_data_b - sky
-    img_data_b *= 10**((25-mb0)/-2.5)
-    rgb_array = np.empty((width,height,3), dtype=float)
-    b = img_scale.asinh(img_data_b, scale_min = min_val, scale_max = max_val, non_linear=non_linear_fact)
-
-    # Green image
-    hdulist = fits.open(green_fn)
-    img_header = hdulist[0].header
-    img_data = hdulist[0].data[ymin:ymax +1,xmin:xmax +1]
-    hdulist.close()
-    width=img_data.shape[0]
-    height=img_data.shape[1]
-    #print "Green file = ", green_fn, "(", width, ",", height, ")"
-    img_data_g = np.array(img_data, dtype=float)
-    img_data_g *= 10**((25-mg0)/-2.5)
-    sky, num_iter = img_scale.sky_median_sig_clip(img_data_g, sig_fract, per_fract, max_iter, low_cut=False, high_cut=True)
-    img_data_g = img_data_g - sky
-    g = img_scale.asinh(img_data_g, scale_min = min_val, scale_max = max_val, non_linear=non_linear_fact)
-
-    # Red image
-    hdulist = fits.open(red_fn)
-    img_header = hdulist[0].header
-    img_data = hdulist[0].data[ymin:ymax +1,xmin:xmax +1]
-    hdulist.close()
-    width=img_data.shape[0]
-    height=img_data.shape[1]
-    #print "Red file = ", red_fn, "(", width, ",", height, ")"
-    img_data_r = np.array(img_data, dtype=float)
-    img_data_r *= 10**((25-mr0)/-2.5)
-    sky, num_iter = img_scale.sky_median_sig_clip(img_data_r, sig_fract, per_fract, max_iter, low_cut=False, high_cut=True)
-    img_data_r = img_data_r - sky
-    r = img_scale.asinh(img_data_r, scale_min = min_val, scale_max = max_val, non_linear=non_linear_fact)
-
-    # RGB image with Matplotlib
-    rgb_array[:,:,0] = r
-    rgb_array[:,:,1] = g
-    rgb_array[:,:,2] = b
-
-    return rgb_array
-
-
 def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
+    '''
     # Creat "cumulative" png for gif image.
     #
     #
@@ -1125,6 +1050,8 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     #
     # snlimbb: SN limit to show flux or up lim in SED.
     #
+    '''
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -1307,7 +1234,6 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     Ztmp = np.zeros(nplot, dtype='float64')
     Ttmp = np.zeros(nplot, dtype='float64')
     ACtmp= np.zeros(nplot, dtype='float64')
-    col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     files = [] # For movie
     for kk in range(0,nplot,1):
@@ -1447,11 +1373,9 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     plt.close()
 
 
-def write_lines(ID,PA,zbes,R_grs,umag=1.0):
+def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
     '''
     '''
-    R_grs = 45
-    dw    = 4
     dlw   = R_grs * dw # Can affect the SFR.
     ldw   = 7
 
@@ -1558,11 +1482,18 @@ def write_lines(ID,PA,zbes,R_grs,umag=1.0):
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     '''
+    Purpose:
+    ==========
     # Creat temporal png for gif image.
     #
     # For summary. In the same format as plot_corner_physparam_frame.
     #
     '''
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+
+    import matplotlib
+    import matplotlib.cm as cm
+    import scipy.stats as stats
 
     nage = MB.nage #np.arange(0,len(age),1)
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
@@ -1573,11 +1504,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
     tau0 = MB.tau0 #[0.1,0.2,0.3]
     dust_model = MB.dust_model
+    DIR_TMP = MB.DIR_TMP #'./templates/'
 
     ###########################
     # Open result file
     ###########################
-    # Open ascii file and stock to array.
     lib     = fnc.open_spec_fits(MB,fall=0)
     lib_all = fnc.open_spec_fits(MB,fall=1)
 
@@ -1707,7 +1638,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
-    DIR_TMP = './templates/'
     ####################
     # MCMC corner plot.
     ####################
@@ -1728,8 +1658,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     sedpar = f0[1]
 
-    import matplotlib
-    import matplotlib.cm as cm
     getcmap   = matplotlib.cm.get_cmap('jet')
     nc        = np.arange(0, nmc, 1)
     col = getcmap((nc-0)/(nmc-0))
@@ -1741,7 +1669,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     Ztmp = np.zeros(nplot, dtype='float64')
     Ttmp = np.zeros(nplot, dtype='float64')
     ACtmp= np.zeros(nplot, dtype='float64')
-    col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
     # Time bin
     Txmax = 4 # Max x value
@@ -1817,14 +1744,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
         if SFtmp > SFmax:
             SFmax = SFtmp
 
-    #NPARmin = [np.log10(M16)-0.1, -0.4, 0, -0.6]
-    #NPARmax = [np.log10(M84)+0.1, 0.5, 2., 0.5]
     delM = np.log10(M84) - np.log10(M16)
-    #NPARmin = [np.log10(M16)-delM*1., np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
-    #NPARmax = [np.log10(M84)+delM*1., np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
     NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
     NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
-    #print(np.log10(Zsmin/AMtmp16),np.log10(Zsmax/AMtmp84),np.log10(Tsmin/AMtmp16),np.log10(Tsmax/AMtmp84))
 
     # For redshift
     if zbes<2:
@@ -1848,7 +1770,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
             Tzz[zz] = 0.01
 
 
-    import scipy.stats as stats
     def density_estimation(m1, m2):
         xmin, xmax = np.min(m1), np.max(m1)
         ymin, ymax = np.min(m2), np.max(m2)
@@ -2062,7 +1983,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
 
     plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
-    plt.close()
+    #plt.close()
 
 
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
@@ -2072,6 +1993,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     # Creat temporal png for gif image.
     #
     '''
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)
@@ -2226,7 +2149,6 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     Ztmp = np.zeros(nplot, dtype='float64')
     Ttmp = np.zeros(nplot, dtype='float64')
     ACtmp= np.zeros(nplot, dtype='float64')
-    col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
 
     # Time bin
@@ -2554,6 +2476,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
 def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  mcmcplot=1, flim=0.05):
     '''
     '''
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Zall)

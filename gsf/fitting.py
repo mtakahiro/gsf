@@ -8,16 +8,18 @@ from scipy.integrate import simps
 import pickle as cPickle
 import os.path
 import random
-from astropy.io import fits
 import string
 import timeit
 from scipy import stats
 from scipy.stats import norm
+from astropy.io import fits,ascii
+import corner
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, savecpkl
 from .zfit import check_redshift
 from .plot_sed import *
+from .writing import get_param
 
 ############################
 py_v = (sys.version_info[0])
@@ -38,6 +40,10 @@ fLW = np.zeros(len(LW), dtype='int')
 class Mainbody():
 
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
+        self.update_input(inputs)
+
+
+    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
         '''
         INPUT:
         ==========
@@ -99,8 +105,13 @@ class Mainbody():
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
 
-        # Filter response curve directory
-        self.DIR_FILT = inputs['DIR_FILT']
+        # Filter response curve directory, if bb catalog is provided.
+        try:
+            self.DIR_FILT = inputs['DIR_FILT']
+            self.filts    = inputs['FILTER']
+            self.filts    = [x.strip() for x in self.filts.split(',')]
+        except:
+            pass
 
         # Tau comparison?
         try:
@@ -219,7 +230,6 @@ class Mainbody():
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
 
 
-
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
         LW  = LW0
@@ -258,24 +268,15 @@ class Mainbody():
         # Broadband
         ##############
         try:
-            dat = np.loadtxt(self.DIR_TMP + 'bb_obs_' + self.ID + '_PA' + self.PA + '.cat', comments='#')
-            NRbb = dat[:, 0]
-            xbb  = dat[:, 1]
-            fybb = dat[:, 2]
-            eybb = dat[:, 3]
-            exbb = dat[:, 4]
-            fy2 = fybb
-            ey2 = eybb
-
-            fy01 = np.append(fy0,fy1)
-            fy   = np.append(fy01,fy2)
-            ey01 = np.append(ey0,ey1)
-            ey   = np.append(ey01,ey2)
-
-            wht  = 1./np.square(ey)
-            wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
-            sn   = fy/ey
+            dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '_PA' + self.PA + '.cat', format='no_header')
+            NRbb = dat['col1']
+            xbb  = dat['col2']
+            fybb = dat['col3']
+            eybb = dat['col4']
+            exbb = dat['col5']
         except: # if no BB;
+            print('No BB data.')
+            '''
             xbb  = np.asarray([100.])
             fy   = np.asarray([0.]) #np.append(fy01,fy2)
             ey   = np.asarray([-99]) #np.append(ey01,ey2)
@@ -285,6 +286,28 @@ class Mainbody():
             fybb = np.asarray([0])
             eybb = np.asarray([-99])
             exbb = np.asarray([100])
+            '''
+            xbb  = np.asarray([])
+            fy   = np.asarray([]) #np.append(fy01,fy2)
+            ey   = np.asarray([]) #np.append(ey01,ey2)
+            wht  = np.asarray([]) #check_line_man(fy, x, wht, fy, zprev, LW0)
+            wht2 = np.asarray([]) #check_line_man(fy, x, wht, fy, zprev, LW0)
+            sn   = np.asarray([]) #fy/ey
+            fybb = np.asarray([])
+            eybb = np.asarray([])
+            exbb = np.asarray([])
+
+        fy2 = fybb
+        ey2 = eybb
+
+        fy01 = np.append(fy0,fy1)
+        fy   = np.append(fy01,fy2)
+        ey01 = np.append(ey0,ey1)
+        ey   = np.append(ey01,ey2)
+
+        wht  = 1./np.square(ey)
+        wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
+        sn   = fy/ey
 
         # Append data;
         if add_fir:
@@ -306,7 +329,7 @@ class Mainbody():
 
 
 
-    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None):
+    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
         '''
         Purpose:
         =========
@@ -319,10 +342,11 @@ class Mainbody():
         fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
         xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].
 
-        zbest : Initial value for redshift.
         prior : Prior for redshift determination. E.g., Eazy z-probability.
         zliml : Lowest redshift for fitting range.
         zlimu : Highest redshift for fitting range.
+
+        method : powell is more accurate. nelder is faster.
 
         Return:
         =========
@@ -360,100 +384,68 @@ class Mainbody():
         xobs = np.append(x01,x2)
 
         wht = 1./np.square(eycon)
-        if lines:
-            wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
-        else:
-            wht2 = wht
+        #if lines:
+        #    wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+        #else:
+        wht2 = wht
 
         # Set parameters;
         fit_par_cz = Parameters()
         for nn in range(len(fm_tmp[:,0])):
             fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
 
+        def residual_z(pars,z):
+            vals  = pars.valuesdict()
+
+            xm_s = xm_tmp * (1+z)
+            fm_s = np.zeros(len(xm_tmp),'float32')
+
+            for nn in range(len(fm_tmp[:,0])):
+                fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
+
+            # This has the same grid as observed spectrum (fcon,xobs)
+            fm_int = np.interp(xobs, xm_s, fm_s)
+
+            if fcon is None:
+                print('Data is none')
+                return fm_int
+            else:
+                return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
+
         # Start redshift search;
         for zz in range(len(zspace)):
-
-            ##############################
-            def residual_z(pars):
-                vals  = pars.valuesdict()
-                z     = zspace[zz]
-
-                xm_s = xm_tmp * (1+z)
-                fm_s = np.zeros(len(xm_tmp),'float32')
-
-                for nn in range(len(fm_tmp[:,0])):
-                    fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
-
-                # This has the same grid as observed spectrum (fcon,xobs)
-                fm_int = np.interp(xobs, xm_s, fm_s)
-
-                if fcon is None:
-                    print('Data is none')
-                    return fm_int
-                else:
-                    return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
-
-            def lnprob_cz(pars):
-                resid  = residual_z(pars) # i.e. (data - model) * wht
-                z      = zspace[zz] #pars['z']
-                s_z    = 1 #pars['f_cz']
-                resid *= 1 / s_z
-                resid *= resid
-                nzz   = int(z/delzz)
-                # Something unacceptable;
-                if nzz<0 or z<zliml:
-                     return -np.inf
-                else:
-                    respr = np.log(prior[nzz])
-                resid += np.log(2 * np.pi * s_z**2) + respr
-                return -0.5 * np.sum(resid)
-            ###############################
-
             # Best fit
-            out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
-            keys = fit_report(out_cz).split('\n')
-            for key in keys:
-                if key[4:7] == 'chi':
-                    skey = key.split(' ')
-                    csq  = float(skey[14])
-                if key[4:7] == 'red':
-                    skey = key.split(' ')
-                    rcsq = float(skey[7])
+            out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
+            keys   = fit_report(out_cz).split('\n')
 
-            fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
+            csq  = out_cz.chisqr
+            rcsq = out_cz.redchi
+            fitc_cz = [csq, rcsq]
 
-            '''
-            #zrecom  = out_cz.params['z'].value
-            Czrec0  = out_cz.params['Cz0'].value
-            Czrec1  = out_cz.params['Cz1'].value
-            mini_cz = Minimizer(lnprob_cz, out_cz.params)
-            res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=10, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
-            '''
             #return fitc_cz
             chi2s[zz,0] = csq
             chi2s[zz,1] = rcsq
 
         self.zspace = zspace
         self.chi2s  = chi2s
+
         return zspace, chi2s
 
 
 
-    def fit_redshift(self, dict, xm_tmp, fm_tmp, flag_m=0, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=1):
+    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0):
         '''
         Purpose:
         ==========
-        Find an optimal redshift, before going into a giant fitting, by using several templates.
+        Find an optimal redshift, before going into a big fit, by using several templates.
 
         Input:
         ==========
-        flag_m :
         delzz  : Delta z in redshift search space
+        zliml  : Lower limit range for redshift
+        zlimu  : Upper limit range for redshift
         ezmin  : Minimum redshift uncertainty.
-        zliml  :
-        zlimu  :
-        snlim  :
-
+        snlim  : SN limit for data points. Those below the number will be cut from the fit.
 
         Note:
         ==========
@@ -465,19 +457,15 @@ class Mainbody():
         zliml  = self.zgal - 0.5
 
         # Observed data.
-        con_cz = (dict['NR']<10000) #& (sn>snlim)
+        sn = dict['fy']/dict['ey']
+        con_cz = (dict['NR']<10000) & (sn>snlim)
         fy_cz  = dict['fy'][con_cz]
         ey_cz  = dict['ey'][con_cz]
         x_cz   = dict['x'][con_cz] # Observed range
         NR_cz  = dict['NR'][con_cz]
 
-        xm_s = xm_tmp #/ (1+self.zprev) * (1+self.zgal)
-        fm_s = np.interp(x_cz, xm_s, fm_tmp)
-
-        if flag_m == 0:
-            dez = 0.5
-        else:
-            dez = 0.2
+        #fm_s = np.interp(x_cz, xm_tmp[con_cz], fm_tmp[con_cz])
+        fm_s = np.interp(x_cz, xm_tmp, fm_tmp)
 
         #
         # If Eazy result exists;
@@ -505,14 +493,14 @@ class Mainbody():
 
         # Plot;
         if self.fzvis==1:
-            import matplotlib as mpl
-            mpl.use('TkAgg')
-            plt.plot(x_cz,fm_s,'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
+            #import matplotlib as mpl
+            #mpl.use('TkAgg')
+            plt.plot(x_cz, fm_s, 'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
-        try:
-        #if True:
+        #try:
+        if True:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
@@ -534,12 +522,11 @@ class Mainbody():
             print('\n\n')
             print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, self.Cz0 * Czrec0, self.Cz1 * Czrec1, fitc_cz[1]))
             print('\n\n')
-
             fit_label = 'Proposed model'
 
-        except:
-        #else:
-            print('z fit failed. No spectral data set?')
+        #except:
+        else:
+            print('!!! z fit failed. No spectral data set?')
             try:
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
@@ -561,11 +548,15 @@ class Mainbody():
             Czrec1  = scl_cz1[1]
             res_cz  = None
 
-            fit_label = 'Previous model'
+            # If this label is being used, it means that the fit is failed.
+            fit_label = 'Current model'
 
+        # New template at zrecom;
         xm_s = xm_tmp / (1+self.zgal) * (1+zrecom)
+        #fm_s = np.interp(x_cz, xm_s[con_cz], fm_tmp[con_cz])
         fm_s = np.interp(x_cz, xm_s, fm_tmp)
         whtl = 1/np.square(ey_cz)
+
         try:
             wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW=self.LW0)
         except:
@@ -595,8 +586,8 @@ class Mainbody():
                 except:
                     pass
 
-            plt.plot(dict['xbb'], dict['fybb'], '.r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
-            plt.scatter(xm_tmp, fm_tmp, c='', marker='d', s=50, edgecolor='b', zorder=4, label='Model')
+            plt.plot(dict['xbb'], dict['fybb'], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
+            plt.scatter(xm_tmp, fm_tmp, color='', marker='d', s=50, edgecolor='b', zorder=4, label='')
 
             try:
                 xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
@@ -641,7 +632,7 @@ class Mainbody():
         self.scl_cz1= scl_cz1
         self.res_cz = res_cz
 
-        return flag_z #, zrecom, self.Cz0 * Czrec0, self.Cz1 * Czrec1, z_cz, scl_cz0, scl_cz1, res_cz
+        return flag_z
 
 
     def get_zdist(self):
@@ -655,13 +646,12 @@ class Mainbody():
         '''
 
         try: # if spectrum;
+        #if True:
             fig = plt.figure(figsize=(6.5,2.5))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
-            n, nbins, patches = ax1.hist(self.res_cz.flatchain['z'], bins=200, normed=True, color='gray',label='')
-            #if f_fitgauss==1:
-            #    ax1.plot(lnspc, pdf_g, label='Gaussian fit', color='g', linestyle='-') # plot it
-            #ax1.set_xlim(m-s*3,m+s*3)
+            n, nbins, patches = ax1.hist(self.res_cz.flatchain['z'], bins=200, normed=True, color='gray', label='')
+
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
             ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1))
@@ -676,12 +666,13 @@ class Mainbody():
             ax1.legend(loc=0)
             plt.savefig('zprob_' + self.ID + '_PA' + seld.PA + '.pdf', dpi=300)
             plt.close()
+        #else:
         except:
             print('z-distribution figure is not generated.')
             pass
 
 
-    def add_param(self,fit_params):
+    def add_param(self, fit_params, sigz=1.0):
         '''
 
         Note:
@@ -722,7 +713,7 @@ class Mainbody():
         return f_add
 
 
-    def main(self, zgal, flag_m, Cz0, Cz1, mcmcplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Input:
         ========
@@ -894,15 +885,8 @@ class Mainbody():
         out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['wht2'],self.ID,self.PA)
 
         # Best fit
-        keys = fit_report(out).split('\n')
-        for key in keys:
-            if key[4:7] == 'chi':
-                skey = key.split(' ')
-                csq  = float(skey[14])
-            if key[4:7] == 'red':
-                skey = key.split(' ')
-                rcsq = float(skey[7])
-
+        csq  = out.chisqr
+        rcsq = out.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
         ZZ   = Zbest # This is really important/does affect lnprob/residual.
 
@@ -917,6 +901,7 @@ class Mainbody():
         AA_tmp = np.zeros(len(self.age), dtype='float64')
         ZZ_tmp = np.zeros(len(self.age), dtype='float64')
         fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
+        #print(self.lib[:,0])
 
         ########################
         # Check redshift
@@ -974,7 +959,12 @@ class Mainbody():
             print('######################')
             print('### Starting emcee ###')
             print('######################')
-            import multiprocess
+
+            try:
+                import multiprocess
+            except:
+                import multiprocessing as multiprocess
+
             ncpu0 = int(multiprocess.cpu_count()/2)
             try:
                 ncpu = int(inputs['NCPU'])
@@ -996,7 +986,6 @@ class Mainbody():
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
-            import corner
             burnin   = int(self.nmc/2)
             savepath = './'
             cpklname = 'chain_' + self.ID + '_PA' + self.PA + '_corner.cpkl'
@@ -1047,23 +1036,16 @@ class Mainbody():
                 print(Mdust_mc)
                 print(Tdust_mc)
 
-            #########################
-            #msmc0 = 0
-            #for aa in range(len(age)):
-            #    msmc0 += res.flatchain['A'+str(aa)]*ms[aa]
-            #msmc = np.percentile(msmc0, [16,50,84])
-
             ####################
             # MCMC corner plot.
             ####################
-            if mcmcplot:
+            if cornerplot:
                 fig1 = corner.corner(res.flatchain, labels=res.var_names, \
                 label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
                 title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
                 fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.pdf')
-                plt.close()
 
             # Do analysis on MCMC results.
             # Write to file.
@@ -1072,7 +1054,6 @@ class Mainbody():
 
             # Then writing;
             start_mc = timeit.default_timer()
-            from .writing import get_param
             get_param(self, res, fitc, tcalc=tcalc)
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
@@ -1107,7 +1088,6 @@ class Mainbody():
             print('\n\n')
             return 1, zrecom, Czrec0, Czrec1
 
-
         else:
             print('\n\n')
             print('Terminated because of redshift estimate.')
@@ -1126,7 +1106,7 @@ class Mainbody():
 
 
 
-    def quick_fit(self, zgal, flag_m, Cz0, Cz1, mcmcplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    def quick_fit(self, zgal, flag_m, Cz0, Cz1, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Purpose:
         ==========
@@ -1143,6 +1123,7 @@ class Mainbody():
         # ezmin (float): minimum error in redshift.
         #
         '''
+        from .posterior_flexible import Post
 
         print('########################')
         print('### Fitting Function ###')
@@ -1209,7 +1190,6 @@ class Mainbody():
         dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
 
         # Call likelihood/prior/posterior function;
-        from .posterior_flexible import Post
         class_post = Post(self)
 
         ###############################
@@ -1289,15 +1269,8 @@ class Mainbody():
         out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['wht2'],self.ID,self.PA)
 
         # Best fit
-        keys = fit_report(out).split('\n')
-        for key in keys:
-            if key[4:7] == 'chi':
-                skey = key.split(' ')
-                csq  = float(skey[14])
-            if key[4:7] == 'red':
-                skey = key.split(' ')
-                rcsq = float(skey[7])
-
+        csq  = out.chisqr
+        rcsq = out.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
         ZZ   = Zbest # This is really important/does affect lnprob/residual.
 

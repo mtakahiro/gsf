@@ -55,7 +55,6 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
         fcon = np.append(fy01,fy2)
         ey01 = np.append(ey0,ey1)
         eycon= np.append(ey01,ey2)
-
         wht = 1./np.square(eycon)
 
         wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
@@ -73,13 +72,16 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
         s_z    = 1 #pars['f_cz']
         resid *= 1 / s_z
         resid *= resid
-        nzz   = int(z/delzz)
-        # Something unacceptable;
-        if nzz<0 or z<zliml:
-             return -np.inf
+        nzz    = int(z/delzz)
+
+        # For something unacceptable;
+        if nzz<0 or z<zliml or z>zlimu:
+            return -np.inf
         else:
             respr = np.log(prior[nzz])
+
         resid += np.log(2 * np.pi * s_z**2) + respr
+
         return -0.5 * np.sum(resid)
 
     #################################
@@ -103,7 +105,7 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
     Czrec0  = out_cz.params['Cz0'].value
     Czrec1  = out_cz.params['Cz1'].value
 
-    mini_cz = Minimizer(lnprob_cz, out_cz.params)
-    res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=10, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
+    mini_cz = Minimizer(lnprob_cz, out_cz.params) #,fcn_args=[zliml, prior, delzz])
+    res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=5, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz

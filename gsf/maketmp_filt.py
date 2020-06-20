@@ -14,8 +14,8 @@ from astropy.convolution import convolve, convolve_fft
 # Custom modules
 from .function import *
 from .function_igm import *
-
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
+
 def sim_spec(lmin, fin, sn):
     '''
     ###################################################
@@ -166,28 +166,27 @@ def maketemp(MB):
         pass
 
     #############################
-    # Extracting BB photometry:
+    # READ BB photometry from CAT_BB:
     #############################
+    from astropy.io import ascii
     if CAT_BB:
-        fd0 = np.loadtxt(CAT_BB, comments='#')
-        try:
-            id0 = fd0[:,0]
-            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-            if int(id0[ii0]) !=  int(ID):
-                print('Something is wrong with BB catalog!')
-                return -1
-            fd  = fd0[ii0,:]
-        except:
-            id0 = fd0[0]
-            if int(id0) !=  int(ID):
-                return -1
-            fd  = fd0[:]
-        id  = fd[0]
+        #fd0 = np.loadtxt(CAT_BB, comments='#')
+        fd0 = ascii.read(CAT_BB)
+
+        id0 = fd0['id']
+        ii0 = np.argmin(np.abs(id0[:]-int(ID)))
+        if int(id0[ii0]) !=  int(ID):
+            print('Cannot find the column for %d in the input BB catalog!'%(int(ID)))
+            return -1
+        id  = fd0['id'][ii0]
+
         fbb = np.zeros(len(SFILT), dtype='float64')
         ebb = np.zeros(len(SFILT), dtype='float64')
+
         for ii in range(len(SFILT)):
-            fbb[ii] = fd[ii*2+1]
-            ebb[ii] = fd[ii*2+2]
+            fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
+            ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
+
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
         hd0   = fd0[1].header

@@ -1,4 +1,3 @@
-# For fitting.
 import numpy as np
 import sys
 
@@ -22,15 +21,18 @@ class Func:
         self.AA   = MB.nage
         self.tau0 = MB.tau0
         self.MB   = MB
-        #try:
-        #    self.delZ = ZZ[1] - ZZ[0]
-        #except:
-        #    self.delZ = 0.01
+
         self.dust_model = dust_model
         self.DIR_TMP    = MB.DIR_TMP
 
         if MB.f_dust:
             self.Temp = MB.Temp
+
+        try:
+            self.filts   = MB.filts
+            self.DIR_FIL = MB.DIR_FILT
+        except:
+            pass
 
     def demo(self):
         ZZ = self.ZZ
@@ -200,7 +202,7 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def get_template(self, lib, Amp=1.0, T=1.0, Av=0.0, Z=0.0, zgal=1.0):
+    def get_template(self, lib, Amp=1.0, T=1.0, Av=0.0, Z=0.0, zgal=1.0, f_bb=False):
         '''
         Purpose:
         =========
@@ -215,10 +217,12 @@ class Func:
         Av  : Dust attenuation in mag.
         Z   : Metallicity in log(Z/Zsun).
         zgal: Redshift.
+        f_bb: bool, to calculate bb photometry for the spectrum requested.
 
         Return:
         ========
-        flux, wavelength
+        flux, wavelength : Flux in Fnu. Wave in AA.
+        lcen, lflux, if f_bb==True.
 
         '''
 
@@ -265,7 +269,11 @@ class Func:
         yyd_sort     = nrd_yyd_sort[:,1]
         xxd_sort     = nrd_yyd_sort[:,2]
 
-        return Amp * yyd_sort, xxd_sort
+        if f_bb:
+            fil_cen, fil_flux = filconv(self.filts, xxd_sort, Amp * yyd_sort, self.DIR_FIL)
+            return Amp * yyd_sort, xxd_sort, fil_flux, fil_cen
+        else:
+            return Amp * yyd_sort, xxd_sort
 
 
     def tmp03(self, A00, Av00, nmodel, Z, zgal, lib):
@@ -451,9 +459,6 @@ class Func:
             zmc = par.params['zmc'].value
         except:
             zmc = zgal
-
-        #Cz0s  = vals['Cz0']
-        #Cz1s  = vals['Cz1']
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
         pp  = int(pp0[0])

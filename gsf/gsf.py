@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ##########################
 # 2018.10.05
 # version 1.0.0
@@ -6,17 +5,18 @@
 
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 import os.path
 import string
+from astropy.cosmology import WMAP9 as cosmo
 
-# Custom modules
+# From gsf
 from .fitting import Mainbody
 from .function_class import Func
 from .basic_func import Basic
 from .maketmp_filt import maketemp
 from .maketmp_z0 import make_tmp_z0
 from .maketmp_z0 import make_tmp_z0_bpass
-from astropy.cosmology import WMAP9 as cosmo
 
 import timeit
 start = timeit.default_timer()
@@ -77,7 +77,7 @@ def run_gsf_template(inputs, fplt=0):
     return MB
 
 
-def run_gsf_all(parfile, fplt, mcmcplot=True):
+def run_gsf_all(parfile, fplt, cornerplot=True):
     '''
     #########################################
     # What do you need before running this?
@@ -101,7 +101,6 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
-
 
     #
     # Then load Func and Basic with param range.
@@ -136,7 +135,7 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
 
-        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 0, MB.Cz0, MB.Cz1, mcmcplot=mcmcplot)
+        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 0, MB.Cz0, MB.Cz1, cornerplot=cornerplot)
 
         while (flag_suc == 1):
             # In case of repeating fit;
@@ -153,7 +152,7 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 1, MB.Cz0, MB.Cz1, mcmcplot=mcmcplot)
+            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 1, MB.Cz0, MB.Cz1, cornerplot=cornerplot)
 
         # Total calculation time
         stop = timeit.default_timer()
@@ -163,8 +162,8 @@ def run_gsf_all(parfile, fplt, mcmcplot=True):
     if fplt <= 3 and flag_suc >= 0:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
-        #plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
-        #inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
+        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
+        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
         plot_sed(MB, fil_path=MB.DIR_FILT,
         SNlim=1.0, figpdf=False, save_sed=True, inputs=MB.inputs, nmc2=300,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label = True)
