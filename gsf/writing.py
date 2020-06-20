@@ -1,5 +1,7 @@
 import numpy as np
 from astropy.io import fits
+from lmfit import Parameters
+
 from .function import filconv, calc_Dn4
 
 def get_param(self, res, fitc, tcalc=1.):
@@ -102,11 +104,10 @@ def get_param(self, res, fitc, tcalc=1.):
     #
     # Get mcmc model templates, plus some indicies.
     #
-    from lmfit import Parameters
     fit_params = Parameters()
     for mm in range(0,mmax,1):
+        print(mm)
         rn = np.random.randint(len(samples))
-
         for aa in range(len(age)):
             fit_params.add('A'+str(aa), value=res.flatchain['A%d'%(aa)][rn], min=0, max=10000)
         fit_params.add('Av', value=res.flatchain['Av'][rn], min=0, max=10)
@@ -244,7 +245,6 @@ def get_param(self, res, fitc, tcalc=1.):
         col01.append(col50)
 
     # zmc
-    #if int(inputs['ZMC']) == 1:
     col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
     col01.append(col50)
 

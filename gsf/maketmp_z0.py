@@ -229,9 +229,9 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     #for pp in range(len(tau0)):
     #    hdr['Tau%d'%(pp)] = tau0[pp]
     for aa in range(len(age)):
-        hdr['realtau%d(Gyr)'%(aa)] = tau_age[aa]
+        hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
     for aa in range(len(age)):
-        hdr['realage%d(Gyr)'%(aa)] = age_age[aa]
+        hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
 
     colspec = fits.ColDefs(col02)
     hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)
@@ -476,9 +476,9 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     if fneb == 1:
         hdr['logU'] = logU
     for aa in range(len(age)):
-        hdr['realtau%d(Gyr)'%(aa)] = tau_age[aa]
+        hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
     for aa in range(len(age)):
-        hdr['realage%d(Gyr)'%(aa)] = age_age[aa]
+        hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
 
     colspec = fits.ColDefs(col02)
     hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)

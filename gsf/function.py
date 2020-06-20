@@ -717,8 +717,9 @@ def check_line(data,wave,wht,model):
     return wht2
 
 # Convolution of templates with filter response curves.
-def filconv_cen(band0, l0, f0): # f0 in fnu
-    DIR = 'FILT/'
+def filconv_cen(band0, l0, f0, DIR='FILT/'): # f0 in fnu
+    '''
+    '''
     fnu  = np.zeros(len(band0), dtype='float64')
     lcen = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
@@ -751,9 +752,13 @@ def filconv_cen(band0, l0, f0): # f0 in fnu
     return lcen, fnu
 
 def filconv(band0, l0, f0, DIR, fw=False):
-    #
-    # f0: in fnu
-    #
+    '''
+    Input:
+    ============
+    f0: in fnu
+
+    '''
+
     fnu  = np.zeros(len(band0), dtype='float64')
     lcen = np.zeros(len(band0), dtype='float64')
     if fw == True:
@@ -776,8 +781,8 @@ def filconv(band0, l0, f0, DIR, fw=False):
         imax  = 0
 
         con = (l0>lmin) & (l0<lmax) & (f0>0)
+        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
-            lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
             filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis

@@ -274,6 +274,7 @@ class Mainbody():
             fybb = dat['col3']
             eybb = dat['col4']
             exbb = dat['col5']
+
         except: # if no BB;
             print('No BB data.')
             '''
@@ -288,11 +289,6 @@ class Mainbody():
             exbb = np.asarray([100])
             '''
             xbb  = np.asarray([])
-            fy   = np.asarray([]) #np.append(fy01,fy2)
-            ey   = np.asarray([]) #np.append(ey01,ey2)
-            wht  = np.asarray([]) #check_line_man(fy, x, wht, fy, zprev, LW0)
-            wht2 = np.asarray([]) #check_line_man(fy, x, wht, fy, zprev, LW0)
-            sn   = np.asarray([]) #fy/ey
             fybb = np.asarray([])
             eybb = np.asarray([])
             exbb = np.asarray([])
@@ -499,8 +495,8 @@ class Mainbody():
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
-        #try:
-        if True:
+        try:
+        #if True:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
@@ -524,8 +520,8 @@ class Mainbody():
             print('\n\n')
             fit_label = 'Proposed model'
 
-        #except:
-        else:
+        except:
+        #else:
             print('!!! z fit failed. No spectral data set?')
             try:
                 ezl = float(self.inputs['EZL'])
@@ -828,6 +824,7 @@ class Mainbody():
             print('##########################')
             for aa in range(len(self.age)):
                 if aa not in aamin:
+                    #print('Not added.')
                     fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
                 else:
                     fit_params.add('A'+str(aa), value=1, min=0, max=1e3)

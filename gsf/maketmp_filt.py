@@ -368,7 +368,6 @@ def maketemp(MB):
                 lm0    = spechdu.data['wavelength']
                 if fneb == 1:
                     spec0 = spechdu.data['efspec_'+str(zz)+'_0_'+str(pp)]
-                    #logU  = f1[0].header['logU']
                 else:
                     spec0 = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
 
@@ -600,6 +599,8 @@ def maketemp(MB):
     for ii in range(len(ltmpbb[0,:])):
         if ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
+        elif ebb[ii]<=0:
+            fw.write('%d %.5f 0 -99 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
 
