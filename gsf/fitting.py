@@ -157,7 +157,7 @@ class Mainbody():
                     print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
                 self.ZFIX = Zbpass[iiz]
                 self.delZ = 0.0001
-                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
@@ -165,17 +165,24 @@ class Mainbody():
                 self.Zall = Zbpass[con_z]
 
         # N of param:
+        nAV = 1
         try:
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
-                self.ndim = int(len(self.nage) * 2 + 1)
+                self.ndim = int(len(self.nage) * 2 + nAV) # age, Z, and Av.
                 print('Metallicity evolution is on.')
                 if int(inputs['ZMC']) == 1:
                     self.ndim += 1
                 print('No of params are : %d'%(self.ndim))
+
             else:
                 self.ZEVOL = 0
-                self.ndim = int(len(self.nage) + 1 + 1)
+                try:
+                    if self.delZ < 0.01:
+                        self.ndim = int(len(self.nage) + nAV) # age and Av.
+                    else:
+                        self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
+
                 print('Metallicity evolution is off.')
                 if int(inputs['ZMC']) == 1:
                     self.ndim += 1

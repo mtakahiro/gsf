@@ -202,7 +202,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     # Weight is set to zero for those no data (ey<0).
     wht = fy * 0
     con_wht = (ey>0)
-    wht[con_wht] = 1./np.square(ey)
+    wht[con_wht] = 1./np.square(ey[con_wht])
 
     NRbb = MB.dict['NR'] #dat[:, 0]
     xbb  = MB.dict['xbb'] #dat[:, 1]
@@ -548,7 +548,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
-    samples  = res #.chain[:, :, :].reshape((-1, ndim))
+    samples  = res
 
     ytmp = np.zeros((nmc2,len(ysum)), dtype='float64')
     ytmpmax = np.zeros(len(ysum), dtype='float64')
