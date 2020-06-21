@@ -163,6 +163,7 @@ class Mainbody():
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z     = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
+                self.delZ = 0.0001
 
         # N of param:
         nAV = 1
@@ -177,11 +178,10 @@ class Mainbody():
 
             else:
                 self.ZEVOL = 0
-                try:
-                    if self.delZ < 0.01:
-                        self.ndim = int(len(self.nage) + nAV) # age and Av.
-                    else:
-                        self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
+                if self.delZ < 0.01:
+                    self.ndim = int(len(self.nage) + nAV) # age and Av.
+                else:
+                    self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
 
                 print('Metallicity evolution is off.')
                 if int(inputs['ZMC']) == 1:
