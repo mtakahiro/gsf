@@ -30,11 +30,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
 
     Input:
     ==========
-    
+
     flim  : Lower limit for plotting an age bin.
     lsfrl : Lower limit for SFR, in logMsun/yr
 
     '''
+    import os.path
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -49,7 +50,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
 
     ################
     # RF colors.
-    import os.path
     home = os.path.expanduser('~')
     c      = MB.c
     chimax = 1.
@@ -86,11 +86,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
 
-    uv= hdul[1].data['uv']
-    vj= hdul[1].data['vj']
-
-    RA   = 0
-    DEC  = 0
+    '''
     rek  = 0
     erekl= 0
     ereku= 0
@@ -99,13 +95,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     qq = 0
     enn = 0
     eqq = 0
+    '''
     try:
         RA   = hdul[0].header['RA']
         DEC  = hdul[0].header['DEC']
     except:
         RA  = 0
         DEC = 0
-
     try:
         SN = hdul[0].header['SN']
     except:
@@ -292,7 +288,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
             Av[mm] = Av_tmp + Avrand
 
         for aa in range(len(age)):
-            AAtmp[aa] = samples['A'+str(aa)][mtmp]/mu
+            AAtmp[aa] = samples['A'+str(aa)][mtmp]
             try:
                 ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
             except:
@@ -520,12 +516,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     prihdr['z']      = zbes
     prihdr['RA']     = RA
     prihdr['DEC']    = DEC
+    '''
     prihdr['Re_kpc'] = rek
     prihdr['Ser_n']  = nn
     prihdr['Axis_q'] = qq
     prihdr['e_Re']   = (erekl+ereku)/2.
     prihdr['e_n']    = enn
     prihdr['e_q']    = eqq
+    '''
     # Add rejuv properties;
     prihdr['f_rejuv']= f_rejuv
     prihdr['t_quen'] = t_quench
@@ -575,6 +573,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     col50 = fits.Column(name='AV', format='E', unit='mag', array=para[:])
     col01.append(col50)
 
+    '''
+    Ths is in gsf_sed_*.fits
     # U-V
     para = [uv[0], uv[1], uv[2]]
     col50 = fits.Column(name='U-V', format='E', unit='mag', array=para[:])
@@ -584,6 +584,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     para = [vj[0], vj[1], vj[2]]
     col50 = fits.Column(name='V-J', format='E', unit='mag', array=para[:])
     col01.append(col50)
+    '''
 
     colms  = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
@@ -1055,11 +1056,21 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
 
 
 def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
-    #
-    # delt_sfh (float): delta t of input SFH in Gyr.
-    #
-    # Returns: SED as function of age, based on SF and Z histories;
-    #
+    '''
+    Input:
+    ============
+
+    delt_sfh (float): delta t of input SFH in Gyr.
+
+
+    Returns:
+    ============
+
+    SED as function of age, based on SF and Z histories;
+
+    '''
+    import os.path
+
     ################
     flim = 0.01
     lsfrl = -1 # log SFR low limit
@@ -1074,7 +1085,6 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     ################
     # RF colors.
-    import os.path
     home = os.path.expanduser('~')
     c      = 3.e18 # A/s
     chimax = 1.

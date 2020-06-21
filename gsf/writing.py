@@ -35,26 +35,6 @@ def get_param(self, res, fitc, tcalc=1.):
     nmc  = self.nmc
     ndim = self.ndim
 
-    mmax = 30
-    if nmc<mmax:
-        mmax = int(nmc/2.)
-
-    # RF color
-    uv = np.zeros(int(mmax), dtype='float32')
-    bv = np.zeros(int(mmax), dtype='float32')
-    vj = np.zeros(int(mmax), dtype='float32')
-    zj = np.zeros(int(mmax), dtype='float32')
-
-    # Lick indeces
-    Dn4  = np.zeros(int(mmax), dtype='float32')
-    Mgb  = np.zeros(int(mmax), dtype='float32')
-    Fe52 = np.zeros(int(mmax), dtype='float32')
-    Fe53 = np.zeros(int(mmax), dtype='float32')
-    Mg1  = np.zeros(int(mmax), dtype='float32')
-    Mg2  = np.zeros(int(mmax), dtype='float32')
-    G4300= np.zeros(int(mmax), dtype='float32')
-    NaD  = np.zeros(int(mmax), dtype='float32')
-    Hb   = np.zeros(int(mmax), dtype='float32')
 
     samples = res.chain[:, :, :].reshape((-1, ndim)) # Already burned.
 
@@ -115,82 +95,6 @@ def get_param(self, res, fitc, tcalc=1.):
         except:
             pass
 
-    for mm in range(0,mmax,1):
-        rn = np.random.randint(len(samples))
-        for aa in range(len(age)):
-            fit_params['A'+str(aa)].value = res.flatchain['A%d'%(aa)][rn]
-            try:
-                fit_params['Z'+str(aa)].value = res.flatchain['Z%d'%(aa)][rn]
-            except:
-                pass
-        fit_params['Av'].value = res.flatchain['Av'][rn]
-
-        model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
-        '''
-        # not necessary here.
-        if self.f_dust:
-            model2_dust, xm_tmp_dust = fnc.tmp04_dust(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
-            model2 = np.append(model2,model2_dust)
-            xm_tmp = np.append(xm_tmp,xm_tmp_dust)
-        '''
-
-        Dn4[mm]= calc_Dn4(xm_tmp, model2, zrecom) # Dust attenuation is not included?
-        lmrest = xm_tmp / (1. + zrecom)
-        band0  = ['u','b','v','j','sz']
-        try:
-            lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # model2 in fnu
-            uv[mm] = -2.5*np.log10(fconv[0]/fconv[2])
-            bv[mm] = -2.5*np.log10(fconv[1]/fconv[2])
-            vj[mm] = -2.5*np.log10(fconv[2]/fconv[3])
-            zj[mm] = -2.5*np.log10(fconv[4]/fconv[3])
-        except:
-            uv[mm] = 0
-            bv[mm] = 0
-            vj[mm] = 0
-            zj[mm] = 0
-
-        '''
-        AA_tmp_sum = 0
-        for ii in range(len(ZZ_tmp)):
-            NZbest[ii]  = bfnc.Z2NZ(ZZ_tmp[ii])
-            AA_tmp_sum += AA_tmp[ii]
-
-            f0 = fits.open(DIR_TMP + 'index_'+str(NZbest[ii])+'.fits')
-
-            Mgb[mm]  += f0[1].data['Mgb_'+str(NZbest[ii])][ii]    * AA_tmp[ii]
-            Fe52[mm] += f0[1].data['Fe5270_'+str(NZbest[ii])][ii] * AA_tmp[ii]
-            Fe53[mm] += f0[1].data['Fe5335_'+str(NZbest[ii])][ii] * AA_tmp[ii]
-            G4300[mm]+= f0[1].data['G4300_'+str(NZbest[ii])][ii]  * AA_tmp[ii]
-            NaD[mm]  += f0[1].data['NaD_'+str(NZbest[ii])][ii]    * AA_tmp[ii]
-            Hb[mm]   += f0[1].data['Hb_'+str(NZbest[ii])][ii]     * AA_tmp[ii]
-            Mg1[mm]  += f0[1].data['Mg1_'+str(NZbest[ii])][ii]    * AA_tmp[ii]
-            Mg2[mm]  += f0[1].data['Mg2_'+str(NZbest[ii])][ii]    * AA_tmp[ii]
-
-        Mgb[mm]   /= AA_tmp_sum
-        Fe52[mm]  /= AA_tmp_sum
-        Fe53[mm]  /= AA_tmp_sum
-        G4300[mm] /= AA_tmp_sum
-        NaD[mm]   /= AA_tmp_sum
-        Hb[mm]    /= AA_tmp_sum
-        Mg1[mm]   /= AA_tmp_sum
-        Mg2[mm]   /= AA_tmp_sum
-        '''
-
-    conper = (Dn4>-99) #(Dn4>0)
-    Dnmc = np.percentile(Dn4[conper], [16,50,84])
-    uvmc = np.percentile(uv[conper], [16,50,84])
-    bvmc = np.percentile(bv[conper], [16,50,84])
-    vjmc = np.percentile(vj[conper], [16,50,84])
-    zjmc = np.percentile(zj[conper], [16,50,84])
-
-    Mgbmc  = np.percentile(Mgb[conper], [16,50,84])
-    Fe52mc = np.percentile(Fe52[conper], [16,50,84])
-    Fe53mc = np.percentile(Fe53[conper], [16,50,84])
-    G4300mc= np.percentile(G4300[conper], [16,50,84])
-    NaDmc  = np.percentile(NaD[conper], [16,50,84])
-    Hbmc   = np.percentile(Hb[conper], [16,50,84])
-    Mg1mc  = np.percentile(Mg1[conper], [16,50,84])
-    Mg2mc  = np.percentile(Mg2[conper], [16,50,84])
 
     ############
     # Get SN.
@@ -256,28 +160,8 @@ def get_param(self, res, fitc, tcalc=1.):
     col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
     col01.append(col50)
 
-    # Dn4000
-    col50 = fits.Column(name='Dn4', format='E', unit='', array=Dnmc[:])
-    col01.append(col50)
-
     # Mass
     col50 = fits.Column(name='ms', format='E', unit='Msun', array=msmc[:])
-    col01.append(col50)
-
-    # U-V
-    col50 = fits.Column(name='uv', format='E', unit='mag', array=uvmc[:])
-    col01.append(col50)
-
-    # V-J
-    col50 = fits.Column(name='vj', format='E', unit='mag', array=vjmc[:])
-    col01.append(col50)
-
-    # B-V
-    col50 = fits.Column(name='bv', format='E', unit='mag', array=bvmc[:])
-    col01.append(col50)
-
-    # z-J
-    col50 = fits.Column(name='zj', format='E', unit='mag', array=zjmc[:])
     col01.append(col50)
 
     # zmc
@@ -294,6 +178,125 @@ def get_param(self, res, fitc, tcalc=1.):
 
     # C1 scale
     col50 = fits.Column(name='Cscale1', format='E', unit='', array=scl_cz1[:])
+    col01.append(col50)
+
+    colms  = fits.ColDefs(col01)
+    dathdu = fits.BinTableHDU.from_columns(colms)
+    hdu    = fits.HDUList([prihdu, dathdu])
+    hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
+
+    ##########
+    # LINES
+    ##########
+    LW, fLW = self.get_lines(self.LW0)
+    fw = open('table_' + ID0 + '_PA' + PA0 + '_lines.txt', 'w')
+    fw.write('# ID PA WL Fcont50 Fcont16 Fcont84 Fline50 Fline16 Fline84 EW50 EW16 EW84\n')
+    for ii in range(len(LW)):
+        if fLW[ii] == 1:
+            fw.write('%s %s %d %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(ID0, PA0, LW[ii], np.median(Fcont[ii,:]), np.percentile(Fcont[ii,:],16), np.percentile(Fcont[ii,:],84), np.median(Fline[ii,:]), np.percentile(Fline[ii,:],16), np.percentile(Fline[ii,:],84), np.median(EW[ii,:]), np.percentile(EW[ii,:],16), np.percentile(EW[ii,:],84)))
+        else:
+            fw.write('%s %s %d 0 0 0 0 0 0 0 0 0\n'%(ID0, PA0, LW[ii]))
+    fw.close()
+
+
+
+def get_index(mmax=300):
+    '''
+    Purpose:
+    ==========
+    Retrieve spectral indices from each realization.
+    '''
+
+    if nmc<mmax:
+        mmax = int(nmc/2.)
+
+    # RF color
+    uv = np.zeros(int(mmax), dtype='float32')
+    bv = np.zeros(int(mmax), dtype='float32')
+    vj = np.zeros(int(mmax), dtype='float32')
+    zj = np.zeros(int(mmax), dtype='float32')
+
+    # Lick indeces
+    Dn4  = np.zeros(int(mmax), dtype='float32')
+    Mgb  = np.zeros(int(mmax), dtype='float32')
+    Fe52 = np.zeros(int(mmax), dtype='float32')
+    Fe53 = np.zeros(int(mmax), dtype='float32')
+    Mg1  = np.zeros(int(mmax), dtype='float32')
+    Mg2  = np.zeros(int(mmax), dtype='float32')
+    G4300= np.zeros(int(mmax), dtype='float32')
+    NaD  = np.zeros(int(mmax), dtype='float32')
+    Hb   = np.zeros(int(mmax), dtype='float32')
+
+    for mm in range(0,mmax,1):
+        rn = np.random.randint(len(res.flatchain['A0']))
+
+        for aa in range(len(age)):
+            fit_params['A'+str(aa)].value = res.flatchain['A%d'%(aa)][rn]
+            try:
+                fit_params['Z'+str(aa)].value = res.flatchain['Z%d'%(aa)][rn]
+            except:
+                pass
+        fit_params['Av'].value = res.flatchain['Av'][rn]
+
+        model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
+
+        # not necessary here.
+        if self.f_dust:
+            model2_dust, xm_tmp_dust = fnc.tmp04_dust(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
+            model2 = np.append(model2,model2_dust)
+            xm_tmp = np.append(xm_tmp,xm_tmp_dust)
+
+        Dn4[mm]= calc_Dn4(xm_tmp, model2, zrecom) # Dust attenuation is not included?
+        lmrest = xm_tmp / (1. + zrecom)
+        band0  = ['u','b','v','j','sz']
+        try:
+            lmconv,fconv = filconv(band0, lmrest, model2, fil_path) # model2 in fnu
+            uv[mm] = -2.5*np.log10(fconv[0]/fconv[2])
+            bv[mm] = -2.5*np.log10(fconv[1]/fconv[2])
+            vj[mm] = -2.5*np.log10(fconv[2]/fconv[3])
+            zj[mm] = -2.5*np.log10(fconv[4]/fconv[3])
+        except:
+            uv[mm] = 0
+            bv[mm] = 0
+            vj[mm] = 0
+            zj[mm] = 0
+
+    conper = (Dn4>-99) #(Dn4>0)
+    Dnmc = np.percentile(Dn4[conper], [16,50,84])
+    uvmc = np.percentile(uv[conper], [16,50,84])
+    bvmc = np.percentile(bv[conper], [16,50,84])
+    vjmc = np.percentile(vj[conper], [16,50,84])
+    zjmc = np.percentile(zj[conper], [16,50,84])
+
+    Mgbmc  = np.percentile(Mgb[conper], [16,50,84])
+    Fe52mc = np.percentile(Fe52[conper], [16,50,84])
+    Fe53mc = np.percentile(Fe53[conper], [16,50,84])
+    G4300mc= np.percentile(G4300[conper], [16,50,84])
+    NaDmc  = np.percentile(NaD[conper], [16,50,84])
+    Hbmc   = np.percentile(Hb[conper], [16,50,84])
+    Mg1mc  = np.percentile(Mg1[conper], [16,50,84])
+    Mg2mc  = np.percentile(Mg2[conper], [16,50,84])
+
+
+    # Dn4000
+    col50 = fits.Column(name='Dn4', format='E', unit='', array=Dnmc[:])
+    col01.append(col50)
+
+
+    # U-V
+    col50 = fits.Column(name='uv', format='E', unit='mag', array=uvmc[:])
+    col01.append(col50)
+
+    # V-J
+    col50 = fits.Column(name='vj', format='E', unit='mag', array=vjmc[:])
+    col01.append(col50)
+
+    # B-V
+    col50 = fits.Column(name='bv', format='E', unit='mag', array=bvmc[:])
+    col01.append(col50)
+
+    # z-J
+    col50 = fits.Column(name='zj', format='E', unit='mag', array=zjmc[:])
     col01.append(col50)
 
     # Mgb
@@ -329,22 +332,3 @@ def get_param(self, res, fitc, tcalc=1.):
     col01.append(col50)
 
     # Summarize;
-    colms  = fits.ColDefs(col01)
-    dathdu = fits.BinTableHDU.from_columns(colms)
-    hdu    = fits.HDUList([prihdu, dathdu])
-    hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
-
-    ##########
-    # LINES
-    ##########
-    #MB = Mainbody(self.inputs)
-    LW, fLW = self.get_lines(self.LW0)
-
-    fw = open('table_' + ID0 + '_PA' + PA0 + '_lines.txt', 'w')
-    fw.write('# ID PA WL Fcont50 Fcont16 Fcont84 Fline50 Fline16 Fline84 EW50 EW16 EW84\n')
-    for ii in range(len(LW)):
-        if fLW[ii] == 1:
-            fw.write('%s %s %d %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(ID0, PA0, LW[ii], np.median(Fcont[ii,:]), np.percentile(Fcont[ii,:],16), np.percentile(Fcont[ii,:],84), np.median(Fline[ii,:]), np.percentile(Fline[ii,:],16), np.percentile(Fline[ii,:],84), np.median(EW[ii,:]), np.percentile(EW[ii,:],16), np.percentile(EW[ii,:],84)))
-        else:
-            fw.write('%s %s %d 0 0 0 0 0 0 0 0 0\n'%(ID0, PA0, LW[ii]))
-    fw.close()

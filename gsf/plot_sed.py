@@ -32,6 +32,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     plots
 
     '''
+    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    from scipy.optimize import curve_fit
+    from scipy import asarray as ar,exp
+    import matplotlib
+    import scipy.integrate as integrate
+    import scipy.special as special
+
+    def gaus(x,a,x0,sigma):
+        return a*exp(-(x-x0)**2/(2*sigma**2))
 
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     lcb = '#4682b4' # line color, blue
@@ -337,9 +348,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ################
     # Set the inset.
     ################
-    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
     if f_grsm:
         ax2t = inset_axes(ax1, width="40%", height="30%", loc=2)
@@ -423,9 +431,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ax1.set_ylim(-ymax*0.1,ymax)
     ax1.text(2300,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
-    #import matplotlib.ticker as ticker
-    import matplotlib
-    #ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
     xticks = [2500, 5000, 10000, 20000, 40000, 80000]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8']
     #if f_dust:
@@ -478,12 +483,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
     #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 6563, 6717, 6731]
     FLW = np.zeros(len(LN),dtype='int')
-
-    from scipy.optimize import curve_fit
-    from scipy import asarray as ar,exp
-
-    def gaus(x,a,x0,sigma):
-        return a*exp(-(x-x0)**2/(2*sigma**2))
 
     dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR = dat[:, 0]
@@ -560,10 +559,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     Fuv     = np.zeros(nmc2, dtype='float64') # For Muv
     Fuv28   = np.zeros(nmc2, dtype='float64') # For Fuv(1500-2800)
     Lir     = np.zeros(nmc2, dtype='float64') # For L(8-1000um)
+    UVJ     = np.zeros((nmc2,4), dtype='float64') # For UVJ color;
+    band0  = ['u','b','v','j','sz']
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
+    # From random chain;
     for kk in range(0,nmc2,1):
-        nr = np.random.randint(len(samples))
+        nr = np.random.randint(len(samples['A0']))
         Av_tmp = samples['Av'][nr]
         for ss in range(len(age)):
             AA_tmp = samples['A'+str(ss)][nr]
@@ -576,14 +578,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             if ss == 0:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp = mod0_tmp
-                #if kk == nmc2-1:
-                #    ax1.fill_between(xm_tmp, fm_tmp * 0, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color=col[ss], zorder=-2, alpha=0.5)
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp += mod0_tmp
-                #if kk == nmc2-1:
-                #    ax1.fill_between(xm_tmp, (fm_tmp-mod0_tmp) * c/ np.square(xm_tmp) / d, fm_tmp * c/ np.square(xm_tmp) / d, '-', lw=1, color=col[ss], zorder=-2, alpha=0.5)
-
 
         if f_err == 1:
             ferr_tmp = samples['f'][nr]
@@ -628,9 +625,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         #
         if f_grsm:
             ax2t.plot(x1_tot/zscl, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+
+        # Get FUV flux;
         Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk]   = 0
+
+        # Get UVJ Color;
+        #    band0  = ['u','b','v','j','sz']
+        lmconv,fconv = filconv(band0, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)), fil_path) # model2 in fnu
+        UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
+        UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
+        UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
+        UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
+
 
     #
     # Plot Median SED;
@@ -677,8 +685,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     f_chind = False
     if f_chind:
         # Chi2 for non detection;
-        import scipy.integrate as integrate
-        import scipy.special as special
         chi_nd = 0
         for nn in range(len(ey[con_up])):
             result = integrate.quad(lambda xint: func_tmp(xint,ey[con_up][nn]/SNlim,ysump[con_up][nn]), 0 * ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim)
@@ -723,7 +729,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     # plot opt-NIR range;
     ax1.scatter(lbb, fbb, lw=1, color='none', edgecolor='blue', \
     zorder=2, alpha=1.0, marker='d', s=40)
-    if save_sed == True:
+    if save_sed:
         # Save BB model;
         col_sed = []
         coltmp = fits.Column(name='wave', format='E', unit='AA', array=lbb)
@@ -790,6 +796,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         hdr['LIR16'] = np.percentile(Lir[:],16)
         hdr['LIR50'] = np.percentile(Lir[:],50)
         hdr['LIR84'] = np.percentile(Lir[:],84)
+
+        # UVJ
+        hdr['uv16'] = np.percentile(UVJ[:,0],16)
+        hdr['uv50'] = np.percentile(UVJ[:,0],50)
+        hdr['uv84'] = np.percentile(UVJ[:,0],84)
+        hdr['bv16'] = np.percentile(UVJ[:,1],16)
+        hdr['bv50'] = np.percentile(UVJ[:,1],50)
+        hdr['bv84'] = np.percentile(UVJ[:,1],84)
+        hdr['vj16'] = np.percentile(UVJ[:,2],16)
+        hdr['vj50'] = np.percentile(UVJ[:,2],50)
+        hdr['vj84'] = np.percentile(UVJ[:,2],84)
+        hdr['zj16'] = np.percentile(UVJ[:,3],16)
+        hdr['zj50'] = np.percentile(UVJ[:,3],50)
+        hdr['zj84'] = np.percentile(UVJ[:,3],84)
 
         # Write;
         colspec = fits.ColDefs(col00)
