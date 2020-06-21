@@ -20,16 +20,21 @@ from . import img_scale
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False):
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False):
     '''
+    Purpose:
+    ==========
+
+    Star formation history plot.
+
+
+    Input:
+    ==========
+    
+    flim  : Lower limit for plotting an age bin.
+    lsfrl : Lower limit for SFR, in logMsun/yr
 
     '''
-
-    flim = 0.01
-    lsfrl = -1 # log SFR low limit
-    mmax  = 1000
-    Txmax = 4 # Max x value
-    lmmin = 9.5 #10.3
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -251,7 +256,8 @@ def plot_sfh(MB, f_comp=0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_
             except:
                 pass
     except:
-        print('No simulation file (%s).\nError may be underestimated.' % meanfile)
+        if verbose:
+            print('No simulation file (%s).\nError may be underestimated.' % meanfile)
         eA = age * 0
         eZ = age * 0
         eAv= 0

@@ -164,7 +164,6 @@ class Mainbody():
                 con_z     = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
 
-
         # N of param:
         try:
             if int(inputs['ZEVOL']) == 1:
@@ -229,6 +228,14 @@ class Mainbody():
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
 
+
+        '''
+        # Read Observed Data
+        if self.f_dust:
+            self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=True)
+        else:
+            self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
+        '''
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
@@ -318,7 +325,7 @@ class Mainbody():
             wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
 
         # Into dict
-        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'xbb':xbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
+        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'xbb':xbb, 'exbb':exbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
 

@@ -512,7 +512,6 @@ def maketemp(MB):
                 col03      = [colspec_dw,col_dw]
             nu_d  = c / lambda_d # 1/s = Hz
             BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
-            # in side exp: J*s * (1/s) / (J/K * K) = 1;
 
             # if optically thin;
             #kappa = nu_d ** beta_d

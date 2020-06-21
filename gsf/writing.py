@@ -35,7 +35,7 @@ def get_param(self, res, fitc, tcalc=1.):
     nmc  = self.nmc
     ndim = self.ndim
 
-    mmax = 300
+    mmax = 30
     if nmc<mmax:
         mmax = int(nmc/2.)
 
@@ -104,20 +104,28 @@ def get_param(self, res, fitc, tcalc=1.):
     #
     # Get mcmc model templates, plus some indicies.
     #
+    # This is just for here;
     fit_params = Parameters()
+    for aa in range(len(age)):
+        fit_params.add('A'+str(aa), value=1., min=0, max=10000)
+    fit_params.add('Av', value=0., min=0, max=10)
+    for aa in range(len(age)):
+        try:
+            fit_params.add('Z'+str(aa), value=0.0, min=-10, max=10)
+        except:
+            pass
+
     for mm in range(0,mmax,1):
-        print(mm)
         rn = np.random.randint(len(samples))
         for aa in range(len(age)):
-            fit_params.add('A'+str(aa), value=res.flatchain['A%d'%(aa)][rn], min=0, max=10000)
-        fit_params.add('Av', value=res.flatchain['Av'][rn], min=0, max=10)
-        for aa in range(len(age)):
+            fit_params['A'+str(aa)].value = res.flatchain['A%d'%(aa)][rn]
             try:
-                fit_params.add('Z'+str(aa), value=res.flatchain['Z%d'%(aa)][rn], min=-10, max=10)
+                fit_params['Z'+str(aa)].value = res.flatchain['Z%d'%(aa)][rn]
             except:
                 pass
-        model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
+        fit_params['Av'].value = res.flatchain['Av'][rn]
 
+        model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
         '''
         # not necessary here.
         if self.f_dust:
@@ -194,8 +202,8 @@ def get_param(self, res, fitc, tcalc=1.):
     fsp  = fds[:,2]
     esp  = fds[:,3]
 
-    consp = (nrs<10000) & (lams/(1.+zrecom)>3600) & (lams/(1.+zrecom)<4200)
-    NSN = len((fsp/esp)[consp])
+    consp = (nrs<10000) & (lams/(1.+zrecom)>3600) & (lams/(1.+zrecom)<4200) & (esp>0)
+    NSN   = len(fsp[consp])
     if NSN>0:
         SN = np.median((fsp/esp)[consp])
     else:

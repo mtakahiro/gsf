@@ -20,7 +20,7 @@ from . import corner
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False):
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False):
     '''
     Input:
     ============
@@ -98,7 +98,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     M16 = hdul[1].data['ms'][0]
     M50 = hdul[1].data['ms'][1]
     M84 = hdul[1].data['ms'][2]
-    print('Total stellar mass is %.2e'%(M50))
+    if verbose:
+        print('Total stellar mass is %.2e'%(M50))
 
     # Amplitude MC
     A50 = np.zeros(len(age), dtype='float64')
@@ -144,7 +145,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         DFILT   = inputs['FIR_FILTER'] # filter band string.
         DFILT   = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
-        print('Total dust mass is %.2e'%(MD50))
+        if verbose:
+            print('Total dust mass is %.2e'%(MD50))
         f_dust = True
     except:
         f_dust = False
@@ -161,6 +163,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ###############################
     # Data taken from
     ###############################
+    if MB.f_dust:
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
+    else:
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
+
     dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR   = dat[:, 0]
     x    = dat[:, 1]
@@ -193,16 +200,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ey   = np.append(ey01,eg2)
 
     # Weight is set to zero for those no data (ey<0).
-    wht=1./np.square(ey)
-    con_wht = (ey<0)
-    wht[con_wht] = 0
+    wht = fy * 0
+    con_wht = (ey>0)
+    wht[con_wht] = 1./np.square(ey)
 
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NRbb = dat[:, 0]
-    xbb  = dat[:, 1]
-    fybb = dat[:, 2]
-    eybb = dat[:, 3]
-    exbb = dat[:, 4]
+    NRbb = MB.dict['NR'] #dat[:, 0]
+    xbb  = MB.dict['xbb'] #dat[:, 1]
+    fybb = MB.dict['fybb'] #dat[:, 2]
+    eybb = MB.dict['eybb'] #dat[:, 3]
+    exbb = MB.dict['exbb'] #dat[:, 4]
     snbb = fybb/eybb
 
     ######################
@@ -225,7 +231,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     conspec = (NR<10000) #& (fy/ey>1)
     ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
-    #conbb = (NR>=10000)
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -485,7 +490,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     x  = dat[:, 1]
     fy = dat[:, 2]
     ey = dat[:, 3]
-    wht=1./np.square(ey)
+
+    wht = fy * 0
+    con_wht = (ey>0)
+    wht[con_wht] = 1./np.square(ey[con_wht])
     ysum_cut = np.interp(x,x0,ysum)
 
     ########################
@@ -651,10 +659,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
 
-    conw = (wht3>0) #& (fy/ey>=SNlim)
+    conw = (wht3>0) & (ey>0) # & (fy/ey>=SNlim)
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
+    ndim_eff = MB.ndim
 
-    nod  = int(len(wht3[conw])-MB.ndim)
+    agemax = MB.cosmo.age(zbes).value
+    for aa in range(len(MB.age)):
+        if MB.age[aa]>agemax:
+            ndim_eff -= 1
+        if MB.ZEVOL == 1:
+            # This is for Z at this age;
+            ndim_eff -= 1
+
+    nod  = int(len(wht3[conw])-ndim_eff)
     con_up = (ey>0)&(fy/ey<SNlim)
 
     f_chind = False
@@ -669,16 +686,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     else:
         chi_nd = 0
 
-    fin_chi2 = (chi2 - 2 * chi_nd) / nod
     print('chi2               : %.2f'%(chi2))
     if f_chind:
         print('No-of-non-det      : %d'%(len(ey[con_up])))
         print('chi2 for non-det   : %.2f'%(chi_nd))
     print('No-of-data points  : %d'%(len(wht3[conw])))
-    print('No-of-params       : %d'%(MB.ndim))
+    print('No-of-params       : %d'%(ndim_eff))
     print('Degrees-of-freedom : %d'%(nod))
+    if nod>0:
+        fin_chi2 = (chi2 - 2 * chi_nd) / nod
+    else:
+        fin_chi2 = -99
     print('Final chi2/nu      : %.2f'%(fin_chi2))
-
 
     #
     # plot BB model from best template (blue squares)
@@ -721,14 +740,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         fbb84_nu = flamtonu(lbb, fbb84*1e-18, m0set=25.0)
         coltmp = fits.Column(name='fnu_84', format='E', unit='fnu(m0=25)', array=fbb84_nu)
         col_sed.append(coltmp)
-        '''
-        fw = open(ID + '_PA' + PA + '_sed.txt', 'w')
-        fw.write('# wave fnu_16 fnu_50 fnu_84 filt_width filter_no\n')
-        fw.write('# (AA) (m0=25.0) (AA)       ()\n')
-        for ii in range(len(lbb)):
-            fw.write('%.2f %.5f %.2f %s\n'%(lbb[ii],fbb_nu[ii],lfwhm[ii],ALLFILT[ii]))
-        fw.close()
-        '''
+
         col  = fits.ColDefs(col_sed)
         hdu0 = fits.BinTableHDU.from_columns(col)#, header=hdr)
         hdu0.writeto(ID + '_PA' + PA + '_sed.fits', overwrite=True)
@@ -759,7 +771,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
         hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
         hdr['hierarch Chi2-of-nondetection'] = chi_nd
-        hdr['hierarch No-of-params']  = MB.ndim
+        hdr['hierarch No-of-params']  = ndim_eff
         hdr['hierarch Degree-of-freedom']  = nod
         hdr['hierarch reduced-chi2']  = fin_chi2
 
@@ -821,14 +833,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*1.1
             ax3t.set_ylim(y3min, y3max)
         except:
-            print('y3 limit is not specified.')
+            if verbose:
+                print('y3 limit is not specified.')
             pass
         ax3t.set_xlim(1e5, 2e7)
         ax3t.set_xscale('log')
-        #ax3t.set_yticklabels(())
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
-        #plt.show()
 
     ###############
     # Line name
@@ -877,57 +888,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
                     ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
         except:
             pass
-
-
-    ####################
-    # Plot Different Z
-    ####################
-    '''
-    # Deprecated;
-    if f_Z_all == 1:
-        fileZ = 'Z_' + ID + '_PA' + PA + '.cat'
-        Zini, chi, Av = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[1, 2, 3+len(age)])
-        Atmp  = np.zeros((len(age),len(Zini)), 'float64')
-        Ztmp  = np.zeros((len(age),len(Zini)), 'float64')
-        for aa in range(len(age)):
-            Atmp[aa,:] = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[3+aa])
-            Ztmp[aa,:] = np.loadtxt(fileZ, comments='#', unpack=True, usecols=[3+len(age)+1+aa])
-
-        for jj in range(len(Zini)):
-            for aa in range(len(age)):
-                if aa == 0:
-                    y0_r, x0_r    = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rp, x0_rp  = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
-                else:
-                    y0_rr, x0_r     = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib_all)
-                    y0_rrp, x0_rrp  = fnc.tmp03(Atmp[aa, jj], Av[jj], aa, Ztmp[aa, jj], zbes, lib)
-                    y0_r  += y0_rr
-                    y0_rp += y0_rrp
-
-            ysum_Z = y0_r
-            chi2_ind = sum((np.square(fy-y0_rp)*wht3)[conw])
-            print('At Z=%.2f; chi2/nu is %.2f', Zini[jj], chi2_ind/nu)
-
-            if Zini[jj]>=0:
-                ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=\ \ %.2f$'%(Zini[jj])) # Z here is Zinitial.
-            else:
-                ax1.plot(x0_r, (ysum_Z)* c/np.square(x0_r)/d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.7, label='$\log\mathrm{Z_*}=%.2f$'%(Zini[jj])) # Z here is Zinitial.
-            if f_grsm:
-                ax2t.plot(x0_r/zscl, ysum_Z * c/ np.square(x0_r) / d, '--', lw=0.3+0.2*jj, color='gray', zorder=-3, alpha=0.5)
-
-    ################
-    # RGB
-    ################
-    try:
-        from scipy import misc
-        rgb_array = misc.imread('/Users/tmorishita/Box Sync/Research/M18_rgb/rgb_'+str(int(ID))+'.png')
-        axicon = fig.add_axes([0.68, 0.53, 0.4, 0.4])
-        axicon.imshow(rgb_array, interpolation='nearest', origin='upper')
-        axicon.set_xticks([])
-        axicon.set_yticks([])
-    except:
-        pass
-    '''
 
     ####################
     ## Save
