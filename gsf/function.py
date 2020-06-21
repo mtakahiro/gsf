@@ -961,19 +961,19 @@ def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
 
 
 def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
+    '''
     #
     # lsig (float): which sigma to detect lines.
     #
-
-    ################
-    # Line library
-    ################
-    #LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'Halpha', 'S2L', 'S2H']
-    #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4983, 6563, 6717, 6731]
+    '''
     fLW = np.zeros(len(LW), dtype='int') # flag.
     R_grs = (xcont[1] - xcont[0])
     dw    = 1.
-    er    = 1./np.sqrt(wht)
+
+    er = wht * 0
+    con_wht = (wht>0)
+    er[con_wht] = 1./np.sqrt(wht[con_wht])
+
     wht2   = wht
     flag_l = 0
 

@@ -672,7 +672,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
             ndim_eff -= 1
 
     nod  = int(len(wht3[conw])-ndim_eff)
-    con_up = (ey>0)&(fy/ey<SNlim)
+    con_up = (ey>0) & (fy/ey<SNlim)
 
     f_chind = False
     if f_chind:
