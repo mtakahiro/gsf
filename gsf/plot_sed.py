@@ -20,7 +20,7 @@ from . import corner
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc2=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False):
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False):
     '''
     Input:
     ============
@@ -71,7 +71,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     Mpc_cm = MB.Mpc_cm
     d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
-
     #############
     # Plot.
     #############
@@ -82,7 +81,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ##################
     # Fitting Results
     ##################
-    #DIR_TMP  = './templates/'
     DIR_FILT = fil_path
     if inputs:
         SFILT = inputs['FILTER'] # filter band string.
@@ -94,6 +92,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         f_err = int(inputs['F_ERR'])
     except:
         f_err = 0
+
     ###########################
     # Open result file
     ###########################
@@ -549,24 +548,25 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
 
     samples  = res
 
-    ytmp = np.zeros((nmc2,len(ysum)), dtype='float64')
+    ytmp = np.zeros((nmc_rand,len(ysum)), dtype='float64')
     ytmpmax = np.zeros(len(ysum), dtype='float64')
     ytmpmin = np.zeros(len(ysum), dtype='float64')
 
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-    Fuv     = np.zeros(nmc2, dtype='float64') # For Muv
-    Fuv28   = np.zeros(nmc2, dtype='float64') # For Fuv(1500-2800)
-    Lir     = np.zeros(nmc2, dtype='float64') # For L(8-1000um)
-    UVJ     = np.zeros((nmc2,4), dtype='float64') # For UVJ color;
+    Fuv     = np.zeros(nmc_rand, dtype='float64') # For Muv
+    Fuv28   = np.zeros(nmc_rand, dtype='float64') # For Fuv(1500-2800)
+    Lir     = np.zeros(nmc_rand, dtype='float64') # For L(8-1000um)
+    UVJ     = np.zeros((nmc_rand,4), dtype='float64') # For UVJ color;
     band0  = ['u','b','v','j','sz']
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
-    for kk in range(0,nmc2,1):
+    for kk in range(0,nmc_rand,1):
         nr = np.random.randint(len(samples['A0']))
         Av_tmp = samples['Av'][nr]
+
         for ss in range(len(age)):
             AA_tmp = samples['A'+str(ss)][nr]
             try:
@@ -631,14 +631,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk]   = 0
 
+
         # Get UVJ Color;
         #    band0  = ['u','b','v','j','sz']
-        lmconv,fconv = filconv(band0, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)), fil_path) # model2 in fnu
+        lmconv,fconv = filconv_fast(MB, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)))
         UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
         UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
-
 
     #
     # Plot Median SED;

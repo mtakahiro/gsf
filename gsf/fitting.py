@@ -16,7 +16,7 @@ from astropy.io import fits,ascii
 import corner
 
 # import from custom codes
-from .function import check_line_man, check_line_cz_man, filconv, calc_Dn4, savecpkl
+from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl
 from .zfit import check_redshift
 from .plot_sed import *
 from .writing import get_param
@@ -112,6 +112,12 @@ class Mainbody():
             self.filts    = [x.strip() for x in self.filts.split(',')]
         except:
             pass
+
+        self.band = {} #np.zeros((len(self.filts),),'float')
+        for ii in range(len(self.filts)):
+            fd = np.loadtxt(self.DIR_FILT + self.filts[ii] + '.fil', comments='#')
+            self.band['%s_lam'%(self.filts[ii])] = fd[:,1]
+            self.band['%s_res'%(self.filts[ii])] = fd[:,2] / np.max(fd[:,2])
 
         # Tau comparison?
         try:

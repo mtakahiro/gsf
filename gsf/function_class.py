@@ -270,7 +270,8 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         if f_bb:
-            fil_cen, fil_flux = filconv(self.filts, xxd_sort, Amp * yyd_sort, self.DIR_FIL)
+            #fil_cen, fil_flux = filconv(self.filts, xxd_sort, Amp * yyd_sort, self.DIR_FIL)
+            fil_cen, fil_flux = filconv_fast(self.MB, xxd_sort, Amp * yyd_sort)
             return Amp * yyd_sort, xxd_sort, fil_flux, fil_cen
         else:
             return Amp * yyd_sort, xxd_sort

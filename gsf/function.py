@@ -716,10 +716,13 @@ def check_line(data,wave,wht,model):
 
     return wht2
 
-# Convolution of templates with filter response curves.
-def filconv_cen(band0, l0, f0, DIR='FILT/'): # f0 in fnu
+def filconv_cen(band0, l0, f0, DIR='FILT/'):
     '''
+    Convolution of templates with filter response curves.
+
+    f0 in fnu
     '''
+
     fnu  = np.zeros(len(band0), dtype='float64')
     lcen = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
@@ -751,11 +754,68 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'): # f0 in fnu
 
     return lcen, fnu
 
+
+def filconv_fast(mb, l0, f0, fw=False):
+    '''
+    Input:
+    ============
+    f0: Flux for spectrum, in fnu
+    l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
+
+    '''
+    fnu  = np.zeros(len(mb.filts), dtype='float64')
+    lcen = np.zeros(len(mb.filts), dtype='float64')
+    if fw:
+        fwhm = np.zeros(len(mb.filts[:]), dtype='float64')
+
+    for ii in range(len(mb.filts[:])):
+        lfil = mb.band['%s_lam'%(mb.filts[ii])]
+        ffil = mb.band['%s_res'%(mb.filts[ii])]
+
+        if fw:
+            ffil_cum = np.cumsum(ffil)
+            ffil_cum/= ffil_cum.max()
+            con      = (ffil_cum>0.05) & (ffil_cum<0.95)
+            fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
+
+        lmin  = np.min(lfil)
+        lmax  = np.max(lfil)
+        imin  = 0
+        imax  = 0
+
+        con = (l0>lmin) & (l0<lmax) #& (f0>0)
+        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
+        if len(l0[con])>1:
+            lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
+            lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
+            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+            wht       = 1.
+
+            # This does not work sometimes;
+            #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
+            #I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            delS = lamS[1]-lamS[0]
+            I1  = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
+            I2  = np.sum(filt_int/lamS*delS)                  #Numerator
+            if I2>0:
+                fnu[ii] = I1/I2/c         #Average flux density
+            else:
+                fnu[ii] = 0
+        else:
+            fnu[ii] = 0
+
+    if fw:
+        return lcen, fnu, fwhm
+    else:
+        return lcen, fnu
+
+
 def filconv(band0, l0, f0, DIR, fw=False):
     '''
     Input:
     ============
-    f0: in fnu
+    f0: Flux for spectrum, in fnu
+    l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
 
     '''
 
@@ -780,13 +840,14 @@ def filconv(band0, l0, f0, DIR, fw=False):
         imin  = 0
         imax  = 0
 
-        con = (l0>lmin) & (l0<lmax) & (f0>0)
+        con = (l0>lmin) & (l0<lmax) #& (f0>0)
         lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
             filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
             wht       = 1.
+
             # This does not work sometimes;
             #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
             #I2  = simps(filt_int/lamS,lamS)                  #Numerator
@@ -800,15 +861,20 @@ def filconv(band0, l0, f0, DIR, fw=False):
         else:
             fnu[ii] = 0
 
-    if fw == True:
+    if fw:
         return lcen, fnu, fwhm
     else:
         return lcen, fnu
 
-def fil_fwhm(band0, DIR): # f0 in fnu
+
+def fil_fwhm(band0, DIR):
+    '''
     #
     # FWHM
     #
+    #f0 in fnu
+    #
+    '''
     fwhm = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
@@ -829,6 +895,7 @@ def fil_fwhm(band0, DIR): # f0 in fnu
         fwhm[ii] = lam1 - lam0
 
     return fwhm
+
 
 def calc_Dn4(x0, y0, z0):
     con1 = (x0/(1+z0)>3750) & (x0/(1+z0)<3950)
