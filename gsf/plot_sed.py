@@ -20,18 +20,20 @@ from . import corner
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False):
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False):
     '''
     Input:
     ============
 
-    snlimbb: SN limit to show flux or up lim in SED.
+    SNlim   : SN limit to show flux or up lim in SED.
+    f_chind : If include non-detection in chi2 calculation, using Sawicki12.
 
     Returns:
     ============
     plots
 
     '''
+
     from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
     from mpl_toolkits.axes_grid1.inset_locator import mark_inset
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -81,12 +83,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ##################
     # Fitting Results
     ##################
-    DIR_FILT = fil_path
-    if inputs:
-        SFILT = inputs['FILTER'] # filter band string.
-        SFILT = [x.strip() for x in SFILT.split(',')]
-    else:
-        SFILT = []
+    DIR_FILT = MB.DIR_FILT
+    SFILT    = MB.filts
 
     try:
         f_err = int(inputs['F_ERR'])
@@ -178,20 +176,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     else:
         MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
 
-    dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NR   = dat[:, 0]
-    x    = dat[:, 1]
-    fy00 = dat[:, 2]
-    ey00 = dat[:, 3]
+    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    NR   = MB.dict['NR'] #dat[:, 0]
+    x    = MB.dict['x'] #dat[:, 1]
+    fy   = MB.dict['fy'] #dat[:, 2]
+    ey   = MB.dict['ey'] #dat[:, 3]
 
     con0 = (NR<1000) #& (fy/ey>SNlim)
     xg0  = x[con0]
-    fg0  = fy00[con0] * Cz0
-    eg0  = ey00[con0] * Cz0
+    fg0  = fy[con0] * Cz0
+    eg0  = ey[con0] * Cz0
     con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
     xg1  = x[con1]
-    fg1  = fy00[con1] * Cz1
-    eg1  = ey00[con1] * Cz1
+    fg1  = fy[con1] * Cz1
+    eg1  = ey[con1] * Cz1
     if len(xg0)>0 or len(xg1)>0:
         f_grsm = True
     else:
@@ -199,22 +197,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
 
     con2 = (NR>=10000)#& (fy/ey>SNlim)
     xg2  = x[con2]
-    fg2  = fy00[con2]
-    eg2  = ey00[con2]
-
-    xg01 = np.append(xg0,xg1)
-    fy01 = np.append(fg0,fg1)
-    ey01 = np.append(eg0,eg1)
-    xg   = np.append(xg01,xg2)
-    fy   = np.append(fy01,fg2)
-    ey   = np.append(ey01,eg2)
+    fg2  = fy[con2]
+    eg2  = ey[con2]
 
     # Weight is set to zero for those no data (ey<0).
     wht = fy * 0
     con_wht = (ey>0)
     wht[con_wht] = 1./np.square(ey[con_wht])
 
-    NRbb = MB.dict['NR'] #dat[:, 0]
+    # BB data points;
+    NRbb = MB.dict['NRbb'] #dat[:, 0]
     xbb  = MB.dict['xbb'] #dat[:, 1]
     fybb = MB.dict['fybb'] #dat[:, 2]
     eybb = MB.dict['eybb'] #dat[:, 3]
@@ -347,7 +339,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     ################
     # Set the inset.
     ################
-
     if f_grsm:
         ax2t = inset_axes(ax1, width="40%", height="30%", loc=2)
 
@@ -483,22 +474,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
     #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 6563, 6717, 6731]
     FLW = np.zeros(len(LN),dtype='int')
 
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NR = dat[:, 0]
-    x  = dat[:, 1]
-    fy = dat[:, 2]
-    ey = dat[:, 3]
-
-    wht = fy * 0
-    con_wht = (ey>0)
-    wht[con_wht] = 1./np.square(ey[con_wht])
-    ysum_cut = np.interp(x,x0,ysum)
-
-    ########################
-    # Magnification
-    ########################
-    umag = 1
-
     ####################
     # For cosmology
     ####################
@@ -631,7 +606,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk]   = 0
 
-
         # Get UVJ Color;
         #    band0  = ['u','b','v','j','sz']
         lmconv,fconv = filconv_fast(MB, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)))
@@ -659,18 +633,23 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         l50_bb, ytmp50_bb, l50_fwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
     '''
 
-    #####################
+    #########################
     # Calculate non-det chi2
     # based on Sawick12
-    #####################
+    #########################
     def func_tmp(xint,eobs,fmodel):
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
 
-    conw = (wht3>0) & (ey>0) # & (fy/ey>=SNlim)
-    chi2 = sum((np.square(fy-ysump)*wht3)[conw])
-    ndim_eff = MB.ndim
+    if f_chind:
+        conw = (wht3>0) & (ey>0) #& (fy/ey>=SNlim)
+    else:
+        conw = (wht3>0) & (ey>0) & (fy/ey>=SNlim)
 
+    chi2 = sum((np.square(fy-ysump)*wht3)[conw])
+
+    # Effective ndim;
+    ndim_eff = MB.ndim
     agemax = MB.cosmo.age(zbes).value
     for aa in range(len(MB.age)):
         if MB.age[aa]>agemax:
@@ -678,24 +657,26 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, figpdf=False, save_sed=Tru
         if MB.ZEVOL == 1:
             # This is for Z at this age;
             ndim_eff -= 1
+    if MB.delZ < 0.01:
+        ndim_eff -= 1
 
-    nod  = int(len(wht3[conw])-ndim_eff)
     con_up = (ey>0) & (fy/ey<SNlim)
-
-    f_chind = False
     if f_chind:
         # Chi2 for non detection;
         chi_nd = 0
         for nn in range(len(ey[con_up])):
-            result = integrate.quad(lambda xint: func_tmp(xint,ey[con_up][nn]/SNlim,ysump[con_up][nn]), 0 * ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim)
-            chi_nd+= np.log(result[0])
+            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -99, ey[con_up][nn]/SNlim)
+            chi_nd += np.log(result[0])
     else:
         chi_nd = 0
+
+    # Number of degree;
+    nod = int(len(wht3[conw])-ndim_eff)
 
     print('chi2               : %.2f'%(chi2))
     if f_chind:
         print('No-of-non-det      : %d'%(len(ey[con_up])))
-        print('chi2 for non-det   : %.2f'%(chi_nd))
+        print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
     print('No-of-data points  : %d'%(len(wht3[conw])))
     print('No-of-params       : %d'%(ndim_eff))
     print('Degrees-of-freedom : %d'%(nod))

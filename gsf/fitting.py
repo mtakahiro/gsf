@@ -181,13 +181,15 @@ class Mainbody():
                 if int(inputs['ZMC']) == 1:
                     self.ndim += 1
                 print('No of params are : %d'%(self.ndim))
-
             else:
                 self.ZEVOL = 0
+                '''
                 if self.delZ < 0.01:
                     self.ndim = int(len(self.nage) + nAV) # age and Av.
                 else:
                     self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
+                '''
+                self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
 
                 print('Metallicity evolution is off.')
                 if int(inputs['ZMC']) == 1:
@@ -294,20 +296,9 @@ class Mainbody():
             fybb = dat['col3']
             eybb = dat['col4']
             exbb = dat['col5']
-
         except: # if no BB;
             print('No BB data.')
-            '''
-            xbb  = np.asarray([100.])
-            fy   = np.asarray([0.]) #np.append(fy01,fy2)
-            ey   = np.asarray([-99]) #np.append(ey01,ey2)
-            wht  = np.asarray([0.]) #check_line_man(fy, x, wht, fy, zprev, LW0)
-            wht2 = np.asarray([0.]) #check_line_man(fy, x, wht, fy, zprev, LW0)
-            sn   = np.asarray([0.]) #fy/ey
-            fybb = np.asarray([0])
-            eybb = np.asarray([-99])
-            exbb = np.asarray([100])
-            '''
+            NRbb = np.asarray([])
             xbb  = np.asarray([])
             fybb = np.asarray([])
             eybb = np.asarray([])
@@ -338,7 +329,7 @@ class Mainbody():
             wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
 
         # Into dict
-        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'xbb':xbb, 'exbb':exbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
+        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xbb, 'exbb':exbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
 
@@ -509,8 +500,8 @@ class Mainbody():
 
         # Plot;
         if self.fzvis==1:
-            #import matplotlib as mpl
-            #mpl.use('TkAgg')
+            import matplotlib as mpl
+            mpl.use('TkAgg')
             plt.plot(x_cz, fm_s, 'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation

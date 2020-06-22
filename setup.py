@@ -1,5 +1,3 @@
-#from distutils.core import setup
-#from distutils.extension import Extension
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
@@ -63,7 +61,7 @@ setup(
     packages=['gsf'],#,'example'
     #packages = find_packages(),
     package_dir={'gsf': 'gsf'},
-    requires=['lmfit', 'fsps', 'emcee', 'corner', 'cosmolopy'],
+    requires=['lmfit', 'fsps', 'python-fsps', 'emcee', 'corner'],
     #requires=['lmfit', 'fsps', 'python-fsps', 'emcee'],
     # long_description=read('README.rst'),
     classifiers=[

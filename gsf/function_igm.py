@@ -8,19 +8,25 @@ d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 def madau_igm_abs(xtmp, ytmp, zin, cosmo=None):
 	'''
-	#
-	# Returns; dust attenuated flux
-	#
-	# xtmp: RF wavelength
-	# ytmp: flux in f_lambda
-	# z_in: observed redshift
-	#
+	Purpose:
+	===========
+	IMG-attenuates the input flux at zin.
+
+	Input:
+	===========
+	xtmp: RF wavelength
+	ytmp: flux in f_lambda
+	z_in: observed redshift
+
+	Returns:
+	===========
+	IGM attenuated flux.
 	'''
+
 	if cosmo == None:
 		from astropy.cosmology import WMAP9 as cosmo
 
 	tau = np.zeros(len(xtmp), dtype='float32')
-	xlya = 1216.
 	xLL  = 912.
 	xLL  = 1216.
 	xobs = xtmp * (1.*zin)
@@ -45,26 +51,28 @@ def get_H(x,a):
 
 
 def get_sig_lya(lam_o, z_s, T=1e4, c=3e18):
-    #
-    # lam_o : Observed wavelength.
-    #
-    nu0    = 2.466e15 #Hz. Lya freq.
-    delnuL = 9.936e7  #Hz. Natural Line Width.
+	'''
+	lam_o : Observed wavelength.
 
-    nu = c / (lam_o * 1e-8)
+	'''
 
-    # Assume sigma_Lya = 100km/s.
-    #sigma_lya = 100.
-    Vth    = 12.85 * (T/1e4)**(1/2) * 1e5 # cm/s
-    delnuD = (Vth/c) * nu0
+	nu0    = 2.466e15 #Hz. Lya freq.
+	delnuL = 9.936e7  #Hz. Natural Line Width.
 
-    x = (nu - nu0)/delnuD
-    a = delnuL / (2.*delnuD)
-    H = get_H(x,a)
+	nu = c / (lam_o * 1e-8)
 
-    sig_lya = 1.041e-13 * (T/1e4)**(-1/2) * H / np.sqrt(np.pi)
+	# Assume sigma_Lya = 100km/s.
+	#sigma_lya = 100.
+	Vth    = 12.85 * (T/1e4)**(1/2) * 1e5 # cm/s
+	delnuD = (Vth/c) * nu0
 
-    return sig_lya
+	x = (nu - nu0)/delnuD
+	a = delnuL / (2.*delnuD)
+	H = get_H(x,a)
+
+	sig_lya = 1.041e-13 * (T/1e4)**(-1/2) * H / np.sqrt(np.pi)
+
+	return sig_lya
 
 
 def get_nH(z):
@@ -84,10 +92,13 @@ def get_nH(z):
 
 def get_column(zin, cosmo, Mpc_cm=3.08568025e+24, z_r=6.0, delz=0.1):
 	'''
-	#
-	# Returns : HI column density in IGM.
-	#
+
+	Returns
+	=========
+	HI column density of IGM at zin, in cm^-3.
+
 	'''
+
 	z = np.arange(z_r, zin, delz)
 	try:
 	    nH = np.zeros(len(z),dtype='float32')

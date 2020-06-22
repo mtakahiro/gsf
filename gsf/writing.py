@@ -35,7 +35,6 @@ def get_param(self, res, fitc, tcalc=1.):
     nmc  = self.nmc
     ndim = self.ndim
 
-
     samples = res.chain[:, :, :].reshape((-1, ndim)) # Already burned.
 
     ##############################
