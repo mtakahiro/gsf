@@ -2,8 +2,6 @@ import numpy as np
 import sys
 import os
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from numpy import log10
@@ -20,7 +18,7 @@ from . import corner
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False):
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True):
     '''
     Input:
     ============
@@ -42,6 +40,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
     import matplotlib
     import scipy.integrate as integrate
     import scipy.special as special
+    import os.path
+
+    if f_silence:
+        import matplotlib
+        matplotlib.use("Agg")
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
@@ -65,20 +68,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
 
     ################
     # RF colors.
-    import os.path
     home = os.path.expanduser('~')
     c      = MB.c
     chimax = 1.
     m0set  = MB.m0set
     Mpc_cm = MB.Mpc_cm
     d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
-
-    #############
-    # Plot.
-    #############
-    fig = plt.figure(figsize=(5.,2.2))
-    fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-    ax1 = fig.add_subplot(111)
 
     ##################
     # Fitting Results
@@ -195,11 +190,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
     else:
         f_grsm = False
 
-    con2 = (NR>=10000)#& (fy/ey>SNlim)
-    xg2  = x[con2]
-    fg2  = fy[con2]
-    eg2  = ey[con2]
-
     # Weight is set to zero for those no data (ey<0).
     wht = fy * 0
     con_wht = (ey>0)
@@ -217,7 +207,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
     # Weight by line
     ######################
     wh0  = 1./np.square(eg0)
-    LW0 = []
+    LW0  = []
     model = fg0
     wht3 = check_line_man(fy, x, wht, fy, zbes, LW0)
 
@@ -230,6 +220,25 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
     for aa in range(len(age)):
         ms[aa] = sedpar.data['ML_' +  str(int(NZbest[aa]))][aa]
 
+
+    #############
+    # Plot.
+    #############
+    # Set the inset.
+    if f_grsm or f_dust:
+        fig = plt.figure(figsize=(7.,3.2))
+        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+        ax1 = fig.add_subplot(111)
+        if f_grsm:
+            ax2t = inset_axes(ax1, width="30%", height="20%", loc=1)
+        if f_dust:
+            ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
+    else:
+        fig = plt.figure(figsize=(5.,2.2))
+        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+        ax1 = fig.add_subplot(111)
+
+    # Plot data;
     conspec = (NR<10000) #& (fy/ey>1)
     ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
@@ -336,15 +345,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
 
     fwuvj.close()
 
-    ################
-    # Set the inset.
-    ################
-    if f_grsm:
-        ax2t = inset_axes(ax1, width="40%", height="30%", loc=2)
-
     # FIR dust plot;
     if f_dust:
-        ax3t = inset_axes(ax1, width="40%", height="30%", loc=1)
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
@@ -499,10 +501,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
         ax2t.errorbar(xg1/zscl, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
         ax2t.errorbar(xg0/zscl, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
-        con4000b = (xg01/zscl>3400) & (xg01/zscl<3800) & (fy01>0) & (ey01>0)
-        con4000r = (xg01/zscl>4200) & (xg01/zscl<5000) & (fy01>0) & (ey01>0)
-        print('Median SN at 3400-3800 is;', np.median((fy01/ey01)[con4000b]))
-        print('Median SN at 4200-5000 is;', np.median((fy01/ey01)[con4000r]))
+        xgrism = np.concatenate([xg0,xg1])
+        fgrism = np.concatenate([fg0,fg1])
+        egrism = np.concatenate([eg0,eg1])
+        con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
+        con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
+        print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
+        print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
 
 
     #
@@ -534,7 +539,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
     Fuv28   = np.zeros(nmc_rand, dtype='float64') # For Fuv(1500-2800)
     Lir     = np.zeros(nmc_rand, dtype='float64') # For L(8-1000um)
     UVJ     = np.zeros((nmc_rand,4), dtype='float64') # For UVJ color;
-    band0  = ['u','b','v','j','sz']
+
+
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
@@ -607,8 +613,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, f_chind=True, figpdf=False
         Lir[kk]   = 0
 
         # Get UVJ Color;
-        #    band0  = ['u','b','v','j','sz']
-        lmconv,fconv = filconv_fast(MB, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)))
+        lmconv,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)))
         UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
@@ -1441,17 +1446,17 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
     flw.close()
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=300):
     '''
     Purpose:
     ==========
-    # Creat temporal png for gif image.
-    #
-    # For summary. In the same format as plot_corner_physparam_frame.
-    #
-    '''
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+    Creat temporal png for gif image.
 
+    For summary. In the same format as plot_corner_physparam_frame.
+
+    '''
+
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     import matplotlib
     import matplotlib.cm as cm
     import scipy.stats as stats
@@ -1519,8 +1524,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./'):
     zbes  = hdul[0].header['z']
     zscl = (1.+zbes)
 
-    # Repeat no.
-    nplot = 1000
+
 
     try:
         os.makedirs(DIR_OUT)

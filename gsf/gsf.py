@@ -135,14 +135,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
 
-        flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 0, MB.Cz0, MB.Cz1, cornerplot=cornerplot)
+        flag_suc = MB.main(0, cornerplot=cornerplot)
 
-        while (flag_suc == 1):
-            # In case of repeating fit;
-            MB.zprev = MB.zgal # Input redshift for previous run
-            MB.zgal  = zrecom # Recommended redshift from previous run
-            MB.Cz0  *= Czrec0
-            MB.Cz1  *= Czrec1
+        while (flag_suc and flag_suc!=-1):
 
             print('\n\n')
             print('Making templates...')
@@ -152,14 +147,14 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc, zrecom, Czrec0, Czrec1 = MB.main(MB.zgal, 1, MB.Cz0, MB.Cz1, cornerplot=cornerplot)
+            flag_suc = MB.main(1, cornerplot=cornerplot)
 
         # Total calculation time
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
 
 
-    if fplt <= 3 and flag_suc >= 0:
+    if fplt <= 3 and flag_suc != -1:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
         #plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,

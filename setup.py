@@ -61,8 +61,8 @@ setup(
     packages=['gsf'],#,'example'
     #packages = find_packages(),
     package_dir={'gsf': 'gsf'},
-    requires=['lmfit', 'fsps', 'python-fsps', 'emcee', 'corner'],
-    #requires=['lmfit', 'fsps', 'python-fsps', 'emcee'],
+    requires=['lmfit', 'fsps', 'emcee', 'corner'],
+    # 'python-fsps' could not be added here, somehow.
     # long_description=read('README.rst'),
     classifiers=[
         "Development Status :: 1 - Planning",

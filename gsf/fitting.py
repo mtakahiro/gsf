@@ -106,8 +106,8 @@ class Mainbody():
             os.mkdir(self.DIR_TMP)
 
         # Filter response curve directory, if bb catalog is provided.
+        self.DIR_FILT = inputs['DIR_FILT']
         try:
-            self.DIR_FILT = inputs['DIR_FILT']
             self.filts    = inputs['FILTER']
             self.filts    = [x.strip() for x in self.filts.split(',')]
         except:
@@ -118,6 +118,15 @@ class Mainbody():
             fd = np.loadtxt(self.DIR_FILT + self.filts[ii] + '.fil', comments='#')
             self.band['%s_lam'%(self.filts[ii])] = fd[:,1]
             self.band['%s_res'%(self.filts[ii])] = fd[:,2] / np.max(fd[:,2])
+
+        # Filter response curve directory, for RF colors.
+        self.filts_rf  = ['u','b','v','j','sz']
+        self.band_rf = {} #np.zeros((len(self.filts),),'float')
+        for ii in range(len(self.filts_rf)):
+            fd = np.loadtxt(self.DIR_FILT + self.filts_rf[ii] + '.fil', comments='#')
+            self.band_rf['%s_lam'%(self.filts_rf[ii])] = fd[:,1]
+            self.band_rf['%s_res'%(self.filts_rf[ii])] = fd[:,2] / np.max(fd[:,2])
+
 
         # Tau comparison?
         try:
@@ -273,9 +282,9 @@ class Mainbody():
         ##############
         # Spectrum
         ##############
-        dat = np.loadtxt(self.DIR_TMP + 'spec_obs_' + self.ID + '_PA' + self.PA + '.cat', comments='#')
-        NR  = dat[:,0]
-        x   = dat[:,1]
+        dat   = np.loadtxt(self.DIR_TMP + 'spec_obs_' + self.ID + '_PA' + self.PA + '.cat', comments='#')
+        NR    = dat[:,0]
+        x     = dat[:,1]
         fy00  = dat[:,2]
         ey00  = dat[:,3]
 
@@ -308,13 +317,14 @@ class Mainbody():
         ey2 = eybb
 
         fy01 = np.append(fy0,fy1)
-        fy   = np.append(fy01,fy2)
         ey01 = np.append(ey0,ey1)
+        fy   = np.append(fy01,fy2)
         ey   = np.append(ey01,ey2)
 
         wht  = 1./np.square(ey)
-        wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
-        sn   = fy/ey
+        # For now...
+        #wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
+        wht2 = wht[:]
 
         # Append data;
         if add_fir:
@@ -326,13 +336,36 @@ class Mainbody():
             fy = np.append(fy,fy_d)
             x  = np.append(x,x_d)
             wht= np.append(wht,1./np.square(ey_d))
-            wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
+            # For now...
+            #wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
+            wht2 = wht[:]
 
         # Into dict
+
+        # Sort data along wave?
+        f_sort = False
+        if f_sort:
+            nrd_yyd = np.zeros((len(NR),6), dtype='float32')
+            nrd_yyd[:,0] = NR
+            nrd_yyd[:,1] = x
+            nrd_yyd[:,2] = fy
+            nrd_yyd[:,3] = ey
+            nrd_yyd[:,4] = wht
+            nrd_yyd[:,5] = wht2
+
+            b = nrd_yyd
+            nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+            NR = nrd_yyd_sort[:,0]
+            x  = nrd_yyd_sort[:,1]
+            fy = nrd_yyd_sort[:,2]
+            ey = nrd_yyd_sort[:,3]
+            wht = nrd_yyd_sort[:,4]
+            wht2= nrd_yyd_sort[:,5]
+
+        sn   = fy/ey
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xbb, 'exbb':exbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
-
 
 
 
@@ -362,6 +395,7 @@ class Mainbody():
         chi2s  :
 
         '''
+        import scipy.interpolate as interpolate
 
         zspace = np.arange(zliml,zlimu,delzz)
         chi2s  = np.zeros((len(zspace),2), 'float32')
@@ -410,8 +444,9 @@ class Mainbody():
             for nn in range(len(fm_tmp[:,0])):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
 
-            # This has the same grid as observed spectrum (fcon,xobs)
-            fm_int = np.interp(xobs, xm_s, fm_s)
+            fint = interpolate.interp1d(xm_s, fm_s, kind='cubic', fill_value="extrapolate")
+            #fm_int = np.interp(xobs, xm_s, fm_s)
+            fm_int = fint(xobs)
 
             if fcon is None:
                 print('Data is none')
@@ -459,20 +494,25 @@ class Mainbody():
         Can be used for any SFH.
 
         '''
+        import scipy.interpolate as interpolate
 
         # For z prior.
         zliml  = self.zgal - 0.5
 
-        # Observed data.
+        # Observed data;
         sn = dict['fy']/dict['ey']
+        # Only spec data?
         con_cz = (dict['NR']<10000) & (sn>snlim)
-        fy_cz  = dict['fy'][con_cz]
+        #con_cz = (dict['NR']<100000) & (sn>snlim)
+        fy_cz  = dict['fy'][con_cz] # Already scaled by self.Cz0
         ey_cz  = dict['ey'][con_cz]
         x_cz   = dict['x'][con_cz] # Observed range
         NR_cz  = dict['NR'][con_cz]
 
+        fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='cubic', fill_value="extrapolate")
         #fm_s = np.interp(x_cz, xm_tmp[con_cz], fm_tmp[con_cz])
-        fm_s = np.interp(x_cz, xm_tmp, fm_tmp)
+        #fm_s = np.interp(x_cz, xm_tmp, fm_tmp)
+        fm_s = fint(x_cz)
 
         #
         # If Eazy result exists;
@@ -502,7 +542,7 @@ class Mainbody():
         if self.fzvis==1:
             import matplotlib as mpl
             mpl.use('TkAgg')
-            plt.plot(x_cz, fm_s, 'gray', linestyle='--', linewidth=0.5, label='Current model ($z=%.5f$)'%(self.zgal)) # Model based on input z.
+            plt.plot(x_cz, fm_s, 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
@@ -517,6 +557,7 @@ class Mainbody():
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
             zrecom  = z_cz[1]
+            #if f_scale:
             Czrec0  = scl_cz0[1]
             Czrec1  = scl_cz1[1]
 
@@ -527,7 +568,7 @@ class Mainbody():
             xmin, xmax = self.zgal-0.2, self.zgal+0.2
             lnspc = np.linspace(xmin, xmax, len(ser))
             print('\n\n')
-            print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, self.Cz0 * Czrec0, self.Cz1 * Czrec1, fitc_cz[1]))
+            print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
 
@@ -561,7 +602,9 @@ class Mainbody():
         # New template at zrecom;
         xm_s = xm_tmp / (1+self.zgal) * (1+zrecom)
         #fm_s = np.interp(x_cz, xm_s[con_cz], fm_tmp[con_cz])
-        fm_s = np.interp(x_cz, xm_s, fm_tmp)
+        #fm_s = np.interp(x_cz, xm_s, fm_tmp)
+        fint = interpolate.interp1d(xm_s, fm_tmp, kind='cubic', fill_value="extrapolate")
+        fm_s = fint(x_cz)
         whtl = 1/np.square(ey_cz)
 
         try:
@@ -594,7 +637,7 @@ class Mainbody():
                     pass
 
             plt.plot(dict['xbb'], dict['fybb'], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
-            plt.scatter(xm_tmp, fm_tmp, color='', marker='d', s=50, edgecolor='b', zorder=4, label='')
+            plt.scatter(xm_tmp, fm_tmp, color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:
                 xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
@@ -618,12 +661,14 @@ class Mainbody():
             C1sigma  = np.abs(Czrec1-self.Cz1)/self.Cz1
             eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
 
+            print('\n##############################################################')
             print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
             print('Error is %.3f per cent.'%(zzsigma*100))
             print('Input Cz0 is %.3f per cent agreement.'%((1.-C0sigma)*100))
             print('Error is %.3f per cent.'%(eC0sigma*100))
             print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
             print('Error is %.3f per cent.'%(eC1sigma*100))
+            print('##############################################################\n')
             plt.show()
 
             flag_z = raw_input('Do you want to continue with the input redshift, Cz0 and Cz1, %.5f %.5f %.5f? ([y]/n/m) '%(self.zgal, self.Cz0, self.Cz1))
@@ -632,8 +677,8 @@ class Mainbody():
 
         # Write it to self;
         self.zrecom = zrecom
-        self.Czrec0 = Czrec0
-        self.Czrec1 = Czrec1
+        self.Czrec0 = Czrec0 * self.Cz0
+        self.Czrec1 = Czrec1 * self.Cz1
         self.z_cz   = z_cz
         self.scl_cz0= scl_cz0
         self.scl_cz1= scl_cz1
@@ -720,7 +765,8 @@ class Mainbody():
         return f_add
 
 
-    def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    #def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    def main(self, flag_m, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Input:
         ========
@@ -792,13 +838,6 @@ class Mainbody():
         fnc  = self.fnc  #Func(Zall, nage, dust_model=dust_model, self.DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
         bfnc = self.bfnc #Basic(Zall)
 
-        # Open ascii file and stock to array.
-        #lib     = self.lib #= fnc.open_spec_fits(ID0, PA0, fall=0, tau0=tau0)
-        #lib_all = self.lib_all #= fnc.open_spec_fits(ID0, PA0, fall=1, tau0=tau0)
-        #if f_dust:
-        #    lib_dust     = self.lib_dust #= fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=0, tau0=tau0)
-        #    lib_dust_all = self.lib_dust_all #= fnc.open_spec_dust_fits(ID0, PA0, Temp, fall=1, tau0=tau0)
-
         # Error parameter
         try:
             self.ferr = int(inputs['F_ERR'])
@@ -809,6 +848,7 @@ class Mainbody():
         #################
         # Observed Data
         #################
+        print('READ data with',self.Cz0, self.Cz1, self.zgal)
         dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         self.dict = dict
 
@@ -819,7 +859,7 @@ class Mainbody():
         ###############################
         # Add parameters
         ###############################
-        agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
+        agemax = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
         try:
             age_fix = inputs['AGEFIX']
@@ -1069,7 +1109,7 @@ class Mainbody():
             print('### Writing params tp file took %.1f sec ###'%(tcalc_mc))
             print('##############################################')
 
-            return 0, self.zgal, self.Cz0, self.Cz1
+            return False #, self.zgal, self.Cz0, self.Cz1
 
 
         elif flag_z == 'm':
@@ -1091,10 +1131,14 @@ class Mainbody():
             else:
                 Czrec1 = self.Cz1
 
+            self.zprev = self.zgal   # Input redshift for previous run
+            self.zgal  = zrecom # Recommended redshift from previous run
+            self.Cz0   = Czrec0
+            self.Cz1   = Czrec1
             print('\n\n')
             print('Generate model templates with input redshift and Scale.')
             print('\n\n')
-            return 1, zrecom, Czrec0, Czrec1
+            return True #, self.zgal, self.Cz0, self.Cz1
 
         else:
             print('\n\n')
@@ -1104,13 +1148,20 @@ class Mainbody():
 
             flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, and Cz1 , %.5f %.5f %.5f? ([y]/n) '%(self.zrecom, self.Czrec0, self.Czrec1))
             if flag_gen == 'y' or flag_gen == '':
-                return 1, self.zrecom, self.Czrec0, self.Czrec1
+
+                self.zprev = self.zgal   # Input redshift for previous run
+                self.zgal  = self.zrecom # Recommended redshift from previous run
+                self.Cz0   = self.Czrec0
+                self.Cz1   = self.Czrec1
+
+                return True #, self.zgal, self.Cz0, self.Cz1
+
             else:
                 print('\n\n')
                 print('There is nothing to do.')
                 print('Terminating process.')
                 print('\n\n')
-                return -1, self.zgal, self.Czrec0, self.Czrec1
+                return -1 #, self.zgal, self.Czrec0, self.Czrec1
 
 
 

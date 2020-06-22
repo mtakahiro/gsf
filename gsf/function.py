@@ -85,7 +85,7 @@ def loadcpkl(cpklfile):
 def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0, chidef=1e5, Zbest=0):
     '''
     #
-    # Get initial parameters
+    # Get initial parameters at various Z;
     #
     '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
@@ -670,6 +670,8 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
 
 
 def check_line(data,wave,wht,model):
+    '''
+    '''
     R_grs = 50
     dw  = 10
     ldw = 5
@@ -681,7 +683,6 @@ def check_line(data,wave,wht,model):
     er  = 1./np.sqrt(wht)
     wht2 = wht
 
-    #print('line check.')
     for ii in range(ii0, ii9, 1):
         concont = (((wave>wave[ii]-dw*R_grs) & (wave<wave[ii]-(dw-ldw)*R_grs)) \
                    | ((wave<wave[ii]+dw*R_grs) & ((wave>wave[ii]+(dw-ldw)*R_grs))))
@@ -711,10 +712,12 @@ def check_line(data,wave,wht,model):
                     wht2[ii] = wht[ii]
 
             except Exception:
-                #print('Error in Line Check.')
+                print('Error in Line Check.')
                 pass
 
     return wht2
+
+
 
 def filconv_cen(band0, l0, f0, DIR='FILT/'):
     '''
@@ -755,22 +758,23 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
     return lcen, fnu
 
 
-def filconv_fast(mb, l0, f0, fw=False):
+def filconv_fast(filts, band, l0, f0, fw=False):
     '''
     Input:
     ============
+    filts, band : From MB.filts and MB.band, respectively.
     f0: Flux for spectrum, in fnu
     l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
 
     '''
-    fnu  = np.zeros(len(mb.filts), dtype='float64')
-    lcen = np.zeros(len(mb.filts), dtype='float64')
+    fnu  = np.zeros(len(filts), dtype='float64')
+    lcen = np.zeros(len(filts), dtype='float64')
     if fw:
-        fwhm = np.zeros(len(mb.filts[:]), dtype='float64')
+        fwhm = np.zeros(len(filts[:]), dtype='float64')
 
-    for ii in range(len(mb.filts[:])):
-        lfil = mb.band['%s_lam'%(mb.filts[ii])]
-        ffil = mb.band['%s_res'%(mb.filts[ii])]
+    for ii in range(len(filts[:])):
+        lfil = band['%s_lam'%(filts[ii])]
+        ffil = band['%s_res'%(filts[ii])]
 
         if fw:
             ffil_cum = np.cumsum(ffil)
@@ -1041,7 +1045,8 @@ def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
     con_wht = (wht>0)
     er[con_wht] = 1./np.sqrt(wht[con_wht])
 
-    wht2   = wht
+    wht2 = np.zeros(len(wht),'float')
+    wht2[:]= wht[:]
     flag_l = 0
 
     for ii in range(len(xcont)):
@@ -1050,4 +1055,5 @@ def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
                 if xcont[ii]/(1.+zgal) > LW[jj] - dw*R_grs and xcont[ii]/(1.+zgal) < LW[jj] + dw*R_grs:
                     wht2[int(ii-dw):int(ii+dw)] *= 0
                     flag_l  = 1
+
     return wht2

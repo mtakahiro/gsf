@@ -3,7 +3,7 @@ from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 from .function import check_line_cz_man
 
 
-def check_redshift(fobs, eobs, xobs, fm_tmp,xm_tmp, zbest, prior, NR, zliml, zlimu, \
+def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zlimu, \
 delzz=0.01, nmc_cz=100, nwalk_cz=10):
     '''
     Purpose:
@@ -18,6 +18,9 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
     zliml : Lowest redshift for fitting range.
     zlimu : Highest redshift for fitting range.
 
+    fm_tmp, xm_tmp : Template spectrum at RF.
+    fobs, eobs, xobs: Observed spectrum. (Already scaled with Cz0prev.)
+
     Return:
     =========
 
@@ -25,6 +28,7 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
     fitc_cz :
 
     '''
+    import scipy.interpolate as interpolate
 
     fit_par_cz = Parameters()
     fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu)
@@ -39,7 +43,9 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
         Cz1s  = vals['Cz1']
 
         xm_s = xm_tmp * (1+z)
-        fm_s = np.interp(xobs, xm_s, fm_tmp)
+        #fm_s = np.interp(xobs, xm_s, fm_tmp)
+        fint = interpolate.interp1d(xm_s, fm_tmp, kind='cubic', fill_value="extrapolate")
+        fm_s = fint(xobs)
 
         con0 = (NR<1000)
         fy0  = fobs[con0] * Cz0s
@@ -101,9 +107,9 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
 
     fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
 
-    zrecom  = out_cz.params['z'].value
-    Czrec0  = out_cz.params['Cz0'].value
-    Czrec1  = out_cz.params['Cz1'].value
+    #zrecom  = out_cz.params['z'].value
+    #Czrec0  = out_cz.params['Cz0'].value
+    #Czrec1  = out_cz.params['Cz1'].value
 
     mini_cz = Minimizer(lnprob_cz, out_cz.params) #,fcn_args=[zliml, prior, delzz])
     res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=5, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)

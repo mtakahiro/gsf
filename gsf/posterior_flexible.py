@@ -39,20 +39,21 @@ class Post:
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
         con_res = (model>0) & (wht2>0) #& (fy>0)
-        sig     = np.sqrt(1./wht2+f**2*model**2)
+        sig     = np.sqrt(1./wht2[con_res] + (f**2*model**2)[con_res])
 
         if not out:
             if fy is None:
                 print('Data is none')
                 return model[con_res]
             else:
-                return (model - fy)[con_res] / sig[con_res] # i.e. residual/sigma. Because is_weighted = True.
+                return (model - fy)[con_res] / sig # i.e. residual/sigma. Because is_weighted = True.
         if out:
             if fy is None:
                 print('Data is none')
                 return model[con_res], model
             else:
-                return (model - fy)[con_res] / sig[con_res], model # i.e. residual/sigma. Because is_weighted = True.
+                return (model - fy)[con_res] / sig, model # i.e. residual/sigma. Because is_weighted = True.
+
 
     def lnprob(self, pars, fy, wht2, f_fir):
         '''
