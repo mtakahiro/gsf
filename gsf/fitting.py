@@ -745,7 +745,6 @@ class Mainbody():
         '''
 
         f_add = False
-
         # Redshift
         if self.fzmc == 1:
             fit_params.add('zmc', value=self.zgal, min=self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz, max=self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz)
@@ -759,6 +758,7 @@ class Mainbody():
                 fit_params.add('f', value=1e-2, min=0, max=1e2)
                 self.ndim += 1
                 f_add = True
+            #print('f err added')
         except:
             ferr = 0
             pass

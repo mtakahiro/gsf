@@ -42,7 +42,10 @@ class Post:
             x1    = np.append(x1,x1_dust[n_optir:])
 
         if self.mb.ferr:
-            f = vals['f']
+            try:
+                f = vals['f']
+            except:
+                f = 0
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
 
