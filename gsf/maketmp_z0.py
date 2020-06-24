@@ -102,6 +102,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                 #
                 # Determining tau for each age bin;
                 #
+                # 1.Continuous age bin;
                 if tau0[pp] == 99:
                     if ss==0:
                         tautmp = age[ss]
@@ -114,11 +115,13 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                     else:
                         tautmp = age[ss] - age[ss-1]
                         agetmp = (age[ss]+age[ss-1])/2.
+                # 2.A fixed-age bin;
                 elif tau0[pp] > 0.0:
                     tautmp = tau0[pp]
                     agetmp = age[ss]
+                # 3.SSP;
                 else: # =Negative tau;
-                    tautmp = 0.01
+                    tautmp = 0.001
                     agetmp = age[ss]
 
                 # Keep tau in header;

@@ -1,18 +1,22 @@
 import numpy as np
 import sys
+import scipy.interpolate as interpolate
 
 from .function import *
 from .basic_func import Basic
 
-c = 3.e18 # A/s
-chimax = 1.
-m0set  = 25.0
-d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 class Func:
+    '''
+    '''
+    c = 3.e18
+    chimax = 1.
+    m0set  = 25.0
+    d = 10**(73.6/2.5)
+
     def __init__(self, MB, dust_model=0):
         '''
-        dust_model : Int. 0 for Calzetti.
+        dust_model (int) : 0 for Calzetti.
         '''
         self.ID   = MB.ID
         self.PA   = MB.PA
@@ -382,7 +386,10 @@ class Func:
         # How much does this cost in time?
         if round(zmc,3) != round(zgal,3):
             xx_s = xx / (1+zgal) * (1+zmc)
-            yy_s = np.interp(xx_s, xx, yy)
+
+            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+            yy_s = fint(xx_s)
+            #yy_s = np.interp(xx_s, xx, yy)
         else:
             xx_s = xx
             yy_s = yy
@@ -441,7 +448,8 @@ class Func:
         # How much does this cost in time?
         if round(zmc,3) != round(zgal,3):
             xx_s = xx / (1+zgal) * (1+zmc)
-            yy_s = np.interp(xx_s, xx, yy)
+            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+            yy_s = fint(xx_s)
         else:
             xx_s = xx
             yy_s = yy
@@ -490,7 +498,8 @@ class Func:
         # How much does this cost in time?
         if zmc != zgal:
             xx_s = xx / (1+zgal) * (1+zmc)
-            yy_s = np.interp(xx_s, xx, yy)
+            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+            yy_s = fint(xx_s)
         else:
             xx_s = xx
             yy_s = yy

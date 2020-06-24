@@ -13,12 +13,13 @@ from .function import *
 from .function_class import Func
 from .basic_func import Basic
 from . import img_scale
-from . import corner
+#from . import corner
+import corner
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True):
+def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, f_fill=False):
     '''
     Input:
     ============
@@ -320,28 +321,28 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     fwuvj.write('# age uv vj\n')
     Asum = np.sum(A50[:])
 
-    for jj in range(len(II0)):
+    alp = .8
+    for jj in range(len(age)):
         ii = int(len(II0) - jj - 1) # from old to young templates.
+
         if jj == 0:
             y0, x0   = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  = y0
             ysump = y0p
-            #if A50[ii]/Asum > flim:
-            #    #ax1.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-            ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
+            if f_fill:
+                ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  += y0_r
             ysump += y0p
-            #if A50[ii]/Asum > flim:
-            #    #ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
-            ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
+            if f_fill:
+                ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
-        if jj == len(II0) - 1:
-            ax1.plot(x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='-', lw=0.5, color='k', alpha=1., zorder=-1, label='')
+        #if jj == len(II0) - 1:
+        #    ax1.plot(x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='-', lw=0.5, color='k', alpha=1., zorder=-1, label='')
 
 
         try:
@@ -552,9 +553,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
 
     samples  = res
 
+    # Saved template;
     ytmp = np.zeros((nmc_rand,len(ysum)), dtype='float64')
+    ytmp_each = np.zeros((nmc_rand,len(ysum),len(age)), dtype='float64')
+
     ytmpmax = np.zeros(len(ysum), dtype='float64')
     ytmpmin = np.zeros(len(ysum), dtype='float64')
+
 
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
@@ -567,9 +572,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
+    alp=0.02
+    #nmc_rand = 10
     for kk in range(0,nmc_rand,1):
-        nr = np.random.randint(len(samples['A0']))
+        #nr = np.random.randint(len(samples['A0']))
+        nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
         Av_tmp = samples['Av'][nr]
+
+        if f_err == 1:
+            ferr_tmp = samples['f'][nr]
+        else:
+            ferr_tmp = 1.0
 
         for ss in range(len(age)):
             AA_tmp = samples['A'+str(ss)][nr]
@@ -582,14 +595,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
             if ss == 0:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp = mod0_tmp
+
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
                 fm_tmp += mod0_tmp
 
-        if f_err == 1:
-            ferr_tmp = samples['f'][nr]
-        else:
-            ferr_tmp = 1.0
+            # Each;
+            ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
+            #print(ferr_tmp, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes)
 
         #
         # Dust component;
@@ -607,22 +620,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
 
             model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
-
-            '''
-            if f_grsm:
-                ax2t.plot(x1_tot/zscl, model_tot * c/np.square(x1_tot)/d, '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
-            ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=0.02)
-            Fuv[kk]    = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
-            Fuv28[kk]  = get_Fuv(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
-            Lir[kk]    = get_Fint(x1_tot[:]/(1.+zbes), model_tot * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=80000, lmax=10000*1e3)
-            '''
 
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-            ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
         #
         # Grism plot + Fuv flux + LIR.
@@ -648,11 +652,25 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     ytmp16 = np.zeros(len(x1_tot), dtype='float64')
     ytmp50 = np.zeros(len(x1_tot), dtype='float64')
     ytmp84 = np.zeros(len(x1_tot), dtype='float64')
+
     for kk in range(len(x1_tot[:])):
         ytmp16[kk] = np.percentile(ytmp[:,kk],16)
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
+
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=1., color='gray', zorder=-1, alpha=0.9)
+
+    f_fancyplot=False
+    if f_fancyplot:
+        # For each age;
+        ytmp_each50       = np.zeros(len(xm_tmp), dtype='float64')
+        ytmp_each50_prior = np.zeros(len(xm_tmp), dtype='float64')
+        for ss in range(len(age)):
+            ii = int(len(II0) - ss - 1) # from old to young templates.
+            for kk in range(len(xm_tmp[:])):
+                ytmp_each50[kk] = np.percentile(ytmp_each[:,kk,ii],50)
+            ax1.fill_between(x1_tot[::nstep_plot], ytmp_each50_prior[::nstep_plot], ytmp_each50[::nstep_plot], linestyle='None', lw=0.5, color=col[ii])
+            ytmp_each50_prior[:] += ytmp_each50[:]
 
     '''
     if f_dust:
@@ -730,12 +748,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         zorder=2, alpha=1.0, marker='d', s=40)
 
     else:
+        '''
         lbb, fbb, lfwhm = filconv(SFILT, x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], DIR_FILT, fw=True)
         iix = []
         for ii in range(len(fbb)):
             iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
         con_sed = (eybb>0)
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='g', zorder=3, alpha=1.0, marker='d', s=40)
+        '''
 
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
@@ -745,7 +765,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         for ii in range(len(fbb)):
             iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
         con_sed = (eybb>0)
-        #ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='blue', zorder=3, alpha=1.0, marker='d', s=40)
+        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='blue', zorder=3, alpha=1.0, marker='d', s=40)
 
 
         # Calculate EW, if there is excess band;
@@ -774,9 +794,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         except:
             pass
 
-    # plot opt-NIR range;
-    #ax1.scatter(lbb[con_sed], fbb[con_sed], lw=1, color='none', edgecolor='blue', \
-    #zorder=2, alpha=1.0, marker='d', s=40)
 
     if save_sed:
         # Save BB model;

@@ -1,8 +1,3 @@
-##########################
-# 2018.10.05
-# version 1.0.0
-##########################
-
 import numpy as np
 import sys
 import matplotlib.pyplot as plt

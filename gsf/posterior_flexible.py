@@ -14,6 +14,7 @@ class Post:
     def __init__(self, mainbody):
         self.mb = mainbody
 
+
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
         Input:
@@ -28,9 +29,9 @@ class Post:
         '''
 
         vals = pars.valuesdict()
-        model, x1 = self.mb.fnc.tmp04(vals, self.mb.zprev, self.mb.lib)
+        model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
         if self.mb.f_dust:
-            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zprev, self.mb.lib_dust)
+            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
             n_optir = len(model)
 
             # Add dust flux to opt/IR grid.
@@ -44,12 +45,13 @@ class Post:
             f = vals['f']
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
+
         #con_res = (model>0) & (wht>0) #& (ey>0)
         sig     = np.sqrt(1./wht + (f**2*model**2))
 
         if fy is None:
             print('Data is none')
-            resid = model#[con_res]
+            resid = model #[con_res]
         else:
             resid = (model - fy) / sig
 
@@ -82,8 +84,8 @@ class Post:
         else:
             f = 0
 
-        con_res = (wht>0)#(model>0) &
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
+        con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
         sig     = np.sqrt(1./wht+f**2*model**2)
 
         chi_nd = 0
@@ -98,7 +100,7 @@ class Post:
                 #result  = cumtrapz(y, num, initial=0)
                 chi_nd += np.log(result[0])
         """
-        lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * np.sum(chi_nd))
+        lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
 
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']
@@ -106,7 +108,8 @@ class Post:
         #     return -np.inf
         #else:
         #    respr = 0 #np.log(1)
-        respr = 0 # Flat prior...
 
+        respr = 0 # Flat prior...
         lnposterior = lnlike + respr
+
         return lnposterior

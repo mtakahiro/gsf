@@ -44,7 +44,7 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
 
         xm_s = xm_tmp * (1+z)
         #fm_s = np.interp(xobs, xm_s, fm_tmp)
-        fint = interpolate.interp1d(xm_s, fm_tmp, kind='cubic', fill_value="extrapolate")
+        fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(xobs)
 
         con0 = (NR<1000)

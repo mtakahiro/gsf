@@ -4,7 +4,7 @@ from lmfit import Parameters
 
 from .function import filconv, calc_Dn4
 
-def get_param(self, res, fitc, tcalc=1.):
+def get_param(self, res, fitc, tcalc=1., burnin=-1):
     '''
     '''
     print('##########################')
@@ -35,7 +35,9 @@ def get_param(self, res, fitc, tcalc=1.):
     nmc  = self.nmc
     ndim = self.ndim
 
-    samples = res.chain[:, :, :].reshape((-1, ndim)) # Already burned.
+    samples = res.chain[:, :, :].reshape((-1, ndim))
+    if burnin < 0:
+         burnin = int(samples.shape[0]/2.)
 
     ##############################
     # Best parameters
@@ -52,27 +54,30 @@ def get_param(self, res, fitc, tcalc=1.):
     f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
     sedpar = f0[1]
     ms     = np.zeros(len(age), dtype='float32')
-    msmc0  = 0
+    msmc0  = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float32')
+
     for aa in range(len(age)):
         Ab[aa]    = res.params['A'+str(aa)].value
-        Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)], [16,50,84])
+        Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)][burnin:], [16,50,84])
         try:
             Zb[aa]    = res.params['Z'+str(aa)].value
-            Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
+            Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
         except:
             Zb[aa]    = res.params['Z0'].value
-            Zmc[aa,:] = np.percentile(res.flatchain['Z0'], [16,50,84])
+            Zmc[aa,:] = np.percentile(res.flatchain['Z0'][burnin:], [16,50,84])
 
         NZbest[aa]= bfnc.Z2NZ(Zb[aa])
         ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
-        msmc0    += res.flatchain['A'+str(aa)]*ms[aa]
+        msmc0[:] += res.flatchain['A' + str(aa)][burnin:] * ms[aa]
+
 
     msmc  = np.percentile(msmc0, [16,50,84])
+
     Avb   = res.params['Av'].value
-    Avmc  = np.percentile(res.flatchain['Av'], [16,50,84])
+    Avmc  = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
     AAvmc = [Avmc]
     try:
-        zmc = np.percentile(res.flatchain['zmc'], [16,50,84])
+        zmc = np.percentile(res.flatchain['zmc'][burnin:], [16,50,84])
     except:
         zmc = z_cz
 
@@ -145,8 +150,8 @@ def get_param(self, res, fitc, tcalc=1.):
         col01.append(col50)
 
     if self.f_dust:
-        Mdustmc[:]  = np.percentile(res.flatchain['MDUST'], [16,50,84])
-        nTdustmc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
+        Mdustmc[:]  = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
+        nTdustmc[:] = np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
         Tdustmc[:]  = self.DT0 + self.dDT * nTdustmc[:]
         col50 = fits.Column(name='MDUST', format='E', unit='Msun', array=Mdustmc[:])
         col01.append(col50)

@@ -280,16 +280,14 @@ class Mainbody():
         '''
         print('READ data with',Cz0, Cz1, zgal)
 
-        dict = {}
-
         ##############
         # Spectrum
         ##############
-        dat   = np.loadtxt(self.DIR_TMP + 'spec_obs_' + self.ID + '_PA' + self.PA + '.cat', comments='#')
-        NR    = dat[:,0]
-        x     = dat[:,1]
-        fy00  = dat[:,2]
-        ey00  = dat[:,3]
+        dat   = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '_PA' + self.PA + '.cat', format='no_header')
+        NR    = dat['col1']#dat[:,0]
+        x     = dat['col2']#dat[:,1]
+        fy00  = dat['col3']#dat[:,2]
+        ey00  = dat['col4']#dat[:,3]
 
         con0 = (NR<1000)
         xx0  = x[con0]
@@ -379,6 +377,7 @@ class Mainbody():
             wht2= nrd_yyd_sort[:,5]
 
         sn   = fy/ey
+        dict = {}
         dict = {'NR':NR, 'x':xx, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
@@ -459,7 +458,7 @@ class Mainbody():
             for nn in range(len(fm_tmp[:,0])):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
 
-            fint = interpolate.interp1d(xm_s, fm_s, kind='cubic', fill_value="extrapolate")
+            fint = interpolate.interp1d(xm_s, fm_s, kind='nearest', fill_value="extrapolate")
             #fm_int = np.interp(xobs, xm_s, fm_s)
             fm_int = fint(xobs)
 
@@ -523,9 +522,8 @@ class Mainbody():
         x_cz   = dict['x'][con_cz] # Observed range
         NR_cz  = dict['NR'][con_cz]
 
-        fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='cubic', fill_value="extrapolate")
-        #fm_s = np.interp(x_cz, xm_tmp[con_cz], fm_tmp[con_cz])
-        #fm_s = np.interp(x_cz, xm_tmp, fm_tmp)
+        # kind='cubic' causes an error if len(xm_tmp)<=3;
+        fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(x_cz)
 
         #
@@ -617,7 +615,7 @@ class Mainbody():
         xm_s = xm_tmp / (1+self.zgal) * (1+zrecom)
         #fm_s = np.interp(x_cz, xm_s[con_cz], fm_tmp[con_cz])
         #fm_s = np.interp(x_cz, xm_s, fm_tmp)
-        fint = interpolate.interp1d(xm_s, fm_tmp, kind='cubic', fill_value="extrapolate")
+        fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(x_cz)
         whtl = 1/np.square(ey_cz)
 
@@ -780,7 +778,7 @@ class Mainbody():
 
 
     #def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
-    def main(self, flag_m, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    def main(self, flag_m, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False):
         '''
         Input:
         ========
@@ -1037,7 +1035,8 @@ class Mainbody():
 
             print('No. of CPU is set to %d'%(ncpu))
             start_mc = timeit.default_timer()
-            res  = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=5, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+            res  = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
             print('###############################')
@@ -1055,9 +1054,10 @@ class Mainbody():
                          savepath+cpklname) # Already burn in
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
-            print('#################################')
-            print('### Saving chain took %.1f sec'%(tcalc_mc))
-            print('#################################')
+            if verbose:
+                print('#################################')
+                print('### Saving chain took %.1f sec'%(tcalc_mc))
+                print('#################################')
 
             Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
             Avpar = np.zeros((1,3), dtype='float64')
@@ -1114,12 +1114,9 @@ class Mainbody():
 
             # Then writing;
             start_mc = timeit.default_timer()
-            get_param(self, res, fitc, tcalc=tcalc)
+            get_param(self, res, fitc, tcalc=tcalc, burnin=burnin)
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
-            print('##############################################')
-            print('### Writing params tp file took %.1f sec ###'%(tcalc_mc))
-            print('##############################################')
 
             return False #, self.zgal, self.Cz0, self.Cz1
 
