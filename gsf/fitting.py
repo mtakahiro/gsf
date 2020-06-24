@@ -943,7 +943,7 @@ class Mainbody():
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['wht2'],self.ID,self.PA)
+        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['ey'],dict['wht2'],self.ID,self.PA)
 
         # Best fit
         csq  = out.chisqr
@@ -992,7 +992,7 @@ class Mainbody():
                     fit_name = 'nelder'
                 else:
                     fit_name = 'powell'
-                out = minimize(class_post.residual, fit_params, args=(dict['fy'], dict['wht2'], self.f_dust), method=fit_name) # It needs to define out with redshift constrain.
+                out = minimize(class_post.residual, fit_params, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust), method=fit_name) # It needs to define out with redshift constrain.
                 print(fit_report(out))
 
                 # Fix params to what we had before.
@@ -1016,7 +1016,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['wht2'],self.f_dust], f_disp=self.f_disp, f_move=f_move)
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, f_move=f_move)
             print('######################')
             print('### Starting emcee ###')
             print('######################')
@@ -1337,7 +1337,7 @@ class Mainbody():
         ####################################
         # Get initial parameters
         print('Start quick fit;')
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['wht2'],self.ID,self.PA)
+        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
 
         # Best fit
         csq  = out.chisqr

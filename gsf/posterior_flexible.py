@@ -1,5 +1,8 @@
 import numpy as np
 import sys
+import scipy.integrate as integrate
+from scipy.integrate import cumtrapz
+
 from .function import *
 
 class Post:
@@ -11,13 +14,17 @@ class Post:
     def __init__(self, mainbody):
         self.mb = mainbody
 
-    def residual(self, pars, fy, wht2, f_fir=False, out=False):
+    def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
-        #
-        # Returns: residual of model and data.
-        # out: model as second output. For lnprob func.
-        # f_fir: Bool. If dust component is on or off.
-        #
+        Input:
+        ==========
+        out   : model as second output. For lnprob func.
+        f_fir : Bool. If dust component is on or off.
+
+        Returns:
+        ==========
+        residual of model and data.
+
         '''
 
         vals = pars.valuesdict()
@@ -37,28 +44,36 @@ class Post:
             f = vals['f']
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
-        con_res = (model>0) & (wht2>0) #& (ey>0)
-        sig     = np.sqrt(1./wht2[con_res] + (f**2*model**2)[con_res])
+        #con_res = (model>0) & (wht>0) #& (ey>0)
+        sig     = np.sqrt(1./wht + (f**2*model**2))
+
+        if fy is None:
+            print('Data is none')
+            resid = model#[con_res]
+        else:
+            resid = (model - fy) / sig
 
         if not out:
-            if fy is None:
-                print('Data is none')
-                return model[con_res]
-            else:
-                return (model - fy)[con_res] / sig # i.e. residual/sigma. Because is_weighted = True.
-        if out:
-            if fy is None:
-                print('Data is none')
-                return model[con_res], model
-            else:
-                return (model - fy)[con_res] / sig, model # i.e. residual/sigma. Because is_weighted = True.
+            return resid # i.e. residual/sigma. Because is_weighted = True.
+        else:
+            return resid, model # i.e. residual/sigma. Because is_weighted = True.
 
 
-    def lnprob(self, pars, fy, wht2, f_fir):
+    def func_tmp(self, xint, eobs, fmodel):
         '''
-        #
-        # Returns: log posterior
-        #
+        Used for chi2 calculation for non-detection
+        '''
+        int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
+        return int_tmp
+
+
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=False, SNlim=1.0):
+        '''
+
+        Returns:
+        =========
+        log posterior
+
         '''
 
         vals   = pars.valuesdict()
@@ -67,11 +82,24 @@ class Post:
         else:
             f = 0
 
-        resid, model = self.residual(pars, fy, wht2, f_fir, out=True)
-        con_res = (model>0) & (wht2>0)
-        sig     = np.sqrt(1./wht2+f**2*model**2)
+        con_res = (wht>0)#(model>0) &
+        resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
+        sig     = np.sqrt(1./wht+f**2*model**2)
 
-        lnlike  = -0.5 * np.sum(resid**2 + np.log(2 * 3.14 * sig[con_res]**2))
+        chi_nd = 0
+        """
+        con_up = (fy==0) & (ey>0)
+        if f_chind:
+            # This does not improve, but costs time;
+            for nn in range(len(ey[con_up])):
+                #num=np.linspace(-1,ey[con_up][nn],num=100)
+                result  = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
+                #y = self.func_tmp(num, ey[con_up][nn], model[con_up][nn])
+                #result  = cumtrapz(y, num, initial=0)
+                chi_nd += np.log(result[0])
+        """
+        lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * np.sum(chi_nd))
+
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']
         #if Av<0:

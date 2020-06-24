@@ -82,7 +82,7 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0, chidef=1e5, Zbest=0):
+def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=1e5, Zbest=0):
     '''
     #
     # Get initial parameters at various Z;
@@ -110,7 +110,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0, chid
                 aa = 0
                 fit_params['Z'+str(aa)].value = ZZ
 
-            out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # nelder is the most efficient.
+            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
             keys = fit_report(out_tmp).split('\n')
             csq  = 99999
             rcsq = 99999
@@ -160,7 +160,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0, chid
                 aa = 0
                 fit_params['Z'+str(aa)].value = ZZ
 
-            out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # powel is the more accurate.
+            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # powel is the more accurate.
             keys = fit_report(out_tmp).split('\n')
             csq  = 99999
             rcsq = 99999

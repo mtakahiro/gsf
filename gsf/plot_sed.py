@@ -670,9 +670,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         return int_tmp
 
     if f_chind:
-        conw = (wht3>0) & (ey>0) #& (fy/ey>=SNlim)
+        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
     else:
-        conw = (wht3>0) & (ey>0) & (fy/ey>=SNlim)
+        conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
 
     chi2 = sum((np.square(fy-ysump)*wht3)[conw])
 
@@ -688,24 +688,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     if MB.delZ < 0.01:
         ndim_eff -= 1
 
-    con_up = (ey>0) & (fy/ey<SNlim)
+    con_up = (ey>0) & (fy/ey<=SNlim)
+
+    chi_nd = 0
     if f_chind:
         # Chi2 for non detection;
-        chi_nd = 0
         for nn in range(len(ey[con_up])):
-            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -99, ey[con_up][nn]/SNlim)
+            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
             chi_nd += np.log(result[0])
-    else:
-        chi_nd = 0
 
     # Number of degree;
-    nod = int(len(wht3[conw])-ndim_eff)
+    con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+    nod = int(len(wht3[con_nod])-ndim_eff)
 
+    print('No-of-detection    : %d'%(len(wht3[conw])))
     print('chi2               : %.2f'%(chi2))
     if f_chind:
         print('No-of-non-detection: %d'%(len(ey[con_up])))
         print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
-    print('No-of-data points  : %d'%(len(wht3[conw])))
     print('No-of-params       : %d'%(ndim_eff))
     print('Degrees-of-freedom : %d'%(nod))
     if nod>0:
@@ -730,6 +730,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         zorder=2, alpha=1.0, marker='d', s=40)
 
     else:
+        lbb, fbb, lfwhm = filconv(SFILT, x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], DIR_FILT, fw=True)
+        iix = []
+        for ii in range(len(fbb)):
+            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
+        con_sed = (eybb>0)
+        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='g', zorder=3, alpha=1.0, marker='d', s=40)
+
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
@@ -738,7 +745,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         for ii in range(len(fbb)):
             iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
         con_sed = (eybb>0)
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='blue', zorder=3, alpha=1.0, marker='d', s=40)
+        #ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='blue', zorder=3, alpha=1.0, marker='d', s=40)
+
 
         # Calculate EW, if there is excess band;
         try:
