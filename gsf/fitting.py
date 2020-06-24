@@ -289,9 +289,11 @@ class Mainbody():
         ey00  = dat[:,3]
 
         con0 = (NR<1000)
+        xx0  = x[con0]
         fy0  = fy00[con0] * Cz0
         ey0  = ey00[con0] * Cz0
         con1 = (NR>=1000) & (NR<10000)
+        xx1  = x[con1]
         fy1  = fy00[con1] * Cz1
         ey1  = ey00[con1] * Cz1
 
@@ -313,15 +315,26 @@ class Mainbody():
             eybb = np.asarray([])
             exbb = np.asarray([])
 
-        fy2 = fybb
-        ey2 = eybb
+        #con_bb = (eybb>0)
+        con_bb = ()
 
+        xx2 = xbb[con_bb]
+        ex2 = exbb[con_bb]
+        fy2 = fybb[con_bb]
+        ey2 = eybb[con_bb]
+
+        xx01 = np.append(xx0,xx1)
         fy01 = np.append(fy0,fy1)
         ey01 = np.append(ey0,ey1)
+        xx   = np.append(xx01,xx2)
         fy   = np.append(fy01,fy2)
         ey   = np.append(ey01,ey2)
 
+
         wht  = 1./np.square(ey)
+        con_wht = (ey<0)
+        wht[con_wht] = 0
+
         # For now...
         #wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
         wht2 = wht[:]
@@ -363,7 +376,7 @@ class Mainbody():
             wht2= nrd_yyd_sort[:,5]
 
         sn   = fy/ey
-        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xbb, 'exbb':exbb, 'fybb':fybb, 'eybb':eybb, 'wht':wht, 'wht2': wht2, 'sn':sn}
+        dict = {'NR':NR, 'x':xx, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
 

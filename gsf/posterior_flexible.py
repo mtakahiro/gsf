@@ -38,7 +38,7 @@ class Post:
             f = vals['f']
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
-        con_res = (model>0) & (wht2>0) #& (fy>0)
+        con_res = (model>0) & (wht2>0) #& (ey>0)
         sig     = np.sqrt(1./wht2[con_res] + (f**2*model**2)[con_res])
 
         if not out:
