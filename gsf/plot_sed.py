@@ -161,7 +161,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
 
     Cz0   = hdul[0].header['Cz0']
     Cz1   = hdul[0].header['Cz1']
-    zbes  = hdul[0].header['z']
+    zbes  = zp50 #hdul[0].header['z']
     zscl = (1.+zbes)
 
     ###############################
@@ -339,6 +339,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
             #if A50[ii]/Asum > flim:
             #    #ax1.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.5, color=col[ii], zorder=-1, label='')
             ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=0.5, zorder=-1, label='')
+
+        if jj == len(II0) - 1:
+            ax1.plot(x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='-', lw=0.5, color='k', alpha=1., zorder=-1, label='')
 
 
         try:
@@ -738,33 +741,30 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='blue', zorder=3, alpha=1.0, marker='d', s=40)
 
         # Calculate EW, if there is excess band;
-        #try:
-        iix2 = []
-        for ii in range(len(fy_ex)):
-            iix2.append(np.argmin(np.abs(lbb[:]-x_ex[ii])))
+        try:
+            iix2 = []
+            for ii in range(len(fy_ex)):
+                iix2.append(np.argmin(np.abs(lbb[:]-x_ex[ii])))
 
-        EW50 = (fy_ex * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-        EW16 = (fy_ex * c / np.square(x_ex) / d - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-        EW84 = (fy_ex * c / np.square(x_ex) / d - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW50 = (fy_ex * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW16 = (fy_ex * c / np.square(x_ex) / d - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW84 = (fy_ex * c / np.square(x_ex) / d - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
 
-        EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-        EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
 
-        for ii in range(len(fy_ex)):
-            lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
-            fres = MB.band['%s_res'%MB.filts[iix2[ii]]][:]
+            for ii in range(len(fy_ex)):
+                lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
+                fres = MB.band['%s_res'%MB.filts[iix2[ii]]][:]
 
-            print('\n')
-            print('EW016 for', x_ex[ii], 'is %.1f'%EW16[ii])
-            print('EW050 for', x_ex[ii], 'is %.1f'%EW50[ii])
-            print('EW084 for', x_ex[ii], 'is %.1f'%EW84[ii])
-            print('%.1f_{-%.1f}^{+%.1f} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
-            print('Or, %.1f\pm{%.1f} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
-
-
-
-        #except:
-        #    pass
+                print('\n')
+                print('EW016 for', x_ex[ii], 'is %.1f'%EW16[ii])
+                print('EW050 for', x_ex[ii], 'is %.1f'%EW50[ii])
+                print('EW084 for', x_ex[ii], 'is %.1f'%EW84[ii])
+                print('%.1f_{-%.1f}^{+%.1f} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
+                print('Or, %.1f\pm{%.1f} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
+        except:
+            pass
 
     # plot opt-NIR range;
     #ax1.scatter(lbb[con_sed], fbb[con_sed], lw=1, color='none', edgecolor='blue', \
@@ -863,13 +863,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     #
     if f_label:
         try:
+        #if True:
             fd = fits.open('SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
             ax1.text(2300, ymax*0.25,\
             'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
             fontsize=9)
         except:
-            print('File is missing : _param.fits')
+            print('\nFile is missing : _param.fits\n')
             pass
 
     #######################################
@@ -1501,7 +1502,7 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
     flw.close()
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=300):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1000):
     '''
     Purpose:
     ==========
@@ -1616,7 +1617,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=3
     ###############################
     # Data taken from
     ###############################
-    DIR_TMP = './templates/'
     dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR = dat[:, 0]
     x  = dat[:, 1]
@@ -1782,6 +1782,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=3
     elif zbes<6:
         zred  = [zbes, 6]
         zredl = ['$z_\mathrm{obs.}$', 6]
+    else:
+        zred  = [zbes, 12]
+        zredl = ['$z_\mathrm{obs.}$', 12]
 
     Tzz   = np.zeros(len(zred), dtype='float64')
     for zz in range(len(zred)):

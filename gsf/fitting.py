@@ -261,6 +261,7 @@ class Mainbody():
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         '''
 
+
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
         LW  = LW0
@@ -277,6 +278,8 @@ class Mainbody():
         Can be used for any SFH
 
         '''
+        print('READ data with',Cz0, Cz1, zgal)
+
         dict = {}
 
         ##############
@@ -379,7 +382,6 @@ class Mainbody():
         dict = {'NR':NR, 'x':xx, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
-
 
 
     def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
@@ -485,7 +487,6 @@ class Mainbody():
         self.chi2s  = chi2s
 
         return zspace, chi2s
-
 
 
     def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0):
@@ -861,7 +862,6 @@ class Mainbody():
         #################
         # Observed Data
         #################
-        print('READ data with',self.Cz0, self.Cz1, self.zgal)
         dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         self.dict = dict
 
@@ -1016,7 +1016,7 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['wht'],self.f_dust], f_disp=self.f_disp, f_move=f_move)
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['wht2'],self.f_dust], f_disp=self.f_disp, f_move=f_move)
             print('######################')
             print('### Starting emcee ###')
             print('######################')
@@ -1037,7 +1037,7 @@ class Mainbody():
 
             print('No. of CPU is set to %d'%(ncpu))
             start_mc = timeit.default_timer()
-            res  = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+            res  = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=5, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
             print('###############################')
@@ -1066,7 +1066,6 @@ class Mainbody():
             ####################
             # Best parameters
             ####################
-            out = res
             Amc  = np.zeros((len(self.age),3), dtype='float64')
             Ab   = np.zeros(len(self.age), dtype='float64')
             Zmc  = np.zeros((len(self.age),3), dtype='float64')
@@ -1076,18 +1075,18 @@ class Mainbody():
             sedpar = f0[1]
             ms     = np.zeros(len(self.age), dtype='float64')
             for aa in range(len(self.age)):
-                Ab[aa]    = out.params['A'+str(aa)].value
+                Ab[aa]    = res.params['A'+str(aa)].value
                 Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)], [16,50,84])
                 try:
-                    Zb[aa]    = out.params['Z'+str(aa)].value
+                    Zb[aa]    = res.params['Z'+str(aa)].value
                     Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
                 except:
-                    Zb[aa]    = out.params['Z0'].value
+                    Zb[aa]    = res.params['Z0'].value
                     Zmc[aa,:] = np.percentile(res.flatchain['Z0'], [16,50,84])
                 NZbest[aa]= bfnc.Z2NZ(Zb[aa])
                 ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
 
-            Avb = out.params['Av'].value
+            Avb = res.params['Av'].value
 
             if self.f_dust:
                 Mdust_mc = np.zeros(3, dtype='float64')

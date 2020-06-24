@@ -1,4 +1,3 @@
-# For fitting.
 import numpy as np
 import sys
 from .function import *
@@ -82,5 +81,4 @@ class Post:
         respr = 0 # Flat prior...
 
         lnposterior = lnlike + respr
-
         return lnposterior

@@ -17,7 +17,7 @@ def get_param(self, res, fitc, tcalc=1.):
     z_cz   = self.z_cz
     scl_cz0= self.scl_cz0
     scl_cz1= self.scl_cz1
-    tau0   = self.tau0#[0.1,0.2,0.3],
+    tau0   = self.tau0
 
     ID0 = self.ID
     PA0 = self.PA
@@ -329,5 +329,3 @@ def get_index(mmax=300):
     # Mg2
     col50 = fits.Column(name='Mg2', format='E', unit='', array=Mg2mc[:])
     col01.append(col50)
-
-    # Summarize;
