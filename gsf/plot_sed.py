@@ -469,7 +469,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
 
     xx = np.arange(1200,160000)
     yy = xx * 0
-    ax1.plot(xx, yy, ls='--', lw=0.5, color='gray')
+    ax1.plot(xx, yy, ls='--', lw=0.5, color='k')
 
     #############
     # Plot
@@ -582,7 +582,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     for kk in range(0,nmc_rand,1):
         nr = np.random.randint(len(samples['A0']))
         #nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
-        Av_tmp = samples['Av'][nr]
+        try:
+            Av_tmp = samples['Av'][nr]
+        except:
+            Av_tmp = MB.AVFIX
 
         if f_err == 1:
             ferr_tmp = samples['f'][nr]
@@ -595,7 +598,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
                 Ztest  = samples['Z'+str(len(age)-1)][nr]
                 ZZ_tmp = samples['Z'+str(ss)][nr]
             except:
-                ZZ_tmp = samples['Z0'][nr]
+                try:
+                    ZZ_tmp = samples['Z0'][nr]
+                except:
+                    ZZ_tmp = MB.ZFIX
 
             if ss == 0:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
@@ -648,7 +654,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         Lir[kk]   = 0
 
         # Get UVJ Color;
-        lmconv,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes)))
+        lmconv,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)))
         UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
@@ -710,14 +716,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     for aa in range(len(MB.age)):
         if MB.age[aa]>agemax:
             ndim_eff -= 1
+        '''
         if MB.ZEVOL == 1:
             # This is for Z at this age;
             ndim_eff -= 1
+        '''
+    '''
     if MB.delZ < 0.01:
         ndim_eff -= 1
-
+    '''
     con_up = (ey>0) & (fy/ey<=SNlim)
-
     chi_nd = 0
     if f_chind:
         # Chi2 for non detection;
@@ -729,6 +737,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
     nod = int(len(wht3[con_nod])-ndim_eff)
 
+    print('\n')
     print('No-of-detection    : %d'%(len(wht3[conw])))
     print('chi2               : %.2f'%(chi2))
     if f_chind:
@@ -758,15 +767,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         zorder=2, alpha=1.0, marker='d', s=40)
 
     else:
-        '''
-        lbb, fbb, lfwhm = filconv(SFILT, x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], DIR_FILT, fw=True)
-        iix = []
-        for ii in range(len(fbb)):
-            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
-        con_sed = (eybb>0)
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='g', zorder=3, alpha=1.0, marker='d', s=40)
-        '''
-
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
@@ -791,9 +791,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
             EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
             EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
 
+            ew_label = []
             for ii in range(len(fy_ex)):
                 lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
                 fres = MB.band['%s_res'%MB.filts[iix2[ii]]][:]
+                ew_label.append(MB.filts[iix2[ii]])
 
                 print('\n')
                 print('EW016 for', x_ex[ii], 'is %.1f'%EW16[ii])
@@ -874,18 +876,34 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         hdr['LIR84'] = np.percentile(Lir[:],84)
 
         # UVJ
-        hdr['uv16'] = np.percentile(UVJ[:,0],16)
-        hdr['uv50'] = np.percentile(UVJ[:,0],50)
-        hdr['uv84'] = np.percentile(UVJ[:,0],84)
-        hdr['bv16'] = np.percentile(UVJ[:,1],16)
-        hdr['bv50'] = np.percentile(UVJ[:,1],50)
-        hdr['bv84'] = np.percentile(UVJ[:,1],84)
-        hdr['vj16'] = np.percentile(UVJ[:,2],16)
-        hdr['vj50'] = np.percentile(UVJ[:,2],50)
-        hdr['vj84'] = np.percentile(UVJ[:,2],84)
-        hdr['zj16'] = np.percentile(UVJ[:,3],16)
-        hdr['zj50'] = np.percentile(UVJ[:,3],50)
-        hdr['zj84'] = np.percentile(UVJ[:,3],84)
+        try:
+            hdr['uv16'] = np.percentile(UVJ[:,0],16)
+            hdr['uv50'] = np.percentile(UVJ[:,0],50)
+            hdr['uv84'] = np.percentile(UVJ[:,0],84)
+            hdr['bv16'] = np.percentile(UVJ[:,1],16)
+            hdr['bv50'] = np.percentile(UVJ[:,1],50)
+            hdr['bv84'] = np.percentile(UVJ[:,1],84)
+            hdr['vj16'] = np.percentile(UVJ[:,2],16)
+            hdr['vj50'] = np.percentile(UVJ[:,2],50)
+            hdr['vj84'] = np.percentile(UVJ[:,2],84)
+            hdr['zj16'] = np.percentile(UVJ[:,3],16)
+            hdr['zj50'] = np.percentile(UVJ[:,3],50)
+            hdr['zj84'] = np.percentile(UVJ[:,3],84)
+        except:
+            print('\nError when writinf UVJ colors;\n')
+            #print(np.percentile(UVJ[:,0],[16,50,84]))
+            pass
+
+        # EW;
+        try:
+            for ii in range(len(EW50)):
+                hdr['EW_%s_16'%(ew_label[ii])] = EW16[ii]
+                hdr['EW_%s_50'%(ew_label[ii])] = EW50[ii]
+                hdr['EW_%s_84'%(ew_label[ii])] = EW84[ii]
+                hdr['EW_%s_e1'%(ew_label[ii])] = EW50_er1[ii]
+                hdr['EW_%s_e2'%(ew_label[ii])] = EW50_er2[ii]
+        except:
+            pass
 
         # Write;
         colspec = fits.ColDefs(col00)

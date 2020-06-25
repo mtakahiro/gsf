@@ -94,6 +94,11 @@ def maketemp(MB):
         print('Filter is not detected!!')
         print('Make sure your \nfilter directory is correct.')
         print('########################')
+    try:
+        SKIPFILT = inputs['SKIPFILT']
+        SKIPFILT = [x.strip() for x in SKIPFILT.split(',')]
+    except:
+        SKIPFILT = []
 
     # If FIR data;
     try:
@@ -578,7 +583,9 @@ def maketemp(MB):
                 fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
 
     for ii in range(len(ltmpbb[0,:])):
-        if  ebb[ii]>ebblim:
+        if SFILT[ii] in SKIPFILT:# data point to be skiped;
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
+        elif  ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
@@ -594,16 +601,23 @@ def maketemp(MB):
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
     fw.close()
 
-    fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    # BB phot
+    fw     = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
-        if ebb[ii]>ebblim:
+        if SFILT[ii] in SKIPFILT:# data point to be skiped;
+            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2.))
+            fw_rem.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+        elif ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
         elif ebb[ii]<=0:
             fw.write('%d %.5f 0 -99 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
-
     fw.close()
+    fw_rem.close()
+
+    # Dust
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
     if f_dust:
         for ii in range(len(ebb_d[:])):
