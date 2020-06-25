@@ -1,14 +1,15 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.1.0
+version 1.2
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
-- The main purpose is to explore galaxy mass accumulation histories with a flexible form of SFH.
+- The main purpose is to explore galaxy star formation histories with a flexible form.
 - The code uses FSPS templates generated via python-fsps.
-- Broadband photometry data, without spectrum (despite the code's name), can be also fitted.
-- Far IR data set can be fitted simultaneously with a simple gray body spectrum.
-- Please use this code at one's own risk.
+- Data set without grism data, despite the code's name, can be also provided.
+- Far IR data set can be fitted simultaneously with a simple gray body spectrum (to be implemented in future version).
+- Due to the complex nature of grism data and code, feel free to contact the author.
+- From v1.2, BPASS templates can also be used. Those who wish to try the functionality, please contact the author.
 ========================================================================================
 
 
@@ -22,12 +23,20 @@ Demonstration
 Pre-requirement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- lmfit (may need a tweak; see custom_code directory)
-- emcee (ver.3)
+- astropy
+- Pandas
+- multiprocessing
+- lmfit (no older than ver1.0.0)
+- emcee (no older than ver3.0.0)
 - corner
-- cosmolopy
-- python-fsps
+- python-fsps (ver0.3.0)
 - fsps
+
+These packages will be installed if users create a new conda environment, by executing;
+
+.. code-block:: bash
+
+    conda create --name gsf_environment.yml
 
 
 Installation & Documentation

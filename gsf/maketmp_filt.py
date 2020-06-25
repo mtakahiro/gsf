@@ -4,7 +4,6 @@ import numpy as np
 import scipy
 import sys
 import os
-import fsps
 
 from astropy.io import fits
 from scipy.integrate import simps
@@ -12,32 +11,21 @@ from scipy.integrate import simps
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
 
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-c = 3e18 # speed of light in AA/s
-pixelscale = 0.06 # arcsec/pixel
-Mpc_cm = 3.08568025e+24 # cm/Mpc
-#m0set = 25.0
-
-# Custom package
+# Custom modules
 from .function import *
-from .function_class import Func
-from .basic_func import Basic
 from .function_igm import *
-
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
-
-###################################################
-### SIMULATION of SPECTRA.
-###################################################
 def sim_spec(lmin, fin, sn):
+    '''
+    ###################################################
+    ### SIMULATION of SPECTRA.
+    ###################################################
     #
     # wave_obs, wave_temp, flux_temp, sn_obs
     # Return: frand, erand
     #
+    '''
     frand = fin * 0
     erand = fin * 0
     for ii in range(len(lmin)):
@@ -49,10 +37,12 @@ def sim_spec(lmin, fin, sn):
             frand[ii] = np.random.normal(fin[ii],erand[ii],1)
     return frand, erand
 
-###################################################
-# Make SPECTRA at given z and filter set.
-###################################################
-def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], fneb=0, DIR_TMP='./templates/'):
+
+def maketemp(MB):
+    '''
+    ###################################################
+    # Make SPECTRA at given z and filter set.
+    ###################################################
     #
     # inputs      : Configuration file.
     # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
@@ -60,12 +50,22 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     # age (array) : Age, in Gyr.
     # fneb (int)  : flag for adding nebular emissionself.
     #
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage) # Set up the number of Age/ZZ
-    bfnc = Basic(Z)
+    '''
+    inputs = MB.inputs
+    ID = MB.ID #inputs['ID']
+    PA = MB.PA #inputs['PA']
+    age  = MB.age #=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
+    nage = MB.nage #np.arange(0,len(age),1)
+    Z  = MB.Zall #=np.arange(-1.2,0.45,0.1),
+    fneb = MB.fneb
+    DIR_TMP = MB.DIR_TMP# './templates/'
+    zbest = MB.zgal
+    tau0 = MB.tau0
+    #tau0 = [float(x.strip()) for x in tau0.split(',')]
 
-    ID = inputs['ID']
-    PA = inputs['PA']
+    fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
+
     try:
         DIR_EXTR = inputs['DIR_EXTR']
         if len(DIR_EXTR)==0:
@@ -94,6 +94,11 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         print('Filter is not detected!!')
         print('Make sure your \nfilter directory is correct.')
         print('########################')
+    try:
+        SKIPFILT = inputs['SKIPFILT']
+        SKIPFILT = [x.strip() for x in SKIPFILT.split(',')]
+    except:
+        SKIPFILT = []
 
     # If FIR data;
     try:
@@ -111,11 +116,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         f_dust = False
         pass
 
-    #
-    # Tau for MCMC parameter; not as fitting parameters.
-    #
-    tau0 = inputs['TAU0']
-    tau0 = [float(x.strip()) for x in tau0.split(',')]
 
     print('############################')
     print('Making templates at %.4f'%(zbest))
@@ -130,7 +130,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     #ninp2 = 0
     f_spec = False
     try:
-        spec_files = inputs['SPEC_FILE'].replace('$ID','%s'%(ID))
+        spec_files = inputs['SPEC_FILE'] #.replace('$ID','%s'%(ID))
         spec_files = [x.strip() for x in spec_files.split(',')]
         ninp0 = np.zeros(len(spec_files), dtype='int')
         for ff, spec_file in enumerate(spec_files):
@@ -141,7 +141,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
             except Exception:
-                print('File, %s, cannot be open.'%(spec_file))
+                print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
         lm   = np.zeros(np.sum(ninp0[:]),dtype='float64')
@@ -171,28 +171,27 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
         pass
 
     #############################
-    # Extracting BB photometry:
+    # READ BB photometry from CAT_BB:
     #############################
+    from astropy.io import ascii
     if CAT_BB:
-        fd0 = np.loadtxt(CAT_BB, comments='#')
-        try:
-            id0 = fd0[:,0]
-            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-            if int(id0[ii0]) !=  int(ID):
-                print('Something is wrong with BB catalog!')
-                return -1
-            fd  = fd0[ii0,:]
-        except:
-            id0 = fd0[0]
-            if int(id0) !=  int(ID):
-                return -1
-            fd  = fd0[:]
-        id  = fd[0]
+        #fd0 = np.loadtxt(CAT_BB, comments='#')
+        fd0 = ascii.read(CAT_BB)
+
+        id0 = fd0['id']
+        ii0 = np.argmin(np.abs(id0[:]-int(ID)))
+        if int(id0[ii0]) !=  int(ID):
+            print('Cannot find the column for %d in the input BB catalog!'%(int(ID)))
+            return -1
+        id  = fd0['id'][ii0]
+
         fbb = np.zeros(len(SFILT), dtype='float64')
         ebb = np.zeros(len(SFILT), dtype='float64')
+
         for ii in range(len(SFILT)):
-            fbb[ii] = fd[ii*2+1]
-            ebb[ii] = fd[ii*2+2]
+            fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
+            ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
+
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
         hd0   = fd0[1].header
@@ -259,20 +258,18 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 f_morp = True
                 try:
                     mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                    fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                    #Amp   = fm[0]
-                    #gamma = fm[1]
-                    Amp   = fm[2]
-                    gamma = fm[4]
+                    #fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
+                    from astropy.io import ascii
+                    fm    = ascii.read(DIR_EXTR + mor_file)
+                    Amp   = fm['A']
+                    gamma = fm['gamma']
                     if inputs['MORP'] == 'moffat':
-                        #alp   = fm[2]
-                        alp   = fm[5]
+                        alp   = fm['alp']
                     else:
                         alp   = 0
                 except Exception:
                     print('Error in reading morphology params.')
                     print('No morphology convolution.')
-                    #return -1
                     pass
             else:
                 print('MORP Keywords does not match.')
@@ -346,11 +343,10 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
     else:
         lm = []
 
+
     ####################################
     # Start generating templates
     ####################################
-    #DIR_TMP = './templates/'
-    #DIR_TMP = inputs['DIR_TEMP']
     f0    = fits.open(DIR_TMP + 'ms.fits')
     mshdu = f0[1]
     col00 = []
@@ -371,13 +367,12 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
             snorm   = np.zeros(Ntmp)
             agebest = np.zeros(Ntmp)
             avbest  = np.zeros(Ntmp)
-            age_univ= cd.age(zbest, use_flat=True, **cosmo)
+            age_univ= MB.cosmo.age(zbest).value #, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
                 lm0    = spechdu.data['wavelength']
                 if fneb == 1:
                     spec0 = spechdu.data['efspec_'+str(zz)+'_0_'+str(pp)]
-                    #logU  = f1[0].header['logU']
                 else:
                     spec0 = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
 
@@ -414,7 +409,7 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 ###################
                 # IGM attenuation.
                 ###################
-                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest)
+                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest, cosmo=MB.cosmo)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
                 if len(lm)>0:
                     try:
@@ -427,18 +422,18 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
                 spec_sum = 0*spec_mul[0] # This is dummy file.
-                DL = cd.luminosity_distance(zbest, **cosmo) * Mpc_cm # Luminositydistance in cm
+                DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
                 #spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
                 #ftmp_int = data_int(lm, wavetmp, spec_av)
 
                 Lsun = 3.839 * 1e33 #erg s-1
-                stmp_common = 1e10 # 1 tmp is in 1e10Lsun
-                #ftmpbb[ss,:]           *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                #ftmpbb[ss,:]      *= (1./Ls[ss])*stmp_common
+                stmp_common = 1e10 # so 1 template is in 1e10Lsun
+
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss]                 *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
+
                 if f_spec:
                     ftmp_nu_int[ss,:]      = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
@@ -469,9 +464,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                     col01 = [col3, col4]
 
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
-                colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_ap)
+                colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=spec_ap)#, disp='%s'%(age[ss])
                 col00.append(colspec)
-                colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', disp='%s'%(age[ss]), array=spec_mul_nu_conv[ss,:])
+                colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=spec_mul_nu_conv[ss,:])#, disp='%s'%(age[ss])
                 col01.append(colspec_all)
 
             #########################
@@ -522,7 +517,6 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 col03      = [colspec_dw,col_dw]
             nu_d  = c / lambda_d # 1/s = Hz
             BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
-            # in side exp: J*s * (1/s) / (J/K * K) = 1;
 
             # if optically thin;
             #kappa = nu_d ** beta_d
@@ -589,7 +583,9 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
 
     for ii in range(len(ltmpbb[0,:])):
-        if  ebb[ii]>ebblim:
+        if SFILT[ii] in SKIPFILT:# data point to be skiped;
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
+        elif  ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
@@ -605,14 +601,23 @@ def maketemp(inputs, zbest, Z=np.arange(-1.2,0.45,0.1), age=[0.01, 0.1, 0.3, 0.7
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
     fw.close()
 
-    fw = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    # BB phot
+    fw     = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
-        if ebb[ii]>ebblim:
+        if SFILT[ii] in SKIPFILT:# data point to be skiped;
+            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2.))
+            fw_rem.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+        elif ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
+        elif ebb[ii]<=0:
+            fw.write('%d %.5f 0 -99 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
         else:
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
-
     fw.close()
+    fw_rem.close()
+
+    # Dust
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
     if f_dust:
         for ii in range(len(ebb_d[:])):

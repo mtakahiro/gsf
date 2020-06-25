@@ -1,12 +1,13 @@
-#!/usr/bin/env python
-#<examples/doc_nistgauss.py>
 import numpy as np
 import sys
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
 from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
-import pickle
 import os
 from matplotlib.ticker import FormatStrFormatter
 
@@ -17,58 +18,44 @@ from .basic_func import Basic
 from .function_igm import *
 from . import img_scale
 
-import cosmolopy.distance as cd
-import cosmolopy.constants as cc
-cosmo = {'omega_M_0' : 0.27, 'omega_lambda_0' : 0.73, 'h' : 0.72}
-cosmo = cd.set_omega_k_0(cosmo)
-Lsun = 3.839 * 1e33 #erg s-1
-Mpc_cm = 3.08568025e+24 # cm/Mpc
-
 lcb   = '#4682b4' # line color, blue
 
-# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-def loadcpkl(cpklfile):
-    """
-    Load cpkl files.
-    """
-    if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
-    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False):
+    '''
+    Purpose:
+    ==========
 
-    if sys.version_info.major == 2:
-        data = pickle.load(f)
-    elif sys.version_info.major == 3:
-        data = pickle.load(f, encoding='latin-1')
-
-    f.close()
-    return data
+    Star formation history plot.
 
 
-###############
-def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False):
-    #
-    #
-    #
-    flim = 0.01
-    lsfrl = -1 # log SFR low limit
-    mmax  = 1000
-    Txmax = 4 # Max x value
-    lmmin = 9.5 #10.3
+    Input:
+    ==========
 
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Z)
+    flim  : Lower limit for plotting an age bin.
+    lsfrl : Lower limit for SFR, in logMsun/yr
+
+    '''
+    import os.path
+
+    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
+    bfnc = MB.bfnc #Basic(Z)
+    ID   = MB.ID
+    PA   = MB.PA
+    Z    = MB.Zall
+    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    nage = MB.nage #np.arange(0,len(age),1)
+    tau0 = MB.tau0 #[0.1,0.2,0.3]
 
     age = np.asarray(age)
 
     ################
     # RF colors.
-    import os.path
     home = os.path.expanduser('~')
-    c      = 3.e18 # A/s
+    c      = MB.c
     chimax = 1.
-    mag0   = 25.0
+    m0set  = MB.m0set
+    Mpc_cm = MB.Mpc_cm
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
-    #d = 10**(-73.6/2.5) # From [ergs/s/cm2/Hz] to [ergs/s/cm2/A]
 
     #############
     # Plot.
@@ -94,16 +81,12 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
 
-    uv= hdul[1].data['uv']
-    vj= hdul[1].data['vj']
-
-    RA   = 0
-    DEC  = 0
+    '''
     rek  = 0
     erekl= 0
     ereku= 0
@@ -112,20 +95,20 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     qq = 0
     enn = 0
     eqq = 0
+    '''
     try:
         RA   = hdul[0].header['RA']
         DEC  = hdul[0].header['DEC']
     except:
         RA  = 0
         DEC = 0
-
     try:
         SN = hdul[0].header['SN']
     except:
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID0 + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -148,11 +131,11 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ####################
     # For cosmology
     ####################
-    DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
-    Tuni = cd.age(zbes, use_flat=True, **cosmo)
-    Tuni0 = (Tuni/cc.Gyr_s - age[:])
+    Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
+    Tuni0 = (Tuni - age[:])
 
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
@@ -166,19 +149,29 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
-    else:
+        """
+        elif MB.f_bpass == 1:
+            file_all = MB.DIR_TMP + 'spec_all.fits'
+            hd = fits.open(file_all)[1].header
+            for aa in range(len(age)):
+                tau_ssp   = hd['realtau%d(Gyr)'%(aa)]
+                delT[aa]  = tau_ssp
+                delTl[aa] = tau_ssp/2
+                delTu[aa] = tau_ssp/2
+        """
+    else: # This is only true when CSP...
         for aa in range(len(age)):
             if aa == 0:
                 delTl[aa] = age[aa]
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 delT[aa]  = delTu[aa] + delTl[aa]
-            elif Tuni/cc.Gyr_s < age[aa]:
+            elif Tuni < age[aa]:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = delTl[aa] #10.
                 delT[aa]  = delTu[aa] + delTl[aa]
             elif aa == len(age)-1:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
-                delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+                delTu[aa] = Tuni - age[aa]
                 delT[aa]  = delTu[aa] + delTl[aa]
             else:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
@@ -189,12 +182,11 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
-    #print(age, delT, delTu, delTl)
     ##############################
     # Load Pickle
     ##############################
     samplepath = './'
-    pfile = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
+    pfile = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
 
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
@@ -260,7 +252,8 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             except:
                 pass
     except:
-        print('No simulation file (%s).\nError may be underestimated.' % meanfile)
+        if verbose:
+            print('No simulation file (%s).\nError may be underestimated.' % meanfile)
         eA = age * 0
         eZ = age * 0
         eAv= 0
@@ -274,18 +267,24 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     SFR_SED = np.zeros(mmax,dtype='float32')
 
     # base files opened.
-    f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     f1     = fits.open(DIR_TMP + 'ms.fits')
     sedpar = f0[1]
     mloss  = f1[1].data
+
     AAtmp = np.zeros(len(age), dtype='float32')
     ZZtmp = np.zeros(len(age), dtype='float32')
     mslist= np.zeros(len(age), dtype='float32')
+
     for mm in range(mmax):
         delt_tot = 0
         mtmp  = np.random.randint(len(samples))# + Nburn
 
-        Av_tmp = samples['Av'][mtmp]
+        try:
+            Av_tmp = samples['Av'][mtmp]
+        except:
+            Av_tmp = MB.AVFIX
+
         Avrand = np.random.uniform(-eAv, eAv)
         if Av_tmp + Avrand<0:
             Av[mm] = 0
@@ -293,11 +292,14 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             Av[mm] = Av_tmp + Avrand
 
         for aa in range(len(age)):
-            AAtmp[aa] = samples['A'+str(aa)][mtmp]/mu
+            AAtmp[aa] = samples['A'+str(aa)][mtmp]
             try:
                 ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
             except:
-                ZZtmp[aa] = samples['Z0'][mtmp]
+                try:
+                    ZZtmp[aa] = samples['Z0'][mtmp]
+                except:
+                    ZZtmp[aa] = MB.ZFIX
 
             nZtmp      = bfnc.Z2NZ(ZZtmp[aa])
             mslist[aa] = sedpar.data['ML_'+str(nZtmp)][aa]
@@ -306,9 +308,10 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
             Arand = np.random.uniform(-eA[aa],eA[aa])
             Zrand = np.random.uniform(-eZ[aa],eZ[aa])
+
             AM[aa, mm] = AAtmp[aa] * mslist[aa] * 10**Arand
             AL[aa, mm] = AM[aa, mm] / mslist[aa]
-            SF[aa, mm] = AAtmp[aa] * mslist[aa] / delT[aa] / ml * 10**Arand
+            SF[aa, mm] = AAtmp[aa] * mslist[aa] / delT[aa] * 10**Arand # / ml
             ZM[aa, mm] = ZZtmp[aa] + Zrand
             ZMM[aa, mm]= (10 ** ZZtmp[aa]) * AAtmp[aa] * mslist[aa] * 10**Zrand
             ZML[aa, mm]= ZMM[aa, mm] / mslist[aa]
@@ -319,7 +322,6 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
                 delt_tot += delT[aa]
 
         SFR_SED[mm] /= delt_tot
-
         for aa in range(len(age)):
             AC[aa, mm] = np.sum(AM[aa:, mm])
             ZC[aa, mm] = np.log10(np.sum(ZMM[aa:, mm])/AC[aa, mm])
@@ -340,7 +342,6 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
             TC[aa, mm] /= ACs
             TL[aa, mm] /= ALs
 
-    #Avtmp  = np.percentile(samples['Av'][:],[16,50,84])
     Avtmp  = np.percentile(Av[:],[16,50,84])
 
     #############
@@ -357,6 +358,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
        ZMp[aa,:] = np.percentile(ZM[aa,:], [16,50,84])
        ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
        SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
+
     SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
     f_SFRSED_plot = False
     if f_SFRSED_plot:
@@ -404,7 +406,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         # Plot exp model?
         #
         DIR_exp = '/Users/tmorishita/Documents/Astronomy/sedfitter_exp/'
-        file = DIR_exp + 'summary_' + ID0 + '_PA' + PA + '.fits'
+        file = DIR_exp + 'summary_' + ID + '_PA' + PA + '.fits'
         hdul = fits.open(file) # open a FITS file
 
         t0  = 10**float(hdul[1].data['age'][1])
@@ -432,7 +434,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         # Plot delay model?
         #
         DIR_exp = '/Users/tmorishita//Documents/Astronomy/sedfitter_del/'
-        file = DIR_exp + 'summary_' + ID0 + '_PA' + PA + '.fits'
+        file = DIR_exp + 'summary_' + ID + '_PA' + PA + '.fits'
         hdul = fits.open(file) # open a FITS file
 
         t0  = 10**float(hdul[1].data['age'][0])
@@ -471,28 +473,15 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax4.scatter(age[conA], ZCp[:,1][conA], marker='.', c='k', s=msize[conA])
     ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
 
-    fw_sfr = open('SFH_' + ID0 + '_PA' + PA + '.txt', 'w')
-    fw_sfr.write('# time_l time_u SFR SFR16 SFR84\n')
-    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)\n')
-
-    fw_met = open('ZH_' + ID0 + '_PA' + PA + '.txt', 'w')
-    fw_met.write('# time_l time_u logZ logZ16 logZ84\n')
-    fw_met.write('# (Gyr)  (Gyr)  (logZsun) (logZsun) (logZsun)\n')
+    fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
+    fw_sfr.write('# time_l time_u SFR SFR16 SFR84 Mstel Mstel16 Mstel84 logZ logZ16 logZ84\n')
+    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
 
     for ii in range(len(age)-1,0-1,-1):
-        t0 = Tuni/cc.Gyr_s - age[ii]
-        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f\n'%(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2]))
-        fw_met.write('%.2f %.2f %.2f %.2f %.2f\n'%(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
+        t0 = Tuni - age[ii]
+        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
+        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
     fw_sfr.close()
-    fw_met.close()
-
-    #########################
-    # Title
-    #########################
-    #ax1.set_title('Each $t$-bin', fontsize=12)
-    #ax2.set_title('Net system', fontsize=12)
-    #ax3.set_title('Each $t$-bin', fontsize=12)
-    #ax4.set_title('Net system', fontsize=12)
 
 
     #############
@@ -521,7 +510,7 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
 
-    ax2.text(0.01, y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'%(ID0, zbes, np.log10(ACp[0,1]), ZCp[0,1], np.log10(np.percentile(TC[0,:],50)), Avtmp[1]), fontsize=9)
+    ax2.text(0.01, y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'%(ID, zbes, np.log10(ACp[0,1]), ZCp[0,1], np.log10(np.percentile(TC[0,:],50)), Avtmp[1]), fontsize=9)
 
     #
     # Brief Summary
@@ -529,17 +518,19 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Writing SED param in a fits file;
     # Header
     prihdr = fits.Header()
-    prihdr['ID']     = ID0
+    prihdr['ID']     = ID
     prihdr['PA']     = PA
     prihdr['z']      = zbes
     prihdr['RA']     = RA
     prihdr['DEC']    = DEC
+    '''
     prihdr['Re_kpc'] = rek
     prihdr['Ser_n']  = nn
     prihdr['Axis_q'] = qq
     prihdr['e_Re']   = (erekl+ereku)/2.
     prihdr['e_n']    = enn
     prihdr['e_q']    = eqq
+    '''
     # Add rejuv properties;
     prihdr['f_rejuv']= f_rejuv
     prihdr['t_quen'] = t_quench
@@ -589,6 +580,8 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     col50 = fits.Column(name='AV', format='E', unit='mag', array=para[:])
     col01.append(col50)
 
+    '''
+    Ths is in gsf_sed_*.fits
     # U-V
     para = [uv[0], uv[1], uv[2]]
     col50 = fits.Column(name='U-V', format='E', unit='mag', array=para[:])
@@ -598,28 +591,30 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     para = [vj[0], vj[1], vj[2]]
     col50 = fits.Column(name='V-J', format='E', unit='mag', array=para[:])
     col01.append(col50)
+    '''
 
     colms  = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu    = fits.HDUList([prihdu, dathdu])
-    hdu.writeto('SFH_' + ID0 + '_PA' + PA + '_param.fits', overwrite=True)
+    hdu.writeto('SFH_' + ID + '_PA' + PA + '_param.fits', overwrite=True)
 
 
     #
     # SFH
     #
     zzall = np.arange(1.,12,0.01)
-    Tall  = cd.age(zzall, use_flat=True, **cosmo)/cc.Gyr_s
+    Tall  = MB.cosmo.age(zzall).value # , use_flat=True, **cosmo)
 
-    fw = open('SFH_' + ID0 + '_PA' + PA + '_sfh.cat', 'w')
-    fw.write('%s'%(ID0))
+    '''
+    fw = open('SFH_' + ID + '_PA' + PA + '_sfh.cat', 'w')
+    fw.write('%s'%(ID))
     for mm in range(len(age)):
         mmtmp = np.argmin(np.abs(Tall - Tuni0[mm]))
         zztmp = zzall[mmtmp]
         fw.write(' %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f'%(zztmp, Tuni0[mm], np.log10(ACp[mm,1]), (np.log10(ACp[mm,1])-np.log10(ACp[mm,0])), (np.log10(ACp[mm,2])-np.log10(ACp[mm,1])), ZCp[mm,1], ZCp[mm,1]-ZCp[mm,0], ZCp[mm,2]-ZCp[mm,1], SFp[mm,1], SFp[mm,1]-SFp[mm,0], SFp[mm,2]-SFp[mm,1]))
     fw.write('\n')
     fw.close()
-    #print('%s & $%.5e$ & $%.5e$ & $%.3f$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.2f_{-%.2f}^{+%.2f}$ & $%.1f$ & $%.1f$ & $%.2f$\\\\'%(ID0, RA, DEC, zbes, np.log10(ACp[0,1]), (np.log10(ACp[0,1])-np.log10(ACp[0,0])), (np.log10(ACp[0,2])-np.log10(ACp[0,1])), ACp[7,1]/ACp[0,1], ACp[7,1]/ACp[0,1]-ACp[7,0]/ACp[0,1], ACp[7,2]/ACp[0,1]-ACp[7,1]/ACp[0,1], ZCp[0,1], ZCp[0,1]-ZCp[0,0], ZCp[0,2]-ZCp[0,1], np.percentile(TC[0,:],50), np.percentile(TC[0,:],50)-np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)-np.percentile(TC[0,:],50), Avtmp[1], Avtmp[1]-Avtmp[0], Avtmp[2]-Avtmp[1], uv[1], uv[1]-uv[0], uv[2]-uv[1], vj[1], vj[1]-vj[0], vj[2]-vj[1], chinu[1], SN, rek))
+    '''
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
@@ -639,9 +634,9 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #ax3.set_xscale('log')
     #ax3.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    fwt = open('T_' + ID0 + '_PA' + PA + '_sfh.cat', 'w')
-    fwt.write('%s %.3f %.3f %.3f'%(ID0, np.percentile(TC[0,:],50), np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)))
-    fwt.close()
+    #fwt = open('T_' + ID + '_PA' + PA + '_sfh.cat', 'w')
+    #fwt.write('%s %.3f %.3f %.3f'%(ID, np.percentile(TC[0,:],50), np.percentile(TC[0,:],16), np.percentile(TC[0,:],84)))
+    #fwt.close()
 
     # For redshift
     if zbes<4:
@@ -658,13 +653,16 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         else:
             zred  = [zbes, 6]
             zredl = ['$z_\mathrm{obs.}$', 6]
-    else:
+    elif zbes<6:
         zred  = [zbes, 6, 7, 9]
         zredl = ['$z_\mathrm{obs.}$', 6, 7, 9]
+    else:
+        zred  = [zbes, 12]
+        zredl = ['$z_\mathrm{obs.}$', 12]
 
     Tzz   = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
-        Tzz[zz] = (Tuni - cd.age(zred[zz], use_flat=True, **cosmo))/cc.Gyr_s
+        Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
         if Tzz[zz] < 0.01:
             Tzz[zz] = 0.01
 
@@ -717,34 +715,37 @@ def plot_sfh(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     ax2.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ####################
-    ## Save
-    ####################
+    # Save
     #plt.show()
     #ax1.legend(loc=2, fontsize=8)
     #ax2.legend(loc=3, fontsize=8)
-    plt.savefig('SFH_' + ID0 + '_PA' + PA + '_pcl.png')
-    #if f_comp == 1:
-    #    plt.savefig('SFH_' + ID0 + '_PA' + PA + '_comp.pdf')
-    #else:
-    #    plt.savefig('SFH_' + ID0 + '_PA' + PA + '_pcl.pdf')
+    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png')
 
-###############
-def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01):
+
+def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01):
+    '''
+    Purpose:
+    =========
+    Reprocess output files to get spectra, UV color, and SFH at higher resolution.
+
+    Input:
+    =========
     #
     # delt_sfh (float): delta t of input SFH in Gyr.
     #
     # Returns: SED as function of age, based on SF and Z histories;
     #
-    print('This function may take a while.')
-    flim = 0.01
+    '''
+
+    print('This function may take a while as it runs fsps.')
+    flim  = 0.01
     lsfrl = -1 # log SFR low limit
     mmax  = 1000
     Txmax = 4 # Max x value
     lmmin = 10.3
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
     age = np.asarray(age)
 
@@ -752,15 +753,15 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     # RF colors.
     import os.path
     home = os.path.expanduser('~')
-    c      = 3.e18 # A/s
+    c      = MB.c #3.e18 # A/s
+    m0set  = MB.m0set #25.0
     chimax = 1.
-    mag0   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
@@ -791,7 +792,7 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID0 + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -814,11 +815,11 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     ####################
     # For cosmology
     ####################
-    DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * MB.Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
-    Tuni = cd.age(zbes, use_flat=True, **cosmo)
-    Tuni0 = (Tuni/cc.Gyr_s - age[:])
+    Tuni = MB.cosmo.age(zbes).value
+    Tuni0 = (Tuni - age[:])
 
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
@@ -828,13 +829,13 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
             delTl[aa] = age[aa]
             delTu[aa] = (age[aa+1]-age[aa])/2.
             delT[aa]  = delTu[aa] + delTl[aa]
-        elif Tuni/cc.Gyr_s < age[aa]:
+        elif Tuni < age[aa]:
             delTl[aa] = (age[aa]-age[aa-1])/2.
             delTu[aa] = delTl[aa] #10.
             delT[aa]  = delTu[aa] + delTl[aa]
         elif aa == len(age)-1:
             delTl[aa] = (age[aa]-age[aa-1])/2.
-            delTu[aa] = Tuni/cc.Gyr_s - age[aa]
+            delTu[aa] = Tuni - age[aa]
             delT[aa]  = delTu[aa] + delTl[aa]
         else:
             delTl[aa] = (age[aa]-age[aa-1])/2.
@@ -848,7 +849,7 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     # Load Pickle
     ##############################
     samplepath = './'
-    pfile = 'chain_' + ID0 + '_PA' + PA + '_corner.cpkl'
+    pfile = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
 
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
@@ -915,8 +916,6 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
         eAv= 0
 
     mm = 0
-    #mmax = 10
-    #print('mmax is set to 10')
     for mm in range(mmax):
         mtmp  = np.random.randint(len(samples))# + Nburn
         AAtmp = np.zeros(len(age), dtype='float32')
@@ -925,7 +924,7 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
 
         Av_tmp = samples['Av'][mtmp]
 
-        f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA + '.fits')
+        f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
         sedpar = f0[1]
         f1     = fits.open(DIR_TMP + 'ms.fits')
         mloss  = f1[1].data
@@ -1002,10 +1001,10 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
 
     conA = (msize>=0)
     # Make template;
-    tbegin = np.min(Tuni/cc.Gyr_s-age)
-    tuniv_hr = np.arange(tbegin,Tuni/cc.Gyr_s,delt_sfh) # in Gyr
-    sfh_hr_in= np.interp(tuniv_hr,(Tuni/cc.Gyr_s-age)[::-1],SFp[:,1][::-1])
-    zh_hr_in = np.interp(tuniv_hr,(Tuni/cc.Gyr_s-age)[::-1],ZCp[:,1][::-1])
+    tbegin = np.min(Tuni-age)
+    tuniv_hr = np.arange(tbegin,Tuni,delt_sfh) # in Gyr
+    sfh_hr_in= np.interp(tuniv_hr,(Tuni-age)[::-1],SFp[:,1][::-1])
+    zh_hr_in = np.interp(tuniv_hr,(Tuni-age)[::-1],ZCp[:,1][::-1])
 
     # FSPS
     con_sfh = (tuniv_hr>0)
@@ -1026,18 +1025,16 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
 
     col01 = []
     t_get = tuniv_hr[con_sfh]
-    #con_tget = ((Tuni/cc.Gyr_s-age)>0)
-    #t_get = (Tuni/cc.Gyr_s-age)[con_tget][::-1]
+
     for ss in range(len(t_get)):
-        wave0, flux0 = sp.get_spectrum(tage=t_get[ss], peraa=True) # if peraa=True, in unit of L/AA
+        wave0, flux0 = sp.get_spectrum(tage=t_get[ss], peraa=True)
         if ss == 0:
             spec_mul_nu_conv = np.zeros((len(t_get),len(wave0)),dtype='float32')
-        #ax2.plot(wave0, flux0, linestyle='-', color='b')
-        #plt.show()
-        print('Template %d is done.'%(ss))
+
+        print('Template %d is processed.'%(ss))
         wavetmp  = wave0*(1.+zbes)
         spec_mul_nu = flamtonu(wavetmp, flux0) # Conversion from Flambda to Fnu.
-        Lsun = 3.839 * 1e33 #erg s-1
+        Lsun = MB.Lsun #3.839 * 1e33 #erg s-1
         stmp_common = 1e10 # 1 tmp is in 1e10Lsun
 
         spec_mul_nu_conv[ss,:] = spec_mul_nu[:]
@@ -1048,7 +1045,7 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
         consave = (wavetmp/(1.+zbes)<20000) # AA
         if ss == 0:
             nd_ap  = np.arange(0,len(wave0),1)
-            col1   = fits.Column(name='wavelength', format='E', unit='AA', disp='obs', array=wavetmp[consave])
+            col1   = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp[consave])#, disp='obs'
             col2   = fits.Column(name='colnum', format='K', unit='', array=nd_ap[consave])
             col00  = [col1, col2]
             col3   = fits.Column(name='age', format='E', unit='Gyr', array=t_get)
@@ -1056,25 +1053,34 @@ def get_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
             col5   = fits.Column(name='zh', format='E', unit='Zsun', array=zh_hr_in[con_sfh])
             col01  = [col3,col4,col5]
 
-        colspec_all = fits.Column(name='fspec_'+str(ss), format='E', unit='Fnu', disp='%s'%(t_get[ss]), array=spec_mul_nu_conv[ss,:][consave])
+        colspec_all = fits.Column(name='fspec_'+str(ss), format='E', unit='Fnu', array=spec_mul_nu_conv[ss,:][consave])#, disp='%s'%(t_get[ss])
         col00.append(colspec_all)
 
     coldefs_spec = fits.ColDefs(col00)
     hdu = fits.BinTableHDU.from_columns(coldefs_spec)
-    hdu.writeto(DIR_TMP + 'obsspec_' + ID0 + '_PA' + PA + '.fits', overwrite=True)
+    hdu.writeto(DIR_TMP + 'obsspec_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
     coldefs_spec = fits.ColDefs(col01)
     hdu = fits.BinTableHDU.from_columns(coldefs_spec)
-    hdu.writeto(DIR_TMP + 'obshist_' + ID0 + '_PA' + PA + '.fits', overwrite=True)
+    hdu.writeto(DIR_TMP + 'obshist_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
 
-###############
-def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
-    #
-    # delt_sfh (float): delta t of input SFH in Gyr.
-    #
-    # Returns: SED as function of age, based on SF and Z histories;
-    #
+def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
+    '''
+    Input:
+    ============
+
+    delt_sfh (float): delta t of input SFH in Gyr.
+
+
+    Returns:
+    ============
+
+    SED as function of age, based on SF and Z histories;
+
+    '''
+    import os.path
+
     ################
     flim = 0.01
     lsfrl = -1 # log SFR low limit
@@ -1083,17 +1089,16 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     lmmin = 10.3
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
     age = np.asarray(age)
 
     ################
     # RF colors.
-    import os.path
     home = os.path.expanduser('~')
     c      = 3.e18 # A/s
     chimax = 1.
-    mag0   = 25.0
+    m0set   = 25.0
     d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     #############
@@ -1110,7 +1115,7 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
@@ -1130,7 +1135,7 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID0 + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -1150,13 +1155,13 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
         Asum += A50[aa]
 
     # Cosmo;
-    DL = cd.luminosity_distance(zbes, **cosmo) * Mpc_cm # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * MB.Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
-    Tuni = cd.age(zbes, use_flat=True, **cosmo)
-    Tuni0 = (Tuni/cc.Gyr_s - age[:])
+    Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
+    Tuni0 = (Tuni - age[:])
 
     # Open summary;
-    file = 'summary_' + ID0 + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '_PA' + PA + '.fits'
     fd   = fits.open(file)[1].data
     #print(fits.open(file)[1].header)
     Avtmp = fd['Av0']
@@ -1165,14 +1170,14 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
     #ax2.plot(vj[1],uv[1],color='gray',marker='s',ms=3)
 
     # SFH
-    file = DIR_TMP + 'obshist_' + ID0 + '_PA' + PA + '.fits'
+    file = DIR_TMP + 'obshist_' + ID + '_PA' + PA + '.fits'
     fd   = fits.open(file)[1].data
     age  = fd['age']
     sfh  = fd['sfh']
     zh   = fd['zh']
 
     # Open FSPS temp;
-    file = DIR_TMP + 'obsspec_' + ID0 + '_PA' + PA + '.fits'
+    file = DIR_TMP + 'obsspec_' + ID + '_PA' + PA + '.fits'
     fd   = fits.open(file)[1].data
     wave = fd['wavelength']
     nr   = fd['colnum']
@@ -1258,4 +1263,4 @@ def plot_evolv(ID0, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7,
 
     ax3.legend(loc=3)
     #plt.show()
-    plt.savefig('hist_' + ID0 + '_PA' + PA + '.pdf')
+    plt.savefig('hist_' + ID + '_PA' + PA + '.pdf')

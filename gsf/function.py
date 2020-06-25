@@ -4,10 +4,10 @@ import numpy as np
 import sys
 from scipy.integrate import simps
 import pickle as cPickle
+import os
 
 #
 c = 3.e18 # A/s
-chimax = 1.
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 ################
@@ -17,13 +17,82 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
+def get_input():
+    '''
+    This returns somewhat a common default input dictionary.
+
+    '''
+
+    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':1, \
+    'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
+    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':100, 'NWALKZ':50,\
+    'ZEVOL':0, 'ZVIS':1, 'FNELD':0}
+
+    return inputs
+
+
+def read_input(parfile):
+    '''
+    Purpose:
+    ==========
     #
-    # Get initial parameters
+    # Get info from param file.
     #
+
+    Return:
+    ===========
+    Input dictionary.
+
+    '''
+
+    input0 = []
+    input1 = []
+    file = open(parfile,'r')
+    while 1:
+        line = file.readline()
+        if not line:
+            break
+        else:
+            cols = str.split(line)
+            if len(cols)>0 and cols[0] != '#':
+                    input0.append(cols[0])
+                    input1.append(cols[1])
+    file.close()
+    inputs = {}
+    for i in range(len(input0)):
+        inputs[input0[i]]=input1[i]
+
+    return inputs
+
+
+def loadcpkl(cpklfile):
+    """
+    Load cpkl files.
+    """
+    import pickle
+    if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
+    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
+
+    if sys.version_info.major == 2:
+        data = pickle.load(f)
+    elif sys.version_info.major == 3:
+        data = pickle.load(f, encoding='latin-1')
+
+    f.close()
+    return data
+
+
+def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=1e5, Zbest=0):
+    '''
+    #
+    # Get initial parameters at various Z;
+    #
+    '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-    chidef = 1e5
-    Zbest  = 0
+
+    if len(fy)<2:
+        print('Not enough data for quick fit. Exiting.')
+        return False
 
     fwz = open('Z_' + ID0 + '_PA' + PA0 + '.cat', 'w')
     fwz.write('# ID Zini chi/nu AA Av Zbest\n')
@@ -41,7 +110,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
                 aa = 0
                 fit_params['Z'+str(aa)].value = ZZ
 
-            out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # nelder is the most efficient.
+            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
             keys = fit_report(out_tmp).split('\n')
             csq  = 99999
             rcsq = 99999
@@ -57,8 +126,8 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
 
             fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-            AA_tmp = np.zeros(len(age), dtype='float32')
-            ZZ_tmp = np.zeros(len(age), dtype='float32')
+            AA_tmp = np.zeros(len(age), dtype='float64')
+            ZZ_tmp = np.zeros(len(age), dtype='float64')
             for aa in range(len(age)):
                 AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
                 fwz.write(' %.5f'%(AA_tmp[aa]))
@@ -91,7 +160,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
                 aa = 0
                 fit_params['Z'+str(aa)].value = ZZ
 
-            out_tmp = minimize(residual, fit_params, args=(fy, wht2, False), method=fit_name) # powel is the more accurate.
+            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # powel is the more accurate.
             keys = fit_report(out_tmp).split('\n')
             csq  = 99999
             rcsq = 99999
@@ -106,8 +175,8 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
             fitc = [csq, rcsq] # Chi2, Reduced-chi2
             fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-            AA_tmp = np.zeros(len(age), dtype='float32')
-            ZZ_tmp = np.zeros(len(age), dtype='float32')
+            AA_tmp = np.zeros(len(age), dtype='float64')
+            ZZ_tmp = np.zeros(len(age), dtype='float64')
             for aa in range(len(age)):
                 AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
                 fwz.write(' %.5f'%(AA_tmp[aa]))
@@ -129,6 +198,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,wht2,ID0,PA0):
 
     fwz.close()
     return out,chidef,Zbest
+
 
 def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
     #
@@ -199,21 +269,21 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
 
 # SFH
 def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr = np.zeros(len(tt), dtype='float64')+minsfr
     sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
 def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr = np.zeros(len(tt), dtype='float64')+minsfr
     sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
 def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float32')+minsfr
+    sfr = np.zeros(len(tt), dtype='float64')+minsfr
     sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]<t0) | (tt[:]>tau)
     sfr[:][con] = minsfr
@@ -295,7 +365,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
     fit_params.add('tau', value=.1, min=0, max=100)
     fit_params.add('A', value=1, min=0, max=5000)
 
-    def residual(pars):
+    def residual_tmp(pars):
         vals  = pars.valuesdict()
         t0_tmp, tau_tmp, A_tmp = vals['t0'],vals['tau'],vals['A']
 
@@ -320,7 +390,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
         return resid
 
 
-    out = minimize(residual, fit_params, method='powell')
+    out = minimize(residual_tmp, fit_params, method='powell')
     #out = minimize(residual, fit_params, method='nelder')
     print(fit_report(out))
 
@@ -363,7 +433,7 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
     # Eb:
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -419,7 +489,7 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     # gamma: See Eq.1
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -477,7 +547,7 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     # Rv: from Calzetti+00
     # lmlimu: Upperlimit. 2.2 in Calz+00
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -516,6 +586,7 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     else:
         return fl_cor, lmmc*10000., nrd
 
+
 def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     #
     # lm (float array) : wavelength, at RF, in AA.
@@ -524,7 +595,7 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     # nr (int array)   : index, to be used for sorting.
     # Rv: =3.1 for MW.
     #
-    Kl = np.zeros(len(lm), dtype='float32')
+    Kl = np.zeros(len(lm), dtype='float64')
 
     lmm  = lm/10000. # into micron
     xx   = 1./lmm
@@ -600,6 +671,8 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
 
 
 def check_line(data,wave,wht,model):
+    '''
+    '''
     R_grs = 50
     dw  = 10
     ldw = 5
@@ -611,7 +684,6 @@ def check_line(data,wave,wht,model):
     er  = 1./np.sqrt(wht)
     wht2 = wht
 
-    #print('line check.')
     for ii in range(ii0, ii9, 1):
         concont = (((wave>wave[ii]-dw*R_grs) & (wave<wave[ii]-(dw-ldw)*R_grs)) \
                    | ((wave<wave[ii]+dw*R_grs) & ((wave>wave[ii]+(dw-ldw)*R_grs))))
@@ -641,16 +713,22 @@ def check_line(data,wave,wht,model):
                     wht2[ii] = wht[ii]
 
             except Exception:
-                #print('Error in Line Check.')
+                print('Error in Line Check.')
                 pass
 
     return wht2
 
-# Convolution of templates with filter response curves.
-def filconv_cen(band0, l0, f0): # f0 in fnu
-    DIR = 'FILT/'
-    fnu  = np.zeros(len(band0), dtype='float32')
-    lcen = np.zeros(len(band0), dtype='float32')
+
+
+def filconv_cen(band0, l0, f0, DIR='FILT/'):
+    '''
+    Convolution of templates with filter response curves.
+
+    f0 in fnu
+    '''
+
+    fnu  = np.zeros(len(band0), dtype='float64')
+    lcen = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + 'f' + str(band0[ii]) + 'w.fil', comments='#')
         lfil = fd[:,1]
@@ -680,10 +758,72 @@ def filconv_cen(band0, l0, f0): # f0 in fnu
 
     return lcen, fnu
 
+
+def filconv_fast(filts, band, l0, f0, fw=False):
+    '''
+    Input:
+    ============
+    filts, band : From MB.filts and MB.band, respectively.
+    f0: Flux for spectrum, in fnu
+    l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
+
+    '''
+    fnu  = np.zeros(len(filts), dtype='float64')
+    lcen = np.zeros(len(filts), dtype='float64')
+    if fw:
+        fwhm = np.zeros(len(filts[:]), dtype='float64')
+
+    for ii in range(len(filts[:])):
+        lfil = band['%s_lam'%(filts[ii])]
+        ffil = band['%s_res'%(filts[ii])]
+
+        if fw:
+            ffil_cum = np.cumsum(ffil)
+            ffil_cum/= ffil_cum.max()
+            con      = (ffil_cum>0.05) & (ffil_cum<0.95)
+            fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
+
+        lmin  = np.min(lfil)
+        lmax  = np.max(lfil)
+        imin  = 0
+        imax  = 0
+
+        con = (l0>lmin) & (l0<lmax) #& (f0>0)
+        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
+        if len(l0[con])>1:
+            lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
+            lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
+            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+            wht       = 1.
+
+            # This does not work sometimes;
+            #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
+            #I2  = simps(filt_int/lamS,lamS)                  #Numerator
+            delS = lamS[1]-lamS[0]
+            I1  = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
+            I2  = np.sum(filt_int/lamS*delS)                  #Numerator
+            if I2>0:
+                fnu[ii] = I1/I2/c         #Average flux density
+            else:
+                fnu[ii] = 0
+        else:
+            fnu[ii] = 0
+
+    if fw:
+        return lcen, fnu, fwhm
+    else:
+        return lcen, fnu
+
+
 def filconv(band0, l0, f0, DIR, fw=False):
-    #
-    # f0: in fnu
-    #
+    '''
+    Input:
+    ============
+    f0: Flux for spectrum, in fnu
+    l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
+
+    '''
+
     fnu  = np.zeros(len(band0), dtype='float64')
     lcen = np.zeros(len(band0), dtype='float64')
     if fw == True:
@@ -705,13 +845,14 @@ def filconv(band0, l0, f0, DIR, fw=False):
         imin  = 0
         imax  = 0
 
-        con = (l0>lmin) & (l0<lmax) & (f0>0)
+        con = (l0>lmin) & (l0<lmax) #& (f0>0)
+        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
-            lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
             filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
             wht       = 1.
+
             # This does not work sometimes;
             #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
             #I2  = simps(filt_int/lamS,lamS)                  #Numerator
@@ -725,23 +866,28 @@ def filconv(band0, l0, f0, DIR, fw=False):
         else:
             fnu[ii] = 0
 
-    if fw == True:
+    if fw:
         return lcen, fnu, fwhm
     else:
         return lcen, fnu
 
-def fil_fwhm(band0, DIR): # f0 in fnu
+
+def fil_fwhm(band0, DIR):
+    '''
     #
     # FWHM
     #
-    fwhm = np.zeros(len(band0), dtype='float32')
+    #f0 in fnu
+    #
+    '''
+    fwhm = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
 
         fsum = np.sum(ffil)
-        fcum = np.zeros(len(ffil), dtype='float32')
+        fcum = np.zeros(len(ffil), dtype='float64')
         lam0,lam1 = 0,0
 
         for jj in range(len(ffil)):
@@ -754,6 +900,7 @@ def fil_fwhm(band0, DIR): # f0 in fnu
         fwhm[ii] = lam1 - lam0
 
     return fwhm
+
 
 def calc_Dn4(x0, y0, z0):
     con1 = (x0/(1+z0)>3750) & (x0/(1+z0)<3950)
@@ -825,7 +972,19 @@ def check_line_cz(ycont,xcont,wycont,model,zgal):
     return wht2, ypoly
 
 
-def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0):
+def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
+    '''
+    Input:
+    ========
+    LW : List for emission lines to be masked.
+
+    Returns:
+    ========
+    wht   : Processed weight, where wavelength at line exists is masked.
+    ypoly : Fitted continuum flux.
+
+    '''
+
     er   = 1./np.sqrt(wycont)
     try:
         wht2, flag_l = detect_line_man(xcont, ycont, wycont, zgal, LW, model)
@@ -834,7 +993,7 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0):
         wht2 = wycont
         pass
 
-    z     = np.polyfit(xcont, ycont, 5, w=wht2)
+    z     = np.polyfit(xcont, ycont, norder, w=wht2)
     p     = np.poly1d(z)
     ypoly = p(xcont)
 
@@ -874,20 +1033,21 @@ def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
 
 
 def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
+    '''
     #
     # lsig (float): which sigma to detect lines.
     #
-
-    ################
-    # Line library
-    ################
-    #LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'Halpha', 'S2L', 'S2H']
-    #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4983, 6563, 6717, 6731]
+    '''
     fLW = np.zeros(len(LW), dtype='int') # flag.
     R_grs = (xcont[1] - xcont[0])
     dw    = 1.
-    er    = 1./np.sqrt(wht)
-    wht2   = wht
+
+    er = wht * 0
+    con_wht = (wht>0)
+    er[con_wht] = 1./np.sqrt(wht[con_wht])
+
+    wht2 = np.zeros(len(wht),'float')
+    wht2[:]= wht[:]
     flag_l = 0
 
     for ii in range(len(xcont)):
@@ -896,4 +1056,5 @@ def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
                 if xcont[ii]/(1.+zgal) > LW[jj] - dw*R_grs and xcont[ii]/(1.+zgal) < LW[jj] + dw*R_grs:
                     wht2[int(ii-dw):int(ii+dw)] *= 0
                     flag_l  = 1
+
     return wht2

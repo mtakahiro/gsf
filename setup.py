@@ -1,5 +1,3 @@
-#from distutils.core import setup
-#from distutils.extension import Extension
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
@@ -53,7 +51,7 @@ PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
     name = "gsf",
-    version = "1.1.0",
+    version = "1.2",
     author = "Takahiro Morishita",
     author_email = "tmorishita@stsci.edu",
     description = "SED Fitting Code for HST Grism",
@@ -63,8 +61,8 @@ setup(
     packages=['gsf'],#,'example'
     #packages = find_packages(),
     package_dir={'gsf': 'gsf'},
-    requires=['lmfit', 'fsps', 'emcee', 'corner', 'cosmolopy'],
-    #requires=['lmfit', 'fsps', 'python-fsps', 'emcee'],
+    requires=['lmfit', 'fsps', 'emcee', 'corner'],
+    # 'python-fsps' could not be added here, somehow.
     # long_description=read('README.rst'),
     classifiers=[
         "Development Status :: 1 - Planning",

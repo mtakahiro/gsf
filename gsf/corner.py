@@ -340,7 +340,7 @@ def corner(xs, bins=20, range=None, weights=None, color="k",
                 if truths[i] is not None and truths[j] is not None:
                     #ax.plot(truths[j], truths[i], color=truth_color)
                     ax.scatter(truths[j], truths[i], color='r', alpha=0.6, edgecolor=truth_color, marker='s', s=50)
-                    ax.scatter(truths[j], truths[i], color='', edgecolor=truth_color, marker='s', s=50)
+                    ax.scatter(truths[j], truths[i], color='none', edgecolor=truth_color, marker='s', s=50)
                 if truths[j] is not None:
                     ax.axvline(truths[j], color=truth_color)
                 if truths[i] is not None:
