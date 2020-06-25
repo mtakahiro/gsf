@@ -63,8 +63,12 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             Zb[aa]    = res.params['Z'+str(aa)].value
             Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
         except:
-            Zb[aa]    = res.params['Z0'].value
-            Zmc[aa,:] = np.percentile(res.flatchain['Z0'][burnin:], [16,50,84])
+            try:
+                Zb[aa]    = res.params['Z0'].value
+                Zmc[aa,:] = np.percentile(res.flatchain['Z0'][burnin:], [16,50,84])
+            except:
+                Zb[aa]    = self.ZFIX
+                Zmc[aa,:] = [self.ZFIX,self.ZFIX,self.ZFIX]
 
         NZbest[aa]= bfnc.Z2NZ(Zb[aa])
         ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
@@ -73,8 +77,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     msmc  = np.percentile(msmc0, [16,50,84])
 
-    Avb   = res.params['Av'].value
-    Avmc  = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
+    try:
+        Avb   = res.params['Av'].value
+        Avmc  = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
+    except:
+        Avb   = self.AVFIX
+        Avmc  = [self.AVFIX,self.AVFIX,self.AVFIX]
+
     AAvmc = [Avmc]
     try:
         zmc = np.percentile(res.flatchain['zmc'][burnin:], [16,50,84])

@@ -280,7 +280,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
         delt_tot = 0
         mtmp  = np.random.randint(len(samples))# + Nburn
 
-        Av_tmp = samples['Av'][mtmp]
+        try:
+            Av_tmp = samples['Av'][mtmp]
+        except:
+            Av_tmp = MB.AVFIX
+
         Avrand = np.random.uniform(-eAv, eAv)
         if Av_tmp + Avrand<0:
             Av[mm] = 0
@@ -292,7 +296,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
             try:
                 ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
             except:
-                ZZtmp[aa] = samples['Z0'][mtmp]
+                try:
+                    ZZtmp[aa] = samples['Z0'][mtmp]
+                except:
+                    ZZtmp[aa] = MB.ZFIX
 
             nZtmp      = bfnc.Z2NZ(ZZtmp[aa])
             mslist[aa] = sedpar.data['ML_'+str(nZtmp)][aa]
@@ -646,9 +653,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
         else:
             zred  = [zbes, 6]
             zredl = ['$z_\mathrm{obs.}$', 6]
-    else:
+    elif zbes<6:
         zred  = [zbes, 6, 7, 9]
         zredl = ['$z_\mathrm{obs.}$', 6, 7, 9]
+    else:
+        zred  = [zbes, 12]
+        zredl = ['$z_\mathrm{obs.}$', 12]
 
     Tzz   = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):

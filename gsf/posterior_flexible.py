@@ -66,13 +66,13 @@ class Post:
 
     def func_tmp(self, xint, eobs, fmodel):
         '''
-        Used for chi2 calculation for non-detection
+        A function used for chi2 calculation for non-detection in lnprob.
         '''
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=False, SNlim=1.0):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0):
         '''
 
         Returns:
@@ -91,7 +91,6 @@ class Post:
         sig     = np.sqrt(1./wht+f**2*model**2)
 
         chi_nd = 0
-        """
         con_up = (fy==0) & (ey>0)
         if f_chind:
             # This does not improve, but costs time;
@@ -101,10 +100,11 @@ class Post:
                 #y = self.func_tmp(num, ey[con_up][nn], model[con_up][nn])
                 #result  = cumtrapz(y, num, initial=0)
                 chi_nd += np.log(result[0])
-        """
-        con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-        lnlike  = -0.5 * np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2))
-        #lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+
+        con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+        #lnlike  = -0.5 * np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2))
+        lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+        #print(np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)), chi_nd)
 
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']

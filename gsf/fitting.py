@@ -181,32 +181,46 @@ class Mainbody():
                 self.delZ = 0.0001
 
         # N of param:
-        nAV = 1
         try:
-            if int(inputs['ZEVOL']) == 1:
-                self.ZEVOL = 1
-                self.ndim = int(len(self.nage) * 2 + nAV) # age, Z, and Av.
-                print('Metallicity evolution is on.')
-                if int(inputs['ZMC']) == 1:
-                    self.ndim += 1
-                print('No of params are : %d'%(self.ndim))
-            else:
-                self.ZEVOL = 0
-                '''
-                if self.delZ < 0.01:
-                    self.ndim = int(len(self.nage) + nAV) # age and Av.
-                else:
-                    self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
-                '''
-                self.ndim = int(len(self.nage) + 1 + nAV) # age, Z, and Av.
-
-                print('Metallicity evolution is off.')
-                if int(inputs['ZMC']) == 1:
-                    self.ndim += 1
-                print('No of params are : %d'%(self.ndim))
+            Avfix = float(inputs['AVFIX'])
+            self.AVFIX = Avfix
+            self.nAV = 0
         except:
+            try:
+                Avmin = float(inputs['AVMIN'])
+                Avmax = float(inputs['AVMAX'])
+                if Avmin == Avmax:
+                    self.nAV = 0
+                    self.AVFIX = Avmin
+                else:
+                    self.nAV = 1
+            except:
+                self.nAV = 1
+
+        #try:
+        if int(inputs['ZEVOL']) == 1:
+            self.ZEVOL = 1
+            self.ndim = int(len(self.nage) * 2 + self.nAV) # age, Z, and Av.
+            print('Metallicity evolution is on.')
+            if int(inputs['ZMC']) == 1:
+                self.ndim += 1
+            print('No of params are : %d'%(self.ndim))
+        else:
             self.ZEVOL = 0
-            pass
+            print('Metallicity evolution is off.')
+            try:
+                ZFIX = float(inputs['ZFIX'])
+                self.nZ = 0
+            except:
+                self.nZ = 1
+
+            self.ndim = int(len(self.nage) + self.nZ + self.nAV) # age, Z, and Av.
+
+        # Redshift
+        if int(inputs['ZMC']) == 1:
+            self.ndim += 1
+
+        print('No of params are : %d'%(self.ndim))
 
         try:
             self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
@@ -886,8 +900,7 @@ class Mainbody():
             print('##########################')
             for aa in range(len(self.age)):
                 if aa not in aamin:
-                    #print('Not added.')
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
                     fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
         except:
@@ -904,17 +917,23 @@ class Mainbody():
         # Dust attenuation
         #####################
         try:
-            Avmin = float(inputs['AVMIN'])
-            Avmax = float(inputs['AVMAX'])
-            if Avmin == Avmax:
-                Avmax += 0.001
-            fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+            Avfix = float(inputs['AVFIX'])
+            fit_params.add('Av', value=Avfix, vary=False)
         except:
-            Avmin = 0.0
-            Avmax = 4.0
-            Avini = 0.5
-            print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
-            fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
+            try:
+                Avmin = float(inputs['AVMIN'])
+                Avmax = float(inputs['AVMAX'])
+                if Avmin == Avmax:
+                    #Avmax += 0.001
+                    fit_params.add('Av', value=(Avmax+Avmin)/2., vary=False)
+                else:
+                    fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+            except:
+                Avmin = 0.0
+                Avmax = 4.0
+                Avini = 0.5
+                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
+                fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
 
         #####################
         # Metallicity
@@ -929,11 +948,11 @@ class Mainbody():
             try:
                 ZFIX = float(inputs['ZFIX'])
                 aa = 0
-                fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
+                fit_params.add('Z'+str(aa), value=ZFIX, vary=False)
             except:
                 aa = 0
                 if np.min(self.Zall)==np.max(self.Zall):
-                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall)+0.0001)
+                    fit_params.add('Z'+str(aa), value=np.min(self.Zall), vary=False)
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
 
@@ -1060,6 +1079,7 @@ class Mainbody():
                 print('### Saving chain took %.1f sec'%(tcalc_mc))
                 print('#################################')
 
+            '''
             Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
             Avpar = np.zeros((1,3), dtype='float64')
             Avpar[0,:] = Avmc
@@ -1096,6 +1116,7 @@ class Mainbody():
                 Tdust_mc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
                 print(Mdust_mc)
                 print(Tdust_mc)
+            '''
 
             ####################
             # MCMC corner plot.

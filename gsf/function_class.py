@@ -343,8 +343,6 @@ class Func:
             zmc = par.params['zmc'].value
         except:
             zmc = zgal
-        #Cz0s  = vals['Cz0']
-        #Cz1s  = vals['Cz1']
 
         if len(tau0)>1:
             pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))

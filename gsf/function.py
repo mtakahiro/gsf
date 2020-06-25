@@ -586,6 +586,7 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     else:
         return fl_cor, lmmc*10000., nrd
 
+
 def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     #
     # lm (float array) : wavelength, at RF, in AA.
