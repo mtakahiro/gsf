@@ -33,7 +33,9 @@ Pre-requirement
 - fsps
 
 These packages will be installed if users create a new conda environment, by executing;
+
 .. code-block:: bash
+
     conda create --name gsf_environment.yml
 
 
