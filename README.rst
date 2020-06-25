@@ -8,7 +8,8 @@ version 1.2
 - The code uses FSPS templates generated via python-fsps.
 - Data set without grism data, despite the code's name, can be also provided.
 - Far IR data set can be fitted simultaneously with a simple gray body spectrum (to be implemented in future version).
-- Due to the complex nature of grism data and code, please feel free to contact with the author.
+- Due to the complex nature of grism data and code, please feel free to contact the author.
+- From v1.2, BPASS templates can also be used. Those who wish to try the functionality, contact the author.
 ========================================================================================
 
 
@@ -30,6 +31,10 @@ Pre-requirement
 - corner
 - python-fsps (ver0.3.0)
 - fsps
+
+These packages will be installed if users create a new conda environment, by executing;
+.. code-block:: bash
+    conda create --name gsf_environment.yml
 
 
 Installation & Documentation
