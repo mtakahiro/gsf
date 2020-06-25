@@ -88,7 +88,6 @@ class Post:
             f = 0
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
-        con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
         sig     = np.sqrt(1./wht+f**2*model**2)
 
         chi_nd = 0
@@ -103,7 +102,9 @@ class Post:
                 #result  = cumtrapz(y, num, initial=0)
                 chi_nd += np.log(result[0])
         """
-        lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+        con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+        lnlike  = -0.5 * np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2))
+        #lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
 
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']

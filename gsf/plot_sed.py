@@ -84,7 +84,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     SFILT    = MB.filts
 
     try:
-        f_err = int(inputs['F_ERR'])
+        f_err = MB.ferr
     except:
         f_err = 0
 
@@ -228,7 +228,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     #############
     # Set the inset.
     if f_grsm or f_dust:
-        fig = plt.figure(figsize=(7.,3.2))
+        fig = plt.figure(figsize=(6.,3.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
         if f_grsm:
@@ -431,7 +431,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.8
+    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
 
     xboxl = 17000
     xboxu = 28000
@@ -441,19 +441,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
 
     x1max = 22000
     if x1max < np.max(xbb[conbb_ymax]):
-        x1max = np.max(xbb[conbb_ymax]) * 1.1
-    ax1.set_xlim(2200, x1max)
+        x1max = np.max(xbb[conbb_ymax]) * 1.5
+    ax1.set_xlim(2200, 11000)
     ax1.set_xscale('log')
     ax1.set_ylim(-ymax*0.1,ymax)
     ax1.text(2300,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
-    xticks = [2500, 5000, 10000, 20000, 40000, 80000]
-    xlabels= ['0.25', '0.5', '1', '2', '4', '8']
+    xticks = [2500, 5000, 10000, 20000, 40000, 80000, 110000]
+    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
     #if f_dust:
     #    xticks = [2500, 5000, 10000, 20000, 40000, 80000, 1e7]
     #    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '1000']
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
+
 
     dely1 = 0.5
     while (ymax-0)/dely1<1:
@@ -465,6 +466,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     ax1.set_yticks(y1ticks)
     ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+
+    xx = np.arange(1200,160000)
+    yy = xx * 0
+    ax1.plot(xx, yy, ls='--', lw=0.5, color='gray')
 
     #############
     # Plot
@@ -575,8 +580,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     alp=0.02
     #nmc_rand = 10
     for kk in range(0,nmc_rand,1):
-        #nr = np.random.randint(len(samples['A0']))
-        nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
+        nr = np.random.randint(len(samples['A0']))
+        #nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
         Av_tmp = samples['Av'][nr]
 
         if f_err == 1:
@@ -620,19 +625,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
 
             model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            if f_fill:
+                ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-            ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            if f_fill:
+                ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
         #
         # Grism plot + Fuv flux + LIR.
         #
         if f_grsm:
-            ax2t.plot(x1_tot/zscl, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            if f_fill:
+                ax2t.plot(x1_tot/zscl, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Get FUV flux;
         Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
@@ -658,7 +666,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
 
-    ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=1., color='gray', zorder=-1, alpha=0.9)
+    #ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=1., color='lightblue', zorder=-2, alpha=0.5)
+    ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
+    ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
 
     f_fancyplot=False
     if f_fancyplot:
@@ -984,7 +994,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     if figpdf:
         plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=300)
     else:
-        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=200)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=250)
 
 
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):

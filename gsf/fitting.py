@@ -1014,7 +1014,8 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, f_move=f_move)
+            import emcee
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None)) #, f_move=f_move)
             print('######################')
             print('### Starting emcee ###')
             print('######################')
