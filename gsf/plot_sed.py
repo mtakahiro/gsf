@@ -12,7 +12,7 @@ from matplotlib.ticker import FormatStrFormatter
 from .function import *
 from .function_class import Func
 from .basic_func import Basic
-from . import img_scale
+#from . import img_scale
 #from . import corner
 import corner
 
@@ -228,7 +228,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     #############
     # Set the inset.
     if f_grsm or f_dust:
-        fig = plt.figure(figsize=(6.,3.2))
+        fig = plt.figure(figsize=(7.,3.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
         if f_grsm:
@@ -236,7 +236,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         if f_dust:
             ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
     else:
-        fig = plt.figure(figsize=(5.,2.2))
+        fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
 
@@ -248,6 +248,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     #######################################
     # D.Kelson like Box for BB photometry
     #######################################
+    #col_dat = 'darkgreen'
+    #col_dat = 'tomato'
+    col_dat = 'r'
     if f_bbbox:
         for ii in range(len(xbb)):
             if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
@@ -269,7 +272,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
             ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
             yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
             ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
-            '.r', linestyle='', linewidth=0, zorder=4,ms=5)#, label='Obs.(BB)')
+            marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
         except:
             pass
         try:
@@ -278,7 +281,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
             #yerr=fybb[conebb_ls]*0+np.max(fybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d)*0.05, \
             #uplims=eybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4, ms=1, capsize=0.)
             ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * SNlim, \
-            color='r', linestyle='', linewidth=0.5, zorder=4, ms=4, marker='v')
+            color=col_dat, linestyle='', linewidth=0.5, zorder=4, ms=4, marker='v')
 
         except:
             pass
@@ -286,15 +289,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     # If any IRAC excess:
     #if True:
     try:
+        col_ex = 'lawngreen'
+        #col_ex = 'limegreen'
+        #col_ex = 'r'
         # Currently, this file is made manually;
         data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
         x_ex  = data_ex['col2']
         fy_ex = data_ex['col3']
         ey_ex = data_ex['col4']
+        ex_ex  = data_ex['col5']
 
         ax1.errorbar(x_ex, fy_ex * c / np.square(x_ex) / d, \
-        yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5)
-        ax1.scatter(x_ex, fy_ex * c / np.square(x_ex) / d, marker='s', color='orange', edgecolor='k', zorder=5, s=20)
+        xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5)
+        ax1.scatter(x_ex, fy_ex * c / np.square(x_ex) / d, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30)
     except:
         pass
 
@@ -466,6 +473,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     ax1.set_yticks(y1ticks)
     ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax1.yaxis.labelpad = 1.5
 
     xx = np.arange(1200,160000)
     yy = xx * 0
@@ -754,6 +762,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     #
     # plot BB model from best template (blue squares)
     #
+    col_dia = 'blue'
     if f_dust:
         ALLFILT = np.append(SFILT,DFILT)
         #for ii in range(len(x1_tot)):
@@ -763,8 +772,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
 
         # plot FIR range;
-        ax3t.scatter(lbb, fbb, lw=1, color='none', edgecolor='blue', \
-        zorder=2, alpha=1.0, marker='d', s=40)
+        ax3t.scatter(lbb, fbb, lw=0.5, color='none', edgecolor=col_dia, \
+        zorder=2, alpha=1.0, marker='d', s=50)
 
     else:
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
@@ -775,7 +784,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         for ii in range(len(fbb)):
             iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
         con_sed = (eybb>0)
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=1, color='none', edgecolor='blue', zorder=3, alpha=1.0, marker='d', s=40)
+        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
 
 
         # Calculate EW, if there is excess band;
@@ -791,6 +800,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
             EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
             EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
 
+            cnt50 = fbb[iix2]
+            cnt16 = fbb16[iix2]
+            cnt84 = fbb84[iix2]
+
             ew_label = []
             for ii in range(len(fy_ex)):
                 lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
@@ -798,11 +811,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
                 ew_label.append(MB.filts[iix2[ii]])
 
                 print('\n')
-                print('EW016 for', x_ex[ii], 'is %.1f'%EW16[ii])
-                print('EW050 for', x_ex[ii], 'is %.1f'%EW50[ii])
-                print('EW084 for', x_ex[ii], 'is %.1f'%EW84[ii])
-                print('%.1f_{-%.1f}^{+%.1f} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
-                print('Or, %.1f\pm{%.1f} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
+                print('EW016 for', x_ex[ii], 'is %d'%EW16[ii])
+                print('EW050 for', x_ex[ii], 'is %d'%EW50[ii])
+                print('EW084 for', x_ex[ii], 'is %d'%EW84[ii])
+                print('%d_{-%d}^{+%d} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
+                print('Or, %d\pm{%d} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
         except:
             pass
 
@@ -902,6 +915,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
                 hdr['EW_%s_84'%(ew_label[ii])] = EW84[ii]
                 hdr['EW_%s_e1'%(ew_label[ii])] = EW50_er1[ii]
                 hdr['EW_%s_e2'%(ew_label[ii])] = EW50_er2[ii]
+                hdr['cnt_%s_16'%(ew_label[ii])]= cnt16[ii]
+                hdr['cnt_%s_50'%(ew_label[ii])]= cnt50[ii]
+                hdr['cnt_%s_84'%(ew_label[ii])]= cnt84[ii]
         except:
             pass
 
@@ -918,7 +934,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         try:
         #if True:
             fd = fits.open('SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
-            ax1.text(2300, ymax*0.25,\
+            ax1.text(2300, ymax*0.32,\
             'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
             fontsize=9)
@@ -1007,12 +1023,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     ####################
     ## Save
     ####################
-    #plt.show()
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
         plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=300)
     else:
-        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=250)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=300)
 
 
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
