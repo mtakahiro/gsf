@@ -331,7 +331,7 @@ class Func:
 
     def tmp04(self, par, zgal, lib):
         '''
-        # Making model template with a given param setself.
+        # Making model template with a given param set.
         # Also dust attenuation.
         '''
         tau0= self.tau0 #[0.01,0.02,0.03]

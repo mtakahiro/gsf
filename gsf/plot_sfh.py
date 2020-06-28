@@ -43,6 +43,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    try:
+        age = MB.age_fix
+    except:
+        age  = MB.age
     nage = MB.nage #np.arange(0,len(age),1)
     tau0 = MB.tau0 #[0.1,0.2,0.3]
 

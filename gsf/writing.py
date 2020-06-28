@@ -21,8 +21,10 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     ID0 = self.ID
     PA0 = self.PA
-
-    age  = self.age
+    try:
+        age = self.age_fix
+    except:
+        age  = self.age
     nage = self.nage
     Zall = self.Zall
 

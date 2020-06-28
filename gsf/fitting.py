@@ -141,6 +141,14 @@ class Mainbody():
         self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
         self.nage = np.arange(0,len(self.age),1)
 
+        try:
+            self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
+            self.nage = np.arange(0,len(self.age_fix),1)
+        except:
+            #self.age_fix = []
+            pass
+
+
         # Redshift as a param;
         try:
             self.fzmc = int(inputs['ZMC'])
@@ -221,11 +229,6 @@ class Mainbody():
             self.ndim += 1
 
         print('No of params are : %d'%(self.ndim))
-
-        try:
-            self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
-        except:
-            self.age_fix = []
 
         # Line
         try:
@@ -887,8 +890,7 @@ class Mainbody():
         agemax = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
         try:
-            age_fix = inputs['AGEFIX']
-            age_fix = [float(x.strip()) for x in age_fix.split(',')]
+            age_fix = self.age_fix #inputs['AGEFIX']
             aamin = []
             print('\n')
             print('##########################')

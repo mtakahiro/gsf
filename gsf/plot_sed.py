@@ -61,6 +61,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    try:
+        age = MB.age_fix
+    except:
+        age  = MB.age
     tau0 = MB.tau0 #[0.1,0.2,0.3]
 
     nstep_plot = 1
@@ -573,7 +577,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
     ytmpmax = np.zeros(len(ysum), dtype='float64')
     ytmpmin = np.zeros(len(ysum), dtype='float64')
 
-
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
@@ -595,6 +598,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         except:
             Av_tmp = MB.AVFIX
 
+        try:
+            zmc = samples['zmc'][nr]
+        except:
+            zmc = zbes
+
         if f_err == 1:
             ferr_tmp = samples['f'][nr]
         else:
@@ -612,11 +620,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
                     ZZ_tmp = MB.ZFIX
 
             if ss == 0:
-                mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
+                mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp = mod0_tmp
-
             else:
-                mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zbes, lib_all)
+                mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
 
             # Each;
@@ -680,8 +687,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
 
-    #ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=1., color='lightblue', zorder=-2, alpha=0.5)
-    ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
+    #
+    if not f_fill:
+        ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
 
     f_fancyplot=False
@@ -1591,7 +1599,10 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     ID   = MB.ID
     PA   = MB.PA
     Z    = MB.Zall
-    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    try:
+        age = MB.age_fix
+    except:
+        age  = MB.age
     tau0 = MB.tau0 #[0.1,0.2,0.3]
     dust_model = MB.dust_model
     DIR_TMP = MB.DIR_TMP #'./templates/'
@@ -1649,7 +1660,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     zscl = (1.+zbes)
 
 
-
     try:
         os.makedirs(DIR_OUT)
     except:
@@ -1681,6 +1691,19 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     ax1 = fig.add_axes([0.05,0.40,0.37,0.23])
     ax2 = fig.add_axes([0.05,0.07,0.37,0.23])
 
+    if MB.f_dust:
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
+    else:
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
+
+    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    NRbb   = MB.dict['NRbb'] #dat[:, 0]
+    xbb    = MB.dict['xbb'] #dat[:, 1]
+    fybb   = MB.dict['fybb'] #dat[:, 2]
+    eybb   = MB.dict['eybb'] #dat[:, 3]
+    exbb   = MB.dict['exbb']
+    snbb = fybb/eybb
+
     # Create a new figure if one wasn't provided.
     ###############################
     # Data taken from
@@ -1709,13 +1732,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     ey   = np.append(ey01,eg2)
     wht=1./np.square(ey)
 
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NRbb = dat[:, 0]
-    xbb  = dat[:, 1]
-    fybb = dat[:, 2]
-    eybb = dat[:, 3]
-    exbb = dat[:, 4]
-    snbb = fybb/eybb
 
     conspec = (NR<10000) #& (fy/ey>1)
     #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
