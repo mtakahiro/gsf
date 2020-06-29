@@ -617,7 +617,8 @@ class Mainbody():
                 ezu = ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
 
-            z_cz    = [self.zprev-ezl, self.zprev, self.zprev+ezu]
+            #z_cz    = [self.zgal - ezl, self.zgal, self.zgal + ezu]
+            z_cz    = [self.zgal, self.zgal, self.zgal]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]

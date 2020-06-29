@@ -728,21 +728,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
 
     # Effective ndim;
     ndim_eff = MB.ndim
+    '''
     agemax = MB.cosmo.age(zbes).value
     for aa in range(len(MB.age)):
         if MB.age[aa]>agemax:
             ndim_eff -= 1
-        '''
-        if MB.ZEVOL == 1:
-            # This is for Z at this age;
-            ndim_eff -= 1
-        '''
     '''
-    if MB.delZ < 0.01:
-        ndim_eff -= 1
-    '''
+
     con_up = (ey>0) & (fy/ey<=SNlim)
-    chi_nd = 0
+    chi_nd = 0.0
     if f_chind:
         # Chi2 for non detection;
         for nn in range(len(ey[con_up])):
@@ -932,7 +926,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', SNlim=1.5, scale=1e-19, f_chind=True,
         # Write;
         colspec = fits.ColDefs(col00)
         hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
-        hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID), overwrite=True)
+        #hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID), overwrite=True)
+        hdu0.writeto('gsf_spec_%s.fits'%(ID), overwrite=True)
 
 
     #
