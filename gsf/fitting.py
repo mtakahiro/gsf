@@ -148,6 +148,11 @@ class Mainbody():
             #self.age_fix = []
             pass
 
+        # SNlimit;
+        try:
+            self.SNlim = float(inputs['SNLIM']) # SN for non-detection in BB catalog.
+        except:
+            self.SNlim = 1.0
 
         # Redshift as a param;
         try:
@@ -617,8 +622,7 @@ class Mainbody():
                 ezu = ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
 
-            #z_cz    = [self.zgal - ezl, self.zgal, self.zgal + ezu]
-            z_cz    = [self.zgal, self.zgal, self.zgal]
+            z_cz    = [self.zprev-ezl, self.zprev, self.zprev+ezu]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]

@@ -155,7 +155,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
         plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
         inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
         plot_sed(MB, fil_path=MB.DIR_FILT,
-        SNlim=1.0, figpdf=False, save_sed=True, inputs=MB.inputs, nmc_rand=100,
+        figpdf=False, save_sed=True, inputs=MB.inputs, nmc_rand=1000,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True)
 
 

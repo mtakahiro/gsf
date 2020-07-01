@@ -95,10 +95,7 @@ class Post:
         if f_chind:
             # This does not improve, but costs time;
             for nn in range(len(ey[con_up])):
-                #num=np.linspace(-1,ey[con_up][nn],num=100)
                 result  = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
-                #y = self.func_tmp(num, ey[con_up][nn], model[con_up][nn])
-                #result  = cumtrapz(y, num, initial=0)
                 chi_nd += np.log(result[0])
 
             con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
