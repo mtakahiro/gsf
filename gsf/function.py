@@ -730,7 +730,7 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
     fnu  = np.zeros(len(band0), dtype='float64')
     lcen = np.zeros(len(band0), dtype='float64')
     for ii in range(len(band0)):
-        fd = np.loadtxt(DIR + 'f' + str(band0[ii]) + 'w.fil', comments='#')
+        fd = np.loadtxt(DIR + 'f%sw.fil'%str(band0[ii]), comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
 
@@ -830,7 +830,8 @@ def filconv(band0, l0, f0, DIR, fw=False):
         fwhm = np.zeros(len(band0), dtype='float64')
 
     for ii in range(len(band0)):
-        fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
+        #fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
+        fd = np.loadtxt(DIR + '%s.fil'%band0[ii], comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
         ffil /= np.max(ffil)
