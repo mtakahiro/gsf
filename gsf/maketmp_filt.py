@@ -18,14 +18,16 @@ col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
 def sim_spec(lmin, fin, sn):
     '''
-    ###################################################
-    ### SIMULATION of SPECTRA.
-    ###################################################
-    #
-    # wave_obs, wave_temp, flux_temp, sn_obs
-    # Return: frand, erand
-    #
+    Purpose:
+    ========
+    SIMULATION of SPECTRA.
+    
+    Input:
+    ======
+    wave_obs, wave_temp, flux_temp, sn_obs
+    Return: frand, erand
     '''
+
     frand = fin * 0
     erand = fin * 0
     for ii in range(len(lmin)):
@@ -40,10 +42,12 @@ def sim_spec(lmin, fin, sn):
 
 def maketemp(MB):
     '''
-    ###################################################
-    # Make SPECTRA at given z and filter set.
-    ###################################################
-    #
+    Purpose:
+    ========
+    Make SPECTRA at given z and filter set.
+    
+    Input:
+    ======
     # inputs      : Configuration file.
     # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
     # Z (array)   : Stellar phase metallicity in logZsun.
@@ -61,7 +65,6 @@ def maketemp(MB):
     DIR_TMP = MB.DIR_TMP# './templates/'
     zbest = MB.zgal
     tau0 = MB.tau0
-    #tau0 = [float(x.strip()) for x in tau0.split(',')]
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -566,7 +569,7 @@ def maketemp(MB):
     ##########################################
     lamliml = 0.
     lamlimu = 20000.
-    ebblim  = 1e5
+    ebblim  = 1e10
     ncolbb  = 10000
     fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
