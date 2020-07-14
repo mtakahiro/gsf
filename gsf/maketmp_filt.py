@@ -40,7 +40,7 @@ def sim_spec(lmin, fin, sn):
     return frand, erand
 
 
-def maketemp(MB):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
     '''
     Purpose:
     ========
@@ -48,13 +48,14 @@ def maketemp(MB):
     
     Input:
     ======
-    # inputs      : Configuration file.
-    # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
-    # Z (array)   : Stellar phase metallicity in logZsun.
-    # age (array) : Age, in Gyr.
-    # fneb (int)  : flag for adding nebular emissionself.
-    #
+    inputs      : Configuration file.
+    zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
+    Z (array)   : Stellar phase metallicity in logZsun.
+    age (array) : Age, in Gyr.
+    fneb (int)  : flag for adding nebular emissionself.
+    
     '''
+    
     inputs = MB.inputs
     ID = MB.ID #inputs['ID']
     PA = MB.PA #inputs['PA']
@@ -567,10 +568,6 @@ def maketemp(MB):
     # For observation.
     # Write out for the Multi-component fitting.
     ##########################################
-    lamliml = 0.
-    lamlimu = 20000.
-    ebblim  = 1e10
-    ncolbb  = 10000
     fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
     for ii in range(len(lm)):
