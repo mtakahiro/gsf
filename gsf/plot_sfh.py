@@ -23,14 +23,12 @@ lcb   = '#4682b4' # line color, blue
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False):
     '''
     Purpose:
-    ==========
-
+    ========
     Star formation history plot.
 
 
     Input:
-    ==========
-
+    ======
     flim  : Lower limit for plotting an age bin.
     lsfrl : Lower limit for SFR, in logMsun/yr
 
@@ -90,16 +88,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
 
-    '''
-    rek  = 0
-    erekl= 0
-    ereku= 0
-    mu = 1.0
-    nn = 0
-    qq = 0
-    enn = 0
-    eqq = 0
-    '''
     try:
         RA   = hdul[0].header['RA']
         DEC  = hdul[0].header['DEC']
@@ -125,7 +113,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
         else:
             SN = 1
 
-
     Asum = 0
     A50 = np.arange(len(age), dtype='float32')
     for aa in range(len(A50)):
@@ -144,6 +131,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     delT  = np.zeros(len(age),dtype='float32')
     delTl = np.zeros(len(age),dtype='float32')
     delTu = np.zeros(len(age),dtype='float32')
+
     if len(age) == 1:
         for aa in range(len(age)):
             try:
@@ -153,16 +141,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
-        """
-        elif MB.f_bpass == 1:
-            file_all = MB.DIR_TMP + 'spec_all.fits'
-            hd = fits.open(file_all)[1].header
-            for aa in range(len(age)):
-                tau_ssp   = hd['realtau%d(Gyr)'%(aa)]
-                delT[aa]  = tau_ssp
-                delTl[aa] = tau_ssp/2
-                delTu[aa] = tau_ssp/2
-        """
+
     else: # This is only true when CSP...
         for aa in range(len(age)):
             if aa == 0:
@@ -186,6 +165,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
+
     ##############################
     # Load Pickle
     ##############################
@@ -195,7 +175,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     try:
-    #if 1>0:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
         nmc    = data['niter']
@@ -211,8 +190,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     ######################
     # Mass-to-Light ratio.
     ######################
-    #ms     = np.zeros(len(age), dtype='float32')
-    # Wht do you want from MCMC sampler?
     AM = np.zeros((len(age), mmax), dtype='float32') # Mass in each bin.
     AC = np.zeros((len(age), mmax), dtype='float32') # Cumulative mass in each bin.
     AL = np.zeros((len(age), mmax), dtype='float32') # Cumulative light in each bin.
@@ -366,7 +343,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
     f_SFRSED_plot = False
     if f_SFRSED_plot:
-        #ax1.plot(delt_tot/2./1e9, np.log10(SFR_SED_med[1]), color='k', marker='*',ms=10)
         ax1.errorbar(delt_tot/2./1e9, np.log10(SFR_SED_med[1]), xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
         yerr=[[np.log10(SFR_SED_med[1])-np.log10(SFR_SED_med[0])],[np.log10(SFR_SED_med[2])-np.log10(SFR_SED_med[1])]], \
         linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
@@ -381,6 +357,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     ax1.fill_between(age[conA], np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA], linestyle='-', color='k', alpha=0.3)
     ax1.scatter(age[conA], np.log10(SFp[:,1])[conA], marker='.', c='k', s=msize[conA])
     ax1.errorbar(age[conA], np.log10(SFp[:,1])[conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[np.log10(SFp[:,1])[conA]-np.log10(SFp[:,0])[conA], np.log10(SFp[:,2])[conA]-np.log10(SFp[:,1])[conA]], linestyle='-', color='k', lw=0.5, marker='')
+
 
     #############
     # Get SFMS in log10;
@@ -487,13 +464,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
         %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
     fw_sfr.close()
 
-
     #############
     # Axis
     #############
-    #ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-    #ax1.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
 
     lsfru = 2.8
     if np.max(np.log10(SFp[:,2]))>2.8:
@@ -502,12 +476,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     if f_comp == 1:
         lsfru = np.max([lsfru, np.log10(np.max(sfr_exp*C_exp))])
 
-
     ax1.set_xlim(0.008, Txmax)
     ax1.set_ylim(lsfrl, lsfru)
     ax1.set_xscale('log')
 
-    #ax2.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax2.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
 
     ax2.set_xlim(0.008, Txmax)
@@ -527,14 +499,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     prihdr['z']      = zbes
     prihdr['RA']     = RA
     prihdr['DEC']    = DEC
-    '''
-    prihdr['Re_kpc'] = rek
-    prihdr['Ser_n']  = nn
-    prihdr['Axis_q'] = qq
-    prihdr['e_Re']   = (erekl+ereku)/2.
-    prihdr['e_n']    = enn
-    prihdr['e_q']    = eqq
-    '''
     # Add rejuv properties;
     prihdr['f_rejuv']= f_rejuv
     prihdr['t_quen'] = t_quench
@@ -584,41 +548,29 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     col50 = fits.Column(name='AV', format='E', unit='mag', array=para[:])
     col01.append(col50)
 
-    '''
-    Ths is in gsf_sed_*.fits
-    # U-V
-    para = [uv[0], uv[1], uv[2]]
-    col50 = fits.Column(name='U-V', format='E', unit='mag', array=para[:])
-    col01.append(col50)
-
-    # V-J
-    para = [vj[0], vj[1], vj[2]]
-    col50 = fits.Column(name='V-J', format='E', unit='mag', array=para[:])
-    col01.append(col50)
-    '''
-
+    # 
     colms  = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu    = fits.HDUList([prihdu, dathdu])
     hdu.writeto('SFH_' + ID + '_PA' + PA + '_param.fits', overwrite=True)
 
+    # Attach to MB;
+    MB.sfh_tlook = age
+    MB.sfh_tlookl= delTl[:][conA]/1e9
+    MB.sfh_tlooku= delTu[:][conA]/1e9
+    MB.sfh_sfr16 = SFp[:,0]
+    MB.sfh_sfr50 = SFp[:,1]
+    MB.sfh_sfr84 = SFp[:,2]
+    MB.sfh_mfr16 = ACp[:,0]
+    MB.sfh_mfr50 = ACp[:,1]
+    MB.sfh_mfr84 = ACp[:,2]
+    MB.sfh_zfr16 = ZCp[:,0]
+    MB.sfh_zfr50 = ZCp[:,1]
+    MB.sfh_zfr84 = ZCp[:,2]
 
-    #
     # SFH
-    #
     zzall = np.arange(1.,12,0.01)
     Tall  = MB.cosmo.age(zzall).value # , use_flat=True, **cosmo)
-
-    '''
-    fw = open('SFH_' + ID + '_PA' + PA + '_sfh.cat', 'w')
-    fw.write('%s'%(ID))
-    for mm in range(len(age)):
-        mmtmp = np.argmin(np.abs(Tall - Tuni0[mm]))
-        zztmp = zzall[mmtmp]
-        fw.write(' %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f'%(zztmp, Tuni0[mm], np.log10(ACp[mm,1]), (np.log10(ACp[mm,1])-np.log10(ACp[mm,0])), (np.log10(ACp[mm,2])-np.log10(ACp[mm,1])), ZCp[mm,1], ZCp[mm,1]-ZCp[mm,0], ZCp[mm,2]-ZCp[mm,1], SFp[mm,1], SFp[mm,1]-SFp[mm,0], SFp[mm,2]-SFp[mm,1]))
-    fw.write('\n')
-    fw.close()
-    '''
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
@@ -646,7 +598,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     if zbes<4:
         if zbes<2:
             zred  = [zbes, 2, 3, 6]
-            #zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
             zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
         elif zbes<2.5:
             zred  = [zbes, 2.5, 3, 6]
@@ -670,7 +621,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
         if Tzz[zz] < 0.01:
             Tzz[zz] = 0.01
 
-    #print(zred, Tzz)
     #ax3t.set_xscale('log')
     #ax3t.set_xlim(0.008, Txmax)
 
@@ -693,7 +643,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     ax4.set_yticks([-0.8, -0.4, 0., 0.4])
     ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
     #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-
     #ax3.yaxis.labelpad = -2
     ax4.yaxis.labelpad = -2
 
