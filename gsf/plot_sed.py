@@ -2061,7 +2061,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
     ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
     ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
-    ax1.set_ylabel('$\log \dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
+    ax1.set_ylabel('$\dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     ax1.set_xlim(0.008, Txmax)
     ax1.set_ylim(0, SFmax)
     ax1.set_xscale('log')
