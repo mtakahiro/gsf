@@ -10,48 +10,53 @@ version 1.2
 - Far IR data set can be fitted simultaneously with a simple gray body spectrum (to be implemented in future version).
 - Due to the complex nature of grism data and code, feel free to contact the author.
 - From v1.2, BPASS templates can also be used. Those who wish to try the functionality, please contact the author.
+
 ========================================================================================
 
 
 Demonstration
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 .. image:: ./sample.png
+
 - Fitting movie can be found `here <https://youtu.be/pdkA9Judd-M>`__.
 
-
-
 Pre-requirement
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 - astropy
 - Pandas
-- multiprocessing
+- multiprocess
 - lmfit (no older than ver1.0.0)
 - emcee (no older than ver3.0.0)
 - corner
 - python-fsps (ver0.3.0)
 - fsps
 
-These packages will be installed if users create a new conda environment, by executing;
+
+To run stellar population model, users need to install `fsps <https://github.com/cconroy20/fsps>`__ by following their instruction.
+
+
+Installation & Documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Required packages will be installed by;
+
+.. code-block:: bash
+
+    pip install -r requirements.txt 
+
+
+Or if users create a new conda environment, by executing;
 
 .. code-block:: bash
 
     conda create --name gsf_environment.yml
 
 
-Installation & Documentation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    git clone https://github.com/mtakahiro/gsf
-    cd gsf
-    python setup.py install
-
 
 Examples
 ~~~~~~~~
-Example data set is stored in ./gsf/examples/
+An example data set is stored in ./gsf/examples/
 
 .. code-block:: bash
 
