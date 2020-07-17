@@ -55,8 +55,7 @@ dependencies:
   - xz=5.2.5=h0b31af3_0
   - zlib=1.2.11=h0b31af3_1006
   - pip:
-    - cosmolopy==0.4
-    - fsps==0.3.0
-    - gsf==1.1.0
+    - fsps
+    - git+https://github.com/mtakahiro/gsf#1.2
 prefix: /Users/tmorishita/anaconda3/envs/gsf
 
