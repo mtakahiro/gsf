@@ -34,13 +34,13 @@ def get_input():
 def read_input(parfile):
     '''
     Purpose:
-    ==========
+    ========
     #
     # Get info from param file.
     #
 
     Return:
-    ===========
+    =======
     Input dictionary.
 
     '''
@@ -818,7 +818,7 @@ def filconv_fast(filts, band, l0, f0, fw=False):
 def filconv(band0, l0, f0, DIR, fw=False):
     '''
     Input:
-    ============
+    ======
     f0: Flux for spectrum, in fnu
     l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
 
