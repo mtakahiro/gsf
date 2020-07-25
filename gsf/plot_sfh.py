@@ -26,7 +26,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     ========
     Star formation history plot.
 
-
     Input:
     ======
     flim  : Lower limit for plotting an age bin.
@@ -34,6 +33,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
 
     '''
     import os.path
+    import time
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -322,6 +322,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
 
             TC[aa, mm] /= ACs
             TL[aa, mm] /= ALs
+
+        # Do stuff...
+        time.sleep(0.01)
+        # Update Progress Bar
+        printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
+
 
     Avtmp  = np.percentile(Av[:],[16,50,84])
 

@@ -17,6 +17,41 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
+
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = None, printEnd = "\r", emojis = ['🥚','🐣','🐥','🦆']):
+    '''
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    '''
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    if fill == None:
+        if float(percent) < 33:
+            fill = emojis[0]
+        elif float(percent) < 33:
+            fill = emojis[1]
+        elif float(percent) < 99:
+            fill = emojis[2]
+        else:
+            fill = emojis[3]
+
+
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    string = '(%d/%d)'%(iteration,total)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix} {string}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
+
 def get_input():
     '''
     This returns somewhat a common default input dictionary.

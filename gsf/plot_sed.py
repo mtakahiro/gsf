@@ -22,13 +22,13 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, f_fill=False, f_fancyplot=False):
     '''
     Input:
-    ============
+    ======
 
     SNlim   : SN limit to show flux or up lim in SED.
     f_chind : If include non-detection in chi2 calculation, using Sawicki12.
 
     Returns:
-    ============
+    ========
     plots
 
     '''
@@ -43,6 +43,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     import scipy.special as special
     import os.path
     from astropy.io import ascii
+    import time
 
     if f_silence:
         import matplotlib
@@ -567,7 +568,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # From random chain;
     alp=0.02
-    #nmc_rand = 10
     for kk in range(0,nmc_rand,1):
         nr = np.random.randint(len(samples['A0']))
         #nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
@@ -651,6 +651,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
         UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
+
+        # Do stuff...
+        time.sleep(0.01)
+        # Update Progress Bar
+        printProgressBar(kk, nmc_rand, prefix = 'Progress:', suffix = 'Complete', length = 40)
+
 
     #
     # Plot Median SED;
