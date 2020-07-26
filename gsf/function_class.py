@@ -336,7 +336,6 @@ class Func:
         # Making model template with a given param set.
         # Also dust attenuation.
         '''
-
         tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
@@ -368,6 +367,8 @@ class Func:
             if f_Alog:
                 if par['A'+str(aa)]>Amin:
                     A00 = 10**par['A'+str(aa)]
+                else:
+                    A00 = 0
             else:
                 A00 = par['A'+str(aa)]
 
@@ -488,6 +489,8 @@ class Func:
             if f_Alog:
                 if par.params['A'+str(aa)].value>Amin:
                     A00 = 10**par.params['A'+str(aa)].value
+                else:
+                    A00 = 0
             else:
                 A00 = par.params['A'+str(aa)].value
 

@@ -588,7 +588,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ferr_tmp = 1.0
 
         for ss in range(len(age)):
-            AA_tmp = 10**samples['A'+str(ss)][nr]
+            try:
+                AA_tmp = 10**samples['A'+str(ss)][nr]
+            except:
+                AA_tmp = 0
+                pass
             
             try:
                 Ztest  = samples['Z'+str(len(age)-1)][nr]
@@ -720,13 +724,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # Effective ndim;
     ndim_eff = MB.ndim
-
-    '''
     agemax = MB.cosmo.age(zbes).value
     for aa in range(len(MB.age)):
         if MB.age[aa]>agemax:
             ndim_eff -= 1
-    '''
+
 
     con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0

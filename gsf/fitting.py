@@ -20,6 +20,7 @@ from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl
 from .zfit import check_redshift
 from .plot_sed import *
 from .writing import get_param
+from .function_class import Func
 
 ############################
 py_v = (sys.version_info[0])
@@ -899,6 +900,16 @@ class Mainbody():
         ###############################
         agemax = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
+        f_Alog = True
+        if f_Alog:
+            Amin = -10
+            Amax = 10
+            Aini = 0
+        else:
+            Amin = 0
+            Amax = 1e3
+            Aini = 1
+        
         try:
             age_fix = self.age_fix #inputs['AGEFIX']
             aamin = []
@@ -912,19 +923,23 @@ class Mainbody():
             print('##########################')
             for aa in range(len(self.age)):
                 if aa not in aamin:
-                    fit_params.add('A'+str(aa), value=0, vary=False)
+                    fit_params.add('A'+str(aa), value=Amin, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
         except:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=Amin, vary=False)
+                    self.ndim -= 1
                 elif self.age[aa]>agemax:
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=Amin, vary=False)
+                    self.ndim -= 1
+                    #self.age  = np.delete(self.age,aa,0)
+                    #self.nage = np.delete(self.nage,aa,0)                    
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
-
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+        
         #####################
         # Dust attenuation
         #####################
@@ -1044,9 +1059,9 @@ class Mainbody():
             ################################
             print('\nMinimizer Defined\n')
             mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, \
-                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
-                )
+                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
                 #moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None))
+                
             print('######################')
             print('### Starting emcee ###')
             print('######################')

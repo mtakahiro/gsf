@@ -75,8 +75,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     msmc0  = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float32')
 
     for aa in range(len(age)):
-        Ab[aa]    = res.params['A'+str(aa)].value
-        Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)][burnin:], [16,50,84])
+        try:
+            Ab[aa]    = res.params['A'+str(aa)].value
+            Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)][burnin:], [16,50,84])
+        except:
+            pass
         try:
             Zb[aa]    = res.params['Z'+str(aa)].value
             Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
@@ -90,8 +93,10 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
         NZbest[aa]= bfnc.Z2NZ(Zb[aa])
         ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
-        msmc0[:] += res.flatchain['A' + str(aa)][burnin:] * ms[aa]
-
+        try:
+            msmc0[:] += res.flatchain['A' + str(aa)][burnin:] * ms[aa]
+        except:
+            pass
 
     msmc  = np.percentile(msmc0, [16,50,84])
 

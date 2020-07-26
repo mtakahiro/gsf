@@ -163,6 +163,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 delT[aa]  = delTu[aa] + delTl[aa]
 
+            if delT[aa] <= 0:
+                delT[aa] = 1e10
+
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
@@ -274,8 +277,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             Av[mm] = Av_tmp + Avrand
 
         for aa in range(len(age)):
-            # This is in log.
-            AAtmp[aa] = samples['A'+str(aa)][mtmp]
+            try:
+                # This is in log.
+                AAtmp[aa] = samples['A'+str(aa)][mtmp]
+            except:
+                AAtmp[aa] = -10
+                pass
+
             try:
                 ZZtmp[aa] = samples['Z'+str(aa)][mtmp]
             except:
