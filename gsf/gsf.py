@@ -72,7 +72,7 @@ def run_gsf_template(inputs, fplt=0):
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True):
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True):
     '''
     #########################################
     # What do you need before running this?
@@ -150,9 +150,13 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
 
 
     if fplt <= 3 and flag_suc != -1:
-        from .plot_sfh import plot_sfh
-        from .plot_sed import plot_sed
-        
+        if f_Alog:
+            from .plot_sfh_logA import plot_sfh
+            from .plot_sed_logA import plot_sed            
+        else:
+            from .plot_sfh import plot_sfh
+            from .plot_sed import plot_sed
+
         plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=100,
         inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
 

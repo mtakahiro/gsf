@@ -21,7 +21,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-        f_fill=False, f_fancyplot=False, f_Alog=False):
+        f_fill=False, f_fancyplot=False, f_Alog=True):
     '''
     Input:
     ======
@@ -119,14 +119,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     A16 = np.zeros(len(age), dtype='float64')
     A84 = np.zeros(len(age), dtype='float64')
     for aa in range(len(age)):
-        if f_Alog:
-            A16[aa] = 10**hdul[1].data['A'+str(aa)][0]
-            A50[aa] = 10**hdul[1].data['A'+str(aa)][1]
-            A84[aa] = 10**hdul[1].data['A'+str(aa)][2]
-        else:
-            A16[aa] = hdul[1].data['A'+str(aa)][0]
-            A50[aa] = hdul[1].data['A'+str(aa)][1]
-            A84[aa] = hdul[1].data['A'+str(aa)][2]
+        A16[aa] = 10**hdul[1].data['A'+str(aa)][0]
+        A50[aa] = 10**hdul[1].data['A'+str(aa)][1]
+        A84[aa] = 10**hdul[1].data['A'+str(aa)][2]
 
     Asum  = np.sum(A50)
 
@@ -593,11 +588,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ferr_tmp = 1.0
 
         for ss in range(len(age)):
-            if f_Alog:
-                AA_tmp = 10**samples['A'+str(ss)][nr]
-            else:
-                AA_tmp = samples['A'+str(ss)][nr]
-
+            AA_tmp = 10**samples['A'+str(ss)][nr]
+            
             try:
                 Ztest  = samples['Z'+str(len(age)-1)][nr]
                 ZZ_tmp = samples['Z'+str(ss)][nr]
