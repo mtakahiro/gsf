@@ -19,16 +19,16 @@ import corner
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, f_fill=False):
+def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, f_fill=False, f_fancyplot=False):
     '''
     Input:
-    ============
+    ======
 
     SNlim   : SN limit to show flux or up lim in SED.
     f_chind : If include non-detection in chi2 calculation, using Sawicki12.
 
     Returns:
-    ============
+    ========
     plots
 
     '''
@@ -43,6 +43,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     import scipy.special as special
     import os.path
     from astropy.io import ascii
+    import time
 
     if f_silence:
         import matplotlib
@@ -282,27 +283,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             pass
         try:
             conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
-            #ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * SNlim, \
-            #yerr=fybb[conebb_ls]*0+np.max(fybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d)*0.05, \
-            #uplims=eybb[conebb_ls]*c/np.square(xbb[conebb_ls])/d*SNlim, color='r', linestyle='', linewidth=0.5, zorder=4, ms=1, capsize=0.)
             ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d, \
             color=col_dat, linestyle='', linewidth=0.5, zorder=4, ms=4, marker='v')
 
         except:
             pass
 
-    # If any IRAC excess:
-    #if True:
+
+    # For any data removed fron fit (i.e. IRAC excess):
     try:
         col_ex = 'lawngreen'
         #col_ex = 'limegreen'
         #col_ex = 'r'
-        # Currently, this file is made manually;
+        # Currently, this file is made after FILTER_SKIP;
         data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
-        x_ex  = data_ex['col2']
-        fy_ex = data_ex['col3']
-        ey_ex = data_ex['col4']
-        ex_ex  = data_ex['col5']
+        x_ex    = data_ex['col2']
+        fy_ex   = data_ex['col3']
+        ey_ex   = data_ex['col4']
+        ex_ex   = data_ex['col5']
 
         ax1.errorbar(x_ex, fy_ex * c / np.square(x_ex) / d, \
         xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5)
@@ -353,10 +351,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
-        #if jj == len(II0) - 1:
-        #    ax1.plot(x0[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='-', lw=0.5, color='k', alpha=1., zorder=-1, label='')
-
-
         try:
             ysum_wid = ysum * 0
             for kk in range(0,ii+1,1):
@@ -392,24 +386,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
-        '''
-        print(MD16,MD50,MD84)
-        print(nTD16,nTD50,nTD84)
-        # 16;
-        par['MDUST'].value=MD16
-        par['TDUST'].value=nTD16
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
-        ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        # 84
-        par['MDUST'].value=MD84
-        par['TDUST'].value=nTD84
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all, tau0=tau0)
-        ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        '''
-
-        #ax1.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        #ax3t.plot(x0d, y0d, '--', lw=0.5, color='purple', zorder=-1, label='')
-
         # data;
         ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', comments='#')
         NRbbd = ddat[:, 0]
@@ -418,6 +394,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         eybbd = ddat[:, 3]
         exbbd = ddat[:, 4]
         snbbd = fybbd/eybbd
+
         try:
             conbbd_hs = (fybbd/eybbd>SNlim)
             ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
@@ -428,6 +405,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
         except:
             pass
+
         try:
             conebbd_ls = (fybbd/eybbd<=SNlim)
             ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d, \
@@ -556,9 +534,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     # From MCMC chain
     #
-    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
     niter = 0
-    data = loadcpkl(os.path.join('./'+file))
+    data  = loadcpkl(os.path.join('./'+file))
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
@@ -572,8 +550,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     samples  = res
 
     # Saved template;
-    ytmp = np.zeros((nmc_rand,len(ysum)), dtype='float64')
-    ytmp_each = np.zeros((nmc_rand,len(ysum),len(age)), dtype='float64')
+    ytmp = np.zeros((mmax,len(ysum)), dtype='float64')
+    ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float64')
 
     ytmpmax = np.zeros(len(ysum), dtype='float64')
     ytmpmin = np.zeros(len(ysum), dtype='float64')
@@ -581,19 +559,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-    Fuv     = np.zeros(nmc_rand, dtype='float64') # For Muv
-    Fuv28   = np.zeros(nmc_rand, dtype='float64') # For Fuv(1500-2800)
-    Lir     = np.zeros(nmc_rand, dtype='float64') # For L(8-1000um)
-    UVJ     = np.zeros((nmc_rand,4), dtype='float64') # For UVJ color;
+    Fuv     = np.zeros(mmax, dtype='float64') # For Muv
+    Fuv28   = np.zeros(mmax, dtype='float64') # For Fuv(1500-2800)
+    Lir     = np.zeros(mmax, dtype='float64') # For L(8-1000um)
+    UVJ     = np.zeros((mmax,4), dtype='float64') # For UVJ color;
 
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
     alp=0.02
-    #nmc_rand = 10
-    for kk in range(0,nmc_rand,1):
+    for kk in range(0,mmax,1):
         nr = np.random.randint(len(samples['A0']))
-        #nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
         try:
             Av_tmp = samples['Av'][nr]
         except:
@@ -629,7 +605,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
-            #print(ferr_tmp, AA_tmp, Av_tmp, ss, ZZ_tmp, zbes)
 
         #
         # Dust component;
@@ -676,6 +651,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
         UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
 
+        # Do stuff...
+        time.sleep(0.01)
+        # Update Progress Bar
+        printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
+
+
     #
     # Plot Median SED;
     #
@@ -693,7 +674,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
 
-    f_fancyplot=False
+    # Attach the data point in MB;
+    MB.sed_wave_obs   = xbb
+    MB.sed_flux_obs   = fybb * c / np.square(xbb) / d
+    MB.sed_eflux_obs  = eybb * c / np.square(xbb) / d
+    # Attach the best SED to MB;
+    MB.sed_wave   = x1_tot
+    MB.sed_flux16 = ytmp16
+    MB.sed_flux50 = ytmp50
+    MB.sed_flux84 = ytmp84
+
+
     if f_fancyplot:
         # For each age;
         ytmp_each50       = np.zeros(len(xm_tmp), dtype='float64')
@@ -705,12 +696,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ax1.fill_between(x1_tot[::nstep_plot], ytmp_each50_prior[::nstep_plot], ytmp_each50[::nstep_plot], linestyle='None', lw=0.5, color=col[ii])
             ytmp_each50_prior[:] += ytmp_each50[:]
 
-    '''
-    if f_dust:
-        l50_bb, ytmp50_bb, l50_fwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-    else:
-        l50_bb, ytmp50_bb, l50_fwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-    '''
 
     #########################
     # Calculate non-det chi2
@@ -729,7 +714,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 
     chi2 = sum((np.square(fy-ysump)*np.sqrt(wht3))[conw])
-    #chi2 = sum((np.square(fy-ysump))[conw])
 
     # Effective ndim;
     ndim_eff = MB.ndim
@@ -741,13 +725,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ndim_eff -= 1
     '''
 
-    con_up = (ey>0) & (fy/ey<=SNlim)
+    con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0
     if f_chind:
         # Chi2 for non detection;
         for nn in range(len(ey[con_up])):
             #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
-            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
+            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
             chi_nd += np.log(result[0])
 
     # Number of degree;
@@ -785,7 +769,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         zorder=2, alpha=1.0, marker='d', s=50)
 
     else:
-        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm   = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
 
@@ -1043,6 +1027,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
     '''
     '''
+    import matplotlib
+    import matplotlib.cm as cm
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     nage = np.arange(0,len(age),1)
     fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
@@ -1074,8 +1060,6 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
     f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     sedpar = f0[1]
 
-    import matplotlib
-    import matplotlib.cm as cm
     getcmap   = matplotlib.cm.get_cmap('jet')
     nc        = np.arange(0, nmc, 1)
     col = getcmap((nc-0)/(nmc-0))
@@ -1583,9 +1567,7 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1000):
     '''
     Purpose:
-    ==========
-    Creat temporal png for gif image.
-
+    ========
     For summary. In the same format as plot_corner_physparam_frame.
 
     '''
@@ -1605,9 +1587,13 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         age = MB.age_fix
     except:
         age  = MB.age
+
     tau0 = MB.tau0 #[0.1,0.2,0.3]
     dust_model = MB.dust_model
-    DIR_TMP = MB.DIR_TMP #'./templates/'
+    DIR_TMP = MB.DIR_TMP
+
+    #Txmax = 4 # Max x value
+    Txmax = np.max(age) + 1.0 # Max x value
 
     ###########################
     # Open result file
@@ -1636,14 +1622,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         A16[aa] = hdul[1].data['A'+str(aa)][0]
         A84[aa] = hdul[1].data['A'+str(aa)][2]
 
-    Asum  = np.sum(A50)
+    Asum = np.sum(A50)
     aa   = 0
-    Av50 = hdul[1].data['Av'+str(aa)][1]
+
     Av16 = hdul[1].data['Av'+str(aa)][0]
+    Av50 = hdul[1].data['Av'+str(aa)][1]
     Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float64')
-    Z16 = np.zeros(len(age), dtype='float64')
-    Z84 = np.zeros(len(age), dtype='float64')
+
+    Z50  = np.zeros(len(age), dtype='float64')
+    Z16  = np.zeros(len(age), dtype='float64')
+    Z84  = np.zeros(len(age), dtype='float64')
+
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -1651,16 +1640,14 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
         NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
-
-    ZZ50 = np.sum(Z50*A50)/np.sum(A50)  # Light weighted Z.
+    ZZ50  = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
     chi   = hdul[1].data['chi'][0]
     chin  = hdul[1].data['chi'][1]
     fitc  = chin
     Cz0   = hdul[0].header['Cz0']
     Cz1   = hdul[0].header['Cz1']
     zbes  = hdul[0].header['z']
-    zscl = (1.+zbes)
-
+    zscl  = (1.+zbes)
 
     try:
         os.makedirs(DIR_OUT)
@@ -1668,14 +1655,14 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         pass
 
     # plot Configuration
-    K = 4 # No of params.
     Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
+    K   = len(Par) # No of params.
     factor = 2.0           # size of one side of one panel
-    lbdim = 0.5 * factor   # size of left/bottom margin
-    trdim = 0.2 * factor   # size of top/right margin
-    whspace = 0.02         # w/hspace size
-    plotdim = factor * K + factor * (K - 1.) * whspace
-    dim = lbdim + plotdim + trdim
+    lbdim  = 0.5 * factor   # size of left/bottom margin
+    trdim  = 0.2 * factor   # size of top/right margin
+    whspace= 0.02         # w/hspace size
+    plotdim= factor * K + factor * (K - 1.) * whspace
+    dim    = lbdim + plotdim + trdim
     sclfig = 0.7
 
 
@@ -1698,21 +1685,18 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     else:
         MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
 
-    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NRbb   = MB.dict['NRbb'] #dat[:, 0]
-    xbb    = MB.dict['xbb'] #dat[:, 1]
-    fybb   = MB.dict['fybb'] #dat[:, 2]
-    eybb   = MB.dict['eybb'] #dat[:, 3]
+    # Get data points;
+    NRbb   = MB.dict['NRbb']
+    xbb    = MB.dict['xbb'] 
+    fybb   = MB.dict['fybb']
+    eybb   = MB.dict['eybb']
     exbb   = MB.dict['exbb']
-    snbb = fybb/eybb
+    snbb   = fybb/eybb
 
-    # Create a new figure if one wasn't provided.
-    ###############################
-    # Data taken from
-    ###############################
+    # Get spec data points;
     dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NR = dat[:, 0]
-    x  = dat[:, 1]
+    NR  = dat[:, 0]
+    x   = dat[:, 1]
     fy00 = dat[:, 2]
     ey00 = dat[:, 3]
 
@@ -1729,27 +1713,23 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     fg2  = fy00[con2]
     eg2  = ey00[con2]
     fy01 = np.append(fg0,fg1)
-    fy   = np.append(fy01,fg2)
     ey01 = np.append(eg0,eg1)
+
+    fy   = np.append(fy01,fg2)
     ey   = np.append(ey01,eg2)
     wht=1./np.square(ey)
 
-
     conspec = (NR<10000) #& (fy/ey>1)
-    #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
-    conbb = (fybb/eybb>1)
+    conbb   = (fybb/eybb>1)
     ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
     ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-    #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
     ####################
     # MCMC corner plot.
     ####################
-    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
     niter = 0
-    data = loadcpkl(os.path.join('./'+file))
+    data  = loadcpkl(os.path.join('./'+file))
 
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
@@ -1777,7 +1757,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     ACtmp= np.zeros(nplot, dtype='float64')
 
     # Time bin
-    Txmax = 4 # Max x value
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
     delT  = np.zeros(len(age),dtype='float64')
@@ -1817,7 +1796,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     delTu[:] *= 1e9 # Gyr to yr
 
     ######
-    files = [] # For movie
+    files = [] # For gif animation
     SFmax = 0
     Tsmin = 0
     Tsmax = 0
@@ -1833,8 +1812,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         AA_tmp = np.max(samples['A'+str(ii)][:])
         AA_tmp84 = np.percentile(samples['A'+str(ii)][:],95)
         AA_tmp16 = np.percentile(samples['A'+str(ii)][:],5)
-        #AA_tmp84 = A84[ii]
-        #AA_tmp16 = A16[ii]
         nZtmp  = bfnc.Z2NZ(ZZ_tmp)
         mslist = sedpar.data['ML_'+str(nZtmp)][ii]
         AMtmp16 += mslist*AA_tmp16
@@ -1857,7 +1834,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     # For redshift
     if zbes<2:
         zred  = [zbes, 2, 3, 6]
-        #zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
         zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
     elif zbes<2.5:
         zred  = [zbes, 2.5, 3, 6]
@@ -2061,7 +2037,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
     ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
     ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
-    ax1.set_ylabel('$\log \dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
+    ax1.set_ylabel('$\dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     ax1.set_xlim(0.008, Txmax)
     ax1.set_ylim(0, SFmax)
     ax1.set_xscale('log')

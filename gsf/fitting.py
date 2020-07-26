@@ -46,7 +46,7 @@ class Mainbody():
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
         '''
         INPUT:
-        ==========
+        ======
         parfile: Ascii file that lists parameters for everything.
 
         Mpc_cm : cm/Mpc
@@ -292,11 +292,13 @@ class Mainbody():
 
     def read_data(self, Cz0, Cz1, zgal, add_fir=False):
         '''
+        Input:
+        ======
         Cz0, Cz1 : Normalization coeffs for grism spectra.
         zgal     : Current redshift estimate.
 
         Note:
-        =======
+        =====
         Can be used for any SFH
 
         '''
@@ -408,12 +410,12 @@ class Mainbody():
     def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
         '''
         Purpose:
-        =========
+        ========
         Search redshift space to find the best redshift and probability distribution.
 
 
         Input:
-        =========
+        ======
 
         fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
         xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].
@@ -425,7 +427,7 @@ class Mainbody():
         method : powell is more accurate. nelder is faster.
 
         Return:
-        =========
+        =======
 
         zspace :
         chi2s  :
@@ -513,11 +515,11 @@ class Mainbody():
     def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0):
         '''
         Purpose:
-        ==========
+        ========
         Find an optimal redshift, before going into a big fit, by using several templates.
 
         Input:
-        ==========
+        ======
         delzz  : Delta z in redshift search space
         zliml  : Lower limit range for redshift
         zlimu  : Upper limit range for redshift
@@ -525,7 +527,7 @@ class Mainbody():
         snlim  : SN limit for data points. Those below the number will be cut from the fit.
 
         Note:
-        ==========
+        =====
         Can be used for any SFH.
 
         '''
@@ -538,7 +540,6 @@ class Mainbody():
         sn = dict['fy']/dict['ey']
         # Only spec data?
         con_cz = (dict['NR']<10000) & (sn>snlim)
-        #con_cz = (dict['NR']<100000) & (sn>snlim)
         fy_cz  = dict['fy'][con_cz] # Already scaled by self.Cz0
         ey_cz  = dict['ey'][con_cz]
         x_cz   = dict['x'][con_cz] # Observed range
@@ -800,19 +801,24 @@ class Mainbody():
 
 
     #def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
-    def main(self, flag_m, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False):
+    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False, skip_fitz=False):
         '''
         Input:
-        ========
-        flag_m : related to redshift error in redshift check func.
+        ======
         ferr   : For error parameter
         zgal   : Input redshift.
-        #
-        #
-        # sigz (float): confidence interval for redshift fit.
-        # ezmin (float): minimum error in redshift.
-        #
+        skip_fitz (bool): Skip redshift fit.
+        sigz (float): confidence interval for redshift fit.
+        ezmin (float): minimum error in redshift.p
+
         '''
+        import emcee
+        try:
+            import multiprocess
+        except:
+            import multiprocessing as multiprocess
+
+        from .posterior_flexible import Post
 
         print('########################')
         print('### Fitting Function ###')
@@ -886,7 +892,6 @@ class Mainbody():
         self.dict = dict
 
         # Call likelihood/prior/posterior function;
-        from .posterior_flexible import Post
         class_post = Post(self)
 
         ###############################
@@ -986,22 +991,20 @@ class Mainbody():
         AA_tmp = np.zeros(len(self.age), dtype='float64')
         ZZ_tmp = np.zeros(len(self.age), dtype='float64')
         fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
-        #print(self.lib[:,0])
 
         ########################
         # Check redshift
         ########################
-        flag_z = self.fit_redshift(dict, xm_tmp, fm_tmp)
+        if skip_fitz:
+            flag_z = 'y'
+        else:
+            flag_z = self.fit_redshift(dict, xm_tmp, fm_tmp)
 
         #################################################
         # Gor for mcmc phase
         #################################################
         if flag_z == 'y' or flag_z == '':
-            #zrecom  = self.zprev
-            #Czrec0  = self.Cz0
-            #Czrec1  = self.Cz1
 
-            # plot z-distribution
             self.get_zdist()
 
             #######################
@@ -1040,16 +1043,13 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            import emcee
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None)) #, f_move=f_move)
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, \
+                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                )
+                #moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None))
             print('######################')
             print('### Starting emcee ###')
             print('######################')
-
-            try:
-                import multiprocess
-            except:
-                import multiprocessing as multiprocess
 
             ncpu0 = int(multiprocess.cpu_count()/2)
             try:
@@ -1086,44 +1086,6 @@ class Mainbody():
                 print('### Saving chain took %.1f sec'%(tcalc_mc))
                 print('#################################')
 
-            '''
-            Avmc = np.percentile(res.flatchain['Av'], [16,50,84])
-            Avpar = np.zeros((1,3), dtype='float64')
-            Avpar[0,:] = Avmc
-
-            ####################
-            # Best parameters
-            ####################
-            Amc  = np.zeros((len(self.age),3), dtype='float64')
-            Ab   = np.zeros(len(self.age), dtype='float64')
-            Zmc  = np.zeros((len(self.age),3), dtype='float64')
-            Zb   = np.zeros(len(self.age), dtype='float64')
-            NZbest = np.zeros(len(self.age), dtype='int')
-            f0     = fits.open(self.DIR_TMP + 'ms_' + self.ID + '_PA' + self.PA + '.fits')
-            sedpar = f0[1]
-            ms     = np.zeros(len(self.age), dtype='float64')
-            for aa in range(len(self.age)):
-                Ab[aa]    = res.params['A'+str(aa)].value
-                Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)], [16,50,84])
-                try:
-                    Zb[aa]    = res.params['Z'+str(aa)].value
-                    Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)], [16,50,84])
-                except:
-                    Zb[aa]    = res.params['Z0'].value
-                    Zmc[aa,:] = np.percentile(res.flatchain['Z0'], [16,50,84])
-                NZbest[aa]= bfnc.Z2NZ(Zb[aa])
-                ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
-
-            Avb = res.params['Av'].value
-
-            if self.f_dust:
-                Mdust_mc = np.zeros(3, dtype='float64')
-                Tdust_mc = np.zeros(3, dtype='float64')
-                Mdust_mc[:] = np.percentile(res.flatchain['MDUST'], [16,50,84])
-                Tdust_mc[:] = np.percentile(res.flatchain['TDUST'], [16,50,84])
-                print(Mdust_mc)
-                print(Tdust_mc)
-            '''
 
             ####################
             # MCMC corner plot.
@@ -1136,7 +1098,7 @@ class Mainbody():
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
                 fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.pdf')
 
-            # Do analysis on MCMC results.
+            # Analyze MCMC results.
             # Write to file.
             stop  = timeit.default_timer()
             tcalc = stop - start
@@ -1147,7 +1109,7 @@ class Mainbody():
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
 
-            return False #, self.zgal, self.Cz0, self.Cz1
+            return False
 
 
         elif flag_z == 'm':
@@ -1176,7 +1138,7 @@ class Mainbody():
             print('\n\n')
             print('Generate model templates with input redshift and Scale.')
             print('\n\n')
-            return True #, self.zgal, self.Cz0, self.Cz1
+            return True
 
         else:
             print('\n\n')
@@ -1192,18 +1154,18 @@ class Mainbody():
                 self.Cz0   = self.Czrec0
                 self.Cz1   = self.Czrec1
 
-                return True #, self.zgal, self.Cz0, self.Cz1
+                return True
 
             else:
                 print('\n\n')
                 print('There is nothing to do.')
                 print('Terminating process.')
                 print('\n\n')
-                return -1 #, self.zgal, self.Czrec0, self.Czrec1
+                return -1
 
 
 
-    def quick_fit(self, zgal, flag_m, Cz0, Cz1, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    def quick_fit(self, zgal, Cz0, Cz1, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Purpose:
         ==========
@@ -1211,14 +1173,11 @@ class Mainbody():
 
         Input:
         ==========
-        flag_m : related to redshift error in redshift check func.
         ferr   : For error parameter
         zgal   : Input redshift.
-        #
-        #
-        # sigz (float): confidence interval for redshift fit.
-        # ezmin (float): minimum error in redshift.
-        #
+        sigz (float): confidence interval for redshift fit.
+        ezmin (float): minimum error in redshift.
+
         '''
         from .posterior_flexible import Post
 

@@ -3,15 +3,14 @@ from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 from .function import check_line_cz_man
 
 
-def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zlimu, \
-delzz=0.01, nmc_cz=100, nwalk_cz=10):
+def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zlimu, delzz=0.01, nmc_cz=100, nwalk_cz=10):
     '''
     Purpose:
-    =========
+    ========
     Fit observed flux with a template to get redshift probability.
 
     Input:
-    =========
+    ======
 
     zbest : Initial value for redshift.
     prior : Prior for redshift determination. E.g., Eazy z-probability.
@@ -22,7 +21,7 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
     fobs, eobs, xobs: Observed spectrum. (Already scaled with Cz0prev.)
 
     Return:
-    =========
+    =======
 
     res_cz  :
     fitc_cz :
@@ -43,7 +42,6 @@ delzz=0.01, nmc_cz=100, nwalk_cz=10):
         Cz1s  = vals['Cz1']
 
         xm_s = xm_tmp * (1+z)
-        #fm_s = np.interp(xobs, xm_s, fm_tmp)
         fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(xobs)
 

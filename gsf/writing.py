@@ -4,21 +4,37 @@ from lmfit import Parameters
 
 from .function import filconv, calc_Dn4
 
+
 def get_param(self, res, fitc, tcalc=1., burnin=-1):
     '''
+    Purpose:
+    ========
+    Write a parameter file.
+
     '''
     print('##########################')
     print('### Writing parameters ###')
     print('##########################')
     lib_all = self.lib_all
-    zrecom = self.zrecom
-    Czrec0 = self.Czrec0
-    Czrec1 = self.Czrec1
-    z_cz   = self.z_cz
-    scl_cz0= self.scl_cz0
-    scl_cz1= self.scl_cz1
-    tau0   = self.tau0
 
+    # Those are from redshiftfit;
+    #zrecom = self.zrecom
+    #Czrec0 = self.Czrec0
+    #Czrec1 = self.Czrec1
+    zrecom = self.zgal
+    Czrec0 = self.Cz0
+    Czrec1 = self.Cz1
+
+    try:
+        z_cz   = self.z_cz
+        scl_cz0= self.scl_cz0
+        scl_cz1= self.scl_cz1
+    except: # When redshiftfit is skipped.
+        z_cz   = np.asarray([self.zgal,self.zgal,self.zgal])
+        scl_cz0= np.asarray([self.Cz0,self.Cz0,self.Cz0])
+        scl_cz1= np.asarray([self.Cz1,self.Cz1,self.Cz1])
+
+    tau0= self.tau0
     ID0 = self.ID
     PA0 = self.PA
     try:
@@ -218,7 +234,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 def get_index(mmax=300):
     '''
     Purpose:
-    ==========
+    ========
     Retrieve spectral indices from each realization.
     '''
 

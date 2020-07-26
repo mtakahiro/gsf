@@ -18,14 +18,16 @@ col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
 def sim_spec(lmin, fin, sn):
     '''
-    ###################################################
-    ### SIMULATION of SPECTRA.
-    ###################################################
-    #
-    # wave_obs, wave_temp, flux_temp, sn_obs
-    # Return: frand, erand
-    #
+    Purpose:
+    ========
+    SIMULATION of SPECTRA.
+    
+    Input:
+    ======
+    wave_obs, wave_temp, flux_temp, sn_obs
+    Return: frand, erand
     '''
+
     frand = fin * 0
     erand = fin * 0
     for ii in range(len(lmin)):
@@ -38,19 +40,22 @@ def sim_spec(lmin, fin, sn):
     return frand, erand
 
 
-def maketemp(MB):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
     '''
-    ###################################################
-    # Make SPECTRA at given z and filter set.
-    ###################################################
-    #
-    # inputs      : Configuration file.
-    # zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
-    # Z (array)   : Stellar phase metallicity in logZsun.
-    # age (array) : Age, in Gyr.
-    # fneb (int)  : flag for adding nebular emissionself.
-    #
+    Purpose:
+    ========
+    Make SPECTRA at given z and filter set.
+    
+    Input:
+    ======
+    inputs      : Configuration file.
+    zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
+    Z (array)   : Stellar phase metallicity in logZsun.
+    age (array) : Age, in Gyr.
+    fneb (int)  : flag for adding nebular emissionself.
+    
     '''
+    
     inputs = MB.inputs
     ID = MB.ID #inputs['ID']
     PA = MB.PA #inputs['PA']
@@ -61,7 +66,6 @@ def maketemp(MB):
     DIR_TMP = MB.DIR_TMP# './templates/'
     zbest = MB.zgal
     tau0 = MB.tau0
-    #tau0 = [float(x.strip()) for x in tau0.split(',')]
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -564,10 +568,6 @@ def maketemp(MB):
     # For observation.
     # Write out for the Multi-component fitting.
     ##########################################
-    lamliml = 0.
-    lamlimu = 20000.
-    ebblim  = 1e5
-    ncolbb  = 10000
     fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
     for ii in range(len(lm)):
@@ -585,6 +585,7 @@ def maketemp(MB):
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
+            #fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, 1000))
         elif  ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
