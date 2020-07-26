@@ -46,7 +46,7 @@ class Mainbody():
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
         '''
         INPUT:
-        ==========
+        ======
         parfile: Ascii file that lists parameters for everything.
 
         Mpc_cm : cm/Mpc
@@ -292,11 +292,13 @@ class Mainbody():
 
     def read_data(self, Cz0, Cz1, zgal, add_fir=False):
         '''
+        Input:
+        ======
         Cz0, Cz1 : Normalization coeffs for grism spectra.
         zgal     : Current redshift estimate.
 
         Note:
-        =======
+        =====
         Can be used for any SFH
 
         '''
@@ -408,12 +410,12 @@ class Mainbody():
     def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
         '''
         Purpose:
-        =========
+        ========
         Search redshift space to find the best redshift and probability distribution.
 
 
         Input:
-        =========
+        ======
 
         fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
         xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].
@@ -425,7 +427,7 @@ class Mainbody():
         method : powell is more accurate. nelder is faster.
 
         Return:
-        =========
+        =======
 
         zspace :
         chi2s  :
@@ -1041,7 +1043,10 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None)) #, f_move=f_move)
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, \
+                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                )
+                #moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None))
             print('######################')
             print('### Starting emcee ###')
             print('######################')

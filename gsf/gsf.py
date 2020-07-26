@@ -19,7 +19,7 @@ start = timeit.default_timer()
 def run_gsf_template(inputs, fplt=0):
     '''
     Purpose:
-    ==========
+    ========
     This is only for 0 and 1, to get templates.
     Not for fitting, nor plotting.
 
@@ -130,7 +130,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
 
-        flag_suc = MB.main(0, cornerplot=cornerplot)
+        flag_suc = MB.main(cornerplot=cornerplot)
 
         while (flag_suc and flag_suc!=-1):
 
@@ -142,7 +142,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc = MB.main(1, cornerplot=cornerplot)
+            flag_suc = MB.main(cornerplot=cornerplot)
 
         # Total calculation time
         stop = timeit.default_timer()
@@ -152,10 +152,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
     if fplt <= 3 and flag_suc != -1:
         from .plot_sfh import plot_sfh
         from .plot_sed import plot_sed
-        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT,
+        
+        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=100,
         inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
+
         plot_sed(MB, fil_path=MB.DIR_FILT,
-        figpdf=False, save_sed=True, inputs=MB.inputs, nmc_rand=1000,
+        figpdf=False, save_sed=True, inputs=MB.inputs, mmax=30,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True)
 
 

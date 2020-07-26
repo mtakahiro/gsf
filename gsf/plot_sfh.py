@@ -20,7 +20,7 @@ from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False):
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=9.5, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False):
     '''
     Purpose:
     ========
@@ -47,8 +47,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
         age  = MB.age
     nage = MB.nage #np.arange(0,len(age),1)
     tau0 = MB.tau0 #[0.1,0.2,0.3]
-
     age = np.asarray(age)
+
+    if Txmin > np.min(age):
+        Txmin = np.min(age) * 0.8
 
     ################
     # RF colors.
@@ -482,13 +484,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     if f_comp == 1:
         lsfru = np.max([lsfru, np.log10(np.max(sfr_exp*C_exp))])
 
-    ax1.set_xlim(0.008, Txmax)
+    ax1.set_xlim(Txmin, Txmax)
     ax1.set_ylim(lsfrl, lsfru)
     ax1.set_xscale('log')
 
     ax2.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
 
-    ax2.set_xlim(0.008, Txmax)
+    ax2.set_xlim(Txmin, Txmax)
     ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
 
@@ -591,7 +593,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     #ax3.set_xlabel('$t$ (Gyr)', fontsize=12)
     #ax3.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
     y3min, y3max = np.min(Z), np.max(Z)
-    #ax3.set_xlim(0.008, Txmax)
+    #ax3.set_xlim(Txmin, Txmax)
     #ax3.set_ylim(y3min, y3max)
     #ax3.set_xscale('log')
     #ax3.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
@@ -628,7 +630,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
             Tzz[zz] = 0.01
 
     #ax3t.set_xscale('log')
-    #ax3t.set_xlim(0.008, Txmax)
+    #ax3t.set_xlim(Txmin, Txmax)
 
     ax1.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax2.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
@@ -636,13 +638,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmax=4, lmmin=9.5, f
     ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
 
     ax1t.set_xscale('log')
-    ax1t.set_xlim(0.008, Txmax)
+    ax1t.set_xlim(Txmin, Txmax)
     ax2t.set_xscale('log')
-    ax2t.set_xlim(0.008, Txmax)
+    ax2t.set_xlim(Txmin, Txmax)
     ax4t.set_xscale('log')
-    ax4t.set_xlim(0.008, Txmax)
+    ax4t.set_xlim(Txmin, Txmax)
 
-    ax4.set_xlim(0.008, Txmax)
+    ax4.set_xlim(Txmin, Txmax)
     ax4.set_ylim(y3min-0.05, y3max)
     ax4.set_xscale('log')
 

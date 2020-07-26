@@ -18,12 +18,12 @@ class Post:
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
         Input:
-        ==========
+        ======
         out   : model as second output. For lnprob func.
         f_fir : Bool. If dust component is on or off.
 
         Returns:
-        ==========
+        ========
         residual of model and data.
 
         '''
@@ -76,7 +76,7 @@ class Post:
         '''
 
         Returns:
-        =========
+        ========
         log posterior
 
         '''
@@ -89,16 +89,17 @@ class Post:
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
         sig     = np.sqrt(1./wht+f**2*model**2)
+        chi_nd  = 0.0
 
-        chi_nd = 0
-        con_up = (fy==0) & (ey>0)
         if f_chind:
-            # This does not improve, but costs time;
+            con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
+            # This may be a bit cost of time;
             for nn in range(len(ey[con_up])):
                 result  = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
                 chi_nd += np.log(result[0])
 
             con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+            #print(len(fy[con_up]),len(fy[con_res]))
             lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
 
         else:

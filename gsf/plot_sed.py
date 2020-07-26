@@ -19,7 +19,7 @@ import corner
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 #col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, nmc_rand=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, f_fill=False, f_fancyplot=False):
+def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, f_fill=False, f_fancyplot=False):
     '''
     Input:
     ======
@@ -550,8 +550,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     samples  = res
 
     # Saved template;
-    ytmp = np.zeros((nmc_rand,len(ysum)), dtype='float64')
-    ytmp_each = np.zeros((nmc_rand,len(ysum),len(age)), dtype='float64')
+    ytmp = np.zeros((mmax,len(ysum)), dtype='float64')
+    ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float64')
 
     ytmpmax = np.zeros(len(ysum), dtype='float64')
     ytmpmin = np.zeros(len(ysum), dtype='float64')
@@ -559,18 +559,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-    Fuv     = np.zeros(nmc_rand, dtype='float64') # For Muv
-    Fuv28   = np.zeros(nmc_rand, dtype='float64') # For Fuv(1500-2800)
-    Lir     = np.zeros(nmc_rand, dtype='float64') # For L(8-1000um)
-    UVJ     = np.zeros((nmc_rand,4), dtype='float64') # For UVJ color;
+    Fuv     = np.zeros(mmax, dtype='float64') # For Muv
+    Fuv28   = np.zeros(mmax, dtype='float64') # For Fuv(1500-2800)
+    Lir     = np.zeros(mmax, dtype='float64') # For L(8-1000um)
+    UVJ     = np.zeros((mmax,4), dtype='float64') # For UVJ color;
 
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
     alp=0.02
-    for kk in range(0,nmc_rand,1):
+    for kk in range(0,mmax,1):
         nr = np.random.randint(len(samples['A0']))
-        #nr = np.random.randint(int(len(samples['A0'])*0.99), len(samples['A0']))
         try:
             Av_tmp = samples['Av'][nr]
         except:
@@ -655,7 +654,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Do stuff...
         time.sleep(0.01)
         # Update Progress Bar
-        printProgressBar(kk, nmc_rand, prefix = 'Progress:', suffix = 'Complete', length = 40)
+        printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
 
     #
@@ -726,13 +725,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ndim_eff -= 1
     '''
 
-    con_up = (ey>0) & (fy/ey<=SNlim)
+    con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0
     if f_chind:
         # Chi2 for non detection;
         for nn in range(len(ey[con_up])):
             #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
-            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
+            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
             chi_nd += np.log(result[0])
 
     # Number of degree;

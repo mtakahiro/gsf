@@ -35,7 +35,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if fill == None:
         if float(percent) < 33:
             fill = emojis[0]
-        elif float(percent) < 33:
+        elif float(percent) < 66:
             fill = emojis[1]
         elif float(percent) < 99:
             fill = emojis[2]
