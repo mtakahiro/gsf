@@ -12,7 +12,7 @@ from matplotlib.ticker import FormatStrFormatter
 from .function import *
 from .function_class import Func
 from .basic_func import Basic
-from . import img_scale
+#from . import img_scale
 #from . import corner
 import corner
 
