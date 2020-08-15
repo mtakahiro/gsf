@@ -102,6 +102,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
+    ndim_eff = hdul[0].header['NDIM']
+
     # Redshift MC
     zp16  = hdul[1].data['zmc'][0]
     zp50  = hdul[1].data['zmc'][1]
@@ -275,21 +277,31 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d]
                 ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
     else: # Normal BB plot;
-        try:
-            conbb_hs = (fybb/eybb>SNlim)
-            ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
-            yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-            ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
-            marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
-        except:
-            pass
-        try:
-            conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
-            ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d, \
-            color=col_dat, linestyle='', linewidth=0.5, zorder=4, ms=4, marker='v')
+        # Detection;
+        conbb_hs = (fybb/eybb>SNlim)
+        ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
+        yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
+        ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
+        marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
 
+        try:
+            # For any data removed fron fit (i.e. IRAC excess):
+            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
+            NR_ex = data_ex['col1']
         except:
-            pass
+            NR_ex = []
+
+        # Upperlim;
+        sigma = 1.0
+        leng = np.max(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d) * 0.05 #0.2
+        conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
+        
+        for ii in range(len(xbb)):
+            if NR[ii] in NR_ex[:]:
+                conebb_ls[ii] = False
+        
+        ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, yerr=leng,\
+            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, linestyle='',color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
 
 
     # For any data removed fron fit (i.e. IRAC excess):
@@ -723,12 +735,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     chi2 = sum((np.square(fy-ysump)*np.sqrt(wht3))[conw])
 
     # Effective ndim;
+    '''
     ndim_eff = MB.ndim
     agemax = MB.cosmo.age(zbes).value
     for aa in range(len(MB.age)):
         if MB.age[aa]>agemax:
             ndim_eff -= 1
-
+    '''
 
     con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0

@@ -157,12 +157,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True):
             from .plot_sfh import plot_sfh
             from .plot_sed import plot_sed
 
-        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=100,
+        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=500,
         inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
-        figpdf=False, save_sed=True, inputs=MB.inputs, mmax=100,
-        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True)
+        figpdf=False, save_sed=True, inputs=MB.inputs, mmax=300,
+        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True, f_fill=False)
 
 
     if fplt == 4:
