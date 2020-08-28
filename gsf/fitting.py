@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -924,6 +923,7 @@ class Mainbody():
             for aa in range(len(self.age)):
                 if aa not in aamin:
                     fit_params.add('A'+str(aa), value=Amin, vary=False)
+                    self.ndim -= 1                    
                 else:
                     fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
         except:
@@ -1106,9 +1106,14 @@ class Mainbody():
             # MCMC corner plot.
             ####################
             if cornerplot:
+                val_truth = []
+                for par in res.var_names:
+                    val_truth.append(res.params[par].value)
+
                 fig1 = corner.corner(res.flatchain, labels=res.var_names, \
                 label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
-                title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), \
+                title_kwargs={"fontsize": 14}, \
+                truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
                 fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.pdf')
@@ -1179,15 +1184,14 @@ class Mainbody():
                 return -1
 
 
-
     def quick_fit(self, zgal, Cz0, Cz1, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Purpose:
-        ==========
+        ========
         Fit input data with a prepared template library, to get a chi-min result.
 
         Input:
-        ==========
+        ======
         ferr   : For error parameter
         zgal   : Input redshift.
         sigz (float): confidence interval for redshift fit.
@@ -1266,6 +1270,15 @@ class Mainbody():
         ###############################
         # Add parameters
         ###############################
+        f_Alog = True
+        if f_Alog:
+            Amin = -10
+            Amax = 10
+            Aini = 0
+        else:
+            Amin = 0
+            Amax = 1e3
+            Aini = 1
         agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
         try:
@@ -1282,18 +1295,18 @@ class Mainbody():
             print('##########################')
             for aa in range(len(self.age)):
                 if aa not in aamin:
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
         except:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 elif self.age[aa]>agemax:
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
 
         #####################
         # Dust attenuation
