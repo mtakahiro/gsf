@@ -81,20 +81,20 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         except:
             pass
         try:
-            Zb[aa]    = res.params['Z'+str(aa)].value
+            Zb[aa] = res.params['Z'+str(aa)].value
             Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
         except:
             try:
-                Zb[aa]    = res.params['Z0'].value
+                Zb[aa] = res.params['Z0'].value
                 Zmc[aa,:] = np.percentile(res.flatchain['Z0'][burnin:], [16,50,84])
             except:
-                Zb[aa]    = self.ZFIX
+                Zb[aa] = self.ZFIX
                 Zmc[aa,:] = [self.ZFIX,self.ZFIX,self.ZFIX]
 
         NZbest[aa]= bfnc.Z2NZ(Zb[aa])
-        ms[aa]    = sedpar.data['ML_' +  str(NZbest[aa])][aa]
+        ms[aa] = sedpar.data['ML_' +  str(NZbest[aa])][aa]
         try:
-            msmc0[:] += res.flatchain['A' + str(aa)][burnin:] * ms[aa]
+            msmc0[:] += 10**res.flatchain['A' + str(aa)][burnin:] * ms[aa]
         except:
             pass
 
