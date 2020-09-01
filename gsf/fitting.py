@@ -355,7 +355,6 @@ class Mainbody():
         fy   = np.append(fy01,fy2)
         ey   = np.append(ey01,ey2)
 
-
         wht  = 1./np.square(ey)
         con_wht = (ey<0)
         wht[con_wht] = 0
@@ -400,6 +399,7 @@ class Mainbody():
             wht = nrd_yyd_sort[:,4]
             wht2= nrd_yyd_sort[:,5]
 
+
         sn   = fy/ey
         dict = {}
         dict = {'NR':NR, 'x':xx, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
@@ -441,25 +441,25 @@ class Mainbody():
             prior = zspace[:] * 0 + 1.0
 
         # Observed data points;
-        NR   = dict['NR']
+        NR = dict['NR']
         con0 = (NR<1000)
-        fy0  = dict['fy'][con0] #* Cz0s
-        ey0  = dict['ey'][con0] #* Cz0s
-        x0   = dict['x'][con0]
+        fy0 = dict['fy'][con0] #* Cz0s
+        ey0 = dict['ey'][con0] #* Cz0s
+        x0  = dict['x'][con0]
         con1 = (NR>=1000) & (NR<10000)
-        fy1  = dict['fy'][con1] #* Cz1s
-        ey1  = dict['ey'][con1] #* Cz1s
-        x1   = dict['x'][con1]
+        fy1 = dict['fy'][con1] #* Cz1s
+        ey1 = dict['ey'][con1] #* Cz1s
+        x1  = dict['x'][con1]
         con2 = (NR>=10000) # BB
-        fy2  = dict['fy'][con2]
-        ey2  = dict['ey'][con2]
-        x2   = dict['x'][con2]
+        fy2 = dict['fy'][con2]
+        ey2 = dict['ey'][con2]
+        x2 = dict['x'][con2]
 
         fy01 = np.append(fy0,fy1)
         fcon = np.append(fy01,fy2)
         ey01 = np.append(ey0,ey1)
-        eycon= np.append(ey01,ey2)
-        x01  = np.append(x0,x1)
+        eycon = np.append(ey01,ey2)
+        x01 = np.append(x0,x1)
         xobs = np.append(x01,x2)
 
         wht = 1./np.square(eycon)
@@ -800,7 +800,6 @@ class Mainbody():
         return f_add
 
 
-    #def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False, skip_fitz=False):
         '''
         Input:
@@ -1058,9 +1057,11 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, \
+            
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
                 moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
                 #moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None))
+
                 
             print('######################')
             print('### Starting emcee ###')
@@ -1077,7 +1078,7 @@ class Mainbody():
 
             print('No. of CPU is set to %d'%(ncpu))
             start_mc = timeit.default_timer()
-            res  = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+            res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
 
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
