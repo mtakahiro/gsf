@@ -90,8 +90,8 @@ def read_input(parfile):
         else:
             cols = str.split(line)
             if len(cols)>0 and cols[0] != '#':
-                    input0.append(cols[0])
-                    input1.append(cols[1])
+                input0.append(cols[0])
+                input1.append(cols[1])
     file.close()
     inputs = {}
     for i in range(len(input0)):

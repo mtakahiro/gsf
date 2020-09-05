@@ -162,7 +162,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True):
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=False, save_sed=True, inputs=MB.inputs, mmax=300,
-        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True, f_fill=False)
+        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True, f_fill=True)
 
 
     if fplt == 4:

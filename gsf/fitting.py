@@ -986,7 +986,8 @@ class Mainbody():
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['ey'],dict['wht2'],self.ID,self.PA)
+        out,chidef,Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
+            dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
 
         # Best fit
         csq  = out.chisqr

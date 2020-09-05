@@ -423,13 +423,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
 
     fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
-    fw_sfr.write('# time_l time_u logSFR logSFR16 logSFR84 logMstel logMstel16 logMstel84 logZ logZ16 logZ84\n')
+    fw_sfr.write('# time_l time_u logSFR16 logSFR50 logSFR84 logMstel16 logMstel50 logMstel84 logZ16 logZ50 logZ84\n')
     fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
 
     for ii in range(len(age)-1,0-1,-1):
         t0 = Tuni - age[ii]
         fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
-        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,1], SFp[ii,0], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,1], ZCp[ii,0], ZCp[ii,2]))
+        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,0], SFp[ii,1], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,0], ZCp[ii,1], ZCp[ii,2]))
     fw_sfr.close()
 
     #############

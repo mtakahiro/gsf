@@ -582,7 +582,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # From random chain;
     alp=0.02
-    for kk in range(0,mmax,1):
+    for kk in range(0, mmax, 1):
         nr = np.random.randint(len(samples['A0']))
         try:
             Av_tmp = samples['Av'][nr]
