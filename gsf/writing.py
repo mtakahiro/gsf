@@ -76,7 +76,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     for aa in range(len(age)):
         try:
-            Ab[aa]    = res.params['A'+str(aa)].value
+            Ab[aa] = res.params['A'+str(aa)].value
             Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)][burnin:], [16,50,84])
         except:
             pass
@@ -216,9 +216,9 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     col50 = fits.Column(name='Cscale1', format='E', unit='', array=scl_cz1[:])
     col01.append(col50)
 
-    colms  = fits.ColDefs(col01)
+    colms = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
-    hdu    = fits.HDUList([prihdu, dathdu])
+    hdu = fits.HDUList([prihdu, dathdu])
     hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
 
     ##########

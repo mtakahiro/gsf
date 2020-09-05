@@ -347,23 +347,34 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     alp = .8
     for jj in range(len(age)):
+
         ii = int(len(II0) - jj - 1) # from old to young templates.
 
         if jj == 0:
-            y0, x0   = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0, x0 = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  = y0
             ysump = y0p
-            if f_fill:
-                ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
-
+            #if f_fill:
+            #    ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  += y0_r
             ysump += y0p
-            if f_fill:
-                ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+            #if f_fill:
+            #    ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+        '''
+        if True:
+            alp_fill = 0.8
+            if jj == 0:
+                yprev = ysum[:] * 0
+                ynow = (ysum[:] * c / np.square(x0) / d)
+            else:
+                yprev = ynow[:]
+                ynow = (ysum[:] * c / np.square(x0) / d)
+            ax1.fill_between(x0[::nstep_plot], yprev[::nstep_plot], ynow[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp_fill, zorder=-1, label='')
+        '''
 
         try:
             ysum_wid = ysum * 0
@@ -372,7 +383,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 nn = int(len(II0) - ii - 1)
 
                 nZ = bfnc.Z2NZ(Z50[tt])
-                y0_wid, x0_wid = fnc.open_spec_fits_dir(MB, tt, nZ, nn, AAv[0], zbes, A50[tt])
+                y0_wid, x0_wid = fnc.open_spec_fits_dir(tt, nZ, nn, AAv[0], zbes, A50[tt])
                 ysum_wid += y0_wid
 
             lmrest_wid = x0_wid/(1.+zbes)
@@ -385,10 +396,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             vjt  = -2.5*log10(fv_t/fj_t)
             fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
         except:
+            print('Error in writing fw.')
             pass
 
     fwuvj.close()
-
+    
     # FIR dust plot;
     if f_dust:
         from lmfit import Parameters
@@ -622,6 +634,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
 
+            if kk == 0 and f_fill:
+                alp_fill = 0.5
+                ii = int(len(II0) - ss - 1) # from old to young templates.
+                x0 = xm_tmp #fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
+
+                if ss == 0:
+                    yprev = fm_tmp[:] * 0
+                    ysum = (fm_tmp[:] * c / np.square(x0) / d)[::nstep_plot]
+                else:
+                    yprev = ysum[:]
+                    ysum = (fm_tmp[:] * c / np.square(x0) / d)[::nstep_plot]
+                ax1.fill_between(x0[::nstep_plot], yprev[::nstep_plot], ysum, linestyle='None', lw=0.5, color=col[ii], alpha=alp_fill, zorder=-1, label='')
+                
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
 
@@ -644,7 +669,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if f_fill:
                 ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
-
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
@@ -674,6 +698,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
+
+
 
 
     #
