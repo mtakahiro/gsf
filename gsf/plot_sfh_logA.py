@@ -1,8 +1,6 @@
 import numpy as np
 import sys
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from numpy import log10
@@ -20,7 +18,9 @@ from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=7.5, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False):
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=7.5, fil_path='./FILT/', \
+    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False, f_silence=True):
+
     '''
     Purpose:
     ========
@@ -34,6 +34,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     '''
     import os.path
     import time
+
+    if f_silence:
+        import matplotlib
+        matplotlib.use("Agg")
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
@@ -632,14 +636,16 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png')
 
 
-def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01):
+def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
+    inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh=0.01):
+
     '''
     Purpose:
     =========
     Reprocess output files to get spectra, UV color, and SFH at higher resolution.
 
     Input:
-    =========
+    ======
     #
     # delt_sfh (float): delta t of input SFH in Gyr.
     #
@@ -975,20 +981,19 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
     hdu.writeto(DIR_TMP + 'obshist_' + ID + '_PA' + PA + '.fits', overwrite=True)
 
 
-def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp = 0, fil_path = './FILT/', inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
+def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
+    inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
+    
     '''
     Input:
-    ============
-
+    ======
     delt_sfh (float): delta t of input SFH in Gyr.
 
-
     Returns:
-    ============
-
+    ========
     SED as function of age, based on SF and Z histories;
-
     '''
+
     import os.path
 
     ################

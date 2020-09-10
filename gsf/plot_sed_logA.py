@@ -26,8 +26,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     Input:
     ======
 
-    SNlim   : SN limit to show flux or up lim in SED.
+    MB.SNlim : SN limit to show flux or up lim in SED.
     f_chind : If include non-detection in chi2 calculation, using Sawicki12.
+    mmax : Number of mcmc realization for plot. Not for calculation.
 
     Returns:
     ========
@@ -347,34 +348,23 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     alp = .8
     for jj in range(len(age)):
-
         ii = int(len(II0) - jj - 1) # from old to young templates.
 
         if jj == 0:
-            y0, x0 = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0, x0   = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  = y0
             ysump = y0p
-            #if f_fill:
-            #    ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+            if f_fill:
+                ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  += y0_r
             ysump += y0p
-            #if f_fill:
-            #    ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
-        '''
-        if True:
-            alp_fill = 0.8
-            if jj == 0:
-                yprev = ysum[:] * 0
-                ynow = (ysum[:] * c / np.square(x0) / d)
-            else:
-                yprev = ynow[:]
-                ynow = (ysum[:] * c / np.square(x0) / d)
-            ax1.fill_between(x0[::nstep_plot], yprev[::nstep_plot], ynow[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp_fill, zorder=-1, label='')
-        '''
+            if f_fill:
+                ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
         try:
             ysum_wid = ysum * 0
@@ -383,7 +373,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 nn = int(len(II0) - ii - 1)
 
                 nZ = bfnc.Z2NZ(Z50[tt])
-                y0_wid, x0_wid = fnc.open_spec_fits_dir(tt, nZ, nn, AAv[0], zbes, A50[tt])
+                y0_wid, x0_wid = fnc.open_spec_fits_dir(MB, tt, nZ, nn, AAv[0], zbes, A50[tt])
                 ysum_wid += y0_wid
 
             lmrest_wid = x0_wid/(1.+zbes)
@@ -396,11 +386,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             vjt  = -2.5*log10(fv_t/fj_t)
             fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
         except:
-            print('Error in writing fw.')
             pass
 
     fwuvj.close()
-    
+
     # FIR dust plot;
     if f_dust:
         from lmfit import Parameters
@@ -634,19 +623,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
 
-            if kk == 0 and f_fill:
-                alp_fill = 0.5
-                ii = int(len(II0) - ss - 1) # from old to young templates.
-                x0 = xm_tmp #fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
-
-                if ss == 0:
-                    yprev = fm_tmp[:] * 0
-                    ysum = (fm_tmp[:] * c / np.square(x0) / d)[::nstep_plot]
-                else:
-                    yprev = ysum[:]
-                    ysum = (fm_tmp[:] * c / np.square(x0) / d)[::nstep_plot]
-                ax1.fill_between(x0[::nstep_plot], yprev[::nstep_plot], ysum, linestyle='None', lw=0.5, color=col[ii], alpha=alp_fill, zorder=-1, label='')
-                
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
 
@@ -669,6 +645,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if f_fill:
                 ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
+
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
@@ -698,8 +675,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
-
-
 
 
     #
@@ -1608,7 +1583,7 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
     flw.close()
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1000):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300):
     '''
     Purpose:
     ========
@@ -1793,12 +1768,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float64')
-    lmtmp= np.zeros(nplot, dtype='float64')
-    Avtmp= np.zeros(nplot, dtype='float64')
-    Ztmp = np.zeros(nplot, dtype='float64')
-    Ttmp = np.zeros(nplot, dtype='float64')
-    ACtmp= np.zeros(nplot, dtype='float64')
+    Ntmp = np.zeros(mmax, dtype='float64')
+    lmtmp= np.zeros(mmax, dtype='float64')
+    Avtmp= np.zeros(mmax, dtype='float64')
+    Ztmp = np.zeros(mmax, dtype='float64')
+    Ttmp = np.zeros(mmax, dtype='float64')
+    ACtmp= np.zeros(mmax, dtype='float64')
 
     # Time bin
     Tuni = MB.cosmo.age(zbes).value
@@ -1839,7 +1814,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
 
-    ######
     files = [] # For gif animation
     SFmax = 0
     Tsmin = 0
@@ -1849,13 +1823,14 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
     AMtmp = 0
     AMtmp16 = 0
     AMtmp84 = 0
+
     for ii in range(len(age)):
         ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
         ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
         ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
-        AA_tmp = np.max(samples['A'+str(ii)][:])
-        AA_tmp84 = np.percentile(samples['A'+str(ii)][:],95)
-        AA_tmp16 = np.percentile(samples['A'+str(ii)][:],5)
+        AA_tmp = 10**np.max(samples['A'+str(ii)][:])
+        AA_tmp84 = 10**np.percentile(samples['A'+str(ii)][:],95)
+        AA_tmp16 = 10**np.percentile(samples['A'+str(ii)][:],5)
         nZtmp  = bfnc.Z2NZ(ZZ_tmp)
         mslist = sedpar.data['ML_'+str(nZtmp)][ii]
         AMtmp16 += mslist*AA_tmp16
@@ -1910,34 +1885,39 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         return X, Y, Z
 
 
-    for kk in range(0,nplot,1):
-        #nr = kk # np.random.randint(len(samples))
+    for kk in range(0,mmax,1):
         nr = np.random.randint(len(samples))
         Avtmp[kk] = samples['Av'][nr]
-        #Asum = 0
-        #for ss in range(len(age)):
-        #Asum += np.sum(samples['A'+str(ss)][nr])
+
         ZMM = np.zeros((len(age)), dtype='float64') # Mass weighted Z.
-        ZM  = np.zeros((len(age)), dtype='float64') # Light weighted T.
-        ZC  = np.zeros((len(age)), dtype='float64') # Light weighted T.
-        SF  = np.zeros((len(age)), dtype='float64') # SFR
-        AM  = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        ZM = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        ZC = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        SF = np.zeros((len(age)), dtype='float64') # SFR
+        AM = np.zeros((len(age)), dtype='float64') # Light weighted T.
+        II0 = nage
 
-
-        II0   = nage #[0,1,2,3] # Number for templates
         for ss in range(len(age)):
             ii = int(len(II0) - ss - 1) # from old to young templates.
-            AA_tmp = samples['A'+str(ii)][nr]
+            
+            try:
+                AA_tmp = 10**samples['A'+str(ii)][nr]
+            except:
+                AA_tmp = 0
+                pass
+
             try:
                 ZZ_tmp = samples['Z'+str(ii)][nr]
             except:
-                ZZ_tmp = samples['Z0'][nr]
+                try:
+                    ZZ_tmp = samples['Z0'][nr]
+                except:
+                    ZZ_tmp = MB.ZFIX
 
-            nZtmp      = bfnc.Z2NZ(ZZ_tmp)
-            mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
+            nZtmp = bfnc.Z2NZ(ZZ_tmp)
+            mslist = sedpar.data['ML_'+str(nZtmp)][ii]
             lmtmp[kk] += AA_tmp * mslist
-            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
-            Ttmp[kk]  += age[ii] * AA_tmp * mslist
+            Ztmp[kk] += (10 ** ZZ_tmp) * AA_tmp * mslist
+            Ttmp[kk] += age[ii] * AA_tmp * mslist
             ACtmp[kk] += AA_tmp * mslist
 
             AM[ii] = AA_tmp * mslist
@@ -1986,10 +1966,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         Ztmp[kk]  = np.log10(Ztmp[kk])
         Ttmp[kk]  = np.log10(Ttmp[kk])
 
-        NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
+        NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
-        #for kk in range(0,nplot,1):
-        if kk == nplot-1:
+        if kk == mmax-1:
             #
             # Histogram
             #
@@ -2001,12 +1980,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
                 bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
                 n, bins, patches = ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
                 yy = np.arange(0,np.max(n)*1.3,1)
-                ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
-                ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
-                ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
-                ax.text(np.percentile(NPAR[i],16), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],16)), fontsize=9)
-                ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
-                ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
+
+                try:
+                    ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
+                    ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
+                    ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
+
+                    ax.text(np.percentile(NPAR[i],16), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],16)), fontsize=9)
+                    ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
+                    ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
+                except:
+                    print('Failed at i,x=',i,x)
 
                 ax.set_xlim(x1min, x1max)
                 ax.set_yticklabels([])
@@ -2018,18 +2002,20 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', nplot=1
         # Scatter and contour
         for i, x in enumerate(Par):
             for j, y in enumerate(Par):
-                #print(i,j,Par[j], Par[i])
                 if i > j:
                     ax = axes[i, j]
                     ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
                     ax.set_xlabel('%s'%(Par[j]), fontsize=12)
 
-                    if kk == nplot-1:
-                        X, Y, Z = density_estimation(NPAR[j], NPAR[i])
-                        mZ = np.max(Z)
-                        ax.contour(X, Y, Z, levels=[0.68*mZ,0.95*mZ,0.99*mZ], linewidths=[0.8,0.5,0.3], colors='gray')
-                        #x1min, x1max = np.min(NPAR[j]), np.max(NPAR[j])
-                        #y1min, y1max = np.min(NPAR[i]), np.max(NPAR[i])
+                    if kk == mmax-1:
+                        try:
+                            Xcont, Ycont, Zcont = density_estimation(NPAR[j], NPAR[i])
+                            mZ = np.max(Zcont)
+                            ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='gray')
+                        except:
+                            #print(NPAR[j], NPAR[i])
+                            print('Error occurs when density estimation. Maybe because single Z')
+                            pass
 
                     x1min, x1max = NPARmin[j], NPARmax[j]
                     y1min, y1max = NPARmin[i], NPARmax[i]
