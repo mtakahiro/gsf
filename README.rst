@@ -1,7 +1,7 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.2
+version 1.3
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
 - The main purpose is to explore galaxy star formation histories with a flexible form.
