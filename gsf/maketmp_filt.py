@@ -375,11 +375,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
 
             if zz == 0 and pp == 0:
                 lm0    = spechdu.data['wavelength']
+                '''
                 if fneb == 1:
                     spec0 = spechdu.data['efspec_'+str(zz)+'_0_'+str(pp)]
                 else:
                     spec0 = spechdu.data['fspec_'+str(zz)+'_0_'+str(pp)]
-
+                '''
             lmbest   = np.zeros((Ntmp, len(lm0)), dtype='float64')
             fbest    = np.zeros((Ntmp, len(lm0)), dtype='float64')
             lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float64')
@@ -413,7 +414,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 ###################
                 # IGM attenuation.
                 ###################
-                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:],zbest, cosmo=MB.cosmo)
+                spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
                 if len(lm)>0:
                     try:

@@ -43,7 +43,7 @@ def get_ind(wave,flux):
 def make_tmp_z0(MB, lammin=400, lammax=80000):
     '''
     Purpose:
-    ==========
+    ========
     #
     # This is for the preparation of
     # default template, with FSPS, at z=0.
@@ -53,7 +53,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     #
 
     Input:
-    ==========
+    ======
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
     # Z (array)  : Stellar phase metallicity in logZsun.
@@ -87,7 +87,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     col01 = [] # For M/L ratio.
     col02 = [] # For templates
     col05 = [] # For spectral indices.
-    #col06 = [] # For weird templates for UVJ calculation;
+
     print('tau is the width of each age bin.')
     tau_age = np.zeros(Na,dtype='float64')
     age_age = np.zeros(Na,dtype='float64')
@@ -153,7 +153,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                     print('Skip fsps, by using previous library.')
 
                 tau0_old = tautmp
-                sp  = sptmp
+                sp = sptmp
                 print(zz, sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8") , pp)
 
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True)
