@@ -226,7 +226,10 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     # Create header;
     #
     hdr = fits.Header()
-    hdr['COMMENT'] = 'Library:%s %s'%(sp.libraries[0].decode("utf-8"), sp.libraries[1].decode("utf-8"))
+
+    hdr['hierarch isochrone'] = '%s'%(sp.libraries[0].decode("utf-8"))
+    hdr['library'] = '%s'%(sp.libraries[1].decode("utf-8"))
+
     if fneb == 1:
         hdr['logU'] = logU
     #for pp in range(len(tau0)):

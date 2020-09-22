@@ -192,12 +192,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     con0 = (NR<1000) #& (fy/ey>SNlim)
     xg0  = x[con0]
-    fg0  = fy[con0] * Cz0
-    eg0  = ey[con0] * Cz0
+    fg0  = fy[con0] #* Cz0
+    eg0  = ey[con0] #* Cz0
     con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
     xg1  = x[con1]
-    fg1  = fy[con1] * Cz1
-    eg1  = ey[con1] * Cz1
+    fg1  = fy[con1] #* Cz1
+    eg1  = ey[con1] #* Cz1
     if len(xg0)>0 or len(xg1)>0:
         f_grsm = True
     else:
@@ -876,13 +876,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         hdr['id'] = ID
 
         # Chi square:
-        hdr['chi2']     = chi2
+        hdr['chi2'] = chi2
         hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
         hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
         hdr['hierarch Chi2-of-nondetection'] = chi_nd
-        hdr['hierarch No-of-params']  = ndim_eff
+        hdr['hierarch No-of-params'] = ndim_eff
         hdr['hierarch Degree-of-freedom']  = nod
-        hdr['hierarch reduced-chi2']  = fin_chi2
+        hdr['hierarch reduced-chi2'] = fin_chi2
 
         # Muv
         MUV = -2.5 * np.log10(Fuv[:]) + 25.0
@@ -932,6 +932,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 hdr['HIERARCH cnt_%s_84'%(ew_label[ii])]= cnt84[ii]
         except:
             pass
+
+        # Version;
+        import gsf
+        hdr['version'] = gsf.__version__
 
         # Write;
         colspec = fits.ColDefs(col00)

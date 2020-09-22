@@ -165,6 +165,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['tcalc']  = tcalc
     prihdr['chi2']   = fitc[0]
     prihdr['chi2nu'] = fitc[1]
+    import gsf
+    prihdr['version'] = gsf.__version__
     prihdu = fits.PrimaryHDU(header=prihdr)
 
     # Data

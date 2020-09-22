@@ -475,6 +475,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     prihdr['t_rejuv']= t_rejuv
     # SFR
     prihdr['tset_SFR']= tset_SFR_SED
+    # Version;
+    import gsf
+    prihdr['version'] = gsf.__version__
 
     prihdu = fits.PrimaryHDU(header=prihdr)
 
@@ -523,7 +526,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # 
     colms  = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
-    hdu    = fits.HDUList([prihdu, dathdu])
+    hdu = fits.HDUList([prihdu, dathdu])
     hdu.writeto('SFH_' + ID + '_PA' + PA + '_param.fits', overwrite=True)
 
     # Attach to MB;

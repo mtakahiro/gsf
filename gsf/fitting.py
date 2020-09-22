@@ -215,9 +215,6 @@ class Mainbody():
             self.ZEVOL = 1
             self.ndim = int(len(self.nage) * 2 + self.nAV) # age, Z, and Av.
             print('Metallicity evolution is on.')
-            if int(inputs['ZMC']) == 1:
-                self.ndim += 1
-            print('No of params are : %d'%(self.ndim))
         else:
             self.ZEVOL = 0
             print('Metallicity evolution is off.')
