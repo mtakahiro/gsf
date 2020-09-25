@@ -229,12 +229,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ######################
     # Mass-to-Light ratio.
     ######################
-    ms     = np.zeros(len(age), dtype='float64')
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
+    ms = np.zeros(len(age), dtype='float64')
+    f0 = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
     sedpar = f0[1]
     for aa in range(len(age)):
         ms[aa] = sedpar.data['ML_' +  str(int(NZbest[aa]))][aa]
-
+    try:
+        sedhead = fits.open(DIR_TMP + 'ms.fits')[1].header
+        isochrone = sedhead['isochrone']
+        LIBRARY = sedhead['LIBRARY']
+    except:
+        isochrone = ''
+        LIBRARY = ''
 
     #############
     # Plot.
@@ -375,7 +381,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 nn = int(len(II0) - ii - 1)
 
                 nZ = bfnc.Z2NZ(Z50[tt])
-                y0_wid, x0_wid = fnc.open_spec_fits_dir(MB, tt, nZ, nn, AAv[0], zbes, A50[tt])
+                y0_wid, x0_wid = fnc.open_spec_fits_dir(tt, nZ, nn, AAv[0], zbes, A50[tt])
                 ysum_wid += y0_wid
 
             lmrest_wid = x0_wid/(1.+zbes)
@@ -384,8 +390,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             fu_t = fconv[0]
             fv_t = fconv[1]
             fj_t = fconv[2]
-            uvt  = -2.5*log10(fu_t/fv_t)
-            vjt  = -2.5*log10(fv_t/fj_t)
+            uvt = -2.5*log10(fu_t/fv_t)
+            vjt = -2.5*log10(fv_t/fj_t)
             fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
         except:
             pass
@@ -876,6 +882,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         hdr = fits.Header()
         hdr['redshift'] = zbes
         hdr['id'] = ID
+        hdr['hierarch isochrone'] = isochrone
+        hdr['library'] = LIBRARY
 
         # Chi square:
         hdr['chi2'] = chi2

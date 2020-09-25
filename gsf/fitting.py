@@ -68,9 +68,16 @@ class Mainbody():
         else:
             self.cosmo = cosmo
 
-        self.ID   = inputs['ID']
-        self.PA   = inputs['PA']
-        self.zgal = float(inputs['ZGAL'])
+        self.ID = inputs['ID']
+        self.PA = inputs['PA']
+        try:
+            self.zgal = float(inputs['ZGAL'])
+        except:
+            CAT_BB = inputs['CAT_BB']
+            fd_cat = ascii.read(CAT_BB)
+            iix = np.where(fd_cat['id'] == int(self.ID))
+            self.zgal = float(fd_cat['redshift'][iix])
+
         self.Cz0  = float(inputs['CZ0'])
         self.Cz1  = float(inputs['CZ1'])
 
@@ -299,7 +306,7 @@ class Mainbody():
         Can be used for any SFH
 
         '''
-        print('READ data with',Cz0, Cz1, zgal)
+        print('READ data with', Cz0, Cz1, zgal)
 
         ##############
         # Spectrum
@@ -748,7 +755,7 @@ class Mainbody():
             ax1.set_xlabel('Redshift')
             ax1.set_ylabel('$dn/dz$')
             ax1.legend(loc=0)
-            plt.savefig('zprob_' + self.ID + '_PA' + seld.PA + '.pdf', dpi=300)
+            plt.savefig('zprob_' + self.ID + '_PA' + self.PA + '.pdf', dpi=300)
             plt.close()
         #else:
         except:
@@ -1058,8 +1065,6 @@ class Mainbody():
             
             mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
                 moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
-                #moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None))
-
                 
             print('######################')
             print('### Starting emcee ###')
@@ -1125,7 +1130,7 @@ class Mainbody():
             # Then writing;
             start_mc = timeit.default_timer()
             get_param(self, res, fitc, tcalc=tcalc, burnin=burnin)
-            stop_mc  = timeit.default_timer()
+            stop_mc = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
 
             return False
@@ -1349,7 +1354,8 @@ class Mainbody():
         ####################################
         # Get initial parameters
         print('Start quick fit;')
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
+        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,\
+            dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
 
         # Best fit
         csq  = out.chisqr

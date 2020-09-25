@@ -24,7 +24,7 @@ class Func:
         self.age  = MB.age
         self.AA   = MB.nage
         self.tau0 = MB.tau0
-        self.MB   = MB
+        self.MB = MB
 
         self.dust_model = dust_model
         self.DIR_TMP    = MB.DIR_TMP
