@@ -173,16 +173,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     Cz0   = hdul[0].header['Cz0']
     Cz1   = hdul[0].header['Cz1']
-    zbes  = zp50 #hdul[0].header['z']
+    zbes  = zp50 
     zscl = (1.+zbes)
 
     ###############################
     # Data taken from
     ###############################
     if MB.f_dust:
-        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
+        #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
+        MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
     else:
-        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
+        #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
+        MB.dict = MB.read_data(Cz0, Cz1, zbes)
 
     #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
     NR   = MB.dict['NR'] #dat[:, 0]
@@ -351,7 +353,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ii = int(len(II0) - jj - 1) # from old to young templates.
 
         if jj == 0:
-            y0, x0   = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0, x0 = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum  = y0
             ysump = y0p

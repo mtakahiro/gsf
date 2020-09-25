@@ -69,16 +69,18 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         nTdustmc= np.zeros(3, dtype='float32')
         Tdustmc = np.zeros(3, dtype='float32')
 
-    f0     = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
+    f0 = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
     sedpar = f0[1]
-    ms     = np.zeros(len(age), dtype='float32')
-    msmc0  = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float32')
+    ms = np.zeros(len(age), dtype='float32')
+    msmc0 = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float32')
 
     for aa in range(len(age)):
         try:
             Ab[aa] = res.params['A'+str(aa)].value
             Amc[aa,:] = np.percentile(res.flatchain['A'+str(aa)][burnin:], [16,50,84])
         except:
+            Ab[aa] = -99
+            Amc[aa,:] = [-99,-99,-99]
             pass
         try:
             Zb[aa] = res.params['Z'+str(aa)].value
