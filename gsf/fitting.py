@@ -39,11 +39,10 @@ fLW = np.zeros(len(LW), dtype='int')
 
 class Mainbody():
 
-    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
-        self.update_input(inputs)
+    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
+        self.update_input(inputs, idman=idman)
 
-
-    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
+    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         '''
         INPUT:
         ======
@@ -58,7 +57,7 @@ class Mainbody():
         self.inputs = inputs
         self.c = c
         self.Mpc_cm = Mpc_cm
-        self.m0set  = m0set
+        self.m0set = m0set
         self.pixelscale = pixelscale
         self.Lsun = Lsun #erg s-1
 
@@ -68,8 +67,14 @@ class Mainbody():
         else:
             self.cosmo = cosmo
 
-        self.ID = inputs['ID']
-        self.PA = inputs['PA']
+        if idman != None:
+            self.ID = idman
+        else:
+            self.ID = inputs['ID']
+        try:
+            self.PA = inputs['PA']
+        except:
+            self.PA = '00'
         try:
             self.zgal = float(inputs['ZGAL'])
         except:
@@ -294,12 +299,13 @@ class Mainbody():
         return LW, fLW
 
 
-    def read_data(self, Cz0, Cz1, zgal, add_fir=False):
+    def read_data(self, Cz0, Cz1, zgal, add_fir=False, idman=None):
         '''
         Input:
         ======
         Cz0, Cz1 : Normalization coeffs for grism spectra.
-        zgal     : Current redshift estimate.
+        zgal : Current redshift estimate.
+        idman : Manual input id.
 
         Note:
         =====

@@ -72,19 +72,15 @@ def run_gsf_template(inputs, fplt=0):
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True):
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
     '''
-    #########################################
-    # What do you need before running this?
-    #
-    # 1. Broadband photometry (ID + '_bb_ksirac.cat')
-    # 2. Moffat parameters
-    # (ID + '_PA' + PA + '_inp{0,1}_moffat.cat')
-    # 3. Extracted spectra
-    # (ID + '_PA' + PA + '_inp0_tmp3.cat')
-    #########################################
+    Purpose:
+    ========
+    Run all steps.
+
     '''
-    flag_suc = 0 #True
+    
+    flag_suc = 0
 
     ######################
     # Read from Input file
@@ -92,7 +88,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True):
     from .function import read_input
     inputs = read_input(parfile)
 
-    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman)
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
