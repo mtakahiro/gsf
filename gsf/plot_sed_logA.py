@@ -58,17 +58,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     lcb = '#4682b4' # line color, blue
 
-    nage = MB.nage #np.arange(0,len(age),1)
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
     ID   = MB.ID
     PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
-    try:
+    nage = MB.nage #np.arange(0,len(age),1)
+    '''try:
         age = MB.age_fix
     except:
         age  = MB.age
+    '''
     tau0 = MB.tau0 #[0.1,0.2,0.3]
 
     nstep_plot = 1
@@ -90,7 +91,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Fitting Results
     ##################
     DIR_FILT = MB.DIR_FILT
-    SFILT    = MB.filts
+    SFILT = MB.filts
 
     try:
         f_err = MB.ferr
@@ -334,7 +335,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     #####################################
     # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(MB,fall=0)
+    lib = fnc.open_spec_fits(MB,fall=0)
     lib_all = fnc.open_spec_fits(MB,fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
@@ -344,8 +345,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         lib_dust     = fnc.open_spec_dust_fits(MB,fall=0)
         lib_dust_all = fnc.open_spec_dust_fits(MB,fall=1)
 
-    II0   = nage #[0,1,2,3] # Number for templates
-    iimax = len(II0)-1
+    #II0   = nage #[0,1,2,3] # Number for templates
+    iimax = len(nage)-1
 
     #
     # This is for UVJ color time evolution.
@@ -356,8 +357,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     alp = .8
     for jj in range(len(age)):
-        ii = int(len(II0) - jj - 1) # from old to young templates.
-
+        ii = int(len(nage) - jj - 1) # from old to young templates.
         if jj == 0:
             y0, x0 = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
@@ -377,8 +377,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         try:
             ysum_wid = ysum * 0
             for kk in range(0,ii+1,1):
-                tt = int(len(II0) - kk - 1)
-                nn = int(len(II0) - ii - 1)
+                tt = int(len(nage) - kk - 1)
+                nn = int(len(nage) - ii - 1)
 
                 nZ = bfnc.Z2NZ(Z50[tt])
                 y0_wid, x0_wid = fnc.open_spec_fits_dir(tt, nZ, nn, AAv[0], zbes, A50[tt])
@@ -591,8 +591,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # From random chain;
     alp=0.02
-    for kk in range(0, mmax, 1):
-        nr = np.random.randint(len(samples['A0']))
+
+
+    for kk in range(0,mmax,1):
+        nr = np.random.randint(len(samples['A%d'%MB.aamin[0]]))
         try:
             Av_tmp = samples['Av'][nr]
         except:
@@ -608,7 +610,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         else:
             ferr_tmp = 1.0
 
-        for ss in range(len(age)):
+        for ss in MB.aamin:
             try:
                 AA_tmp = 10**samples['A'+str(ss)][nr]
             except:
@@ -624,13 +626,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 except:
                     ZZ_tmp = MB.ZFIX
 
-            if ss == 0:
+            if ss == MB.aamin[0]:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp = mod0_tmp
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
-
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
 

@@ -297,9 +297,9 @@ class Func:
             pp += -1
 
         coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
-        nr  = lib[:, 0]
-        xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-        yy  = lib[:, coln]
+        nr  = lib[:,0]
+        xx  = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        yy  = lib[:,coln]
 
         if self.dust_model == 0:
             yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)

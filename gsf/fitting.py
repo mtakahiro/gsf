@@ -120,8 +120,8 @@ class Mainbody():
         # Filter response curve directory, if bb catalog is provided.
         self.DIR_FILT = inputs['DIR_FILT']
         try:
-            self.filts    = inputs['FILTER']
-            self.filts    = [x.strip() for x in self.filts.split(',')]
+            self.filts = inputs['FILTER']
+            self.filts = [x.strip() for x in self.filts.split(',')]
         except:
             pass
 
@@ -155,9 +155,21 @@ class Mainbody():
 
         try:
             self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
-            self.nage = np.arange(0,len(self.age_fix),1)
+            aamin = []
+            print('\n')
+            print('##########################')
+            print('AGEFIX is found.\nAge will be fixed to:')
+            for age_tmp in self.age_fix:
+                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
+                aamin.append(ageind)
+                print('%6s Gyr'%(self.age[ageind]))
+            print('##########################')
+            self.aamin = aamin
         except:
-            #self.age_fix = []
+            aamin = []
+            for nn,age_tmp in enumerate(self.age):
+                aamin.append(nn)
+            self.aamin = aamin
             pass
 
         # SNlimit;
@@ -201,7 +213,7 @@ class Mainbody():
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-                con_z     = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
+                con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
                 self.delZ = 0.0001
 
@@ -291,7 +303,6 @@ class Mainbody():
         else:
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         '''
-
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
@@ -910,7 +921,7 @@ class Mainbody():
         fit_params = Parameters()
         f_Alog = True
         if f_Alog:
-            Amin = -10
+            Amin = -99
             Amax = 10
             Aini = 0
         else:
@@ -918,24 +929,14 @@ class Mainbody():
             Amax = 1e3
             Aini = 1
         
-        try:
-            age_fix = self.age_fix #inputs['AGEFIX']
-            aamin = []
-            print('\n')
-            print('##########################')
-            print('AGEFIX is found.\nAge will be fixed to:')
-            for age_tmp in age_fix:
-                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
-                aamin.append(ageind)
-                print('%6s Gyr'%(self.age[ageind]))
-            print('##########################')
+        if len(self.age) != len(self.aamin):
             for aa in range(len(self.age)):
-                if aa not in aamin:
+                if aa not in self.aamin:
                     fit_params.add('A'+str(aa), value=Amin, vary=False)
                     self.ndim -= 1                    
                 else:
                     fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
-        except:
+        else:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
                     fit_params.add('A'+str(aa), value=Amin, vary=False)
@@ -944,11 +945,10 @@ class Mainbody():
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
                     fit_params.add('A'+str(aa), value=Amin, vary=False)
                     self.ndim -= 1
-                    #self.age  = np.delete(self.age,aa,0)
-                    #self.nage = np.delete(self.nage,aa,0)                    
                 else:
                     fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
-        
+
+
         #####################
         # Dust attenuation
         #####################
@@ -960,13 +960,13 @@ class Mainbody():
                 Avmin = float(inputs['AVMIN'])
                 Avmax = float(inputs['AVMAX'])
                 if Avmin == Avmax:
-                    #Avmax += 0.001
                     fit_params.add('Av', value=(Avmax+Avmin)/2., vary=False)
                 else:
                     fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
             except:
                 Avmin = 0.0
                 Avmax = 4.0
+                Avini = (Avmax-Avmin)/2. # 0.5
                 Avini = 0.5
                 print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
                 fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
@@ -1036,7 +1036,7 @@ class Mainbody():
             # Add parameters;
             #######################
             out_keep = out #.copy()
-            f_add    = self.add_param(fit_params)
+            f_add = self.add_param(fit_params)
 
             # Then, minimize again.
             if f_add:

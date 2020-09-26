@@ -26,21 +26,21 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     Czrec1 = self.Cz1
 
     try:
-        z_cz   = self.z_cz
-        scl_cz0= self.scl_cz0
-        scl_cz1= self.scl_cz1
+        z_cz = self.z_cz
+        scl_cz0 = self.scl_cz0
+        scl_cz1 = self.scl_cz1
     except: # When redshiftfit is skipped.
-        z_cz   = np.asarray([self.zgal,self.zgal,self.zgal])
-        scl_cz0= np.asarray([self.Cz0,self.Cz0,self.Cz0])
-        scl_cz1= np.asarray([self.Cz1,self.Cz1,self.Cz1])
+        z_cz = np.asarray([self.zgal,self.zgal,self.zgal])
+        scl_cz0 = np.asarray([self.Cz0,self.Cz0,self.Cz0])
+        scl_cz1 = np.asarray([self.Cz1,self.Cz1,self.Cz1])
 
-    tau0= self.tau0
+    tau0 = self.tau0
     ID0 = self.ID
     PA0 = self.PA
-    try:
+    '''try:
         age = self.age_fix
-    except:
-        age  = self.age
+    except:'''
+    age  = self.age
     nage = self.nage
     Zall = self.Zall
 
@@ -59,10 +59,10 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     ##############################
     # Best parameters
-    Amc  = np.zeros((len(age),3), dtype='float32')
-    Ab   = np.zeros(len(age), dtype='float32')
-    Zmc  = np.zeros((len(age),3), dtype='float32')
-    Zb   = np.zeros(len(age), dtype='float32')
+    Amc  = np.zeros((len(age),3), dtype='float')
+    Ab   = np.zeros(len(age), dtype='float')
+    Zmc  = np.zeros((len(age),3), dtype='float')
+    Zb   = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
     if self.f_dust:
         Mdustmc = np.zeros(3, dtype='float32')
@@ -71,8 +71,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     f0 = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
     sedpar = f0[1]
-    ms = np.zeros(len(age), dtype='float32')
-    msmc0 = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float32')
+    ms = np.zeros(len(age), dtype='float')
+    try:
+        msmc0 = np.zeros(len(res.flatchain['A%d'%self.aamin[0]][burnin:]), dtype='float')
+    except:
+        msmc0 = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float')
 
     for aa in range(len(age)):
         try:
@@ -103,11 +106,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     msmc  = np.percentile(msmc0, [16,50,84])
 
     try:
-        Avb   = res.params['Av'].value
-        Avmc  = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
+        Avb = res.params['Av'].value
+        Avmc = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
     except:
-        Avb   = self.AVFIX
-        Avmc  = [self.AVFIX,self.AVFIX,self.AVFIX]
+        Avb = self.AVFIX
+        Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
 
     AAvmc = [Avmc]
     try:
