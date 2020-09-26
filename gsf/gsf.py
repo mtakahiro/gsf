@@ -16,6 +16,7 @@ from .maketmp_z0 import make_tmp_z0_bpass
 import timeit
 start = timeit.default_timer()
 
+
 def run_gsf_template(inputs, fplt=0):
     '''
     Purpose:
@@ -186,11 +187,10 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
         plot_mz(MB, MB.ID, MB.PA, MB.Zall, MB.age)
 
 
-
 if __name__ == "__main__":
     '''
     '''
     parfile = sys.argv[1]
-    fplt    = int(sys.argv[2])
+    fplt = int(sys.argv[2])
 
     run_gsf_all(parfile, fplt)
