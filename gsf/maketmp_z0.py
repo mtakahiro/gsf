@@ -68,7 +68,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     import fsps
 
     nimf = MB.nimf
-    Z    = MB.Zall #np.arange(-1.2,0.4249,0.05)
+    Z  = MB.Zall #np.arange(-1.2,0.4249,0.05)
     age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
     tau0 = MB.tau0 #[0.01,0.02,0.03],
     fneb = MB.fneb #0,
@@ -229,11 +229,15 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
 
     hdr['hierarch isochrone'] = '%s'%(sp.libraries[0].decode("utf-8"))
     hdr['library'] = '%s'%(sp.libraries[1].decode("utf-8"))
+    hdr['NIMF'] = nimf
 
     if fneb == 1:
         hdr['logU'] = logU
-    #for pp in range(len(tau0)):
-    #    hdr['Tau%d'%(pp)] = tau0[pp]
+
+    # Version;
+    import gsf
+    hdr['version'] = gsf.__version__
+
     for aa in range(len(age)):
         hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
     for aa in range(len(age)):
