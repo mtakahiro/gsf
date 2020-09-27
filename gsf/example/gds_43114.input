@@ -5,7 +5,7 @@
 #
 # params for MCMC
 #
-NMC		    1000 # No. of iteration in SED fitting.
+NMC		1000 # No. of iteration in SED fitting.
 NWALK		50 # No. of random walker in SED fitting.
 NMCZ		100 # No. of iteration in redshift fitting.
 NWALKZ		10 # No. of random walker in redshift fitting.
