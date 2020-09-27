@@ -19,7 +19,7 @@ from .function_igm import *
 lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=10.5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True):
+    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True, f_log_sfh=True):
 
     '''
     Purpose:
@@ -32,6 +32,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     lsfrl : Lower limit for SFR, in logMsun/yr
 
     '''
+
     import os.path
     import time
 
@@ -39,14 +40,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         import matplotlib
         matplotlib.use("Agg")
 
-    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
-    bfnc = MB.bfnc #Basic(Z)
+    fnc  = MB.fnc
+    bfnc = MB.bfnc
     ID   = MB.ID
     PA   = MB.PA
     Z    = MB.Zall
-    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    age  = MB.age
     nage = MB.nage
-    tau0 = MB.tau0 #[0.1,0.2,0.3]
+    tau0 = MB.tau0
     age = np.asarray(age)
 
     if Txmin > np.min(age):
@@ -68,8 +69,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #############
     # Plot.
     #############
-    fig = plt.figure(figsize=(8,2.8))
-    fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
+    if f_log_sfh:
+        fig = plt.figure(figsize=(8,2.8))
+        fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
+    else:
+        fig = plt.figure(figsize=(8.2,2.8))
+        fig.subplots_adjust(top=0.88, bottom=0.18, left=0.1, right=0.99, hspace=0.15, wspace=0.3)
     ax1 = fig.add_subplot(131)
     ax2 = fig.add_subplot(132)
     #ax3 = fig.add_subplot(223)
@@ -385,15 +390,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             msize[aa] = 150 * A50[aa]/Asum
 
     conA = (msize>=0)
-    ax1.fill_between(age[conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
-    #ax1.errorbar(age[conA], SFp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[SFp[:,1][conA]-SFp[:,0][conA], SFp[:,2][conA]-SFp[:,1][conA]], linestyle='-', color='k', lw=0.5, marker='')
-
-    '''
-    for ii in range(len(age[conA])):
-        aa = len(age) -1 - ii
-        if msize[aa]>0:
-            ax1.scatter(age[aa], SFp[aa,1], marker='.', c='k', s=msize[aa])
-    '''
+    if f_log_sfh:
+        ax1.fill_between(age[conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+    else:
+        ax1.fill_between(age[conA], 10**SFp[:,0][conA], 10**SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
 
     if f_fill:
         tbnd = 0.0001
@@ -401,10 +401,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             agebin = np.arange(age[aa]-delTl[aa]/1e9, age[aa]+delTu[aa]/1e9, delTu[aa]/1e10)
             #ax1.fill_between(agebin, SFp[aa,2]*0-2, SFp[aa,2], color=col[aa], alpha=0.5, zorder=-2, lw=0)
             tbnd = age[aa]+delT[aa]/2./1e9
-            ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
-                yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
-            if msize[aa]>0:
-                ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+            
+            if f_log_sfh:
+                ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
+                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
+                if msize[aa]>0:
+                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+            else:
+                ax1.errorbar(age[aa], 10**SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
+                    yerr=[[10**SFp[aa,1]-10**SFp[aa,0]], [10**SFp[aa,2]-10**SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
+                if msize[aa]>0:
+                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
 
     #############
     # Get SFMS in log10;
@@ -423,15 +430,20 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     # Plot MS?
     if f_SFMS:
-        ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3)
-        ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5)
+        if f_log_sfh:
+            ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3)
+            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5)
+        else:
+            ax1.fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3)
+            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5)
 
     #
     # Mass in each bin
     #
     ax2label = ''
     ax2.fill_between(age[conA], ACp[:,0][conA], ACp[:,2][conA], linestyle='-', color='k', alpha=0.3)
-    ax2.errorbar(age[conA], ACp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label)
+    ax2.errorbar(age[conA], ACp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], \
+        yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label, zorder=1)
     #ax2.scatter(age[conA], ACp[:,1][conA], marker='.', c='k', s=msize)
 
     if f_fill:
@@ -444,12 +456,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             tbnd = age[aa]+delT[aa]/2./1e9
             mtmp = ACp[aa,1]
             if msize[aa]>0:
-                ax2.scatter(age[aa], ACp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+                ax2.scatter(age[aa], ACp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=2)
 
 
     y2min = np.max([lmmin,np.min(ACp[:,0][conA])])
     y2max = np.max(ACp[:,2][conA])+0.05
-
     if np.abs(y2max-y2min) < 0.2:
         y2min -= 0.2
 
@@ -458,12 +469,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #
     ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.3)
     #ax4.scatter(age[conA], ZCp[:,1][conA], marker='.', c='k', s=msize[conA])
-    ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
+    ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5, zorder=1)
     
     for ii in range(len(age)):
         aa = len(age) -1 - ii
         if msize[aa]>0:
-            ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+            ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=2)
 
 
     fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
@@ -479,22 +490,53 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #############
     # Axis
     #############
-    ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
+    # For redshift
+    if zbes<4:
+        if zbes<2:
+            zred  = [zbes, 2, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
+        elif zbes<2.5:
+            zred  = [zbes, 2.5, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
+        elif zbes<3.:
+            zred  = [zbes, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 3, 6]
+        else:
+            zred  = [zbes, 6]
+            zredl = ['$z_\mathrm{obs.}$', 6]
+    elif zbes<6:
+        zred  = [zbes, 6, 7, 9]
+        zredl = ['$z_\mathrm{obs.}$', 6, 7, 9]
+    else:
+        zred  = [zbes, 12]
+        zredl = ['$z_\mathrm{obs.}$', 12]
+
+    Tzz = np.zeros(len(zred), dtype='float32')
+    for zz in range(len(zred)):
+        Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
+        if Tzz[zz] < 0.01:
+            Tzz[zz] = 0.01
 
     lsfru = 2.8
     if np.max(SFp[:,2])>2.8:
         lsfru = np.max(SFp[:,2])+0.1
 
+    if f_log_sfh:
+        ax1.set_ylim(lsfrl, lsfru)
+        ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
+        ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
+    else:
+        ax1.set_ylim(0, 10**lsfru)
+        ax1.set_ylabel('$\dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
+        ax1.plot(Tzz, Tzz*0+10**lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
+
     ax1.set_xlim(Txmin, Txmax)
-    ax1.set_ylim(lsfrl, lsfru)
     ax1.set_xscale('log')
 
     ax2.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
-
     ax2.set_xlim(Txmin, Txmax)
     ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
-
     ax2.text(np.min(age), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
         %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9)
 
@@ -598,36 +640,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)
 
-    # For redshift
-    if zbes<4:
-        if zbes<2:
-            zred  = [zbes, 2, 3, 6]
-            zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
-        elif zbes<2.5:
-            zred  = [zbes, 2.5, 3, 6]
-            zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
-        elif zbes<3.:
-            zred  = [zbes, 3, 6]
-            zredl = ['$z_\mathrm{obs.}$', 3, 6]
-        else:
-            zred  = [zbes, 6]
-            zredl = ['$z_\mathrm{obs.}$', 6]
-    elif zbes<6:
-        zred  = [zbes, 6, 7, 9]
-        zredl = ['$z_\mathrm{obs.}$', 6, 7, 9]
-    else:
-        zred  = [zbes, 12]
-        zredl = ['$z_\mathrm{obs.}$', 12]
-
-    Tzz   = np.zeros(len(zred), dtype='float32')
-    for zz in range(len(zred)):
-        Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
-        if Tzz[zz] < 0.01:
-            Tzz[zz] = 0.01
-
-    #ax3t.set_xscale('log')
-    #ax3t.set_xlim(Txmin, Txmax)
-
     ax1.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax2.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
@@ -650,7 +662,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #ax3.yaxis.labelpad = -2
     ax4.yaxis.labelpad = -2
 
-
     ax1t.set_xticklabels(zredl[:])
     ax1t.set_xticks(Tzz[:])
     ax1t.tick_params(axis='x', labelcolor='k')
@@ -669,7 +680,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax4t.xaxis.set_ticks_position('none')
     ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     ax2.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     # Save
