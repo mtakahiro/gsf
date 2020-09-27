@@ -63,7 +63,8 @@ An example data set is stored in ./gsf/examples/
     python run_gsf.py test.input <flag>
 
 
-If one needs a new config file;
+If one needs a new config file
+
 .. code-block:: bash
 
     python get_configfile.py
