@@ -18,7 +18,7 @@ from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=10.5, fil_path='./FILT/', \
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True, f_log_sfh=True):
 
     '''
@@ -452,7 +452,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         for ii in range(len(age)):
             aa = len(age) -1 - ii
             agebin = np.arange(0, age[aa], delTu[aa]/1e10)
-            ax2.fill_between(agebin, mtmp, ACp[aa,1], color=col[aa], alpha=0.5, zorder=-2, lw=0)
+            #ax2.fill_between(agebin, mtmp, ACp[aa,1], color=col[aa], alpha=0.5, zorder=-2, lw=0)
+            ax2.errorbar(age[aa], ACp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], \
+                yerr=[[ACp[aa,1]-ACp[aa,0]],[ACp[aa,2]-ACp[aa,1]]], linestyle='-', color=col[aa], lw=0.5, zorder=1)
+
             tbnd = age[aa]+delT[aa]/2./1e9
             mtmp = ACp[aa,1]
             if msize[aa]>0:
