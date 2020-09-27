@@ -16,6 +16,7 @@ from .maketmp_z0 import make_tmp_z0_bpass
 import timeit
 start = timeit.default_timer()
 
+
 def run_gsf_template(inputs, fplt=0):
     '''
     Purpose:
@@ -72,19 +73,15 @@ def run_gsf_template(inputs, fplt=0):
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True):
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
     '''
-    #########################################
-    # What do you need before running this?
-    #
-    # 1. Broadband photometry (ID + '_bb_ksirac.cat')
-    # 2. Moffat parameters
-    # (ID + '_PA' + PA + '_inp{0,1}_moffat.cat')
-    # 3. Extracted spectra
-    # (ID + '_PA' + PA + '_inp0_tmp3.cat')
-    #########################################
+    Purpose:
+    ========
+    Run all steps.
+
     '''
-    flag_suc = 0 #True
+    
+    flag_suc = 0
 
     ######################
     # Read from Input file
@@ -92,7 +89,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
     from .function import read_input
     inputs = read_input(parfile)
 
-    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman)
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
@@ -150,15 +147,19 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
 
 
     if fplt <= 3 and flag_suc != -1:
-        from .plot_sfh import plot_sfh
-        from .plot_sed import plot_sed
-        
-        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=100,
+        if f_Alog:
+            from .plot_sfh_logA import plot_sfh
+            from .plot_sed_logA import plot_sed            
+        else:
+            from .plot_sfh import plot_sfh
+            from .plot_sed import plot_sed
+
+        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=300,
         inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
-        figpdf=False, save_sed=True, inputs=MB.inputs, mmax=30,
-        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True)
+        figpdf=False, save_sed=True, inputs=MB.inputs, mmax=300,
+        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True, f_fill=True)
 
 
     if fplt == 4:
@@ -186,11 +187,10 @@ def run_gsf_all(parfile, fplt, cornerplot=True):
         plot_mz(MB, MB.ID, MB.PA, MB.Zall, MB.age)
 
 
-
 if __name__ == "__main__":
     '''
     '''
     parfile = sys.argv[1]
-    fplt    = int(sys.argv[2])
+    fplt = int(sys.argv[2])
 
     run_gsf_all(parfile, fplt)

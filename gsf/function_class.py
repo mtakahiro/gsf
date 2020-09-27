@@ -24,7 +24,7 @@ class Func:
         self.age  = MB.age
         self.AA   = MB.nage
         self.tau0 = MB.tau0
-        self.MB   = MB
+        self.MB = MB
 
         self.dust_model = dust_model
         self.DIR_TMP    = MB.DIR_TMP
@@ -209,12 +209,12 @@ class Func:
     def get_template(self, lib, Amp=1.0, T=1.0, Av=0.0, Z=0.0, zgal=1.0, f_bb=False):
         '''
         Purpose:
-        =========
+        ========
         Gets an element template given a set of parameters.
         Not necessarily the most efficient way, but easy to use.
 
         Input:
-        =========
+        ======
         lib : library dictionary.
         Amp : Amplitude of template. Note that each template has Lbol = 1e10Lsun.
         T   : Age, in Gyr.
@@ -224,7 +224,7 @@ class Func:
         f_bb: bool, to calculate bb photometry for the spectrum requested.
 
         Return:
-        ========
+        =======
         flux, wavelength : Flux in Fnu. Wave in AA.
         lcen, lflux, if f_bb==True.
 
@@ -297,9 +297,9 @@ class Func:
             pp += -1
 
         coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
-        nr  = lib[:, 0]
-        xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-        yy  = lib[:, coln]
+        nr  = lib[:,0]
+        xx  = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        yy  = lib[:,coln]
 
         if self.dust_model == 0:
             yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
@@ -329,8 +329,10 @@ class Func:
 
         return A00 * yyd_sort, xxd_sort
 
-    def tmp04(self, par, zgal, lib):
+    def tmp04(self, par, zgal, lib, f_Alog=True, Amin=-10):
         '''
+        Purpose:
+        ========
         # Making model template with a given param set.
         # Also dust attenuation.
         '''
@@ -360,20 +362,19 @@ class Func:
             except:
                 # This is in the case with ZEVO=0.
                 Z   = par['Z0']
-            A00 = par['A'+str(aa)]
+
+            # Is A in logspace?
+            if f_Alog:
+                if par['A'+str(aa)]>Amin:
+                    A00 = 10**par['A'+str(aa)]
+                else:
+                    A00 = 0
+            else:
+                A00 = par['A'+str(aa)]
+
             NZ  = bfnc.Z2NZ(Z)
             coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
-            '''
-            # Just debbug purpose...
-            if len(lib[0,:])<coln:
-                print('################################################')
-                print('Something is wrong in tmp04 in function_class.py')
-                print('aa = %d out of '%(aa),AA)
-                print('NZ = %d out of '%(NZ),ZZ)
-                print('pp = %d'%(pp))
-                print('2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa must be <= %d'%(len(lib[0,:])))
-                print('################################################')
-            '''
+
             if aa == 0:
                 nr  = lib[:, 0]
                 xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
@@ -420,6 +421,7 @@ class Func:
 
         return yyd_sort, xxd_sort
 
+
     def tmp04_dust(self, par, zgal, lib):
         '''
         # Making model template with a given param setself.
@@ -453,7 +455,8 @@ class Func:
             yy_s = yy
         return yy_s, xx_s
 
-    def tmp04_val(self, par, zgal, lib):
+
+    def tmp04_val(self, par, zgal, lib, f_Alog=True, Amin=-10):
         '''
         '''
         tau0= self.tau0 #[0.01,0.02,0.03]
@@ -481,7 +484,16 @@ class Func:
             except:
                 # This is in the case with ZEVO=0.
                 Z = par.params['Z0'].value
-            A00 = par.params['A'+str(aa)].value
+
+            # Is A in logspace?
+            if f_Alog:
+                if par.params['A'+str(aa)].value>Amin:
+                    A00 = 10**par.params['A'+str(aa)].value
+                else:
+                    A00 = 0
+            else:
+                A00 = par.params['A'+str(aa)].value
+
             NZ  = bfnc.Z2NZ(Z)
 
             #coln = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.

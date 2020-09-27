@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -20,6 +19,7 @@ from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl
 from .zfit import check_redshift
 from .plot_sed import *
 from .writing import get_param
+from .function_class import Func
 
 ############################
 py_v = (sys.version_info[0])
@@ -39,11 +39,10 @@ fLW = np.zeros(len(LW), dtype='int')
 
 class Mainbody():
 
-    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
-        self.update_input(inputs)
+    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
+        self.update_input(inputs, idman=idman)
 
-
-    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None):
+    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         '''
         INPUT:
         ======
@@ -58,7 +57,7 @@ class Mainbody():
         self.inputs = inputs
         self.c = c
         self.Mpc_cm = Mpc_cm
-        self.m0set  = m0set
+        self.m0set = m0set
         self.pixelscale = pixelscale
         self.Lsun = Lsun #erg s-1
 
@@ -68,9 +67,22 @@ class Mainbody():
         else:
             self.cosmo = cosmo
 
-        self.ID   = inputs['ID']
-        self.PA   = inputs['PA']
-        self.zgal = float(inputs['ZGAL'])
+        if idman != None:
+            self.ID = idman
+        else:
+            self.ID = inputs['ID']
+        try:
+            self.PA = inputs['PA']
+        except:
+            self.PA = '00'
+        try:
+            self.zgal = float(inputs['ZGAL'])
+        except:
+            CAT_BB = inputs['CAT_BB']
+            fd_cat = ascii.read(CAT_BB)
+            iix = np.where(fd_cat['id'] == int(self.ID))
+            self.zgal = float(fd_cat['redshift'][iix])
+
         self.Cz0  = float(inputs['CZ0'])
         self.Cz1  = float(inputs['CZ1'])
 
@@ -108,8 +120,8 @@ class Mainbody():
         # Filter response curve directory, if bb catalog is provided.
         self.DIR_FILT = inputs['DIR_FILT']
         try:
-            self.filts    = inputs['FILTER']
-            self.filts    = [x.strip() for x in self.filts.split(',')]
+            self.filts = inputs['FILTER']
+            self.filts = [x.strip() for x in self.filts.split(',')]
         except:
             pass
 
@@ -143,9 +155,21 @@ class Mainbody():
 
         try:
             self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
-            self.nage = np.arange(0,len(self.age_fix),1)
+            aamin = []
+            print('\n')
+            print('##########################')
+            print('AGEFIX is found.\nAge will be fixed to:')
+            for age_tmp in self.age_fix:
+                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
+                aamin.append(ageind)
+                print('%6s Gyr'%(self.age[ageind]))
+            print('##########################')
+            self.aamin = aamin
         except:
-            #self.age_fix = []
+            aamin = []
+            for nn,age_tmp in enumerate(self.age):
+                aamin.append(nn)
+            self.aamin = aamin
             pass
 
         # SNlimit;
@@ -189,7 +213,7 @@ class Mainbody():
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-                con_z     = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
+                con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
                 self.delZ = 0.0001
 
@@ -215,9 +239,6 @@ class Mainbody():
             self.ZEVOL = 1
             self.ndim = int(len(self.nage) * 2 + self.nAV) # age, Z, and Av.
             print('Metallicity evolution is on.')
-            if int(inputs['ZMC']) == 1:
-                self.ndim += 1
-            print('No of params are : %d'%(self.ndim))
         else:
             self.ZEVOL = 0
             print('Metallicity evolution is off.')
@@ -283,26 +304,26 @@ class Mainbody():
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         '''
 
-
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
         LW  = LW0
         return LW, fLW
 
 
-    def read_data(self, Cz0, Cz1, zgal, add_fir=False):
+    def read_data(self, Cz0, Cz1, zgal, add_fir=False, idman=None):
         '''
         Input:
         ======
         Cz0, Cz1 : Normalization coeffs for grism spectra.
-        zgal     : Current redshift estimate.
+        zgal : Current redshift estimate.
+        idman : Manual input id.
 
         Note:
         =====
         Can be used for any SFH
 
         '''
-        print('READ data with',Cz0, Cz1, zgal)
+        print('READ data with', Cz0, Cz1, zgal)
 
         ##############
         # Spectrum
@@ -355,7 +376,6 @@ class Mainbody():
         fy   = np.append(fy01,fy2)
         ey   = np.append(ey01,ey2)
 
-
         wht  = 1./np.square(ey)
         con_wht = (ey<0)
         wht[con_wht] = 0
@@ -400,6 +420,7 @@ class Mainbody():
             wht = nrd_yyd_sort[:,4]
             wht2= nrd_yyd_sort[:,5]
 
+
         sn   = fy/ey
         dict = {}
         dict = {'NR':NR, 'x':xx, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
@@ -441,25 +462,25 @@ class Mainbody():
             prior = zspace[:] * 0 + 1.0
 
         # Observed data points;
-        NR   = dict['NR']
+        NR = dict['NR']
         con0 = (NR<1000)
-        fy0  = dict['fy'][con0] #* Cz0s
-        ey0  = dict['ey'][con0] #* Cz0s
-        x0   = dict['x'][con0]
+        fy0 = dict['fy'][con0] #* Cz0s
+        ey0 = dict['ey'][con0] #* Cz0s
+        x0  = dict['x'][con0]
         con1 = (NR>=1000) & (NR<10000)
-        fy1  = dict['fy'][con1] #* Cz1s
-        ey1  = dict['ey'][con1] #* Cz1s
-        x1   = dict['x'][con1]
+        fy1 = dict['fy'][con1] #* Cz1s
+        ey1 = dict['ey'][con1] #* Cz1s
+        x1  = dict['x'][con1]
         con2 = (NR>=10000) # BB
-        fy2  = dict['fy'][con2]
-        ey2  = dict['ey'][con2]
-        x2   = dict['x'][con2]
+        fy2 = dict['fy'][con2]
+        ey2 = dict['ey'][con2]
+        x2 = dict['x'][con2]
 
         fy01 = np.append(fy0,fy1)
         fcon = np.append(fy01,fy2)
         ey01 = np.append(ey0,ey1)
-        eycon= np.append(ey01,ey2)
-        x01  = np.append(x0,x1)
+        eycon = np.append(ey01,ey2)
+        x01 = np.append(x0,x1)
         xobs = np.append(x01,x2)
 
         wht = 1./np.square(eycon)
@@ -532,6 +553,9 @@ class Mainbody():
 
         '''
         import scipy.interpolate as interpolate
+
+        # NMC for zfit
+        self.nmc_cz = self.inputs['NMCZ']
 
         # For z prior.
         zliml  = self.zgal - 0.5
@@ -751,7 +775,7 @@ class Mainbody():
             ax1.set_xlabel('Redshift')
             ax1.set_ylabel('$dn/dz$')
             ax1.legend(loc=0)
-            plt.savefig('zprob_' + self.ID + '_PA' + seld.PA + '.pdf', dpi=300)
+            plt.savefig('zprob_' + self.ID + '_PA' + self.PA + '.pdf', dpi=300)
             plt.close()
         #else:
         except:
@@ -800,7 +824,6 @@ class Mainbody():
         return f_add
 
 
-    #def main(self, zgal, flag_m, Cz0, Cz1, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False, skip_fitz=False):
         '''
         Input:
@@ -899,31 +922,35 @@ class Mainbody():
         ###############################
         agemax = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
-        try:
-            age_fix = self.age_fix #inputs['AGEFIX']
-            aamin = []
-            print('\n')
-            print('##########################')
-            print('AGEFIX is found.\nAge will be fixed to:')
-            for age_tmp in age_fix:
-                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
-                aamin.append(ageind)
-                print('%6s Gyr'%(self.age[ageind]))
-            print('##########################')
+        f_Alog = True
+        if f_Alog:
+            Amin = -99
+            Amax = 10
+            Aini = 0
+        else:
+            Amin = 0
+            Amax = 1e3
+            Aini = 1
+        
+        if len(self.age) != len(self.aamin):
             for aa in range(len(self.age)):
-                if aa not in aamin:
-                    fit_params.add('A'+str(aa), value=0, vary=False)
+                if aa not in self.aamin:
+                    fit_params.add('A'+str(aa), value=Amin, vary=False)
+                    self.ndim -= 1                    
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
-        except:
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+        else:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=Amin, vary=False)
+                    self.ndim -= 1
                 elif self.age[aa]>agemax:
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=Amin, vary=False)
+                    self.ndim -= 1
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+
 
         #####################
         # Dust attenuation
@@ -936,13 +963,13 @@ class Mainbody():
                 Avmin = float(inputs['AVMIN'])
                 Avmax = float(inputs['AVMAX'])
                 if Avmin == Avmax:
-                    #Avmax += 0.001
                     fit_params.add('Av', value=(Avmax+Avmin)/2., vary=False)
                 else:
                     fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
             except:
                 Avmin = 0.0
                 Avmax = 4.0
+                Avini = (Avmax-Avmin)/2. # 0.5
                 Avini = 0.5
                 print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
                 fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
@@ -972,7 +999,8 @@ class Mainbody():
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'],dict['ey'],dict['wht2'],self.ID,self.PA)
+        out,chidef,Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
+            dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
 
         # Best fit
         csq  = out.chisqr
@@ -1011,7 +1039,7 @@ class Mainbody():
             # Add parameters;
             #######################
             out_keep = out #.copy()
-            f_add    = self.add_param(fit_params)
+            f_add = self.add_param(fit_params)
 
             # Then, minimize again.
             if f_add:
@@ -1043,10 +1071,10 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'],dict['ey'],dict['wht2'],self.f_dust], f_disp=self.f_disp, \
-                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
-                )
-                #moves=emcee.moves.DEMove(sigma=1e-05, gamma0=None))
+            
+            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
+                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+                
             print('######################')
             print('### Starting emcee ###')
             print('######################')
@@ -1062,7 +1090,7 @@ class Mainbody():
 
             print('No. of CPU is set to %d'%(ncpu))
             start_mc = timeit.default_timer()
-            res  = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+            res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
 
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
@@ -1091,9 +1119,14 @@ class Mainbody():
             # MCMC corner plot.
             ####################
             if cornerplot:
+                val_truth = []
+                for par in res.var_names:
+                    val_truth.append(res.params[par].value)
+
                 fig1 = corner.corner(res.flatchain, labels=res.var_names, \
                 label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
-                title_kwargs={"fontsize": 14}, truths=list(res.params.valuesdict().values()), \
+                title_kwargs={"fontsize": 14}, \
+                truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
                 fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.pdf')
@@ -1106,7 +1139,7 @@ class Mainbody():
             # Then writing;
             start_mc = timeit.default_timer()
             get_param(self, res, fitc, tcalc=tcalc, burnin=burnin)
-            stop_mc  = timeit.default_timer()
+            stop_mc = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
 
             return False
@@ -1164,15 +1197,14 @@ class Mainbody():
                 return -1
 
 
-
     def quick_fit(self, zgal, Cz0, Cz1, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
         '''
         Purpose:
-        ==========
+        ========
         Fit input data with a prepared template library, to get a chi-min result.
 
         Input:
-        ==========
+        ======
         ferr   : For error parameter
         zgal   : Input redshift.
         sigz (float): confidence interval for redshift fit.
@@ -1251,6 +1283,15 @@ class Mainbody():
         ###############################
         # Add parameters
         ###############################
+        f_Alog = True
+        if f_Alog:
+            Amin = -10
+            Amax = 10
+            Aini = 0
+        else:
+            Amin = 0
+            Amax = 1e3
+            Aini = 1
         agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
         try:
@@ -1267,18 +1308,18 @@ class Mainbody():
             print('##########################')
             for aa in range(len(self.age)):
                 if aa not in aamin:
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
         except:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 elif self.age[aa]>agemax:
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                    fit_params.add('A'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=1, min=0, max=1e3)
+                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
 
         #####################
         # Dust attenuation
@@ -1322,7 +1363,8 @@ class Mainbody():
         ####################################
         # Get initial parameters
         print('Start quick fit;')
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
+        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,\
+            dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
 
         # Best fit
         csq  = out.chisqr

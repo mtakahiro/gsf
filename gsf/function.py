@@ -18,7 +18,7 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = None, printEnd = "\r", emojis = ['🥚','🐣','🐥','🦆']):
+def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", emojis=['']):
     '''
     Call in a loop to create terminal progress bar
     @params:
@@ -31,6 +31,8 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     '''
+    #, emojis=['🥚','🐣','🐥','🦆']
+
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     if fill == None:
         if float(percent) < 33:
@@ -41,7 +43,6 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
             fill = emojis[2]
         else:
             fill = emojis[3]
-
 
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
@@ -90,8 +91,8 @@ def read_input(parfile):
         else:
             cols = str.split(line)
             if len(cols)>0 and cols[0] != '#':
-                    input0.append(cols[0])
-                    input1.append(cols[1])
+                input0.append(cols[0])
+                input1.append(cols[1])
     file.close()
     inputs = {}
     for i in range(len(input0)):
@@ -117,11 +118,12 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=1e5, Zbest=0):
+def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=1e5, Zbest=0, f_keep=False):
     '''
-    #
-    # Get initial parameters at various Z;
-    #
+    Purpose:
+    ========
+    Get initial parameters at various Z;
+    
     '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 
@@ -129,7 +131,8 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
         print('Not enough data for quick fit. Exiting.')
         return False
 
-    fwz = open('Z_' + ID0 + '_PA' + PA0 + '.cat', 'w')
+    file = 'Z_' + ID0 + '_PA' + PA0 + '.cat'
+    fwz = open(file, 'w')
     fwz.write('# ID Zini chi/nu AA Av Zbest\n')
     fwz.write('# FNELD = %d\n' % fneld)
 
@@ -232,6 +235,10 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
                 out    = out_tmp
 
     fwz.close()
+
+    if not f_keep:
+        os.system('rm %s'%file)
+    
     return out,chidef,Zbest
 
 
