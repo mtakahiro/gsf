@@ -5,4 +5,3 @@ lmfit==1.0.0
 emcee==3.0.2
 corner==2.0.1
 git+https://github.com/dfm/python-fsps
-git+https://github.com/mtakahiro/gsf#1.2

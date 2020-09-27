@@ -56,6 +56,6 @@ dependencies:
   - zlib=1.2.11=h0b31af3_1006
   - pip:
     - fsps
-    - git+https://github.com/mtakahiro/gsf#1.2
+    - git+https://github.com/mtakahiro/gsf#1.3.1
 prefix: /Users/tmorishita/anaconda3/envs/gsf
 
