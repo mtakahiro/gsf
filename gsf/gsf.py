@@ -99,7 +99,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
     #
     MB.fnc  = Func(MB) # Set up the number of Age/ZZ
     MB.bfnc = Basic(MB)
-
+    
     #
     # Make templates based on input redsfift.
     #
@@ -155,13 +155,13 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
             from .plot_sed import plot_sed
 
         plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=300,
-        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True)
+        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True, f_fill=True)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=False, save_sed=True, inputs=MB.inputs, mmax=300,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True, f_fill=True)
 
-
+    '''
     if fplt == 4:
         from .plot_sfh import get_evolv
         get_evolv(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP)
@@ -170,10 +170,10 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
     if fplt == 5:
         from .plot_sfh import plot_evolv
         plot_evolv(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, nmc=10)
-
+    '''
 
     if fplt == 6:
-        from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
+        from .plot_sed_logA import plot_corner_physparam_frame,plot_corner_physparam_summary
         plot_corner_physparam_summary(MB)
         #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
         #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)

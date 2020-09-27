@@ -150,8 +150,23 @@ class Mainbody():
             pass
 
         # Age
-        self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
-        self.nage = np.arange(0,len(self.age),1)
+        try:
+            self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
+            self.nage = np.arange(0,len(self.age),1)
+        except:
+            try:
+                self.delage = float(inputs['DELAGE'])
+            except:
+                self.delage = 0.1
+            try:
+                self.agemax = float(inputs['AGEMAX'])
+                self.agemin = float(inputs['AGEMIN'])
+            except:
+                self.agemax = 14.0
+                self.agemin = 0.003
+            logage = np.arange(np.log10(self.agemin), np.log10(self.agemax), self.delage)
+            self.age = 10**logage
+            self.nage = np.arange(0,len(self.age),1)
 
         try:
             self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
@@ -294,7 +309,6 @@ class Mainbody():
         except:
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
-
 
         '''
         # Read Observed Data
@@ -1045,14 +1059,16 @@ class Mainbody():
             if f_add:
                 if self.fneld == 1:
                     fit_name = 'nelder'
-                else:
+                elif self.fneld == 0:
                     fit_name = 'powell'
+                elif self.fneld == 2:
+                    fit_name = 'leastsq'
                 out = minimize(class_post.residual, fit_params, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust), method=fit_name) # It needs to define out with redshift constrain.
                 print(fit_report(out))
 
                 # Fix params to what we had before.
                 out.params['zmc'].value = self.zgal
-                out.params['Av'].value  = out_keep.params['Av'].value
+                out.params['Av'].value = out_keep.params['Av'].value
                 for aa in range(len(self.age)):
                     out.params['A'+str(aa)].value = out_keep.params['A'+str(aa)].value
                     try:

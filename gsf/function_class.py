@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import scipy.interpolate as interpolate
+import asdf
 
 from .function import *
 from .basic_func import Basic
@@ -18,22 +19,22 @@ class Func:
         '''
         dust_model (int) : 0 for Calzetti.
         '''
-        self.ID   = MB.ID
-        self.PA   = MB.PA
-        self.ZZ   = MB.Zall
-        self.age  = MB.age
-        self.AA   = MB.nage
+        self.ID = MB.ID
+        self.PA = MB.PA
+        self.ZZ = MB.Zall
+        self.age = MB.age
+        self.AA = MB.nage
         self.tau0 = MB.tau0
         self.MB = MB
 
         self.dust_model = dust_model
-        self.DIR_TMP    = MB.DIR_TMP
+        self.DIR_TMP = MB.DIR_TMP
 
         if MB.f_dust:
             self.Temp = MB.Temp
 
         try:
-            self.filts   = MB.filts
+            self.filts = MB.filts
             self.DIR_FIL = MB.DIR_FILT
         except:
             pass
@@ -57,10 +58,16 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
+
+        # ASDF;
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
         if fall == 0:
             app = ''
+            hdu0 = self.af['spec']
         elif fall == 1:
             app = 'all_'
+            hdu0 = self.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
         for pp in range(len(tau0)):
@@ -68,23 +75,21 @@ class Func:
                 Z   = ZZ[zz]
                 NZ  = bfnc.Z2NZ(Z)
                 if zz == 0 and pp == 0:
-                    f0   = fits.open(DIR_TMP + 'spec_' + app + ID0 + '_PA' + PA0 + '.fits')
-                    hdu0 = f0[1]
-                    nr   = hdu0.data['colnum']
-                    xx   = hdu0.data['wavelength']
+                    #f0   = fits.open(DIR_TMP + 'spec_' + app + ID0 + '_PA' + PA0 + '.fits')
+                    #hdu0 = f0[1]
+                    nr = hdu0['colnum']
+                    xx = hdu0['wavelength']
 
-                    lib  = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float32')
+                    lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float32')
 
                     lib[:,0] = nr[:]
                     lib[:,1] = xx[:]
 
                 for aa in range(len(AA)):
                     coln = int(2 + aa)
-
                     colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
                     colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
-
-                    lib[:,colnall] = hdu0.data[colname]
+                    lib[:,colnall] = hdu0[colname]
 
         return lib
 
@@ -103,16 +108,19 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
+        # ASDF;
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
         if fall == 0:
             app = ''
+            hdu0 = self.af['spec_dust']
         elif fall == 1:
             app = 'all_'
+            hdu0 = self.af['spec_dust_full']
 
-        DIR_TMP = self.DIR_TMP #'./templates/'
-        f0   = fits.open(DIR_TMP + 'spec_dust_' + app + ID0 + '_PA' + PA0 + '.fits')
-        hdu0 = f0[1]
-        nr   = hdu0.data['colnum']
-        xx   = hdu0.data['wavelength']
+        DIR_TMP = self.DIR_TMP
+        nr   = hdu0['colnum']
+        xx   = hdu0['wavelength']
 
         lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float32')
         lib[:,0] = nr[:]
@@ -142,22 +150,30 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
+
+        # ASDF;
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
         app = 'all'
+        hdu0 = self.af['spec_full']
         DIR_TMP = self.DIR_TMP #'./templates/'
 
         #for pp in range(len(tau0)):
         pp = 0
         zz = nz
-        f0 = fits.open(DIR_TMP + 'spec_' + app + '.fits')
-        hdu0 = f0[1]
+        #f0 = fits.open(DIR_TMP + 'spec_' + app + '.fits')
+        #hdu0 = f0[1]
 
         # Luminosity
-        f0    = fits.open(DIR_TMP + 'ms.fits')
-        mshdu = f0[1]
+        #f0    = fits.open(DIR_TMP + 'ms.fits')
+        #mshdu = f0[1]
+        mshdu = self.af0['ML']
         Ls    = np.zeros(len(AA), dtype='float32')
-        Ls[:] = mshdu.data['Ls_'+str(zz)][:]
+        #Ls[:] = mshdu.data['Ls_'+str(zz)][:]
+        Ls[:] = self.af0['Ls']
 
-        xx   = hdu0.data['wavelength'] # RF;
+
+        xx   = hdu0['wavelength'] # RF;
         nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
         lib  = np.zeros((len(nr), 2+1), dtype='float32')
@@ -174,7 +190,7 @@ class Func:
         if aa >0 and aa == kk:
             colname = 'fspec_' + str(zz) + '_0' + '_' + str(pp)# + '_0'
 
-        yy0 = hdu0.data[colname]/Ls[aa]
+        yy0 = hdu0[colname]/Ls[aa]
         yy  = flamtonu(xx, yy0)
         lib[:,2] = yy[:]
 
@@ -230,8 +246,8 @@ class Func:
 
         '''
 
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
+        bfnc = self.MB.bfnc
+        DIR_TMP = self.MB.DIR_TMP 
         NZ  = bfnc.Z2NZ(Z)
 
         pp0 = np.random.uniform(low=0, high=len(self.tau0), size=(1,))
@@ -328,6 +344,7 @@ class Func:
         xxd_sort     = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
+
 
     def tmp04(self, par, zgal, lib, f_Alog=True, Amin=-10):
         '''

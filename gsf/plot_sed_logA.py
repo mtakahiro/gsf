@@ -1,9 +1,9 @@
 import numpy as np
 import sys
 import os
+import asdf
 
 import matplotlib.pyplot as plt
-
 from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
@@ -12,8 +12,6 @@ from matplotlib.ticker import FormatStrFormatter
 from .function import *
 from .function_class import Func
 from .basic_func import Basic
-#from . import img_scale
-#from . import corner
 import corner
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
@@ -54,8 +52,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
-
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+    
     lcb = '#4682b4' # line color, blue
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
@@ -64,13 +61,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
-    nage = MB.nage #np.arange(0,len(age),1)
-    '''try:
-        age = MB.age_fix
-    except:
-        age  = MB.age
-    '''
+    nage = MB.nage 
     tau0 = MB.tau0 #[0.1,0.2,0.3]
+
+    #col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+    NUM_COLORS = len(age)
+    cm = plt.get_cmap('gist_rainbow')
+    col = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
 
     nstep_plot = 1
     if MB.f_bpass:
@@ -231,14 +228,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Mass-to-Light ratio.
     ######################
     ms = np.zeros(len(age), dtype='float64')
-    f0 = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
-    sedpar = f0[1]
+    #f0 = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
+    #sedpar = f0[1]
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    sedpar = af['ML']
+
     for aa in range(len(age)):
-        ms[aa] = sedpar.data['ML_' +  str(int(NZbest[aa]))][aa]
+        ms[aa] = sedpar['ML_' +  str(int(NZbest[aa]))][aa]
     try:
-        sedhead = fits.open(DIR_TMP + 'ms.fits')[1].header
-        isochrone = sedhead['isochrone']
-        LIBRARY = sedhead['LIBRARY']
+        isochrone = af['isochrone']
+        LIBRARY = af['library']
     except:
         isochrone = ''
         LIBRARY = ''
@@ -1617,10 +1616,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ID   = MB.ID
     PA   = MB.PA
     Z    = MB.Zall
-    try:
-        age = MB.age_fix
-    except:
-        age  = MB.age
+    age  = MB.age
 
     tau0 = MB.tau0 #[0.1,0.2,0.3]
     dust_model = MB.dust_model
@@ -1775,8 +1771,10 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
-    sedpar = f0[1]
+    #f0 = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
+    #sedpar = f0[1]
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    sedpar = af['ML']
 
     getcmap   = matplotlib.cm.get_cmap('jet')
     nc        = np.arange(0, nmc, 1)
@@ -1843,11 +1841,19 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
         ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
         ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
-        AA_tmp = 10**np.max(samples['A'+str(ii)][:])
-        AA_tmp84 = 10**np.percentile(samples['A'+str(ii)][:],95)
-        AA_tmp16 = 10**np.percentile(samples['A'+str(ii)][:],5)
+
+        
+        try:
+            AA_tmp = 10**np.max(samples['A'+str(ii)][:])
+            AA_tmp84 = 10**np.percentile(samples['A'+str(ii)][:],95)
+            AA_tmp16 = 10**np.percentile(samples['A'+str(ii)][:],5)
+        except:
+            AA_tmp = 0
+            AA_tmp84 = 0
+            AA_tmp16 = 0
+
         nZtmp  = bfnc.Z2NZ(ZZ_tmp)
-        mslist = sedpar.data['ML_'+str(nZtmp)][ii]
+        mslist = sedpar['ML_'+str(nZtmp)][ii]
         AMtmp16 += mslist*AA_tmp16
         AMtmp84 += mslist*AA_tmp84
 
@@ -1929,7 +1935,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                     ZZ_tmp = MB.ZFIX
 
             nZtmp = bfnc.Z2NZ(ZZ_tmp)
-            mslist = sedpar.data['ML_'+str(nZtmp)][ii]
+            mslist = sedpar['ML_'+str(nZtmp)][ii]
             lmtmp[kk] += AA_tmp * mslist
             Ztmp[kk] += (10 ** ZZ_tmp) * AA_tmp * mslist
             Ttmp[kk] += age[ii] * AA_tmp * mslist
@@ -1960,17 +1966,25 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         for ss in range(len(age)):
             ii = ss # from old to young templates.
             AC = np.sum(AM[ss:])
-            ZC[ss] = np.log10(np.sum(ZMM[ss:])/AC)
+            if AC > 0:
+                ZC[ss] = np.log10(np.sum(ZMM[ss:])/AC)
+            else:
+                ZC[ss] = -99
 
-        # Total
-        ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
+        # Plot Total
         ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=.1, color='gray', zorder=-1, label='', alpha=0.1)
+
         if len(age)==1:
             ax1.plot(age[:], SF[:], marker='.', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
             ax2.plot(age[:], ZC[:], marker='.', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
         else:
             ax1.plot(age[:], SF[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
             ax2.plot(age[:], ZC[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
+
+        # Get ymax
+        ymax_bb = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
+        ymax_temp = np.max(ysum * c/ np.square(x0) / d) * 1.10
+        ymax = np.max([ymax_bb, ymax_temp])
 
         # Convert into log
         Ztmp[kk] /= ACtmp[kk]

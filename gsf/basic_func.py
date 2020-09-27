@@ -11,12 +11,4 @@ class Basic:
     # Conversion from Z to NZ
     def Z2NZ(self, Z):
         NZ = np.argmin(np.abs(self.ZZ-Z))
-        """
-        if self.NZ>1:
-            Zmax = np.max(self.ZZ)
-            Zmin = np.min(self.ZZ)
-            NZ   = int((Z - Zmin + self.delZ/2.0) / self.delZ)
-        else:
-            NZ = 0
-        """
         return NZ

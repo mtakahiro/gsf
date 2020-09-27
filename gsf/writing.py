@@ -1,9 +1,9 @@
 import numpy as np
 from astropy.io import fits
 from lmfit import Parameters
+import asdf
 
 from .function import filconv, calc_Dn4
-
 
 def get_param(self, res, fitc, tcalc=1., burnin=-1):
     '''
@@ -37,9 +37,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     tau0 = self.tau0
     ID0 = self.ID
     PA0 = self.PA
-    '''try:
-        age = self.age_fix
-    except:'''
     age  = self.age
     nage = self.nage
     Zall = self.Zall
@@ -69,8 +66,12 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         nTdustmc= np.zeros(3, dtype='float32')
         Tdustmc = np.zeros(3, dtype='float32')
 
-    f0 = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
-    sedpar = f0[1]
+    # ASDF;
+    af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '_PA' + PA0 + '.asdf')
+    sedpar = af['ML']
+    #f0 = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
+    #sedpar = f0[1]
+    
     ms = np.zeros(len(age), dtype='float')
     try:
         msmc0 = np.zeros(len(res.flatchain['A%d'%self.aamin[0]][burnin:]), dtype='float')
@@ -97,7 +98,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
                 Zmc[aa,:] = [self.ZFIX,self.ZFIX,self.ZFIX]
 
         NZbest[aa]= bfnc.Z2NZ(Zb[aa])
-        ms[aa] = sedpar.data['ML_' +  str(NZbest[aa])][aa]
+        ms[aa] = sedpar['ML_' +  str(NZbest[aa])][aa]
         try:
             msmc0[:] += 10**res.flatchain['A' + str(aa)][burnin:] * ms[aa]
         except:

@@ -1,8 +1,8 @@
 import numpy as np
 import sys
+import asdf
 
 import matplotlib.pyplot as plt
-
 from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
@@ -18,8 +18,8 @@ from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=7.5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, verbose=False, f_silence=True):
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=10.5, fil_path='./FILT/', \
+    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True):
 
     '''
     Purpose:
@@ -46,25 +46,24 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
     nage = MB.nage
-    '''try:
-        age = MB.age_fix
-    except:
-        age  = MB.age
-    '''
     tau0 = MB.tau0 #[0.1,0.2,0.3]
     age = np.asarray(age)
 
     if Txmin > np.min(age):
         Txmin = np.min(age) * 0.8
 
+    NUM_COLORS = len(age)
+    cm = plt.get_cmap('gist_rainbow_r')
+    col = [cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
+
     ################
     # RF colors.
     home = os.path.expanduser('~')
-    c      = MB.c
+    c = MB.c
     chimax = 1.
-    m0set  = MB.m0set
+    m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d      = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     #############
     # Plot.
@@ -200,11 +199,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Mass-to-Light ratio.
     ######################
     AM = np.zeros((len(age), mmax), dtype='float32') # Mass in each bin.
-    AC = np.zeros((len(age), mmax), dtype='float32') # Cumulative mass in each bin.
+    AC = np.zeros((len(age), mmax), dtype='float32') -99 # Cumulative mass in each bin.
     AL = np.zeros((len(age), mmax), dtype='float32') # Cumulative light in each bin.
     ZM = np.zeros((len(age), mmax), dtype='float32') # Z.
-    ZC = np.zeros((len(age), mmax), dtype='float32') # Cumulative Z.
-    ZL = np.zeros((len(age), mmax), dtype='float32') # Light weighted cumulative Z.
+    ZC = np.zeros((len(age), mmax), dtype='float32') -99 # Cumulative Z.
+    ZL = np.zeros((len(age), mmax), dtype='float32') -99 # Light weighted cumulative Z.
     TC = np.zeros((len(age), mmax), dtype='float32') # Mass weighted T.
     TL = np.zeros((len(age), mmax), dtype='float32') # Light weighted T.
     ZMM= np.zeros((len(age), mmax), dtype='float32') # Mass weighted Z.
@@ -224,7 +223,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     eZ_mean = 0
     try:
-        #meanfile = '/Users/tmorishita/Documents/Astronomy/sim_tran/sim_SFH_mean.cat'
         meanfile = './sim_SFH_mean.cat'
         dfile    = np.loadtxt(meanfile, comments='#')
         eA = dfile[:,2]
@@ -256,11 +254,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     tset_SFR_SED = 0.03 # Gyr
     SFR_SED = np.zeros(mmax,dtype='float32')
 
-    # base files opened.
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
-    f1     = fits.open(DIR_TMP + 'ms.fits')
-    sedpar = f0[1]
-    mloss  = f1[1].data
+    # ASDF;
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
+    sedpar = af['ML']
+    mloss = af0['ML']
 
     AAtmp = np.zeros(len(age), dtype='float32')
     ZZtmp = np.zeros(len(age), dtype='float32')
@@ -298,7 +296,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                     ZZtmp[aa] = MB.ZFIX
 
             nZtmp      = bfnc.Z2NZ(ZZtmp[aa])
-            mslist[aa] = sedpar.data['ML_'+str(nZtmp)][aa]
+            mslist[aa] = sedpar['ML_'+str(nZtmp)][aa]
 
             ml = mloss['ms_'+str(nZtmp)][aa]
 
@@ -316,14 +314,20 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             # SFR from SED. This will be converted in log later;
             if age[aa]<=tset_SFR_SED:
                 SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
-                delt_tot    += delT[aa]
+                delt_tot += delT[aa]
 
         SFR_SED[mm] /= delt_tot
-        SFR_SED[mm] = np.log10(SFR_SED[mm])
+        if SFR_SED[mm] > 0:
+            SFR_SED[mm] = np.log10(SFR_SED[mm])
+        else:
+            SFR_SED[mm] = -99
+
         for aa in range(len(age)):
-            AC[aa, mm] = np.log10(np.sum(10**AM[aa:,mm]))
-            ZC[aa, mm] = np.log10(np.sum(10**ZMM[aa:,mm])/10**AC[aa, mm])
-            ZL[aa, mm] = np.log10(np.sum(10**ZML[aa:,mm])/np.sum(10**AL[aa:,mm]))
+            if np.sum(10**AM[aa:,mm])>0:
+                AC[aa, mm] = np.log10(np.sum(10**AM[aa:,mm]))
+                ZC[aa, mm] = np.log10(np.sum(10**ZMM[aa:,mm])/10**AC[aa, mm])
+            if np.sum(10**AL[aa:,mm])>0:
+                ZL[aa, mm] = np.log10(np.sum(10**ZML[aa:,mm])/np.sum(10**AL[aa:,mm]))
             if f_zev == 0: # To avoid random fluctuation in A.
                 ZC[aa,mm] = ZM[aa,mm]
 
@@ -349,8 +353,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         # Update Progress Bar
         printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
-
-    Avtmp  = np.percentile(Av[:],[16,50,84])
+    print('')
+    Avtmp = np.percentile(Av[:],[16,50,84])
 
     #############
     # Plot
@@ -381,10 +385,26 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             msize[aa] = 150 * A50[aa]/Asum
 
     conA = (msize>=0)
-    ax1.fill_between(age[conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.3)
-    ax1.scatter(age[conA], SFp[:,1][conA], marker='.', c='k', s=msize[conA])
-    ax1.errorbar(age[conA], SFp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[SFp[:,1][conA]-SFp[:,0][conA], SFp[:,2][conA]-SFp[:,1][conA]], linestyle='-', color='k', lw=0.5, marker='')
+    ax1.fill_between(age[conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+    #ax1.errorbar(age[conA], SFp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[SFp[:,1][conA]-SFp[:,0][conA], SFp[:,2][conA]-SFp[:,1][conA]], linestyle='-', color='k', lw=0.5, marker='')
 
+    '''
+    for ii in range(len(age[conA])):
+        aa = len(age) -1 - ii
+        if msize[aa]>0:
+            ax1.scatter(age[aa], SFp[aa,1], marker='.', c='k', s=msize[aa])
+    '''
+
+    if f_fill:
+        tbnd = 0.0001
+        for aa in range(len(age)):
+            agebin = np.arange(age[aa]-delTl[aa]/1e9, age[aa]+delTu[aa]/1e9, delTu[aa]/1e10)
+            #ax1.fill_between(agebin, SFp[aa,2]*0-2, SFp[aa,2], color=col[aa], alpha=0.5, zorder=-2, lw=0)
+            tbnd = age[aa]+delT[aa]/2./1e9
+            ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
+                yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
+            if msize[aa]>0:
+                ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
 
     #############
     # Get SFMS in log10;
@@ -394,17 +414,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     SFMS_50 = get_SFMS(zbes,age,10**ACp[:,1],IMF=IMF)
     SFMS_84 = get_SFMS(zbes,age,10**ACp[:,2],IMF=IMF)
 
-    try:
+    #try:
+    if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
-    except:
+    else:
         print('Rejuvenation judge failed. (plot_sfh.py)')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
     if f_SFMS:
         ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3)
-        ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='b', alpha=0.5)
-
+        ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5)
 
     #
     # Mass in each bin
@@ -412,20 +432,39 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2label = ''
     ax2.fill_between(age[conA], ACp[:,0][conA], ACp[:,2][conA], linestyle='-', color='k', alpha=0.3)
     ax2.errorbar(age[conA], ACp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label)
-    ax2.scatter(age[conA], ACp[:,1][conA], marker='.', c='k', s=msize)
+    #ax2.scatter(age[conA], ACp[:,1][conA], marker='.', c='k', s=msize)
+
+    if f_fill:
+        tbnd = 0.0001
+        mtmp = 0
+        for ii in range(len(age)):
+            aa = len(age) -1 - ii
+            agebin = np.arange(0, age[aa], delTu[aa]/1e10)
+            ax2.fill_between(agebin, mtmp, ACp[aa,1], color=col[aa], alpha=0.5, zorder=-2, lw=0)
+            tbnd = age[aa]+delT[aa]/2./1e9
+            mtmp = ACp[aa,1]
+            if msize[aa]>0:
+                ax2.scatter(age[aa], ACp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+
 
     y2min = np.max([lmmin,np.min(ACp[:,0][conA])])
     y2max = np.max(ACp[:,2][conA])+0.05
 
-    if (y2max-y2min)<0.2:
+    if np.abs(y2max-y2min) < 0.2:
         y2min -= 0.2
 
     #
     # Total Metal
     #
     ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.3)
-    ax4.scatter(age[conA], ZCp[:,1][conA], marker='.', c='k', s=msize[conA])
+    #ax4.scatter(age[conA], ZCp[:,1][conA], marker='.', c='k', s=msize[conA])
     ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5)
+    
+    for ii in range(len(age)):
+        aa = len(age) -1 - ii
+        if msize[aa]>0:
+            ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+
 
     fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
     fw_sfr.write('# time_l time_u logSFR16 logSFR50 logSFR84 logMstel16 logMstel50 logMstel84 logZ16 logZ50 logZ84\n')
@@ -456,7 +495,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
 
-    ax2.text(0.01, y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+    ax2.text(np.min(age), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
         %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9)
 
     #
@@ -637,7 +676,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #plt.show()
     #ax1.legend(loc=2, fontsize=8)
     #ax2.legend(loc=3, fontsize=8)
-    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png')
+    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=200)
 
 
 def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \

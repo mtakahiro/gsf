@@ -136,9 +136,14 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
     fwz.write('# ID Zini chi/nu AA Av Zbest\n')
     fwz.write('# FNELD = %d\n' % fneld)
 
-    # Nelder;
     if fneld == 1:
         fit_name = 'nelder'
+    elif fneld == 0:
+        fit_name = 'powell'
+    elif fneld == 2:
+        fit_name = 'leastsq'
+
+    if fneld == 1 or fneld == 2: # Nelder;
         for zz in range(len(ZZtmp)):
             ZZ = ZZtmp[zz]
             if int(inputs['ZEVOL']) == 1:
@@ -185,10 +190,8 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
             if fitc[1]<chidef:
                 chidef = fitc[1]
                 out    = out_tmp
-    # Or
-    # Powell;
-    else:
-        fit_name='powell'
+
+    else: # Powell;
         for zz in range(len(ZZtmp)):
             ZZ = ZZtmp[zz]
             if int(inputs['ZEVOL']) == 1:
@@ -289,7 +292,7 @@ def get_SFMS(red,age,mass,IMF=1):
         CIMF = 0.04
         print('SFMS is shifted to Kroupa IMF.')
 
-    x  = np.log10(mass) - CIMF #np.arange(6,13,0.1)
+    x = np.log10(mass) - CIMF #np.arange(6,13,0.1)
     tz = cosmo.age(z=red).value - age # in Gyr
     y1 = (0.84 - 0.026*tz) * x - (6.51 - 0.11*tz) # in log Msun/yr
     con = (y1<=0)

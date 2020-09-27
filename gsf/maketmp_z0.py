@@ -65,7 +65,9 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     #  the width to the next age bin.
     #
     '''
+    import asdf
     import fsps
+    import gsf
 
     nimf = MB.nimf
     Z  = MB.Zall #np.arange(-1.2,0.4249,0.05)
@@ -88,6 +90,10 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     col02 = [] # For templates
     col05 = [] # For spectral indices.
 
+    tree_spec = {}
+    tree_ML = {}
+    tree_lick = {}
+
     print('tau is the width of each age bin.')
     tau_age = np.zeros(Na,dtype='float64')
     age_age = np.zeros(Na,dtype='float64')
@@ -107,11 +113,6 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                     if ss==0:
                         tautmp = age[ss]
                         agetmp = age[ss]/2.
-                    # This does not make sense.
-                    #elif ss == Na-1:
-                    #    # This could be very big tau...
-                    #    tautmp = age_univ - age[ss-1]
-                    #    agetmp = (age_univ+age[ss-1])/2.
                     else:
                         tautmp = age[ss] - age[ss-1]
                         agetmp = (age[ss]+age[ss-1])/2.
@@ -175,21 +176,45 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if ss == 0 and pp == 0 and zz == 0:
+                    # ASDF Big tree;
+                    # Create header;
+                    tree = {
+                        'isochrone': '%s'%(sp.libraries[0].decode("utf-8")),
+                        'library': '%s'%(sp.libraries[1].decode("utf-8")),
+                        'nimf': nimf,
+                        'version_gsf': gsf.__version__
+                    }
+                    if fneb == 1:
+                        tree.update({'logU': logU})
+
                     col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
                     col02.append(col3)
 
+                    # ASDF
+                    tree_spec.update({'wavelength': wave})
+
                 col4  = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
                 col02.append(col4)
+
+                # ASDF
+                tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
+
                 if fneb == 1:
                     col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=eflux)
                     col02.append(col4e)
+                    # ASDF
+                    tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
 
+                '''
+                # We don't need this...?
                 for ss0 in range(len(age)):
                     if ss == 0 and age[ss0] == age[ss]:
+
                         wave1, flux1 = sp.get_spectrum(tage=0.01, peraa=True)
                         flux1 /= 10**sp.log_lbol
                         con1 = (wave1>lammin) & (wave1<lammax)
                         col001 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=flux1[con1])
+
                         col02.append(col001)
                         if fneb == 1:
                             ewave1, eflux1 = esp.get_spectrum(tage=0.01, peraa=True)
@@ -210,39 +235,40 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                             con1 = (ewave1>lammin) & (ewave1<lammax)
                             col001 = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)+'_'+str(ss0), format='E', unit='Fnu', array=eflux1[con1])
                             col02.append(col001)
+                '''
 
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
                 for ll in range(len(INDICES)):
                     col5 = fits.Column(name=INDICES[ll]+'_'+str(zz), format='E', unit='', array=LICK[:,ll])
                     col05.append(col5)
+                    # ASDF
+                    tree_lick.update({INDICES[ll]+'_'+str(zz): LICK[:,ll]})
 
                 col1 = fits.Column(name='ms_'+str(zz), format='E', unit='Msun', array=ms)
+                # ASDF
+                tree_ML.update({'ms_'+str(zz): ms})
                 col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
+                # ASDF
+                tree_ML.update({'Ls_'+str(zz): Ls})
                 col01.append(col1)
                 col01.append(col2)
 
-    #
-    # Create header;
-    #
-    hdr = fits.Header()
-
-    hdr['hierarch isochrone'] = '%s'%(sp.libraries[0].decode("utf-8"))
-    hdr['library'] = '%s'%(sp.libraries[1].decode("utf-8"))
-    hdr['NIMF'] = nimf
-
-    if fneb == 1:
-        hdr['logU'] = logU
-
-    # Version;
-    import gsf
-    hdr['version'] = gsf.__version__
-
+    # Write;
     for aa in range(len(age)):
-        hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
+        #hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
+        tree.update({'realtau%d(Gyr)'%(aa): tau_age[aa]})
     for aa in range(len(age)):
-        hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
+        #hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
+        tree.update({'realage%d(Gyr)'%(aa): age_age[aa]})
 
+    tree.update({'spec' : tree_spec})
+    tree.update({'ML' : tree_ML})
+    tree.update({'lick' : tree_lick})
+    af = asdf.AsdfFile(tree)
+    af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
+
+    '''
     colspec = fits.ColDefs(col02)
     hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)
     hdu2.writeto(DIR_TMP + 'spec_all.fits', overwrite=True)
@@ -257,6 +283,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     colms = fits.ColDefs(col01)
     hdu1  = fits.BinTableHDU.from_columns(colms, header=hdr)
     hdu1.writeto(DIR_TMP + 'ms.fits', overwrite=True)
+    '''
 
 
 def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
