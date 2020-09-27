@@ -554,6 +554,9 @@ class Mainbody():
         '''
         import scipy.interpolate as interpolate
 
+        # NMC for zfit
+        self.nmc_cz = self.inputs['NMCZ']
+
         # For z prior.
         zliml  = self.zgal - 0.5
 
