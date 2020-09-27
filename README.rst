@@ -1,7 +1,7 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.3
+version 1.3.1
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
 - The main purpose is to explore galaxy star formation histories with a flexible form.
@@ -61,6 +61,12 @@ An example data set is stored in ./gsf/examples/
 .. code-block:: bash
 
     python run_gsf.py test.input <flag>
+
+
+If one needs a new config file;
+.. code-block:: bash
+
+    python get_configfile.py
 
 
 flag
