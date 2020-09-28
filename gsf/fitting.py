@@ -39,6 +39,7 @@ fLW = np.zeros(len(LW), dtype='int')
 
 class Mainbody():
 
+
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         self.update_input(inputs, idman=idman)
 
@@ -139,7 +140,6 @@ class Mainbody():
             fd = np.loadtxt(self.DIR_FILT + self.filts_rf[ii] + '.fil', comments='#')
             self.band_rf['%s_lam'%(self.filts_rf[ii])] = fd[:,1]
             self.band_rf['%s_res'%(self.filts_rf[ii])] = fd[:,2] / np.max(fd[:,2])
-
 
         # Tau comparison?
         try:
@@ -293,7 +293,7 @@ class Mainbody():
                 self.Temp = [DT0]
             else:
                 self.Temp= np.arange(DT0,DT1,dDT)
-                
+
             self.f_dust = True
             self.DT0 = DT0
             self.DT1 = DT1
@@ -843,7 +843,7 @@ class Mainbody():
             else:
                 fit_params.add('TDUST', value=0, vary=False)
 
-            fit_params.add('MDUST', value=1e6, min=0, max=1e10)
+            fit_params.add('MDUST', value=8, min=3, max=15)
             self.ndim += 1
 
             dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)

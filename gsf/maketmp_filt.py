@@ -437,10 +437,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
 
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
-                ms[ss]                 *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
+                ms[ss] *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
 
                 if f_spec:
-                    ftmp_nu_int[ss,:]      = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                    ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
 
                 # UV magnitude;
@@ -528,7 +528,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
         else:
             Temp = np.arange(DT0,DT1,dDT)
 
-        lambda_d = np.arange(1e4,1e7,1e3) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
+        dellam_d = 1e3
+        lambda_d = np.arange(1e4,1e7,dellam_d) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
 
         # c in AA/s.
         kb = 1.380649e-23 # Boltzmann constant, in J/K
@@ -538,35 +539,72 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
         kabs0 = 4.0 # in cm2/g
         beta_d= 2.08 #
         lam0  = 250.*1e4 # mu m to AA
-        kappa = kabs0 * (lam0/lambda_d)**beta_d # cm2/g
-        kappa *= (1e8)**2 # AA2/g
+        #kappa *= (1e8)**2 # AA2/g
+
+        from astropy.modeling import models
+        from astropy import units as u
         for tt in range(len(Temp)):
             if tt == 0:
                 # For full;
-                nd_d       = np.arange(0,len(lambda_d),1)
-                colspec_dw = fits.Column(name='wavelength', format='E', unit='AA', array=lambda_d*(1.+zbest))
-                col_dw     = fits.Column(name='colnum', format='K', unit='', array=nd_d)
-                col03      = [colspec_dw,col_dw]
+                nd_d  = np.arange(0,len(lambda_d),1)
+
                 # ASDF
                 tree_spec_dust_full.update({'wavelength': lambda_d*(1.+zbest)})
                 tree_spec_dust_full.update({'colnum': nd_d})
 
-            nu_d  = c / lambda_d # 1/s = Hz
-            BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
-
+            '''
+            nu_d = c / lambda_d # 1/s = Hz
+            nu_d_hp = nu_d * hp # This is recommended, as BT_nu equation may cause overflow.
+            BT_nu = 2 * hp * nu_d[:]**3 / c**2 / (np.exp(nu_d_hp/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
             # if optically thin;
             #kappa = nu_d ** beta_d
-            fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * kappa * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
-            #fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
-            fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
-            fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
+            fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * kappa * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz/sr = J/s/cm^2/Hz/g/sr
+            fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
+            fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun/sr.
+            '''
+
+            bb = models.BlackBody(temperature=Temp[tt]*u.K)
+            wav = lambda_d * u.AA
+            BT_nu = bb(wav) # erg/Hz/s/sr/cm2
+
+            kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
+            
+            # if optically thin;
+            #kappa = nu_d ** beta_d
+            fnu_d = (1+zbest)/DL**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+            fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
+
+            '''
+            # Redefine;
+            nu_d = c / wav  * u.Hz
+            beta = 2.0
+            nu_1 = c / lam0 # 1/s
+            t_nu = (nu_d / nu_1)**beta
+            k870 = 0.05 # m2/kg
+            nu_870 = 343 * 1e9 # in Hz
+
+            Snu0 = (1+zbest)/DL**2 * k870 * (nu_d / nu_870)**beta * flux # 1/cm2 * m2/kg * J/s/AA^2/Hz/sr. = 10000 * J/s/AA^2/Hz/sr/kg
+            Snu0 *= 1.989e+30 * 10000 # J/s/AA^2/Hz/sr/Msun
+            Snu0 *= 1e+7 # erg/s/AA^2/Hz/Msun/sr.
+            Snu0 *= (1e8)**2 # erg/s/cm^2/Hz/Msun/sr.
+            '''
+
             if True:
                 print('Somehow, crazy scale is required for FIR normalization...')
-                fnu_d *= 1e40
+                fnu_d *= 1e30
+            
+            if False:
+                flam_d = fnutolam(wav, fnu_d)
+                plt.plot(wav, flam_d, '.-')
+                plt.xlim(1e4, 1e6)
+                plt.show()
+                hoge
+
             
             #colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
             #col03.append(colspec_d)
             # ASDF
+            fnu_d = fnu_d.value
             tree_spec_dust_full.update({'fspec_'+str(tt): fnu_d})
 
             # Convolution;

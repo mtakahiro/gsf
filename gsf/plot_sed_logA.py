@@ -352,7 +352,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
-        #par.add('MDUST',value=1e-4)
+        #par.add('MDUST',value=-99)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
@@ -650,7 +650,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #
         if f_dust:
             if kk == 0:
-                par  = Parameters()
+                par = Parameters()
                 par.add('MDUST',value=samples['MDUST'][nr])
                 try:
                     par.add('TDUST',value=samples['TDUST'][nr])
@@ -658,6 +658,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                     par.add('TDUST',value=0)
 
             par['MDUST'].value = samples['MDUST'][nr]
+
             try:
                 par['TDUST'].value = samples['TDUST'][nr]
             except:
@@ -771,7 +772,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Chi2 for non detection;
         for nn in range(len(ey[con_up])):
             #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
-            result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
+            result = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
             chi_nd += np.log(result[0])
 
     # Number of degree;
@@ -907,14 +908,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         hdr['hierarch isochrone'] = isochrone
         hdr['library'] = LIBRARY
 
-        # Chi square:
-        hdr['chi2'] = chi2
-        hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
-        hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
-        hdr['hierarch Chi2-of-nondetection'] = chi_nd
-        hdr['hierarch No-of-params'] = ndim_eff
-        hdr['hierarch Degree-of-freedom']  = nod
-        hdr['hierarch reduced-chi2'] = fin_chi2
+        try:
+            # Chi square:
+            hdr['chi2'] = chi2
+            hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
+            hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
+            hdr['hierarch Chi2-of-nondetection'] = chi_nd
+            hdr['hierarch No-of-params'] = ndim_eff
+            hdr['hierarch Degree-of-freedom']  = nod
+            hdr['hierarch reduced-chi2'] = fin_chi2
+        except:
+            print('Chi seems to be wrong...')
+            pass
 
         # Muv
         MUV = -2.5 * np.log10(Fuv[:]) + 25.0

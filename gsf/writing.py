@@ -191,7 +191,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     if self.f_dust:
         Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
-        if self.DT0 == self.DT1:
+        if self.DT0 == self.DT1 or self.DT0 + self.dDT <= self.DT1:
             nTdustmc[:] = [0,0,0] #np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
             Tdustmc[:] = [self.DT0,self.DT0,self.DT0]
         else:

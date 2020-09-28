@@ -353,6 +353,7 @@ class Func:
         # Making model template with a given param set.
         # Also dust attenuation.
         '''
+
         tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
@@ -457,13 +458,13 @@ class Func:
             m_dust = par['MDUST']
             t_dust = par['TDUST']
         except: # This is exception for initial minimizing;
-            m_dust = 0
+            m_dust = -99
             t_dust = 0
 
         nr = lib[:,0]
         xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
         coln= 2+int(t_dust+0.5)
-        yy = m_dust * lib[:,coln]
+        yy = 10**m_dust * lib[:,coln]
         try:
             zmc = par.params['zmc'].value
         except:
