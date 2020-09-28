@@ -42,6 +42,7 @@ class Mainbody():
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         self.update_input(inputs, idman=idman)
 
+
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         '''
         INPUT:
@@ -288,7 +289,11 @@ class Mainbody():
             DT0 = float(inputs['TDUST_LOW'])
             DT1 = float(inputs['TDUST_HIG'])
             dDT = float(inputs['TDUST_DEL'])
-            self.Temp= np.arange(DT0,DT1,dDT)
+            if DT0 == DT1:
+                self.Temp = [DT0]
+            else:
+                self.Temp= np.arange(DT0,DT1,dDT)
+                
             self.f_dust = True
             self.DT0 = DT0
             self.DT1 = DT1
@@ -320,6 +325,7 @@ class Mainbody():
         else:
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         '''
+
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
@@ -403,11 +409,11 @@ class Mainbody():
 
         # Append data;
         if add_fir:
-            dat_d = np.loadtxt(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '_PA' + self.PA + '.cat', comments='#')
-            nr_d = dat_d[:,1]
-            x_d = dat_d[:,1]
-            fy_d = dat_d[:,2]
-            ey_d = dat_d[:,3]
+            dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '_PA' + self.PA + '.cat')
+            nr_d = dat_d['col1']
+            x_d = dat_d['col2']
+            fy_d = dat_d['col3']
+            ey_d = dat_d['col4']
 
             NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
@@ -831,9 +837,14 @@ class Mainbody():
         # Dust;
         if self.f_dust:
             Tdust = self.Temp
-            fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust)-1)
+            if len(Tdust)-1>0:
+                fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust)-1)
+                self.ndim += 1
+            else:
+                fit_params.add('TDUST', value=0, vary=False)
+
             fit_params.add('MDUST', value=1e6, min=0, max=1e10)
-            self.ndim += 2
+            self.ndim += 1
 
             dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
 

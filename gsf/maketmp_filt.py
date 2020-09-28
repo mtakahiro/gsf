@@ -523,9 +523,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
         tree_spec_dust = {}
         tree_spec_dust_full = {}
 
-        Temp = np.arange(DT0,DT1,dDT)
+        if DT0 == DT1:
+            Temp = [DT0]
+        else:
+            Temp = np.arange(DT0,DT1,dDT)
+
         lambda_d = np.arange(1e4,1e7,1e3) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
-        #lambda_d = np.arange(4000,1e7,1e3) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
+
         # c in AA/s.
         kb = 1.380649e-23 # Boltzmann constant, in J/K
         hp = 6.62607015e-34 # Planck constant, in J*s
@@ -556,9 +560,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
             #fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz = J/s/cm^2/Hz/g
             fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun; i.e. 1 flux is in 1Msun
             fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun.
-            #fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
-            print('Somehow, crazy scale is required for FIR normalization...')
-            fnu_d *= 1e40
+            if True:
+                print('Somehow, crazy scale is required for FIR normalization...')
+                fnu_d *= 1e40
             
             #colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
             #col03.append(colspec_d)

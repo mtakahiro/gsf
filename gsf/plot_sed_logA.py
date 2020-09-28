@@ -156,8 +156,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         nTD16 = hdul[1].data['nTDUST'][0]
         nTD50 = hdul[1].data['nTDUST'][1]
         nTD84 = hdul[1].data['nTDUST'][2]
-        DFILT   = inputs['FIR_FILTER'] # filter band string.
-        DFILT   = [x.strip() for x in DFILT.split(',')]
+        DFILT = inputs['FIR_FILTER'] # filter band string.
+        DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             print('Total dust mass is %.2e'%(MD50))
@@ -347,6 +347,53 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(nage)-1
 
+    # FIR dust plot;
+    if f_dust:
+        from lmfit import Parameters
+        par = Parameters()
+        par.add('MDUST',value=MD50)
+        #par.add('MDUST',value=1e-4)
+        par.add('TDUST',value=nTD50)
+        par.add('zmc',value=zp50)
+
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
+        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
+
+        #ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        #ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        
+        # data;
+        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '_PA' + MB.PA + '.cat')
+        NRbbd = dat_d['col1']
+        xbbd = dat_d['col2']
+        fybbd = dat_d['col3']
+        eybbd = dat_d['col4']
+        exbbd = dat_d['col5']
+        snbbd = fybbd/eybbd
+
+        try:
+            conbbd_hs = (fybbd/eybbd>SNlim)
+            ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
+            yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
+            ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
+            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+            ax3t.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
+            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+        except:
+            pass
+
+        try:
+            conebbd_ls = (fybbd/eybbd<=SNlim)
+            ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d, \
+            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
+            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d, color='r', linestyle='', linewidth=0.5, zorder=4)
+            ax3t.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d, \
+            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
+            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d, color='r', linestyle='', linewidth=0.5, zorder=4)
+        except:
+            pass
+
+
     #
     # This is for UVJ color time evolution.
     #
@@ -355,6 +402,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     Asum = np.sum(A50[:])
 
     alp = .8
+
     for jj in range(len(age)):
         ii = int(len(nage) - jj - 1) # from old to young templates.
         if jj == 0:
@@ -362,6 +410,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum = y0
             ysump = y0p
+            nopt = len(ysump)
+
+            if f_dust:
+                ysump[:] += y0d_cut[:nopt]
+                ysump = np.append(ysump,y0d_cut[nopt:])
+
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
@@ -369,7 +423,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
-            ysump += y0p
+            ysump[:nopt] += y0p
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
@@ -396,52 +450,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             pass
 
     fwuvj.close()
-
-    # FIR dust plot;
-    if f_dust:
-        from lmfit import Parameters
-        par = Parameters()
-        par.add('MDUST',value=MD50)
-        par.add('TDUST',value=nTD50)
-        par.add('zmc',value=zp50)
-
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
-
-        ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-
-        # data;
-        ddat  = np.loadtxt(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-        NRbbd = ddat[:, 0]
-        xbbd  = ddat[:, 1]
-        fybbd = ddat[:, 2]
-        eybbd = ddat[:, 3]
-        exbbd = ddat[:, 4]
-        snbbd = fybbd/eybbd
-
-
-        try:
-            conbbd_hs = (fybbd/eybbd>SNlim)
-            ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
-            yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-            ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
-            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-            ax3t.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) / d, \
-            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-        except:
-            pass
-
-        try:
-            conebbd_ls = (fybbd/eybbd<=SNlim)
-            ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d, \
-            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
-            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d, color='r', linestyle='', linewidth=0.5, zorder=4)
-            ax3t.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) / d, \
-            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d)*0.05, \
-            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d, color='r', linestyle='', linewidth=0.5, zorder=4)
-        except:
-            pass
 
     #############
     # Main result
@@ -644,9 +652,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if kk == 0:
                 par  = Parameters()
                 par.add('MDUST',value=samples['MDUST'][nr])
-                par.add('TDUST',value=samples['TDUST'][nr])
+                try:
+                    par.add('TDUST',value=samples['TDUST'][nr])
+                except:
+                    par.add('TDUST',value=0)
+
             par['MDUST'].value = samples['MDUST'][nr]
-            par['TDUST'].value = samples['TDUST'][nr]
+            try:
+                par['TDUST'].value = samples['TDUST'][nr]
+            except:
+                par['TDUST'].value = 0
 
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
             if kk == 0:
@@ -658,6 +673,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             if f_fill:
                 ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+                ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
@@ -709,6 +725,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if not f_fill:
         ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+    #ax3t.plot(x1_tot, ytmp50 * c/ np.square(x1_tot) / d, '--', lw=0.5, color='r', zorder=-1, label='')
 
     # Attach the data point in MB;
     MB.sed_wave_obs = xbb
@@ -720,13 +737,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     MB.sed_flux50 = ytmp50
     MB.sed_flux84 = ytmp84
 
-
     if f_fancyplot:
         # For each age;
         ytmp_each50 = np.zeros(len(xm_tmp), dtype='float64')
         ytmp_each50_prior = np.zeros(len(xm_tmp), dtype='float64')
         for ss in range(len(age)):
-            ii = int(len(II0) - ss - 1) # from old to young templates.
+            ii = int(len(nage) - ss - 1) # from old to young templates.
             for kk in range(len(xm_tmp[:])):
                 ytmp_each50[kk] = np.percentile(ytmp_each[:,kk,ii],50)
             ax1.fill_between(x1_tot[::nstep_plot], ytmp_each50_prior[::nstep_plot], ytmp_each50[::nstep_plot], linestyle='None', lw=0.5, color=col[ii])
@@ -739,8 +755,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #########################
     def func_tmp(xint,eobs,fmodel):
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
-        #int_tmp = np.exp(-0.5 * ((xint-fmodel))**2/fmodel)
-        #int_tmp = np.exp(-0.5 * ((xint-fmodel))**2)
         return int_tmp
 
     if f_chind:
@@ -748,8 +762,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     else:
         conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
 
-    if MB.f_dust:
-        ysump = y0d_cut
     chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
 
     #
@@ -788,9 +800,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ALLFILT = np.append(SFILT,DFILT)
         #for ii in range(len(x1_tot)):
         #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
-        lbb, fbb, lfwhm   = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
+
+        ax1.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
+        ax3t.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
+
+        iix = []
+        for ii in range(len(fbb)):
+            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
+        con_sed = ()
+        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
 
         # plot FIR range;
         ax3t.scatter(lbb, fbb, lw=0.5, color='none', edgecolor=col_dia, \
@@ -988,14 +1009,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_dust:
         try:
             contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
-            #y3min, y3max = -.2*np.max(fybbd[contmp]*c/np.square(xbbd[contmp])/d), np.max((fybbd)[contmp]*c/np.square(xbbd[contmp])/d)*1.1
-            y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*1.1
+            y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*1.5
             ax3t.set_ylim(y3min, y3max)
         except:
             if verbose:
                 print('y3 limit is not specified.')
             pass
-        ax3t.set_xlim(1e5, 2e7)
+        ax3t.set_xlim(1e5, 3e7)
         ax3t.set_xscale('log')
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
