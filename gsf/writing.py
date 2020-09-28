@@ -190,9 +190,9 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         col01.append(col50)
 
     if self.f_dust:
-        Mdustmc[:]  = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
+        Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
         nTdustmc[:] = np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
-        Tdustmc[:]  = self.DT0 + self.dDT * nTdustmc[:]
+        Tdustmc[:] = self.DT0 + self.dDT * nTdustmc[:]
         col50 = fits.Column(name='MDUST', format='E', unit='Msun', array=Mdustmc[:])
         col01.append(col50)
         col50 = fits.Column(name='nTDUST', format='E', unit='K', array=nTdustmc[:])

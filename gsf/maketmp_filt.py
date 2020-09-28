@@ -213,7 +213,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
 
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
-        hd0   = fd0[1].header
+        hd0 = fd0[1].header
         bunit_bb = float(hd0['bunit'][:5])
         lmbb0= fd0[1].data['wavelength']
         fbb0 = fd0[1].data['flux'] * bunit_bb
@@ -247,24 +247,21 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
 
     # Dust flux;
     if f_dust:
-        fdd = np.loadtxt(CAT_BB_DUST, comments='#')
+        fdd = ascii.read(CAT_BB_DUST)
         try:
-            id0 = fdd[:,0]
+            id0 = fdd['id']
             ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-            if int(id0[ii0]) !=  int(ID):
+            if int(id0[ii0]) != int(ID):
                 return -1
-            fd  = fdd[ii0,:]
         except:
-            id0 = fdd[0]
-            if int(id0) !=  int(ID):
-                return -1
-            fd  = fdd[:]
-        id  = fd[0]
+            return -1
+        id = fdd['id']
+
         fbb_d = np.zeros(len(DFILT), dtype='float64')
         ebb_d = np.zeros(len(DFILT), dtype='float64')
         for ii in range(len(DFILT)):
-            fbb_d[ii] = fd[ii*2+1]
-            ebb_d[ii] = fd[ii*2+2]
+            fbb_d[ii] = fdd['F%s'%(DFILT[ii])][ii0]
+            ebb_d[ii] = fdd['E%s'%(DFILT[ii])][ii0]
 
     #############################
     # Getting Morphology params.
@@ -547,8 +544,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 col_dw     = fits.Column(name='colnum', format='K', unit='', array=nd_d)
                 col03      = [colspec_dw,col_dw]
                 # ASDF
-                tree_spec_dust.update({'wavelength': lambda_d*(1.+zbest)})
-                tree_spec_dust.update({'colnum': nd_d})
+                tree_spec_dust_full.update({'wavelength': lambda_d*(1.+zbest)})
+                tree_spec_dust_full.update({'colnum': nd_d})
 
             nu_d  = c / lambda_d # 1/s = Hz
             BT_nu = 2*hp*nu_d[:]**3 / c**2 / (np.exp(hp*nu_d[:]/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
@@ -562,10 +559,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
             #fnu_d *= 1e9 # Now 1 flux is in 1e9Msun
             print('Somehow, crazy scale is required for FIR normalization...')
             fnu_d *= 1e40
-            colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
-            col03.append(colspec_d)
+            
+            #colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
+            #col03.append(colspec_d)
             # ASDF
-            tree_spec_dust.update({'fspec_'+str(tt): fnu_d})
+            tree_spec_dust_full.update({'fspec_'+str(tt): fnu_d})
 
             # Convolution;
             #ltmpbb_d, ftmpbb_d = filconv(DFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
@@ -586,12 +584,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 col4   = fits.Column(name='colnum', format='K', unit='', array=nd_db)
                 col04 = [col3, col4]
                 # ASDF
-                tree_spec_dust_full.update({'wavelength': ltmpbb_d})
-                tree_spec_dust_full.update({'colnum': nd_db})
+                tree_spec_dust.update({'wavelength': ltmpbb_d})
+                tree_spec_dust.update({'colnum': nd_db})
 
-            colspec_db = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=ftmpbb_d)
-            col04.append(colspec_db)
-            tree_spec_dust_full.update({'fspec_'+str(tt): ftmpbb_d})
+            #colspec_db = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=ftmpbb_d)
+            #col04.append(colspec_db)
+            tree_spec_dust.update({'fspec_'+str(tt): ftmpbb_d})
 
         '''
         coldefs_d = fits.ColDefs(col03)
@@ -604,6 +602,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
         '''
         tree.update({'spec_dust' : tree_spec_dust})
         tree.update({'spec_dust_full' : tree_spec_dust_full})
+        print('dust updated.')
 
     # Save;
     af = asdf.AsdfFile(tree)

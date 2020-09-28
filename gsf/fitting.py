@@ -290,6 +290,9 @@ class Mainbody():
             dDT = float(inputs['TDUST_DEL'])
             self.Temp= np.arange(DT0,DT1,dDT)
             self.f_dust = True
+            self.DT0 = DT0
+            self.DT1 = DT1
+            self.dDT = dDT
             print('FIR fit is on.')
         except:
             self.Temp = []
@@ -401,13 +404,16 @@ class Mainbody():
         # Append data;
         if add_fir:
             dat_d = np.loadtxt(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '_PA' + self.PA + '.cat', comments='#')
-            x_d   = dat_d[:,1]
-            fy_d  = dat_d[:,2]
-            ey_d  = dat_d[:,3]
+            nr_d = dat_d[:,1]
+            x_d = dat_d[:,1]
+            fy_d = dat_d[:,2]
+            ey_d = dat_d[:,3]
 
+            NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
-            x  = np.append(x,x_d)
-            wht= np.append(wht,1./np.square(ey_d))
+            ey = np.append(ey,ey_d)
+            x = np.append(x,x_d)
+            wht = np.append(wht,1./np.square(ey_d))
             # For now...
             #wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
             wht2 = wht[:]
@@ -434,10 +440,9 @@ class Mainbody():
             wht = nrd_yyd_sort[:,4]
             wht2= nrd_yyd_sort[:,5]
 
-
-        sn   = fy/ey
+        sn = fy/ey
         dict = {}
-        dict = {'NR':NR, 'x':xx, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
+        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
 
@@ -578,10 +583,10 @@ class Mainbody():
         sn = dict['fy']/dict['ey']
         # Only spec data?
         con_cz = (dict['NR']<10000) & (sn>snlim)
-        fy_cz  = dict['fy'][con_cz] # Already scaled by self.Cz0
-        ey_cz  = dict['ey'][con_cz]
-        x_cz   = dict['x'][con_cz] # Observed range
-        NR_cz  = dict['NR'][con_cz]
+        fy_cz = dict['fy'][con_cz] # Already scaled by self.Cz0
+        ey_cz = dict['ey'][con_cz]
+        x_cz = dict['x'][con_cz] # Observed range
+        NR_cz = dict['NR'][con_cz]
 
         # kind='cubic' causes an error if len(xm_tmp)<=3;
         fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='nearest', fill_value="extrapolate")
@@ -819,7 +824,6 @@ class Mainbody():
                 fit_params.add('f', value=1e-2, min=0, max=1e2)
                 self.ndim += 1
                 f_add = True
-            #print('f err added')
         except:
             ferr = 0
             pass
@@ -831,7 +835,7 @@ class Mainbody():
             fit_params.add('MDUST', value=1e6, min=0, max=1e10)
             self.ndim += 2
 
-            dict = read_data(self.Cz0, self.Cz1, self.zgal, add_fir=True)
+            dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
 
             f_add = True
 
@@ -879,7 +883,7 @@ class Mainbody():
         self.lib = self.fnc.open_spec_fits(self, fall=0)
         self.lib_all = self.fnc.open_spec_fits(self, fall=1)
         if self.f_dust:
-            self.lib_dust     = self.fnc.open_spec_dust_fits(self, fall=0)
+            self.lib_dust = self.fnc.open_spec_dust_fits(self, fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
 
         # For MCMC;
@@ -912,7 +916,7 @@ class Mainbody():
         except:
             dust_model = 0
 
-        fnc  = self.fnc  #Func(Zall, nage, dust_model=dust_model, self.DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
+        fnc = self.fnc  #Func(Zall, nage, dust_model=dust_model, self.DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
         bfnc = self.bfnc #Basic(Zall)
 
         # Error parameter
@@ -925,7 +929,7 @@ class Mainbody():
         #################
         # Observed Data
         #################
-        dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
+        dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
         self.dict = dict
 
         # Call likelihood/prior/posterior function;
@@ -1013,14 +1017,14 @@ class Mainbody():
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
-        out,chidef,Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
+        out, chidef, Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
             dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
 
         # Best fit
-        csq  = out.chisqr
+        csq = out.chisqr
         rcsq = out.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
-        ZZ   = Zbest # This is really important/does affect lnprob/residual.
+        ZZ = Zbest # This is really important/does affect lnprob/residual.
 
         print('\n\n')
         print('#####################################')
@@ -1067,7 +1071,8 @@ class Mainbody():
                 print(fit_report(out))
 
                 # Fix params to what we had before.
-                out.params['zmc'].value = self.zgal
+                if self.fzmc:
+                    out.params['zmc'].value = self.zgal
                 out.params['Av'].value = out_keep.params['Av'].value
                 for aa in range(len(self.age)):
                     out.params['A'+str(aa)].value = out_keep.params['A'+str(aa)].value
@@ -1245,7 +1250,7 @@ class Mainbody():
         self.lib = self.fnc.open_spec_fits(self, fall=0)
         self.lib_all = self.fnc.open_spec_fits(self, fall=1)
         if self.f_dust:
-            self.lib_dust     = self.fnc.open_spec_dust_fits(self, fall=0)
+            self.lib_dust = self.fnc.open_spec_dust_fits(self, fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
 
         # For MCMC;

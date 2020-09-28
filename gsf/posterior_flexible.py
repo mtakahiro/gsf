@@ -14,7 +14,6 @@ class Post:
     def __init__(self, mainbody):
         self.mb = mainbody
 
-
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
         Input:
@@ -30,16 +29,17 @@ class Post:
 
         vals = pars.valuesdict()
         model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
+
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
             n_optir = len(model)
 
             # Add dust flux to opt/IR grid.
-            model[:]+= model_dust[:n_optir]
+            model[:] += model_dust[:n_optir]
 
             # then append only FIR flux grid.
             model = np.append(model,model_dust[n_optir:])
-            x1    = np.append(x1,x1_dust[n_optir:])
+            x1 = np.append(x1,x1_dust[n_optir:])
 
         if self.mb.ferr:
             try:
@@ -50,7 +50,7 @@ class Post:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
 
         #con_res = (model>0) & (wht>0) #& (ey>0)
-        sig     = np.sqrt(1./wht + (f**2*model**2))
+        sig = np.sqrt(1./wht + (f**2*model**2))
 
         if fy is None:
             print('Data is none')
@@ -74,7 +74,6 @@ class Post:
 
     def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0):
         '''
-
         Returns:
         ========
         log posterior

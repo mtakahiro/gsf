@@ -119,9 +119,9 @@ class Func:
             hdu0 = self.af['spec_dust_full']
 
         DIR_TMP = self.DIR_TMP
-        nr   = hdu0['colnum']
-        xx   = hdu0['wavelength']
-
+        nr = hdu0['colnum']
+        xx = hdu0['wavelength']
+        
         lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float32')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
@@ -130,13 +130,14 @@ class Func:
             coln    = int(2 + aa)
             colname = 'fspec_' + str(aa)
             colnall = int(2 + aa) # 2 takes account of wavelength and AV columns.
-            lib[:,colnall] = hdu0.data[colname]
+            lib[:,colnall] = hdu0[colname]
             if fall==1 and False:
                 import matplotlib.pyplot as plt
                 plt.close()
                 plt.plot(lib[:,1],lib[:,coln],linestyle='-')
                 plt.show()
         return lib
+
 
     def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
         '''
@@ -171,7 +172,6 @@ class Func:
         Ls    = np.zeros(len(AA), dtype='float32')
         #Ls[:] = mshdu.data['Ls_'+str(zz)][:]
         Ls[:] = self.af0['Ls']
-
 
         xx   = hdu0['wavelength'] # RF;
         nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
@@ -441,27 +441,34 @@ class Func:
 
     def tmp04_dust(self, par, zgal, lib):
         '''
+        Purpose:
+        ========
         # Making model template with a given param setself.
         # Also dust attenuation.
         '''
+
         tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
 
-        m_dust = par['MDUST']
-        t_dust = par['TDUST']
-        #print(t_dust,m_dust)
+        try:
+            m_dust = par['MDUST']
+            t_dust = par['TDUST']
+        except: # This is exception for initial minimizing;
+            m_dust = 0
+            t_dust = 0
 
-        nr  = lib[:,0]
-        xx  = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        nr = lib[:,0]
+        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
         coln= 2+int(t_dust+0.5)
-        yy  = m_dust * lib[:,coln]
+        yy = m_dust * lib[:,coln]
         try:
             zmc = par.params['zmc'].value
         except:
             zmc = zgal
+
         # How much does this cost in time?
         if round(zmc,3) != round(zgal,3):
             xx_s = xx / (1+zgal) * (1+zmc)
@@ -470,6 +477,7 @@ class Func:
         else:
             xx_s = xx
             yy_s = yy
+
         return yy_s, xx_s
 
 

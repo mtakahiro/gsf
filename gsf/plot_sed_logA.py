@@ -340,8 +340,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
-        Temp= np.arange(DT0,DT1,dDT)
-        lib_dust     = fnc.open_spec_dust_fits(MB,fall=0)
+        Temp = np.arange(DT0,DT1,dDT)
+        lib_dust = fnc.open_spec_dust_fits(MB,fall=0)
         lib_dust_all = fnc.open_spec_dust_fits(MB,fall=1)
 
     #II0   = nage #[0,1,2,3] # Number for templates
@@ -360,15 +360,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         if jj == 0:
             y0, x0 = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
-            ysum  = y0
+            ysum = y0
             ysump = y0p
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
 
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p     = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
-            ysum  += y0_r
+            y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            ysum += y0_r
             ysump += y0p
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
@@ -404,7 +404,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         par.add('MDUST',value=MD50)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
+
         y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
+        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
+
         ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
 
@@ -416,6 +419,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         eybbd = ddat[:, 3]
         exbbd = ddat[:, 4]
         snbbd = fybbd/eybbd
+
 
         try:
             conbbd_hs = (fybbd/eybbd>SNlim)
@@ -591,7 +595,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # From random chain;
     alp=0.02
 
-
     for kk in range(0,mmax,1):
         nr = np.random.randint(len(samples['A%d'%MB.aamin[0]]))
         try:
@@ -644,14 +647,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 par.add('TDUST',value=samples['TDUST'][nr])
             par['MDUST'].value = samples['MDUST'][nr]
             par['TDUST'].value = samples['TDUST'][nr]
+
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
+                # Redefine??
+                ytmp = np.zeros((mmax,len(x1_tot)), dtype='float64')
 
-            model_tot  = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
+            model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             if f_fill:
                 ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
         else:
@@ -684,6 +691,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
+    print('')
 
     #
     # Plot Median SED;
@@ -703,11 +711,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
 
     # Attach the data point in MB;
-    MB.sed_wave_obs   = xbb
-    MB.sed_flux_obs   = fybb * c / np.square(xbb) / d
-    MB.sed_eflux_obs  = eybb * c / np.square(xbb) / d
+    MB.sed_wave_obs = xbb
+    MB.sed_flux_obs = fybb * c / np.square(xbb) / d
+    MB.sed_eflux_obs = eybb * c / np.square(xbb) / d
     # Attach the best SED to MB;
-    MB.sed_wave   = x1_tot
+    MB.sed_wave = x1_tot
     MB.sed_flux16 = ytmp16
     MB.sed_flux50 = ytmp50
     MB.sed_flux84 = ytmp84
@@ -715,7 +723,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     if f_fancyplot:
         # For each age;
-        ytmp_each50       = np.zeros(len(xm_tmp), dtype='float64')
+        ytmp_each50 = np.zeros(len(xm_tmp), dtype='float64')
         ytmp_each50_prior = np.zeros(len(xm_tmp), dtype='float64')
         for ss in range(len(age)):
             ii = int(len(II0) - ss - 1) # from old to young templates.
@@ -740,18 +748,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     else:
         conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
 
+    if MB.f_dust:
+        ysump = y0d_cut
+    chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
 
-    chi2 = sum((np.square(fy-ysump)*np.sqrt(wht3))[conw])
-
-    # Effective ndim;
-    '''
-    ndim_eff = MB.ndim
-    agemax = MB.cosmo.age(zbes).value
-    for aa in range(len(MB.age)):
-        if MB.age[aa]>agemax:
-            ndim_eff -= 1
-    '''
-
+    #
     con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0
     if f_chind:
