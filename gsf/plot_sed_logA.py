@@ -19,7 +19,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-        f_fill=False, f_fancyplot=False, f_Alog=True):
+        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300):
     '''
     Input:
     ======
@@ -252,12 +252,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax1 = fig.add_subplot(111)
         if f_grsm:
             #ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
-            ax2t = ax1.inset_axes((0.7,.95-0.2,.28,.2))
+            ax2t = ax1.inset_axes((0.7,.95-0.25,.28,.25))
         if f_dust:
             #ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
             #ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
-            ax3t = ax1.inset_axes((0.7,.35,.28,.2))
-            ax3t.set_xlabel('Obs. wavelength ($\mu$m)')
+            ax3t = ax1.inset_axes((0.7,.35,.28,.25))
+            #ax3t.set_xlabel('Obs. wavelength ($\mu$m)')
     else:
         fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
@@ -265,8 +265,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # Plot data;
     conspec = (NR<10000) #& (fy/ey>1)
-    ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
+    #ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
+    #ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -556,10 +556,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
-        ax2t.fill_between(xg1/zscl, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-        ax2t.fill_between(xg0/zscl, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
-        ax2t.errorbar(xg1/zscl, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-        ax2t.errorbar(xg0/zscl, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
+        ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
+        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
         xgrism = np.concatenate([xg0,xg1])
         fgrism = np.concatenate([fg0,fg1])
@@ -694,7 +694,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #
         if f_grsm:
             if f_fill:
-                ax2t.plot(x1_tot/zscl, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+                ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Get FUV flux;
         Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
@@ -1012,17 +1012,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #######################################
     ax1.xaxis.labelpad = -3
     if f_grsm:
-        ax2t.set_xlabel('RF wavelength ($\mathrm{\mu m}$)')
-        ax2t.set_xlim(3600, 5400)
-        conaa = (x0/zscl>3300) & (x0/zscl<6000)
+        xgmin, xgmax = 7500, 17000
+        ax2t.set_xlabel('')
+        ax2t.set_xlim(xgmin, xgmax)
+
+        conaa = (x0>xgmin-200) & (x0<xgmax+200)
         ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.2
         yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.2
-        ax2t.set_ylim(yminzoom, ymaxzoom)
 
+        ax2t.set_ylim(yminzoom, ymaxzoom)
         ax2t.xaxis.labelpad = -2
-        ax2t.set_yticklabels(())
-        ax2t.set_xticks([4000, 5000])
-        ax2t.set_xticklabels(['0.4', '0.5'])
+        #ax2t.set_yticklabels(())
+        ax2t.set_xticks([8000, 10000, 12000, 14000, 16000])
+        ax2t.set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
 
     if f_dust:
         try:
@@ -1091,9 +1093,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ####################
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=300)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=dpi)
     else:
-        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=300)
+        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=dpi)
 
 
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):

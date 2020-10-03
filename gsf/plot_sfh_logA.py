@@ -19,7 +19,8 @@ from .function_igm import *
 lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True, f_log_sfh=True):
+    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True, \
+        f_log_sfh=True, dpi=250):
 
     '''
     Purpose:
@@ -392,14 +393,15 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     conA = (msize>=0)
     if f_log_sfh:
         ax1.fill_between(age[conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+        ax1.errorbar(age, SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
     else:
         ax1.fill_between(age[conA], 10**SFp[:,0][conA], 10**SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+        ax1.errorbar(age, 10**SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
 
     if f_fill:
         tbnd = 0.0001
         for aa in range(len(age)):
             agebin = np.arange(age[aa]-delTl[aa]/1e9, age[aa]+delTu[aa]/1e9, delTu[aa]/1e10)
-            #ax1.fill_between(agebin, SFp[aa,2]*0-2, SFp[aa,2], color=col[aa], alpha=0.5, zorder=-2, lw=0)
             tbnd = age[aa]+delT[aa]/2./1e9
             
             if f_log_sfh:
@@ -441,7 +443,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Mass in each bin
     #
     ax2label = ''
-    ax2.fill_between(age[conA], ACp[:,0][conA], ACp[:,2][conA], linestyle='-', color='k', alpha=0.3)
+    ax2.fill_between(age[conA], ACp[:,0][conA], ACp[:,2][conA], linestyle='-', color='k', alpha=0.5)
     ax2.errorbar(age[conA], ACp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], \
         yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label, zorder=1)
     #ax2.scatter(age[conA], ACp[:,1][conA], marker='.', c='k', s=msize)
@@ -452,7 +454,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         for ii in range(len(age)):
             aa = len(age) -1 - ii
             agebin = np.arange(0, age[aa], delTu[aa]/1e10)
-            #ax2.fill_between(agebin, mtmp, ACp[aa,1], color=col[aa], alpha=0.5, zorder=-2, lw=0)
             ax2.errorbar(age[aa], ACp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], \
                 yerr=[[ACp[aa,1]-ACp[aa,0]],[ACp[aa,2]-ACp[aa,1]]], linestyle='-', color=col[aa], lw=0.5, zorder=1)
 
@@ -470,13 +471,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #
     # Total Metal
     #
-    ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.3)
-    #ax4.scatter(age[conA], ZCp[:,1][conA], marker='.', c='k', s=msize[conA])
-    ax4.errorbar(age[conA], ZCp[:,1][conA], yerr=[ZCp[:,1][conA]-ZCp[:,0][conA],ZCp[:,2][conA]-ZCp[:,1][conA]], linestyle='-', color='k', lw=0.5, zorder=1)
+    ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.5)
+    ax4.errorbar(age[conA], ZCp[:,1][conA], linestyle='-', color='k', lw=0.5, zorder=1)
     
     for ii in range(len(age)):
         aa = len(age) -1 - ii
         if msize[aa]>0:
+            ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
             ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=2)
 
 
@@ -689,7 +690,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #plt.show()
     #ax1.legend(loc=2, fontsize=8)
     #ax2.legend(loc=3, fontsize=8)
-    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=200)
+    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
 
 
 def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
