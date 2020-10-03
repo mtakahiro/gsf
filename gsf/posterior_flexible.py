@@ -36,7 +36,13 @@ class Post:
 
             # Add dust flux to opt/IR grid.
             model[:] += model_dust[:n_optir]
-
+            '''try:
+                print(vals['MDUST'])
+                print(model_dust[:n_optir],x1_dust[:n_optir])
+                print(model_dust[n_optir:],x1_dust[n_optir:])
+            except:
+                pass
+            '''
             # then append only FIR flux grid.
             model = np.append(model,model_dust[n_optir:])
             x1 = np.append(x1,x1_dust[n_optir:])

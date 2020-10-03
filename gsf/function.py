@@ -378,8 +378,16 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
     return fnu
 
 def data_int(lmobs, lmtmp, ftmp):
+    '''
+    Purpose:
+    ========
+
+    Input:
+    ======
     # lmobs: Observed wavelength.
     # lmtmp, ftmp: Those to be interpolated.
+    '''
+
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 

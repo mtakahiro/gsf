@@ -575,7 +575,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Stellar mass
     ACP = [ACp[0,0], ACp[0,1], ACp[0,2]]
     col50 = fits.Column(name='Mstel', format='E', unit='logMsun', array=ACP[:])
-    col01.append(col50)
+    col01.append(col50)        
 
     # SFR based on SED
     col50 = fits.Column(name='SFR', format='E', unit='Msun/yr', array=SFR_SED_med[:])

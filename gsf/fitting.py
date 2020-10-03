@@ -846,8 +846,8 @@ class Mainbody():
             else:
                 fit_params.add('TDUST', value=0, vary=False)
 
+            #fit_params.add('MDUST', value=9, min=9, max=9.1)
             fit_params.add('MDUST', value=9, min=5, max=15)
-            #fit_params.add('MDUST', value=13, min=12, max=15)
             self.ndim += 1
 
             dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)

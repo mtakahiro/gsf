@@ -571,13 +571,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                     tree_spec_full.update({'colnum':nd})
 
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
-                colspec = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=spec_ap)#, disp='%s'%(age[ss])
-                col00.append(colspec)
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_ap})
 
-                colspec_all = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=spec_mul_nu_conv[ss,:])#, disp='%s'%(age[ss])
-                col01.append(colspec_all)
                 # ASDF
                 tree_spec_full.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
 
@@ -659,6 +655,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
             ALLFILT = np.append(SFILT,DFILT)
             ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
 
+            if f_spec:
+                ftmp_nu_int_d = data_int(lm, lambda_d*(1.+zbest), fnu_d)
+                ltmpbb_d = np.append(lm, ltmpbb_d)
+                ftmpbb_d = np.append(ftmp_nu_int_d, ftmpbb_d)
+                nd_db = np.arange(0, len(ftmpbb_d), 1)
+
             if tt == 0:
                 # For conv;
                 col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
@@ -709,7 +711,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
     fw.close()
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
     if f_dust:
-        nbblast = len(ltmpbb[0,:])
+        nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast]))

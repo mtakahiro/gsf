@@ -251,11 +251,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
         if f_grsm:
-            ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
+            #ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
+            ax2t = ax1.inset_axes((0.7,.95-0.2,.28,.2))
         if f_dust:
             #ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
-            ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
-            ax3t.set_xlabel('($\mu$m)')
+            #ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
+            ax3t = ax1.inset_axes((0.7,.35,.28,.2))
+            ax3t.set_xlabel('Obs. wavelength ($\mu$m)')
     else:
         fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
@@ -990,9 +992,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_label:
         try:
             fd = fits.open('SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
-            ax1.text(2400, ymax*0.5,\
-            'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
+            
+            if f_dust:
+                label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+                %(ID, zbes, fd['Mstel'][1], MD50, fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2)
+                ylabel = ymax*0.45
+            else:
+                label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+                %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2)
+                ylabel = ymax*0.5
+
+            ax1.text(2400, ylabel,\
+            label,\
             fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
         except:
             print('\nFile is missing : _param.fits\n')
