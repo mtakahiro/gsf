@@ -16,6 +16,109 @@ from .function import *
 from .function_igm import *
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
+
+def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, DIR_DUST='/Users/tmorishita/Downloads/DL07spec/', phi=0.055):
+    '''
+    Purpose:
+    ========
+
+    Input:
+    ======
+    lambda_d : Wavelength array, in AA.
+    phi (default: 0.055): Eq.34 of Draine & Li 2007.
+
+    Return:
+    =======
+    Interpolated dust emission in Fnu of m0=25.0. In units of Fnu/Msun
+
+    Ref:
+    ====
+    umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
+            '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '10.0', '12.0', '15.0',\
+            '20.0', '25.0']
+    umaxs = ['1e3', '1e4', '1e5', '1e6', '1e7']
+
+    '''
+    from .function import fnutonu
+    import scipy.interpolate as interpolate
+    from astropy.io import ascii
+
+    Htokg = 1.66054e-27 # kg/H
+    kgtomsun = 1.989e+30 # kg/Msun
+    MsunperH = Htokg / kgtomsun # Msun/H
+
+    Jytoerg = 1e-23 # erg/s/cm2/Hz / Jy
+    c = 3e18
+    Mpc_cm = 3.08568025e+24
+
+    umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
+            '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '12.0', '15.0',\
+            '20.0', '25.0']
+    umaxs = ['1e3', '1e4', '1e5', '1e6', '1e7']
+        
+    dust_model = DIR_DUST+'draine07_models.txt'
+    fd_model = ascii.read(dust_model)
+
+    umin = umins[numin]
+    umax = umaxs[numax]
+    dmodel = fd_model['name'][ndmodel]
+
+    # See README of Draine's table.
+    #dU = float(umin)/100.
+    #U = np.arange(float(umin), float(umax), dU)
+    #Umean = np.mean(U)
+    #print(Umean)
+
+    gamma = 0.01
+    Umean = (1-gamma) * float(umin) + (gamma * float(umin) * np.log(float(umax)/float(umin))) / (1-float(umin)/float(umax))
+    #print(Umean)
+
+    #try:
+    if True:
+        if dmodel == 'MW3.1_60':
+            data_start = 55
+        else:
+            data_start = 36
+
+        file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
+        print(file_dust)
+        fd = ascii.read(file_dust, data_start=data_start)
+
+        wave = fd['col1'] # in mu m.
+        #flux = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
+        flux = fd['col2'] # erg/s H-1
+        flux_dens = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
+        
+        fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) / MsunperH
+        # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) / (Msun/H) = erg/s/cm2/Hz / Msun
+
+        freq = c / (wave*1e4) # 1/Hz
+
+        ftot = np.sum(flux/ MsunperH) # erg/s H-1 / (Msun/H) = erg/s/Msun
+        #Mh = ftot * phi # erg/s/Msun * g/(erg/s) = g/Msun
+
+        # Get Mdust to MH2 ratio;
+        #ftot2 = np.sum(flux * freq)
+        #MdtoMh = phi / Umean * ftot2 / (Htokg*1e3) # g/(erg/s)/H / 1 * erg/s/Msun / g * Msun/H = 1/Msun 
+        #print(MdtoMh)
+        MdtoMh = 0.01 #1.0
+        Mdust = 1.0 * MdtoMh #* Mh * kgtomsun * mh # Msun/template
+ 
+        # Then;
+        fnu = fnutonu(fobs) / Mdust # Flux density per 1Msun for dust.
+
+        fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
+        yy_s = fint(lambda_d)
+        con_yys = (lambda_d<1e4) # Interpolation cause some error??
+        yy_s[con_yys] = 0
+
+    #except:
+    #    print('Something is wrong.',file_dust)
+    #    yy_s = lambda_d * 0
+
+    return yy_s
+
+
 def sim_spec(lmin, fin, sn):
     '''
     Purpose:
@@ -429,8 +532,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 spec_sum = 0*spec_mul[0] # This is dummy file.
                 DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
-                #spec_av  = flamtonu(wavetmp, spec_sum) # Conversion from Flambda to Fnu.
-                #ftmp_int = data_int(lm, wavetmp, spec_av)
 
                 Lsun = 3.839 * 1e33 #erg s-1
                 stmp_common = 1e10 # so 1 template is in 1e10Lsun
@@ -442,11 +543,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
                 ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
-
-                # UV magnitude;
-                #print('%s AA is used as UV reference.'%(xm_tmp[iiuv]))
-                #print(ms[ss], (Lsun/(4.*np.pi*DL**2/(1.+zbest))))
-                #print('m-M=',5*np.log10(DL/Mpc_cm*1e6/10))
 
                 ##########################################
                 # Writing out the templates to fits table.
@@ -498,20 +594,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
     #########################
     # Summarize the templates
     #########################
-    '''
-    coldefs_spec = fits.ColDefs(col00)
-    hdu = fits.BinTableHDU.from_columns(coldefs_spec)
-    hdu.writeto(DIR_TMP + 'spec_' + ID + '_PA' + PA + '.fits', overwrite=True)
-
-    coldefs_spec = fits.ColDefs(col01)
-    hdu2 = fits.BinTableHDU.from_columns(coldefs_spec)
-    hdu2.writeto(DIR_TMP + 'spec_all_' + ID + '_PA' + PA + '.fits', overwrite=True)
-
-    coldefs_ms = fits.ColDefs(col02)
-    hdu3 = fits.BinTableHDU.from_columns(coldefs_ms)
-    hdu3.writeto(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits', overwrite=True)
-    '''
-
     tree.update({'spec' : tree_spec})
     tree.update({'spec_full' : tree_spec_full})
     tree.update({'ML' : tree_ML})
@@ -529,20 +611,22 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
             Temp = np.arange(DT0,DT1,dDT)
 
         dellam_d = 1e3
-        lambda_d = np.arange(1e4,1e7,dellam_d) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um;
+        lambda_d = np.arange(1e3,1e7,dellam_d) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um; This has to be wide enough, to cut dust contribution at <1um.
 
+        '''
         # c in AA/s.
         kb = 1.380649e-23 # Boltzmann constant, in J/K
         hp = 6.62607015e-34 # Planck constant, in J*s
-
         # from Eq.3 of Bianchi 13
         kabs0 = 4.0 # in cm2/g
         beta_d= 2.08 #
         lam0  = 250.*1e4 # mu m to AA
-        #kappa *= (1e8)**2 # AA2/g
-
+        
         from astropy.modeling import models
         from astropy import units as u
+        '''
+
+        print('Reading dust table...')
         for tt in range(len(Temp)):
             if tt == 0:
                 # For full;
@@ -553,72 +637,28 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 tree_spec_dust_full.update({'colnum': nd_d})
 
             '''
-            nu_d = c / lambda_d # 1/s = Hz
-            nu_d_hp = nu_d * hp # This is recommended, as BT_nu equation may cause overflow.
-            BT_nu = 2 * hp * nu_d[:]**3 / c**2 / (np.exp(nu_d_hp/(kb*Temp[tt]))-1) # J*s * (1/s)^3 / (AA/s)^2 / sr = J / AA^2 / sr = J/s/AA^2/Hz/sr.
-            # if optically thin;
-            #kappa = nu_d ** beta_d
-            fnu_d = 1.0 / (4.*np.pi*DL**2/(1.+zbest)) * kappa * BT_nu # 1/cm2 * AA2/g * J/s/AA^2/Hz/sr = J/s/cm^2/Hz/g/sr
-            fnu_d *= 1.989e+33 # J/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
-            fnu_d *= 1e7 # erg/s/cm^2/Hz/Msun/sr.
-            '''
-
             bb = models.BlackBody(temperature=Temp[tt]*u.K)
             wav = lambda_d * u.AA
             BT_nu = bb(wav) # erg/Hz/s/sr/cm2
-
             kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
             
             # if optically thin;
             #kappa = nu_d ** beta_d
             fnu_d = (1+zbest)/DL**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
             fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
-
-            '''
-            # Redefine;
-            nu_d = c / wav  * u.Hz
-            beta = 2.0
-            nu_1 = c / lam0 # 1/s
-            t_nu = (nu_d / nu_1)**beta
-            k870 = 0.05 # m2/kg
-            nu_870 = 343 * 1e9 # in Hz
-
-            Snu0 = (1+zbest)/DL**2 * k870 * (nu_d / nu_870)**beta * flux # 1/cm2 * m2/kg * J/s/AA^2/Hz/sr. = 10000 * J/s/AA^2/Hz/sr/kg
-            Snu0 *= 1.989e+30 * 10000 # J/s/AA^2/Hz/sr/Msun
-            Snu0 *= 1e+7 # erg/s/AA^2/Hz/Msun/sr.
-            Snu0 *= (1e8)**2 # erg/s/cm^2/Hz/Msun/sr.
             '''
 
-            if True:
-                print('Somehow, crazy scale is required for FIR normalization...')
-                fnu_d *= 1e30
-            
-            if False:
-                flam_d = fnutolam(wav, fnu_d)
-                plt.plot(wav, flam_d, '.-')
-                plt.xlim(1e4, 1e6)
-                plt.show()
-                hoge
+            #numin, numax, nmodel = 8, 3, 9
+            numin, numax, nmodel = tt, 3, 6
+            fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
 
-            
-            #colspec_d = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu(erg/s/cm^2/Hz/Msun)', disp='%.2f'%(Temp[tt]), array=fnu_d)
-            #col03.append(colspec_d)
             # ASDF
-            fnu_d = fnu_d.value
             tree_spec_dust_full.update({'fspec_'+str(tt): fnu_d})
 
             # Convolution;
-            #ltmpbb_d, ftmpbb_d = filconv(DFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
             ALLFILT = np.append(SFILT,DFILT)
             ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
-            if False:
-                #plt.plot(nu_d/1e9/(1.+zbest),fnu_d)
-                #nubb_d = c / ltmpbb_d
-                #plt.plot(nubb_d/1e9, ftmpbb_d, 'x')
-                plt.plot(lambda_d/1e4,fnu_d)
-                plt.plot(lambda_d*(1.+zbest)/1e4,fnu_d)
-                plt.plot(ltmpbb_d/1e4, ftmpbb_d, 'x')
-                plt.show()
+
             if tt == 0:
                 # For conv;
                 col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
@@ -629,19 +669,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
                 tree_spec_dust.update({'wavelength': ltmpbb_d})
                 tree_spec_dust.update({'colnum': nd_db})
 
-            #colspec_db = fits.Column(name='fspec_'+str(tt), format='E', unit='Fnu', disp='%.2f'%(Temp[tt]), array=ftmpbb_d)
-            #col04.append(colspec_db)
             tree_spec_dust.update({'fspec_'+str(tt): ftmpbb_d})
 
-        '''
-        coldefs_d = fits.ColDefs(col03)
-        hdu4 = fits.BinTableHDU.from_columns(coldefs_d)
-        hdu4.writeto(DIR_TMP + 'spec_dust_all_' + ID + '_PA' + PA + '.fits', overwrite=True)
-
-        coldefs_db = fits.ColDefs(col04)
-        hdu5 = fits.BinTableHDU.from_columns(coldefs_db)
-        hdu5.writeto(DIR_TMP + 'spec_dust_' + ID + '_PA' + PA + '.fits', overwrite=True)
-        '''
         tree.update({'spec_dust' : tree_spec_dust})
         tree.update({'spec_dust_full' : tree_spec_dust_full})
         print('dust updated.')
@@ -649,7 +678,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
     # Save;
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all_' + ID + '_PA' + PA + '.asdf', all_array_compression='zlib')
-
 
     ##########################################
     # For observation.

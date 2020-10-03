@@ -387,7 +387,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     msize = np.zeros(len(age), dtype='float32')
     for aa in range(len(age)):
         if A50[aa]/Asum>flim: # if >1%
-            msize[aa] = 150 * A50[aa]/Asum
+            msize[aa] = 200 * A50[aa]/Asum
 
     conA = (msize>=0)
     if f_log_sfh:
@@ -404,14 +404,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             
             if f_log_sfh:
                 ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
-                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
+                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
             else:
                 ax1.errorbar(age[aa], 10**SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
                     yerr=[[10**SFp[aa,1]-10**SFp[aa,0]], [10**SFp[aa,2]-10**SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa])
+                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
 
     #############
     # Get SFMS in log10;
@@ -431,11 +431,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Plot MS?
     if f_SFMS:
         if f_log_sfh:
-            ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3)
-            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5)
+            ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2)
+            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
         else:
-            ax1.fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3)
-            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5)
+            ax1.fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3, zorder=-2)
+            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
 
     #
     # Mass in each bin
@@ -540,8 +540,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2.set_xlim(Txmin, Txmax)
     ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
-    ax2.text(np.min(age), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-        %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9)
+    ax2.text(np.min(age*1.05), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+        %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
 
     #
     # Brief Summary

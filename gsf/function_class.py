@@ -127,7 +127,7 @@ class Func:
         lib[:,1] = xx[:]
 
         for aa in range(len(self.Temp)):
-            coln    = int(2 + aa)
+            coln = int(2 + aa)
             colname = 'fspec_' + str(aa)
             colnall = int(2 + aa) # 2 takes account of wavelength and AV columns.
             lib[:,colnall] = hdu0[colname]
@@ -136,6 +136,7 @@ class Func:
                 plt.close()
                 plt.plot(lib[:,1],lib[:,coln],linestyle='-')
                 plt.show()
+                hoge
         return lib
 
 

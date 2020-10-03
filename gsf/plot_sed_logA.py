@@ -251,9 +251,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
         if f_grsm:
-            ax2t = inset_axes(ax1, width="30%", height="20%", loc=1)
+            ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
         if f_dust:
-            ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
+            #ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
+            ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
+            ax3t.set_xlabel('($\mu$m)')
     else:
         fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
@@ -473,9 +475,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, 110000]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-    #if f_dust:
-    #    xticks = [2500, 5000, 10000, 20000, 40000, 80000, 1e7]
-    #    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '1000']
+    if f_dust:
+        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
+        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
+
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
 
@@ -492,7 +495,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     ax1.yaxis.labelpad = 1.5
 
-    xx = np.arange(1200,160000)
+    xx = np.arange(1200,400000)
     yy = xx * 0
     ax1.plot(xx, yy, ls='--', lw=0.5, color='k')
 
@@ -726,7 +729,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if not f_fill:
         ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
-    #ax3t.plot(x1_tot, ytmp50 * c/ np.square(x1_tot) / d, '--', lw=0.5, color='r', zorder=-1, label='')
 
     # Attach the data point in MB;
     MB.sed_wave_obs = xbb
@@ -810,7 +812,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         iix = []
         for ii in range(len(fbb)):
-            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
+            #iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
+            iix.append(ii)
         con_sed = ()
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
 
@@ -986,12 +989,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     if f_label:
         try:
-        #if True:
             fd = fits.open('SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
-            ax1.text(2300, ymax*0.32,\
+            ax1.text(2400, ymax*0.5,\
             'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2),\
-            fontsize=9)
+            fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
         except:
             print('\nFile is missing : _param.fits\n')
             pass
@@ -1014,7 +1016,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_dust:
         try:
             contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
-            y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*1.5
+            y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*2.0
             ax3t.set_ylim(y3min, y3max)
         except:
             if verbose:

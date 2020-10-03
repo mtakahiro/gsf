@@ -31,7 +31,6 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     '''
-    #, emojis=['🥚','🐣','🐥','🦆']
 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     if fill == None:
@@ -335,11 +334,15 @@ def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
     return sfr
 
 def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
-    #
-    # lmtmp: Rest frame wave (AA)
-    # ftmp: Fnu ()
-    # Return: integrated flux.
-    #
+    '''
+    Input:
+    ======
+    lmtmp: Rest frame wave (AA)
+    ftmp: Fnu ()
+    Return: integrated flux.
+
+    '''
+    
     con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
@@ -380,13 +383,48 @@ def data_int(lmobs, lmtmp, ftmp):
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 
+def fnutonu(fnu, m0set=25.0, m0input=-48.6):
+    '''
+    Purpose:
+    ========
+    Convert from Fnu (cgs) to Fnu (m0=m0set)
+    
+    Inputs:
+    =======
+    fnu : flux in cgs, with magnitude zero point of m0input.
+    m0set : Target mag zero point.
+    
+    '''
+    Ctmp = 10**((48.6+m0set)/2.5)
+    fnu_new  = fnu * Ctmp
+    return fnu_new
+
+
 def flamtonu(lam, flam, m0set=25.0):
-    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    '''
+    Purpose:
+    ========
+    Convert from Flam to Fnu, with mag zeropoint of m0set.
+    
+    Inputs:
+    =======
+
+    '''
+    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     fnu  = flam * Ctmp
     return fnu
 
 def fnutolam(lam, fnu, m0set=25.0):
-    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    '''
+    Purpose:
+    ========
+    Convert from Fnu to Flam, with mag zeropoint of m0set.
+    
+    Inputs:
+    =======
+
+    '''
+    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     flam  = fnu / Ctmp
     return flam
 
