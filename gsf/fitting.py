@@ -931,8 +931,8 @@ class Mainbody():
         except:
             dust_model = 0
 
-        fnc = self.fnc  #Func(Zall, nage, dust_model=dust_model, self.DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
-        bfnc = self.bfnc #Basic(Zall)
+        fnc = self.fnc
+        bfnc = self.bfnc 
 
         # Error parameter
         try:
@@ -957,7 +957,7 @@ class Mainbody():
         fit_params = Parameters()
         f_Alog = True
         if f_Alog:
-            Amin = -99
+            Amin = -20
             Amax = 10
             Aini = 0
         else:
@@ -1108,13 +1108,6 @@ class Mainbody():
             ################################
             print('\nMinimizer Defined\n')
             
-            mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
-                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
-                
-            print('######################')
-            print('### Starting emcee ###')
-            print('######################')
-
             ncpu0 = int(multiprocess.cpu_count()/2)
             try:
                 ncpu = int(inputs['NCPU'])
@@ -1123,10 +1116,110 @@ class Mainbody():
             except:
                 ncpu = ncpu0
                 pass
-
             print('No. of CPU is set to %d'%(ncpu))
+
+            print('######################')
+            print('### Starting emcee ###')
+            print('######################')
             start_mc = timeit.default_timer()
-            res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+
+            # Nested sample?
+            try:
+                nnested = int(inputs['NEST_SAMP'])
+                if nnested == 1:
+                    f_mcmc = False #True #
+                    f_nested = True #False #
+                else:
+                    f_mcmc = True
+                    f_nested = False
+            except:
+                f_mcmc = True
+                f_nested = False
+
+            if f_mcmc:
+                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
+                    moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+                res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+                
+                #
+                flatchain = res.flatchain
+                var_names = res.var_names
+                params_value = {}
+                for key in var_names:
+                    params_value[key] = res.params[key].value
+
+
+            elif f_nested:
+                import dynesty
+                from dynesty import NestedSampler
+
+                nlive = self.nmc      # number of live point
+                maxmcmc = self.nmc    # maximum MCMC chain length
+                nthreads = ncpu       # use one CPU core
+                bound = 'multi'   # use MutliNest algorithm for bounds
+                sample = 'unif'   # uniform sampling
+                tol = 0.1         # the stopping criterion
+                ndim_nest = self.ndim #0
+                '''
+                for key in out.params:
+                    print(out.params[key].vary)
+                    ndim_nest += 1
+                '''
+
+                #pars, fy, ey, wht, f_fir
+                logl_kwargs = {} #{'pars':out.params, 'fy':dict['fy'], 'ey':dict['ey'], 'wht':dict['wht2'], 'f_fir':self.f_dust}
+                logl_args = [dict['fy'], dict['ey'], dict['wht2'], self.f_dust]
+                ptform_kwargs = {} #{'pars': out.params}
+                ptform_args = []
+
+                from .posterior_nested import Post_nested
+                class_post_nested = Post_nested(self, params=out.params)
+
+                # Initialize;
+                sampler = NestedSampler(class_post_nested.lnlike, class_post_nested.prior_transform, ndim_nest, walks=self.nwalk,\
+                bound=bound, sample=sample, nlive=nlive, ptform_args=ptform_args, logl_args=logl_args, logl_kwargs=logl_kwargs)
+
+                # Run;
+                sampler.run_nested(dlogz=tol, print_progress=self.f_disp) 
+                
+                #sampler.save_samples = True
+                #sampler.save_bounds = True
+                res0 = sampler.results # get results dictionary from sampler
+
+                # Just for dammy;
+                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=False, \
+                    moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+                res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+
+                # Update;
+                var_names = []#res.var_names
+                params_value = {}
+                ii = 0
+                for key in out.params:
+                    if out.params[key].vary:
+                        var_names.append(key)
+                        params_value[key] = np.median(res0.samples[:,ii])
+                        ii += 1
+
+                import pandas as pd                
+                flatchain = pd.DataFrame(data=res0.samples, columns=var_names)
+
+                class get_res:
+                    def __init__(self, flatchain, var_names, params_value, res):
+                        self.flatchain = flatchain
+                        self.var_names = var_names
+                        self.params_value = params_value
+                        self.params = res.params
+                        for key in var_names:
+                            self.params[key].value = params_value[key]
+
+                res = get_res(flatchain, var_names, params_value, res)
+                print(params_value)
+
+
+            else:
+                print('Failed. Exiting.')
+                return -1
 
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
@@ -1134,13 +1227,14 @@ class Mainbody():
             print('### MCMC part took %.1f sec ###'%(tcalc_mc))
             print('###############################')
 
+
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
             burnin   = int(self.nmc/2)
             savepath = './'
             cpklname = 'chain_' + self.ID + '_PA' + self.PA + '_corner.cpkl'
-            savecpkl({'chain':res.flatchain,
+            savecpkl({'chain':flatchain,
                           'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
                          savepath+cpklname) # Already burn in
             stop_mc  = timeit.default_timer()
@@ -1156,10 +1250,10 @@ class Mainbody():
             ####################
             if cornerplot:
                 val_truth = []
-                for par in res.var_names:
-                    val_truth.append(res.params[par].value)
+                for par in var_names:
+                    val_truth.append(params_value[par])
 
-                fig1 = corner.corner(res.flatchain, labels=res.var_names, \
+                fig1 = corner.corner(flatchain, labels=var_names, \
                 label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
                 title_kwargs={"fontsize": 14}, \
                 truths=val_truth, \

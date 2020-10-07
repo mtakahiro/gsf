@@ -50,7 +50,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     nmc  = self.nmc
     ndim = self.ndim
 
-    samples = res.chain[:, :, :].reshape((-1, ndim))
+    #samples = res.chain[:, :, :].reshape((-1, ndim))
+    samples = res.flatchain
     if burnin < 0:
          burnin = int(samples.shape[0]/2.)
 
@@ -69,14 +70,12 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     # ASDF;
     af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '_PA' + PA0 + '.asdf')
     sedpar = af['ML']
-    #f0 = fits.open(DIR_TMP + 'ms_' + ID0 + '_PA' + PA0 + '.fits')
-    #sedpar = f0[1]
     
     ms = np.zeros(len(age), dtype='float')
     try:
         msmc0 = np.zeros(len(res.flatchain['A%d'%self.aamin[0]][burnin:]), dtype='float')
     except:
-        msmc0 = np.zeros(len(res.flatchain['A0'][burnin:]), dtype='float')
+        msmc0 = np.zeros(len(res.flatchain['Av'][burnin:]), dtype='float')
 
     for aa in range(len(age)):
         try:
@@ -106,12 +105,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     msmc  = np.percentile(msmc0, [16,50,84])
 
-    try:
+    #try:
+    if True:
         Avb = res.params['Av'].value
         Avmc = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
-    except:
-        Avb = self.AVFIX
-        Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
+    #except:
+    #    Avb = self.AVFIX
+    #    Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
 
     AAvmc = [Avmc]
     try:

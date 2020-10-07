@@ -250,9 +250,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fig = plt.figure(figsize=(7.,3.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
+        xsize = 0.29
+        ysize = 0.25
         if f_grsm:
             #ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
-            ax2t = ax1.inset_axes((0.7,.95-0.25,.28,.25))
+            ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if f_dust:
             #ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
             #ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
@@ -262,11 +264,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
-
-    # Plot data;
-    conspec = (NR<10000) #& (fy/ey>1)
-    #ax1.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    #ax1.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -556,10 +553,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
-        ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-        ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
+        #ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
+        #ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
         ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-        ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
         xgrism = np.concatenate([xg0,xg1])
         fgrism = np.concatenate([fg0,fg1])
@@ -1012,19 +1009,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #######################################
     ax1.xaxis.labelpad = -3
     if f_grsm:
-        xgmin, xgmax = 7500, 17000
+
+        conlim = (x0>10000) & (x0<25000)
+        xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
         ax2t.set_xlabel('')
         ax2t.set_xlim(xgmin, xgmax)
 
-        conaa = (x0>xgmin-200) & (x0<xgmax+200)
-        ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.2
-        yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.2
+        conaa = (x0>xgmin-50) & (x0<xgmax+50)
+        ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.15
+        yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.15
 
         ax2t.set_ylim(yminzoom, ymaxzoom)
         ax2t.xaxis.labelpad = -2
-        #ax2t.set_yticklabels(())
-        ax2t.set_xticks([8000, 10000, 12000, 14000, 16000])
-        ax2t.set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
+        if xgmax>20000:
+            ax2t.set_xticks([8000, 12000, 16000, 20000, 24000])
+            ax2t.set_xticklabels(['0.8', '1.2', '1.6', '2.0', '2.4'])
+        else:
+            ax2t.set_xticks([8000, 10000, 12000, 14000, 16000])
+            ax2t.set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
 
     if f_dust:
         try:
