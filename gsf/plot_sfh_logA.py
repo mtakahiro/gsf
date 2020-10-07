@@ -480,7 +480,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
             ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=2)
 
-
+    '''
     fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
     fw_sfr.write('# time_l time_u logSFR16 logSFR50 logSFR84 logMstel16 logMstel50 logMstel84 logZ16 logZ50 logZ84\n')
     fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
@@ -490,6 +490,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
         %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,0], SFp[ii,1], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,0], ZCp[ii,1], ZCp[ii,2]))
     fw_sfr.close()
+    '''
 
     #############
     # Axis
@@ -609,11 +610,57 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     col50 = fits.Column(name='AV', format='E', unit='mag', array=para[:])
     col01.append(col50)
 
-    # 
+    #
     colms  = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    hdu.writeto('SFH_' + ID + '_PA' + PA + '_param.fits', overwrite=True)
+    file_sfh_param = 'SFH_' + ID + '_PA' + PA + '_param.fits'
+    hdu.writeto(file_sfh_param, overwrite=True)
+
+    # For SFH plot;
+    t0 = Tuni - age[:]
+    col02 = []
+    col50 = fits.Column(name='time', format='E', unit='Gyr', array=age[:])
+    col02.append(col50)
+    col50 = fits.Column(name='time_l', format='E', unit='Gyr', array=age[:]-delTl[:]/1e9)
+    col02.append(col50)
+    col50 = fits.Column(name='time_u', format='E', unit='Gyr', array=age[:]+delTl[:]/1e9)
+    col02.append(col50)
+    col50 = fits.Column(name='logSFR16', format='E', unit='Msun/yr', array=SFp[:,0])
+    col02.append(col50)
+    col50 = fits.Column(name='logSFR50', format='E', unit='Msun/yr', array=SFp[:,1])
+    col02.append(col50)
+    col50 = fits.Column(name='logSFR84', format='E', unit='Msun/yr', array=SFp[:,2])
+    col02.append(col50)
+    col50 = fits.Column(name='logMstel16', format='E', unit='Msun', array=ACp[:,0])
+    col02.append(col50)
+    col50 = fits.Column(name='logMstel50', format='E', unit='Msun', array=ACp[:,1])
+    col02.append(col50)
+    col50 = fits.Column(name='logMstel84', format='E', unit='Msun', array=ACp[:,2])
+    col02.append(col50)
+    col50 = fits.Column(name='logZ16', format='E', unit='logZsun', array=ZCp[:,0])
+    col02.append(col50)
+    col50 = fits.Column(name='logZ50', format='E', unit='logZsun', array=ZCp[:,1])
+    col02.append(col50)
+    col50 = fits.Column(name='logZ84', format='E', unit='logZsun', array=ZCp[:,2])
+    col02.append(col50)
+    
+    colms  = fits.ColDefs(col02)
+    dathdu = fits.BinTableHDU.from_columns(colms)
+    hdu = fits.HDUList([prihdu, dathdu])
+    file_sfh = 'SFH_' + ID + '_PA' + PA + '.fits'
+    hdu.writeto(file_sfh, overwrite=True)
+
+    '''
+    fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
+    fw_sfr.write('# time_l time_u logSFR16 logSFR50 logSFR84 logMstel16 logMstel50 logMstel84 logZ16 logZ50 logZ84\n')
+    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
+
+    for ii in range(len(age)-1,0-1,-1):
+        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
+        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,0], SFp[ii,1], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,0], ZCp[ii,1], ZCp[ii,2]))
+    fw_sfr.close()
+    '''
 
     # Attach to MB;
     MB.sfh_tlook = age

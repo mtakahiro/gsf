@@ -997,7 +997,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             else:
                 label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
                 %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2)
-                ylabel = ymax*0.5
+                ylabel = ymax*0.32
 
             ax1.text(2400, ylabel,\
             label,\

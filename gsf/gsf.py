@@ -146,7 +146,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
         print('The whole process took;',stop - start)
 
 
-    if fplt <= 3 and flag_suc != -1:
+    if fplt <= 3 and flag_suc != -1:# and False:
         if f_Alog:
             from .plot_sfh_logA import plot_sfh
             from .plot_sed_logA import plot_sed            

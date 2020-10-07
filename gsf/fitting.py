@@ -38,7 +38,6 @@ fLW = np.zeros(len(LW), dtype='int')
 
 class Mainbody():
 
-
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         self.update_input(inputs, idman=idman)
 
@@ -206,6 +205,9 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+                print('\n')
+                print('##########################')
+                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.delZ = float(inputs['DELZ'])
@@ -226,6 +228,9 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+                print('\n')
+                print('##########################')
+                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
@@ -320,6 +325,21 @@ class Mainbody():
         except:
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
+
+
+        # Nested sample?
+        try:
+            nnested = int(inputs['NEST_SAMP'])
+            if nnested == 1:
+                self.f_mcmc = False #True #
+                self.f_nested = True #False #
+            else:
+                self.f_mcmc = True
+                self.f_nested = False
+        except:
+            self.f_mcmc = True
+            self.f_nested = False
+
 
         '''
         # Read Observed Data
@@ -909,6 +929,9 @@ class Mainbody():
         self.Zevol    = int(self.inputs['ZEVOL'])
         self.fzvis    = int(self.inputs['ZVIS'])
         self.fneld    = int(self.inputs['FNELD'])
+        if self.f_nested:
+            print('Nested sample is on. Nelder is used for time saving analysis.')
+            self.fneld = 1 
 
         try:
             self.ntemp = int(self.inputs['NTEMP'])
@@ -1123,20 +1146,8 @@ class Mainbody():
             print('######################')
             start_mc = timeit.default_timer()
 
-            # Nested sample?
-            try:
-                nnested = int(inputs['NEST_SAMP'])
-                if nnested == 1:
-                    f_mcmc = False #True #
-                    f_nested = True #False #
-                else:
-                    f_mcmc = True
-                    f_nested = False
-            except:
-                f_mcmc = True
-                f_nested = False
 
-            if f_mcmc:
+            if self.f_mcmc:
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
                 res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
@@ -1149,7 +1160,7 @@ class Mainbody():
                     params_value[key] = res.params[key].value
 
 
-            elif f_nested:
+            elif self.f_nested:
                 import dynesty
                 from dynesty import NestedSampler
 
@@ -1192,17 +1203,18 @@ class Mainbody():
                 res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
 
                 # Update;
+                nburn = int(self.nmc/2)
                 var_names = []#res.var_names
                 params_value = {}
                 ii = 0
                 for key in out.params:
                     if out.params[key].vary:
                         var_names.append(key)
-                        params_value[key] = np.median(res0.samples[:,ii])
+                        params_value[key] = np.median(res0.samples[nburn:,ii])
                         ii += 1
 
-                import pandas as pd                
-                flatchain = pd.DataFrame(data=res0.samples, columns=var_names)
+                import pandas as pd
+                flatchain = pd.DataFrame(data=res0.samples[nburn:,:], columns=var_names)
 
                 class get_res:
                     def __init__(self, flatchain, var_names, params_value, res):
@@ -1481,6 +1493,9 @@ class Mainbody():
                 ZFIX = float(inputs['ZFIX'])
                 aa = 0
                 fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
+                print('\n')
+                print('##########################')
+                print('ZFIX is found.\nZ will be fixed to: %.2f'%(ZFIX))
             except:
                 aa = 0
                 if np.min(self.Zall)==np.max(self.Zall):
