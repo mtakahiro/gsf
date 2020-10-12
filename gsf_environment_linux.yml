@@ -18,9 +18,9 @@ dependencies:
   - kiwisolver=1.2.0
   - libblas=3.8.0=16_openblas
   - libcblas=3.8.0=16_openblas
-  - libcxx=10.0.0=h1af66ff_2
+  - libcxx=10.0.0
   - libffi=3.2.1
-  - libgfortran=4.0.0
+  - libgfortran
   - liblapack=3.8.0=16_openblas
   - libopenblas=0.3.9
   - libpng=1.6.37
