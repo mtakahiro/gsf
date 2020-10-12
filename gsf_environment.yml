@@ -4,6 +4,7 @@ channels:
   - http://ssb.stsci.edu/astroconda
   - defaults
 dependencies:
+  - asdf=2.5.2
   - asteval=0.9.16=pyh5ca1d4c_0
   - astropy=4.0.1.post1=py37h9bfed18_0
   - ca-certificates=2020.4.5.1=hecc5488_0
