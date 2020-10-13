@@ -188,10 +188,11 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
             fwz.write('\n')
             if fitc[1]<chidef:
                 chidef = fitc[1]
-                out    = out_tmp
+                out = out_tmp
 
     else: # Powell;
-        for zz in range(len(ZZtmp)):
+        #for zz in range(len(ZZtmp)):
+        for zz in range(int(len(ZZtmp)/2),int(len(ZZtmp)/2)+1,1):
             ZZ = ZZtmp[zz]
             if int(inputs['ZEVOL']) == 1:
                 for aa in range(len(age)):
@@ -234,7 +235,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
             fwz.write('\n')
             if fitc[1]<chidef:
                 chidef = fitc[1]
-                out    = out_tmp
+                out = out_tmp
 
     fwz.close()
 
