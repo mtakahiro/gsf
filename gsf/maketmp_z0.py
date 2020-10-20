@@ -266,6 +266,8 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
     age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]/Gyr
     tau0 = MB.tau0 #[0.01,0.02,0.03],
     fneb = MB.fneb #0,
+    print('Currently, BPASS does not have option of nebular emission.')
+    fneb = 0
     logU = MB.logU #-2.5,
     DIR_TMP= MB.DIR_TMP #'./templates/'
 
@@ -414,8 +416,8 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                     # ASDF Big tree;
                     # Create header;
                     tree = {
-                        'isochrone': '%s'%(sp.libraries[0].decode("utf-8")),
-                        'library': '%s'%(sp.libraries[1].decode("utf-8")),
+                        'isochrone': 'BPASS',
+                        'library': 'BPASS',
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }

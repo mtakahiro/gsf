@@ -195,6 +195,7 @@ class Mainbody():
         # Redshift as a param;
         try:
             self.fzmc = int(inputs['ZMC'])
+            print('Cannot find ZMC. Set to %d.'%(self.fzmc))
         except:
             self.fzmc = 0
 
@@ -271,8 +272,7 @@ class Mainbody():
             self.ndim = int(len(self.nage) + self.nZ + self.nAV) # age, Z, and Av.
 
         # Redshift
-        if int(inputs['ZMC']) == 1:
-            self.ndim += 1
+        self.ndim += self.fzmc
 
         print('No of params are : %d'%(self.ndim))
 
@@ -297,7 +297,6 @@ class Mainbody():
                 self.Temp = [DT0]
             else:
                 self.Temp= np.arange(DT0,DT1,dDT)
-
             self.f_dust = True
             self.DT0 = DT0
             self.DT1 = DT1
@@ -364,12 +363,16 @@ class Mainbody():
         zgal : Current redshift estimate.
         idman : Manual input id.
 
+        Return:
+        =======
+        Dictionary.
+
         Note:
         =====
         Can be used for any SFH
 
         '''
-        print('READ data with', Cz0, Cz1, zgal)
+        print('READ data with Cz0=%.2f, Cz0=%.2f, zgal=%.2f'%(Cz0, Cz1, zgal))
 
         ##############
         # Spectrum
@@ -482,10 +485,8 @@ class Mainbody():
         ========
         Search redshift space to find the best redshift and probability distribution.
 
-
         Input:
         ======
-
         fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
         xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].
 
@@ -497,9 +498,8 @@ class Mainbody():
 
         Return:
         =======
-
-        zspace :
-        chi2s  :
+        zspace : Numpy array of redshift grid.
+        chi2s  : Numpy array of chi2 values corresponding to zspace.
 
         '''
         import scipy.interpolate as interpolate
@@ -581,7 +581,7 @@ class Mainbody():
         return zspace, chi2s
 
 
-    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0):
+    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True):
         '''
         Purpose:
         ========
@@ -594,24 +594,32 @@ class Mainbody():
         zlimu  : Upper limit range for redshift
         ezmin  : Minimum redshift uncertainty.
         snlim  : SN limit for data points. Those below the number will be cut from the fit.
+        f_bb_zfit : Redshift fitting if only BB data. If False, return nothing.
 
         Note:
         =====
-        Can be used for any SFH.
+        Spectrum must be provided to make this work.
 
         '''
         import scipy.interpolate as interpolate
 
         # NMC for zfit
-        self.nmc_cz = self.inputs['NMCZ']
+        self.nmc_cz = int(self.inputs['NMCZ'])
 
         # For z prior.
         zliml  = self.zgal - 0.5
 
         # Observed data;
         sn = dict['fy']/dict['ey']
+
         # Only spec data?
         con_cz = (dict['NR']<10000) & (sn>snlim)
+        if len(dict['fy'][con_cz])==0:
+            if f_bb_zfit:
+                con_cz = (sn>snlim)
+            else:
+                return 'y'
+
         fy_cz = dict['fy'][con_cz] # Already scaled by self.Cz0
         ey_cz = dict['ey'][con_cz]
         x_cz = dict['x'][con_cz] # Observed range
@@ -640,10 +648,19 @@ class Mainbody():
             prior_s = np.exp(-0.5 * cprob_s)
             prior_s /= np.sum(prior_s)
         else:
-            zz_prob  = np.arange(0,13,delzz)
-            prior_s  = zz_prob * 0 + 1.
-            prior_s /= np.sum(prior_s)
+            zz_prob = np.arange(0,13,delzz)
+            if priors != None:
+                zprob = priors['z']
+                cprob = priors['chi']
 
+                cprob_s = np.interp(zz_prob, zprob, cprob)
+                prior_s = np.exp(-0.5 * cprob_s)
+                prior_s /= np.sum(prior_s)
+
+            else:
+                zz_prob = np.arange(0,13,delzz)
+                prior_s = zz_prob * 0 + 1.
+                prior_s /= np.sum(prior_s)
 
         # Plot;
         if self.fzvis==1:
@@ -658,7 +675,7 @@ class Mainbody():
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, prior_s, NR_cz, zliml, zlimu, delzz, self.nmc_cz, self.nwalk_cz)
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, zz_prob, prior_s, NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
             z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -681,7 +698,7 @@ class Mainbody():
 
         except:
         #else:
-            print('!!! z fit failed. No spectral data set?')
+            print('### z fit failed. No spectral data set?')
             try:
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
@@ -796,20 +813,22 @@ class Mainbody():
 
     def get_zdist(self):
         '''
-        # Save fig of z-distribution.
+        Purpose:
+        ========
+        Save fig of z-distribution.
 
         Note:
-        =======
+        =====
         Can be used for any SFH
 
         '''
 
-        try: # if spectrum;
-        #if True:
+        #try: # if spectrum;
+        if True:
             fig = plt.figure(figsize=(6.5,2.5))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
-            n, nbins, patches = ax1.hist(self.res_cz.flatchain['z'], bins=200, normed=True, color='gray', label='')
+            n, nbins, patches = ax1.hist(self.res_cz.flatchain['z'], bins=200, density=True, color='gray', label='')
 
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
@@ -825,18 +844,20 @@ class Mainbody():
             ax1.legend(loc=0)
             plt.savefig('zprob_' + self.ID + '_PA' + self.PA + '.pdf', dpi=300)
             plt.close()
-        #else:
-        except:
+        else:
+        #except:
             print('z-distribution figure is not generated.')
             pass
 
 
     def add_param(self, fit_params, sigz=1.0):
         '''
+        Purpose:
+        ========
+        Add parameters.
 
         Note:
-        =======
-        Can be used for any SFH
+        =====
         '''
 
         f_add = False
@@ -1146,19 +1167,19 @@ class Mainbody():
             print('######################')
             start_mc = timeit.default_timer()
 
-
+            # MCMC;
             if self.f_mcmc:
-                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=self.f_disp, \
-                    moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
-                res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], \
+                    f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+
+                res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
                 
-                #
                 flatchain = res.flatchain
                 var_names = res.var_names
                 params_value = {}
                 for key in var_names:
                     params_value[key] = res.params[key].value
-
 
             elif self.f_nested:
                 import dynesty
@@ -1227,7 +1248,6 @@ class Mainbody():
 
                 res = get_res(flatchain, var_names, params_value, res)
                 print(params_value)
-
 
             else:
                 print('Failed. Exiting.')

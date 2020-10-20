@@ -54,13 +54,14 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
 
 def get_input():
     '''
-    This returns somewhat a common default input dictionary.
+    Purpose:
+    ========
+    Get a default dictionary for input params.
 
     '''
-
     inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':1, \
     'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
-    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':100, 'NWALKZ':50,\
+    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,\
     'ZEVOL':0, 'ZVIS':1, 'FNELD':0}
 
     return inputs
@@ -70,16 +71,13 @@ def read_input(parfile):
     '''
     Purpose:
     ========
-    #
-    # Get info from param file.
-    #
+    Get info from param file.
 
     Return:
     =======
     Input dictionary.
 
     '''
-
     input0 = []
     input1 = []
     file = open(parfile,'r')
@@ -98,6 +96,24 @@ def read_input(parfile):
         inputs[input0[i]]=input1[i]
 
     return inputs
+
+
+def write_input(inputs, file_out='gsf.input'):
+    '''
+    Purpose:
+    ========
+    Get an ascii format param file.    
+
+    Return:
+    =======
+    file_out.
+    '''
+    import gsf
+    fw = open(file_out, 'w')
+    fw.write('# gsf ver %s\n'%(gsf.__version__))
+    for key in inputs.keys():
+        fw.write('%s %s\n'%(key,inputs[key]))
+    return True
 
 
 def loadcpkl(cpklfile):
@@ -188,11 +204,10 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
             fwz.write('\n')
             if fitc[1]<chidef:
                 chidef = fitc[1]
-                out = out_tmp
+                out    = out_tmp
 
     else: # Powell;
-        #for zz in range(len(ZZtmp)):
-        for zz in range(int(len(ZZtmp)/2),int(len(ZZtmp)/2)+1,1):
+        for zz in range(len(ZZtmp)):
             ZZ = ZZtmp[zz]
             if int(inputs['ZEVOL']) == 1:
                 for aa in range(len(age)):
@@ -235,7 +250,7 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
             fwz.write('\n')
             if fitc[1]<chidef:
                 chidef = fitc[1]
-                out = out_tmp
+                out    = out_tmp
 
     fwz.close()
 

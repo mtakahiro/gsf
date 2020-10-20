@@ -1,9 +1,5 @@
-import numpy as np
-from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-from .function import check_line_cz_man
 
-
-def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zlimu, delzz=0.01, nmc_cz=100, nwalk_cz=10):
+def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, nmc_cz=100, nwalk_cz=10, nthin=5):
     '''
     Purpose:
     ========
@@ -11,8 +7,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
 
     Input:
     ======
-
     zbest : Initial value for redshift.
+    zprior : Redshift grid for prior.
     prior : Prior for redshift determination. E.g., Eazy z-probability.
     zliml : Lowest redshift for fitting range.
     zlimu : Highest redshift for fitting range.
@@ -22,11 +18,13 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
 
     Return:
     =======
-
     res_cz  :
     fitc_cz :
 
     '''
+    from .function import check_line_cz_man
+    import numpy as np
+    from lmfit import Model, Parameters, minimize, fit_report, Minimizer
     import scipy.interpolate as interpolate
 
     fit_par_cz = Parameters()
@@ -61,7 +59,10 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
         eycon= np.append(ey01,ey2)
         wht = 1./np.square(eycon)
 
-        wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+        try:
+            wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+        except:
+            wht2 = wht
 
         if fobs is None:
             print('Data is none')
@@ -71,22 +72,22 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
 
     ###############################
     def lnprob_cz(pars):
-        resid  = residual_z(pars) # i.e. (data - model) * wht
-        z      = pars['z']
-        s_z    = 1 #pars['f_cz']
-        resid *= 1 / s_z
+        resid = residual_z(pars) # i.e. (data - model) * wht
+        z = pars['z']
+        s_z = 1 #pars['f_cz']
+        resid *= 1/s_z
         resid *= resid
-        nzz    = int(z/delzz)
+        
+        #nzz = int(z/delzz)
+        nzz = np.argmin(np.abs(zprior-z))
 
         # For something unacceptable;
         if nzz<0 or z<zliml or z>zlimu:
             return -np.inf
         else:
             respr = np.log(prior[nzz])
-
-        resid += np.log(2 * np.pi * s_z**2) + respr
-
-        return -0.5 * np.sum(resid)
+            resid += np.log(2 * np.pi * s_z**2) + respr
+            return -0.5 * np.sum(resid)
 
     #################################
 
@@ -109,7 +110,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
     #Czrec0  = out_cz.params['Cz0'].value
     #Czrec1  = out_cz.params['Cz1'].value
 
-    mini_cz = Minimizer(lnprob_cz, out_cz.params) #,fcn_args=[zliml, prior, delzz])
-    res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=5, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
+    mini_cz = Minimizer(lnprob_cz, out_cz.params)
+    #print(nthin, nwalk_cz, out_cz.params,int(nmc_cz/2))
+    res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz
