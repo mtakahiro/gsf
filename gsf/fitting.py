@@ -44,10 +44,9 @@ class Mainbody():
 
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         '''
-        INPUT:
+        Input:
         ======
-        parfile: Ascii file that lists parameters for everything.
-
+        parfile : Ascii file that lists parameters for everything.
         Mpc_cm : cm/Mpc
         pixelscale : arcsec/pixel
 
@@ -195,9 +194,9 @@ class Mainbody():
         # Redshift as a param;
         try:
             self.fzmc = int(inputs['ZMC'])
-            print('Cannot find ZMC. Set to %d.'%(self.fzmc))
         except:
             self.fzmc = 0
+            print('Cannot find ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
         if self.f_bpass == 0:
@@ -565,7 +564,7 @@ class Mainbody():
         for zz in range(len(zspace)):
             # Best fit
             out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
-            keys   = fit_report(out_cz).split('\n')
+            keys = fit_report(out_cz).split('\n')
 
             csq  = out_cz.chisqr
             rcsq = out_cz.redchi
@@ -576,12 +575,12 @@ class Mainbody():
             chi2s[zz,1] = rcsq
 
         self.zspace = zspace
-        self.chi2s  = chi2s
+        self.chi2s = chi2s
 
         return zspace, chi2s
 
 
-    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True):
+    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False):
         '''
         Purpose:
         ========
@@ -589,12 +588,13 @@ class Mainbody():
 
         Input:
         ======
-        delzz  : Delta z in redshift search space
-        zliml  : Lower limit range for redshift
-        zlimu  : Upper limit range for redshift
-        ezmin  : Minimum redshift uncertainty.
-        snlim  : SN limit for data points. Those below the number will be cut from the fit.
+        delzz : Delta z in redshift search space
+        zliml : Lower limit range for redshift
+        zlimu : Upper limit range for redshift
+        ezmin : Minimum redshift uncertainty.
+        snlim : SN limit for data points. Those below the number will be cut from the fit.
         f_bb_zfit : Redshift fitting if only BB data. If False, return nothing.
+        f_line_check : If True, line masking.
 
         Note:
         =====
@@ -655,13 +655,18 @@ class Mainbody():
 
                 cprob_s = np.interp(zz_prob, zprob, cprob)
                 prior_s = np.exp(-0.5 * cprob_s)
+                con_pri = (zz_prob<np.min(zprob)) | (zz_prob>np.max(zprob))
+                prior_s[con_pri] = 0
                 prior_s /= np.sum(prior_s)
 
             else:
                 zz_prob = np.arange(0,13,delzz)
                 prior_s = zz_prob * 0 + 1.
                 prior_s /= np.sum(prior_s)
-
+        # Attach prior:
+        self.z_prior = zz_prob
+        self.p_prior = prior_s
+        
         # Plot;
         if self.fzvis==1:
             import matplotlib as mpl
@@ -676,14 +681,14 @@ class Mainbody():
             print('Start MCMC for redshift fit')
             print('############################')
             res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, zz_prob, prior_s, NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
-            z_cz    = np.percentile(res_cz.flatchain['z'], [16,50,84])
+            z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
-            zrecom  = z_cz[1]
+            zrecom = z_cz[1]
             #if f_scale:
-            Czrec0  = scl_cz0[1]
-            Czrec1  = scl_cz1[1]
+            Czrec0 = scl_cz0[1]
+            Czrec1 = scl_cz1[1]
 
             # Switch to peak redshift:
             # find minimum and maximum of xticks, so we know
@@ -731,10 +736,13 @@ class Mainbody():
         fm_s = fint(x_cz)
         whtl = 1/np.square(ey_cz)
 
-        try:
-            wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW=self.LW0)
-        except:
-            wht3, ypoly = whtl, fy_cz
+        if f_line_check:
+            try:
+                wht3, ypoly = check_line_cz_man(fy_cz, x_cz, whtl, fm_s, zrecom, LW=self.LW0)
+            except:
+                wht3, ypoly = whtl, fy_cz
+        else:
+            wht3 = whtl
         con_line = (wht3==0)
 
         # Visual inspection;
@@ -811,16 +819,18 @@ class Mainbody():
         return flag_z
 
 
-    def get_zdist(self):
+    def get_zdist(self, f_interact=False):
         '''
         Purpose:
         ========
         Save fig of z-distribution.
 
+        Input:
+        ======
+        f_interact : If true, the function returns figure ax.
+
         Note:
         =====
-        Can be used for any SFH
-
         '''
 
         #try: # if spectrum;
@@ -838,19 +848,34 @@ class Mainbody():
             xx = yy * 0 + self.z_cz[2]
             ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
             xx = yy * 0 + self.zgal
-            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue')
+            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='royalblue', label='Input redshift')
+
+            # Prior:
+            ax1.plot(self.z_prior, self.p_prior * np.max(yy)/np.max(self.p_prior), linestyle='--', linewidth=1, color='cyan', label='Prior')
+
+            # Label:
             ax1.set_xlabel('Redshift')
             ax1.set_ylabel('$dn/dz$')
             ax1.legend(loc=0)
-            plt.savefig('zprob_' + self.ID + '_PA' + self.PA + '.pdf', dpi=300)
-            plt.close()
+            
+            # Save:
+            file_out = 'zprob_' + self.ID + '_PA' + self.PA + '.png'
+            print('Figure is saved in %s'%file_out)
+
+            if f_interact:
+                fig.savefig(file_out, dpi=300)
+                return fig, ax1
+            else:
+                plt.savefig(file_out, dpi=300)
+                plt.close()
+                return True
         else:
         #except:
             print('z-distribution figure is not generated.')
             pass
 
 
-    def add_param(self, fit_params, sigz=1.0):
+    def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
         '''
         Purpose:
         ========
@@ -863,8 +888,11 @@ class Mainbody():
         f_add = False
         # Redshift
         if self.fzmc == 1:
-            fit_params.add('zmc', value=self.zgal, min=self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz, max=self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz)
-            #self.ndim += 1 # Already added.
+            if zmin == None:
+                zmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
+            if zmax == None:
+                zmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
+            fit_params.add('zmc', value=self.zgal, min=zmin, max=zmax)
             f_add = True
 
         # Error parameter
@@ -902,11 +930,10 @@ class Mainbody():
         '''
         Input:
         ======
-        ferr   : For error parameter
-        zgal   : Input redshift.
+        ferr : For error parameter
         skip_fitz (bool): Skip redshift fit.
         sigz (float): confidence interval for redshift fit.
-        ezmin (float): minimum error in redshift.p
+        ezmin (float): minimum error in redshift
 
         '''
         import emcee
@@ -1116,7 +1143,7 @@ class Mainbody():
             # Add parameters;
             #######################
             out_keep = out #.copy()
-            f_add = self.add_param(fit_params)
+            f_add = self.add_param(fit_params, sigz=5.0)
 
             # Then, minimize again.
             if f_add:
@@ -1291,7 +1318,8 @@ class Mainbody():
                 truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
-                fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.pdf')
+                fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.png')
+                self.cornerplot_fig = fig1
 
             # Analyze MCMC results.
             # Write to file.
@@ -1515,7 +1543,7 @@ class Mainbody():
                 fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
                 print('\n')
                 print('##########################')
-                print('ZFIX is found.\nZ will be fixed to: %.2f'%(ZFIX))
+                print('ZFIX is found.\nZ will be fixed to:\n %.2f'%(ZFIX))
             except:
                 aa = 0
                 if np.min(self.Zall)==np.max(self.Zall):

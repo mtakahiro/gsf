@@ -165,6 +165,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['Cz0']    = Czrec0
     prihdr['Cz1']    = Czrec1
     prihdr['z']      = zrecom
+    prihdr['zmc']    = zmc[1]
     prihdr['SN']     = SN
     prihdr['nSN']    = NSN
     prihdr['NDIM']   = ndim

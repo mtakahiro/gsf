@@ -360,9 +360,12 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
-        try:
-            zmc = par.params['zmc'].value
-        except:
+        if self.MB.fzmc == 1:
+            try:
+                zmc = par['zmc']
+            except:
+                zmc = zgal
+        else:
             zmc = zgal
 
         if len(tau0)>1:
@@ -377,10 +380,10 @@ class Func:
         for aa in range(len(AA)):
             try:
                 Ztest = par['Z'+str(len(AA)-1)] # instead of 'ZEVOL'
-                Z     = par['Z'+str(aa)]
+                Z = par['Z'+str(aa)]
             except:
                 # This is in the case with ZEVO=0.
-                Z   = par['Z0']
+                Z = par['Z0']
 
             # Is A in logspace?
             if f_Alog:
@@ -391,23 +394,21 @@ class Func:
             else:
                 A00 = par['A'+str(aa)]
 
-            NZ  = bfnc.Z2NZ(Z)
-            coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+            NZ = bfnc.Z2NZ(Z)
+            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
 
             if aa == 0:
-                nr  = lib[:, 0]
-                xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy  = A00 * lib[:, coln]
+                nr = lib[:, 0]
+                xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+                yy = A00 * lib[:, coln]
             else:
                 yy += A00 * lib[:, coln]
 
         # How much does this cost in time?
-        if round(zmc,3) != round(zgal,3):
+        if True: #round(zmc,3) != round(zgal,3):
             xx_s = xx / (1+zgal) * (1+zmc)
-
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
             yy_s = fint(xx_s)
-            #yy_s = np.interp(xx_s, xx, yy)
         else:
             xx_s = xx
             yy_s = yy
@@ -472,7 +473,7 @@ class Func:
             zmc = zgal
 
         # How much does this cost in time?
-        if round(zmc,3) != round(zgal,3):
+        if True: #round(zmc,3) != round(zgal,3):
             xx_s = xx / (1+zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
             yy_s = fint(xx_s)

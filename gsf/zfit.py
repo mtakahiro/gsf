@@ -1,5 +1,6 @@
 
-def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, nmc_cz=100, nwalk_cz=10, nthin=5):
+def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
+    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False):
     '''
     Purpose:
     ========
@@ -20,8 +21,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     =======
     res_cz  :
     fitc_cz :
-
     '''
+
     from .function import check_line_cz_man
     import numpy as np
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
@@ -34,10 +35,10 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
 
     ##############################
     def residual_z(pars):
-        vals  = pars.valuesdict()
-        z     = vals['z']
-        Cz0s  = vals['Cz0']
-        Cz1s  = vals['Cz1']
+        vals = pars.valuesdict()
+        z = vals['z']
+        Cz0s = vals['Cz0']
+        Cz1s = vals['Cz1']
 
         xm_s = xm_tmp * (1+z)
         fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
@@ -59,11 +60,14 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         eycon= np.append(ey01,ey2)
         wht = 1./np.square(eycon)
 
-        try:
-            wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
-        except:
+        if f_line_check:
+            try:
+                wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+            except:
+                wht2 = wht
+        else:
             wht2 = wht
-
+            
         if fobs is None:
             print('Data is none')
             return fm_s
@@ -82,7 +86,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         nzz = np.argmin(np.abs(zprior-z))
 
         # For something unacceptable;
-        if nzz<0 or z<zliml or z>zlimu:
+        if nzz<0 or z<zliml or z>zlimu or prior[nzz]<=0:
             return -np.inf
         else:
             respr = np.log(prior[nzz])

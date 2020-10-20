@@ -19,7 +19,7 @@ from .function_igm import *
 lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/',f_SFMS=False, f_fill=False, verbose=False, f_silence=True, \
+    inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_fill=True, verbose=False, f_silence=True, \
         f_log_sfh=True, dpi=250):
 
     '''
@@ -29,9 +29,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     Input:
     ======
-    flim  : Lower limit for plotting an age bin.
+    flim : Lower limit for plotting an age bin.
     lsfrl : Lower limit for SFR, in logMsun/yr
-
+    f_SFMS : If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
     '''
 
     import os.path
@@ -97,7 +97,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ###########################
     file = 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
-    zbes = hdul[0].header['z']
+    try:
+        zbes = hdul[0].header['zmc']
+    except:
+        zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
 
     try:

@@ -23,7 +23,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     '''
     Input:
     ======
-
     MB.SNlim : SN limit to show flux or up lim in SED.
     f_chind : If include non-detection in chi2 calculation, using Sawicki12.
     mmax : Number of mcmc realization for plot. Not for calculation.
@@ -690,8 +689,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Grism plot + Fuv flux + LIR.
         #
         if f_grsm:
-            if f_fill:
-                ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+            #if f_fill:
+            ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Get FUV flux;
         Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)

@@ -1088,12 +1088,12 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
 
     Returns:
     ========
-    wht   : Processed weight, where wavelength at line exists is masked.
+    wht : Processed weight, where wavelength at line exists is masked.
     ypoly : Fitted continuum flux.
 
     '''
 
-    er   = 1./np.sqrt(wycont)
+    er  = 1./np.sqrt(wycont)
     try:
         wht2, flag_l = detect_line_man(xcont, ycont, wycont, zgal, LW, model)
     except Exception:
