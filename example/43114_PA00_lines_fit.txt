@@ -1,0 +1,6 @@
+# LW flux_line eflux_line flux_cont EW eEW L_line eL_line
+# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)
+# Error in EW is 1sigma, by pm eflux_line.
+# If EW=-99, it means gaussian fit failed.
+# and flux is the sum of excess at WL pm 180.0 AA.
+# Magnification is corrected; mu=1.000

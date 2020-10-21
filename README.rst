@@ -47,7 +47,7 @@ Or if users create a new conda environment, by executing;
 
 .. code-block:: bash
 
-    conda create --name gsf_environment.yml
+    conda create --name environment.yml
 
 
 
@@ -65,6 +65,8 @@ If one needs a new config file
 .. code-block:: bash
 
     python get_configfile.py
+
+Or take a look at a notebook.
 
 
 flag

@@ -69,7 +69,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
-    package_data={'gsf': ['example/*'], 'gsf': ['example/filter/*'], 'gsf': ['example/templates/*']},
+    #package_data={'gsf': ['example/*'], 'gsf': ['example/filter/*'], 'gsf': ['example/templates/*']},
     zip_safe=False,
     #install_requires=requires,
     #ext_modules = extensions,
