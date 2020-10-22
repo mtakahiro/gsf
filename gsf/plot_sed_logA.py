@@ -97,7 +97,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     ndim_eff = hdul[0].header['NDIM']
@@ -397,10 +397,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     # This is for UVJ color time evolution.
     #
-    fwuvj = open(ID + '_PA' + PA + '_uvj.txt', 'w')
+    fwuvj = open(MB.DIR_OUT + ID + '_PA' + PA + '_uvj.txt', 'w')
     fwuvj.write('# age uv vj\n')
     Asum = np.sum(A50[:])
-
     alp = .8
 
     for jj in range(len(age)):
@@ -480,7 +479,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
 
-
     dely1 = 0.5
     while (ymax-0)/dely1<1:
         dely1 /= 2.
@@ -544,7 +542,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     if f_grsm:
         print('This function (write_lines) needs to be revised.')
-        write_lines(ID,PA,zbes)
+        write_lines(ID, PA, zbes, DIR_OUT=MB.DIR_OUT)
 
 
     ##########################
@@ -569,9 +567,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     # From MCMC chain
     #
-    file  = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = MB.DIR_OUT + 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
     niter = 0
-    data  = loadcpkl(os.path.join('./'+file))
+    data  = loadcpkl(file)
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
@@ -884,7 +882,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         col  = fits.ColDefs(col_sed)
         hdu0 = fits.BinTableHDU.from_columns(col)#, header=hdr)
-        hdu0.writeto(ID + '_PA' + PA + '_sed.fits', overwrite=True)
+        hdu0.writeto(MB.DIR_OUT + ID + '_PA' + PA + '_sed.fits', overwrite=True)
 
         # Then save full spectrum;
         col00  = []
@@ -977,9 +975,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         # Write;
         colspec = fits.ColDefs(col00)
-        hdu0    = fits.BinTableHDU.from_columns(colspec, header=hdr)
+        hdu0 = fits.BinTableHDU.from_columns(colspec, header=hdr)
         #hdu0.writeto(DIR_TMP + 'gsf_spec_%s.fits'%(ID), overwrite=True)
-        hdu0.writeto('gsf_spec_%s.fits'%(ID), overwrite=True)
+        hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
 
 
     #
@@ -987,8 +985,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     if f_label:
         try:
-            fd = fits.open('SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
-            
+            fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
             if f_dust:
                 label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
                 %(ID, zbes, fd['Mstel'][1], MD50, fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2)
@@ -1008,7 +1005,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #######################################
     ax1.xaxis.labelpad = -3
     if f_grsm:
-
         conlim = (x0>10000) & (x0<25000)
         xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
         ax2t.set_xlabel('')
@@ -1094,9 +1090,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ####################
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=dpi)
+        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=dpi)
     else:
-        plt.savefig('SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=dpi)
+        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=dpi)
 
 
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
@@ -1532,7 +1528,7 @@ def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), ag
     plt.close()
 
 
-def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
+def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
     '''
     '''
     dlw   = R_grs * dw # Can affect the SFR.
@@ -1543,7 +1539,7 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
     # ,manually edit the following file
     # so as Fcont50 have >0.
     ###################################
-    flw = open(ID + '_PA' + PA + '_lines_fit.txt', 'w')
+    flw = open(DIR_OUT + ID + '_PA' + PA + '_lines_fit.txt', 'w')
     flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
     flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
     flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
@@ -1551,7 +1547,7 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0):
     flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
     flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
     try:
-        fl = np.loadtxt('table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
+        fl = np.loadtxt(DIR_OUT + 'table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
         LW      = fl[:,2]
         Fcont50 = fl[:,3]
         Fline50 = fl[:,6]
@@ -1673,7 +1669,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     lib     = fnc.open_spec_fits(MB,fall=0)
     lib_all = fnc.open_spec_fits(MB,fall=1)
 
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -1799,9 +1795,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ####################
     # MCMC corner plot.
     ####################
-    file  = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = MB.DIR_OUT + 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
     niter = 0
-    data  = loadcpkl(os.path.join('./'+file))
+    data  = loadcpkl(file)
 
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
@@ -2121,7 +2117,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
 
         if kk%10 == 0 and out_ind == 1:
-            fname = DIR_OUT + '%d.png' % kk
+            fname = MB.DIR_OUT +  + '%d.png' % kk
             print('Saving frame', fname)
             plt.savefig(fname, dpi=200)
             files.append(fname)
@@ -2168,7 +2164,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2t.xaxis.set_ticks_position('none')
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
 
-    plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
+    plt.savefig(MB.DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
     #plt.close()
 
 

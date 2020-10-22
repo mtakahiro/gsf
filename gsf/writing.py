@@ -233,13 +233,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     colms = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    hdu.writeto('summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
+    hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
 
     ##########
     # LINES
     ##########
     LW, fLW = self.get_lines(self.LW0)
-    fw = open('table_' + ID0 + '_PA' + PA0 + '_lines.txt', 'w')
+    fw = open(self.DIR_OUT + 'table_' + ID0 + '_PA' + PA0 + '_lines.txt', 'w')
     fw.write('# ID PA WL Fcont50 Fcont16 Fcont84 Fline50 Fline16 Fline84 EW50 EW16 EW84\n')
     for ii in range(len(LW)):
         if fLW[ii] == 1:

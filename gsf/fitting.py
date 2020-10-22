@@ -14,9 +14,9 @@ from astropy.io import fits,ascii
 import corner
 
 # import from custom codes
-from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl
+from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
 from .zfit import check_redshift
-from .plot_sed import *
+#from .plot_sed import *
 from .writing import get_param
 from .function_class import Func
 
@@ -80,6 +80,7 @@ class Mainbody():
             CAT_BB = inputs['CAT_BB']
             fd_cat = ascii.read(CAT_BB)
             iix = np.where(fd_cat['id'] == int(self.ID))
+            #iix = np.where(fd_cat['id'] == self.ID)
             self.zgal = float(fd_cat['redshift'][iix])
 
         self.Cz0  = float(inputs['CZ0'])
@@ -115,6 +116,14 @@ class Mainbody():
         self.DIR_TMP  = inputs['DIR_TEMP']
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
+
+        # Outpu directory;
+        try:
+            self.DIR_OUT = inputs['DIR_OUT']
+            if not os.path.exists(self.DIR_OUT):
+                os.mkdir(self.DIR_OUT)
+        except:
+            self.DIR_OUT = './'
 
         # Filter response curve directory, if bb catalog is provided.
         self.DIR_FILT = inputs['DIR_FILT']
@@ -833,8 +842,8 @@ class Mainbody():
         =====
         '''
 
-        #try: # if spectrum;
-        if True:
+        try: # if spectrum;
+        #if True:
             fig = plt.figure(figsize=(6.5,2.5))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
@@ -859,7 +868,7 @@ class Mainbody():
             ax1.legend(loc=0)
             
             # Save:
-            file_out = 'zprob_' + self.ID + '_PA' + self.PA + '.png'
+            file_out = self.DIR_OUT + 'zprob_' + self.ID + '_PA' + self.PA + '.png'
             print('Figure is saved in %s'%file_out)
 
             if f_interact:
@@ -869,8 +878,8 @@ class Mainbody():
                 plt.savefig(file_out, dpi=300)
                 plt.close()
                 return True
-        else:
-        #except:
+        #else:
+        except:
             print('z-distribution figure is not generated.')
             pass
 
@@ -1291,7 +1300,7 @@ class Mainbody():
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
             burnin   = int(self.nmc/2)
-            savepath = './'
+            savepath = self.DIR_OUT
             cpklname = 'chain_' + self.ID + '_PA' + self.PA + '_corner.cpkl'
             savecpkl({'chain':flatchain,
                           'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
@@ -1318,7 +1327,7 @@ class Mainbody():
                 truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
-                fig1.savefig('SPEC_' + self.ID + '_PA' + self.PA + '_corner.png')
+                fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_PA' + self.PA + '_corner.png')
                 self.cornerplot_fig = fig1
 
             # Analyze MCMC results.

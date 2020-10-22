@@ -95,7 +95,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file
     try:
         zbes = hdul[0].header['zmc']
@@ -186,7 +186,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ##############################
     # Load Pickle
     ##############################
-    samplepath = './'
+    samplepath = MB.DIR_OUT 
     pfile = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
 
     niter = 0
@@ -617,7 +617,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     colms  = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    file_sfh_param = 'SFH_' + ID + '_PA' + PA + '_param.fits'
+    file_sfh_param = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_param.fits'
     hdu.writeto(file_sfh_param, overwrite=True)
 
     # For SFH plot;
@@ -651,7 +651,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     colms  = fits.ColDefs(col02)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    file_sfh = 'SFH_' + ID + '_PA' + PA + '.fits'
+    file_sfh = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits'
     hdu.writeto(file_sfh, overwrite=True)
 
     '''
@@ -740,7 +740,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #plt.show()
     #ax1.legend(loc=2, fontsize=8)
     #ax2.legend(loc=3, fontsize=8)
-    plt.savefig('SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
+    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
 
 
 def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
