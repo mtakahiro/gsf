@@ -19,6 +19,7 @@ TAU_COMP	1 # comparison between different tau for each ssp when plot.
 # Params for data
 #
 DIR_TEMP	./templates/nonebular_miles/ # Directory of extracted spectra.
+DIR_OUT		./output/
 DIR_EXTR	./ # Directory of extracted spectra.
 DIR_FILT	./filter/ 
 CAT_BB		./GDS_bb_ksirac_uvis.cat # Directory of extracted spectra.

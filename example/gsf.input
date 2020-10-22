@@ -6,7 +6,7 @@ CZ0 1.0
 CZ1 1.0
 BPASS 0
 DIR_TEMP ./templates/nonebular_miles/
-DIR_FILT /Users/tmorishita/GitHub/gsf/example/filter/
+DIR_FILT ./filter/
 AGE 0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0
 NIMF 0
 NMC 1000
@@ -16,6 +16,7 @@ NWALKZ 20
 ZEVOL 0
 ZVIS 0
 FNELD 1
+DIR_OUT ./output/
 ZMC 1
 ZMIN -0.8
 ZMAX 0.624
