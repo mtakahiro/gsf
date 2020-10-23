@@ -56,6 +56,7 @@ dependencies:
   - xz=5.2.5
   - zlib=1.2.11
   - pip:
-    - fsps
+    - git+https://github.com/dfm/python-fsps.git
+    - git+https://github.com/mtakahiro/gsf.git
 prefix: /Users/tmorishita/anaconda3/envs/gsf
 
