@@ -589,7 +589,7 @@ class Mainbody():
         return zspace, chi2s
 
 
-    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False):
+    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
         '''
         Purpose:
         ========
@@ -604,6 +604,8 @@ class Mainbody():
         snlim : SN limit for data points. Those below the number will be cut from the fit.
         f_bb_zfit : Redshift fitting if only BB data. If False, return nothing.
         f_line_check : If True, line masking.
+
+        priors (optional): Dictionary that contains z (redshift grid) and chi2 (chi-square).
 
         Note:
         =====
@@ -660,13 +662,15 @@ class Mainbody():
             zz_prob = np.arange(0,13,delzz)
             if priors != None:
                 zprob = priors['z']
-                cprob = priors['chi']
+                cprob = priors['chi2']
 
                 cprob_s = np.interp(zz_prob, zprob, cprob)
-                prior_s = np.exp(-0.5 * cprob_s)
+                prior_s = np.exp(-0.5 * cprob_s) / np.sum(cprob_s)
                 con_pri = (zz_prob<np.min(zprob)) | (zz_prob>np.max(zprob))
                 prior_s[con_pri] = 0
-                prior_s /= np.sum(prior_s)
+                if f_norm:
+                    prior_s /= np.sum(prior_s)
+                    #prior_s /= np.sum(prior_s)
 
             else:
                 zz_prob = np.arange(0,13,delzz)
@@ -689,7 +693,7 @@ class Mainbody():
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, zz_prob, prior_s, NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, self.z_prior, self.p_prior, NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])

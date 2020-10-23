@@ -1723,8 +1723,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         pass
 
     # plot Configuration
-    Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
-    K   = len(Par) # No of params.
+    if MB.fzmc == 1:
+        Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$', '$z$']
+    else:
+        Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
+
+    K = len(Par) # No of params.
     factor = 2.0           # size of one side of one panel
     lbdim  = 0.5 * factor   # size of left/bottom margin
     trdim  = 0.2 * factor   # size of top/right margin
@@ -1825,6 +1829,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     Ztmp = np.zeros(mmax, dtype='float64')
     Ttmp = np.zeros(mmax, dtype='float64')
     ACtmp= np.zeros(mmax, dtype='float64')
+    redshifttmp = np.zeros(mmax, dtype='float64')
 
     # Time bin
     Tuni = MB.cosmo.age(zbes).value
@@ -1879,7 +1884,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
         ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
         ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
-
         
         try:
             AA_tmp = 10**np.max(samples['A'+str(ii)][:])
@@ -1906,8 +1910,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             SFmax = SFtmp
 
     delM = np.log10(M84) - np.log10(M16)
-    NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
-    NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
+    if MB.fzmc == 1:
+        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.percentile(samples['zmc'],1)]
+        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.percentile(samples['zmc'],99)]
+    else:
+        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
+        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
 
     # For redshift
     if zbes<2:
@@ -1978,6 +1986,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             Ztmp[kk] += (10 ** ZZ_tmp) * AA_tmp * mslist
             Ttmp[kk] += age[ii] * AA_tmp * mslist
             ACtmp[kk] += AA_tmp * mslist
+            if MB.fzmc == 1:
+                redshifttmp[kk] = samples['zmc'][nr]
 
             AM[ii] = AA_tmp * mslist
             SF[ii] = AA_tmp * mslist / delT[ii]
@@ -2033,7 +2043,10 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         Ztmp[kk]  = np.log10(Ztmp[kk])
         Ttmp[kk]  = np.log10(Ttmp[kk])
 
-        NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
+        if MB.fzmc == 1:
+            NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
+        else:
+            NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
         if kk == mmax-1:
             #

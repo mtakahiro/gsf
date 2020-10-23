@@ -240,7 +240,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
 
 
     print('############################')
-    print('Making templates at %.4f'%(zbest))
+    print('Making templates at z=%.4f'%(zbest))
     print('############################')
     ####################################################
     # Get extracted spectra.

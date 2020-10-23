@@ -82,16 +82,15 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         resid *= 1/s_z
         resid *= resid
         
-        #nzz = int(z/delzz)
         nzz = np.argmin(np.abs(zprior-z))
 
         # For something unacceptable;
-        if nzz<0 or z<zliml or z>zlimu or prior[nzz]<=0:
+        if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
             return -np.inf
         else:
             respr = np.log(prior[nzz])
-            resid += np.log(2 * np.pi * s_z**2) + respr
-            return -0.5 * np.sum(resid)
+            resid += np.log(2 * np.pi * s_z**2)
+            return -0.5 * np.sum(resid) + respr
 
     #################################
 

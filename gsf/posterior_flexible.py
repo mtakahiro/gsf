@@ -85,7 +85,6 @@ class Post:
         log posterior
 
         '''
-
         vals   = pars.valuesdict()
         if self.mb.ferr == 1:
             f = vals['f']
@@ -118,7 +117,20 @@ class Post:
         #else:
         #    respr = 0 #np.log(1)
 
-        respr = 0 # Flat prior...
-        lnposterior = lnlike + respr
+        # Prior
+        respr = 0
 
+        # Prior for redshift:
+        if self.mb.fzmc == 1:
+            zprior = self.mb.z_prior
+            prior = self.mb.p_prior
+
+            nzz = np.argmin(np.abs(zprior-vals['zmc']))
+            # For something unacceptable;
+            if nzz<0 or prior[nzz]<=0:
+                respr += -np.inf
+            else:
+                respr += np.log(prior[nzz])
+            
+        lnposterior = lnlike + respr
         return lnposterior
