@@ -1911,8 +1911,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     delM = np.log10(M84) - np.log10(M16)
     if MB.fzmc == 1:
-        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.percentile(samples['zmc'],1)]
-        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.percentile(samples['zmc'],99)]
+        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.percentile(samples['zmc'],1)-0.1]
+        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.percentile(samples['zmc'],99)+0.1]
     else:
         NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
         NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
