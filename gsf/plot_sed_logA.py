@@ -1954,7 +1954,10 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     for kk in range(0,mmax,1):
         nr = np.random.randint(len(samples))
-        Avtmp[kk] = samples['Av'][nr]
+        try:
+            Avtmp[kk] = samples['Av'][nr]
+        except:
+            Avtmp[kk] = MB.AVFIX
 
         ZMM = np.zeros((len(age)), dtype='float64') # Mass weighted Z.
         ZM = np.zeros((len(age)), dtype='float64') # Light weighted T.
@@ -2094,7 +2097,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                             ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='gray')
                         except:
                             #print(NPAR[j], NPAR[i])
-                            print('Error occurs when density estimation. Maybe because single Z')
+                            print('Error occurs when density estimation. Maybe because some params are fixed.')
                             pass
 
                     x1min, x1max = NPARmin[j], NPARmax[j]

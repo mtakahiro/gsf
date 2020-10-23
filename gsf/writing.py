@@ -105,13 +105,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     msmc  = np.percentile(msmc0, [16,50,84])
 
-    #try:
-    if True:
+    try:
+    #if True:
         Avb = res.params['Av'].value
         Avmc = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
-    #except:
-    #    Avb = self.AVFIX
-    #    Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
+    except:
+        Avb = self.AVFIX
+        Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
 
     AAvmc = [Avmc]
     try:
