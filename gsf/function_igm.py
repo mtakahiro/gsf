@@ -9,17 +9,17 @@ d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 def madau_igm_abs(xtmp, ytmp, zin, cosmo=None):
 	'''
 	Purpose:
-	===========
+	========
 	IMG-attenuates the input flux at zin.
 
 	Input:
-	===========
-	xtmp: RF wavelength
-	ytmp: flux in f_lambda
-	z_in: observed redshift
+	======
+	xtmp: RF wavelength in AA.
+	ytmp: flux in f_lambda.
+	z_in: observed redshift.
 
 	Returns:
-	===========
+	========
 	IGM attenuated flux.
 	'''
 

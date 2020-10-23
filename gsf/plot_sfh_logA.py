@@ -20,8 +20,7 @@ lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_fill=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250):
-
+        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01):
     '''
     Purpose:
     ========
@@ -152,10 +151,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             try:
                 tau_ssp = float(inputs['TAU_SSP'])
             except:
-                tau_ssp = 0.01
+                tau_ssp = tau_lim
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
-            delT[aa]  = delTu[aa] + delTl[aa]
+            if age[aa] < tau_lim:
+                # This is because fsps has the minimum tau = tau_lim
+                delT[aa] = tau_lim
+            else:
+                delT[aa] = delTu[aa] + delTl[aa]
 
     else: # This is only true when CSP...
         for aa in range(len(age)):
@@ -176,7 +179,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 delT[aa]  = delTu[aa] + delTl[aa]
 
-            if delT[aa] <= 0:
+            if delT[aa] < tau_lim:
+                # This is because fsps has the minimum tau = tau_lim
+                delT[aa] = tau_lim
+            elif delT[aa] <= 0:
                 delT[aa] = 1e10
 
     delT[:]  *= 1e9 # Gyr to yr
@@ -522,9 +528,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     Tzz = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
-        if Tzz[zz] < 0.01:
-            Tzz[zz] = 0.01
-
+        if Tzz[zz] < TMIN:
+            Tzz[zz] = TMIN
+    
     lsfru = 2.8
     if np.max(SFp[:,2])>2.8:
         lsfru = np.max(SFp[:,2])+0.1

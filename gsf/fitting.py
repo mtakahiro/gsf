@@ -251,6 +251,9 @@ class Mainbody():
             Avfix = float(inputs['AVFIX'])
             self.AVFIX = Avfix
             self.nAV = 0
+            print('\n')
+            print('##########################')
+            print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
         except:
             try:
                 Avmin = float(inputs['AVMIN'])
@@ -1528,17 +1531,26 @@ class Mainbody():
         # Dust attenuation
         #####################
         try:
-            Avmin = float(inputs['AVMIN'])
-            Avmax = float(inputs['AVMAX'])
-            if Avmin == Avmax:
-                Avmax += 0.001
-            fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+            Avfix = float(inputs['AVFIX'])
+            fit_params.add('Av', value=Avfix, vary=False)
+            print('\n')
+            print('##########################')
+            print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
         except:
-            Avmin = 0.0
-            Avmax = 4.0
-            Avini = 0.5
-            print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
-            fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
+            try:
+                Avmin = float(inputs['AVMIN'])
+                Avmax = float(inputs['AVMAX'])
+                if Avmin == Avmax:
+                    fit_params.add('Av', value=(Avmax+Avmin)/2., vary=False)
+                else:
+                    fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+            except:
+                Avmin = 0.0
+                Avmax = 4.0
+                Avini = (Avmax-Avmin)/2. # 0.5
+                Avini = 0.5
+                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
+                fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
 
         #####################
         # Metallicity

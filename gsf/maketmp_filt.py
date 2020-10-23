@@ -143,7 +143,7 @@ def sim_spec(lmin, fin, sn):
     return frand, erand
 
 
-def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=20000., ncolbb=10000):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     '''
     Purpose:
     ========

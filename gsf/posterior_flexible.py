@@ -78,6 +78,34 @@ class Post:
         return int_tmp
 
 
+    def prior_transform(self, pars):
+        """
+        A function defining the tranform between the parameterisation in the unit hypercube
+        to the true parameters.
+
+        Args:
+            theta (tuple): a tuple containing the parameters.
+            
+        Returns:
+            tuple: a new tuple or array with the transformed parameters.
+        """
+        ii = 0
+        for key in self.params:
+            if self.params[key].vary:
+                cmin = self.params[key].min
+                cmax = self.params[key].max
+                cprim = pars[ii]
+                pars[ii] = cprim*(cmax-cmin) + cmin
+                ii += 1
+        '''
+        mmu = 0.     # mean of Gaussian prior on m
+        msigma = 10. # standard deviation of Gaussian prior on m
+        m = mmu + msigma*ndtri(mprime) # convert back to m
+        '''
+
+        return pars
+
+
     def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0):
         '''
         Returns:
@@ -85,7 +113,7 @@ class Post:
         log posterior
 
         '''
-        vals   = pars.valuesdict()
+        vals = pars.valuesdict()
         if self.mb.ferr == 1:
             f = vals['f']
         else:

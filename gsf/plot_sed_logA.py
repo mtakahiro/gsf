@@ -1635,7 +1635,7 @@ def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
     flw.close()
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01):
     '''
     Purpose:
     ========
@@ -1818,8 +1818,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
     sedpar = af['ML']
 
-    getcmap   = matplotlib.cm.get_cmap('jet')
-    nc        = np.arange(0, nmc, 1)
+    getcmap = matplotlib.cm.get_cmap('jet')
+    nc = np.arange(0, nmc, 1)
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
@@ -1843,7 +1843,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             try:
                 tau_ssp = float(inputs['TAU_SSP'])
             except:
-                tau_ssp = 0.01
+                tau_ssp = tau_lim
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
             delT[aa]  = delTu[aa] + delTl[aa]
@@ -1865,6 +1865,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 delT[aa]  = delTu[aa] + delTl[aa]
+
+            if delT[aa] < tau_lim:
+                # This is because fsps has the minimum tau = tau_lim
+                delT[aa] = tau_lim
+
 
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
@@ -1905,9 +1910,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         Zsmax += 10**ZZ_tmp84 * AA_tmp84 * mslist
         Zsmin += 10**ZZ_tmp16 * AA_tmp16 * mslist
 
-        SFtmp  = AA_tmp * mslist / delT[ii]
+        SFtmp = AA_tmp * mslist / delT[ii]
         if SFtmp > SFmax:
             SFmax = SFtmp
+    if SFmax > 0.5e4:
+        SFmax = 0.5e4
 
     delM = np.log10(M84) - np.log10(M16)
     if MB.fzmc == 1:
@@ -1937,8 +1944,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     Tzz   = np.zeros(len(zred), dtype='float64')
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value) #/ cc.Gyr_s
-        if Tzz[zz] < 0.01:
-            Tzz[zz] = 0.01
+        if Tzz[zz] < TMIN:
+            Tzz[zz] = TMIN
 
 
     def density_estimation(m1, m2):
@@ -2151,14 +2158,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
     ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax1.set_ylabel('$\dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
-    ax1.set_xlim(0.008, Txmax)
+    ax1.set_xlim(np.min(age)*0.8, Txmax)
     ax1.set_ylim(0, SFmax)
     ax1.set_xscale('log')
     ax2.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax2.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
-    ax2.set_xlim(0.008, Txmax)
+    ax2.set_xlim(np.min(age)*0.8, Txmax)
     #ax2.set_ylim(NPARmin[3], NPARmax[3])
-    ax2.set_ylim(-0.6, 0.5)
+    if round(np.min(Z),2) == round(np.max(Z),2):
+        ax2.set_ylim(-0.8, 0.5)
+    else:
+        ax2.set_ylim(np.min(Z)-0.05, np.max(Z)+0.05)
     ax2.set_xscale('log')
     #ax2.yaxis.labelpad = -5
 

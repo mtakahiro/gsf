@@ -8,12 +8,10 @@ INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 
 
 def get_ind(wave,flux):
     '''
-    #
-    # Get Lick index
-    # for input input
-    #
+    Purpose:
+    ========
+    Get Lick index for input input
     '''
-
     lml     = [4268, 5143, 5233, 5305, 5862, 4828, 4628, 4985, 5669, 5742, 4895, 4895, 5818, 6068]
     lmcl    = [4283, 5161, 5246, 5312, 5879, 4848, 4648, 5005, 5689, 5762, 5069, 5154, 5938, 6191]
     lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
@@ -40,7 +38,7 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(MB, lammin=400, lammax=80000):
+def make_tmp_z0(MB, lammin=100, lammax=160000):
     '''
     Purpose:
     ========
@@ -109,7 +107,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                 # Determining tau for each age bin;
                 #
                 # 1.Continuous age bin;
-                if tau0[pp] == 99:
+                if int(tau0[pp]) == 99:
                     if ss==0:
                         tautmp = age[ss]
                         agetmp = age[ss]/2.
@@ -133,7 +131,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
                 # Then, make sps.
                 #
                 if tautmp != tau0_old:
-                    if tau0[pp] == 99:
+                    if int(tau0[pp]) == 99:
                         print('CSP is applied.')
                         print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
@@ -238,7 +236,7 @@ def make_tmp_z0(MB, lammin=400, lammax=80000):
     af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
 
 
-def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
+def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
     '''
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
@@ -344,7 +342,7 @@ def make_tmp_z0_bpass(MB, lammin=400, lammax=80000, BPASS_DIR='/astro/udfcen3/Ta
                 #
                 # Determining tau for each age bin;
                 #
-                if tau0[pp] == 99:
+                if int(tau0[pp]) == 99:
                     if ss==0:
                         tautmp = age[ss]
                         agetmp = age[ss]/2.

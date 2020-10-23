@@ -37,7 +37,7 @@ def run_gsf_template(inputs, fplt=0):
     # 0. Make basic templates
     #
     if fplt<1:
-        lammax = 80000 / (1.+MB.zgal) # AA
+        lammax = 160000 / (1.+MB.zgal) # AA
         if MB.f_bpass == 1:
             make_tmp_z0_bpass(MB, lammax=lammax)
         else:
