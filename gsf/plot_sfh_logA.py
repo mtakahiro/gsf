@@ -55,7 +55,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow_r')
-    col = [cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
+    col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
 
     ################
     # RF colors.
@@ -415,9 +415,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             
             if f_log_sfh:
                 ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
-                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='', zorder=1, lw=1.)
+                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=[col[aa]], marker='', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
+                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=1)
             else:
                 ax1.errorbar(age[aa], 10**SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
                     yerr=[[10**SFp[aa,1]-10**SFp[aa,0]], [10**SFp[aa,2]-10**SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
@@ -464,12 +464,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             aa = len(age) -1 - ii
             agebin = np.arange(0, age[aa], delTu[aa]/1e10)
             ax2.errorbar(age[aa], ACp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], \
-                yerr=[[ACp[aa,1]-ACp[aa,0]],[ACp[aa,2]-ACp[aa,1]]], linestyle='-', color=col[aa], lw=0.5, zorder=1)
+                yerr=[[ACp[aa,1]-ACp[aa,0]],[ACp[aa,2]-ACp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=2)
 
             tbnd = age[aa]+delT[aa]/2./1e9
             mtmp = ACp[aa,1]
             if msize[aa]>0:
-                ax2.scatter(age[aa], ACp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=2)
+                ax2.scatter(age[aa], ACp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=2)
 
 
     y2min = np.max([lmmin,np.min(ACp[:,0][conA])])
@@ -487,19 +487,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         aa = len(age) -1 - ii
         if msize[aa]>0:
             ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
-            ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=2)
+            ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=2)
 
-    '''
-    fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
-    fw_sfr.write('# time_l time_u logSFR16 logSFR50 logSFR84 logMstel16 logMstel50 logMstel84 logZ16 logZ50 logZ84\n')
-    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
-
-    for ii in range(len(age)-1,0-1,-1):
-        t0 = Tuni - age[ii]
-        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
-        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,0], SFp[ii,1], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,0], ZCp[ii,1], ZCp[ii,2]))
-    fw_sfr.close()
-    '''
 
     #############
     # Axis
@@ -538,11 +527,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     if f_log_sfh:
         ax1.set_ylim(lsfrl, lsfru)
         ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-        ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
+        #ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     else:
         ax1.set_ylim(0, 10**lsfru)
         ax1.set_ylabel('$\dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-        ax1.plot(Tzz, Tzz*0+10**lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
+        #ax1.plot(Tzz, Tzz*0+10**lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     ax1.set_xlim(Txmin, Txmax)
     ax1.set_xscale('log')
@@ -660,17 +649,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     file_sfh = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits'
     hdu.writeto(file_sfh, overwrite=True)
 
-    '''
-    fw_sfr = open('SFH_' + ID + '_PA' + PA + '.txt', 'w')
-    fw_sfr.write('# time_l time_u logSFR16 logSFR50 logSFR84 logMstel16 logMstel50 logMstel84 logZ16 logZ50 logZ84\n')
-    fw_sfr.write('# (Gyr)  (Gyr)  (M/yr) (M/yr) (M/yr)  (M) (M) (M)  (logZsun) (logZsun) (logZsun)\n')
-
-    for ii in range(len(age)-1,0-1,-1):
-        fw_sfr.write('%.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n'\
-        %(t0-delTl[ii]/1e9, t0+delTl[ii]/1e9, SFp[ii,0], SFp[ii,1], SFp[ii,2], ACp[ii,0], ACp[ii,1], ACp[ii,2], ZCp[ii,0], ZCp[ii,1], ZCp[ii,2]))
-    fw_sfr.close()
-    '''
-
     # Attach to MB;
     MB.sfh_tlook = age
     MB.sfh_tlookl= delTl[:][conA]/1e9
@@ -687,7 +665,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     # SFH
     zzall = np.arange(1.,12,0.01)
-    Tall  = MB.cosmo.age(zzall).value # , use_flat=True, **cosmo)
+    Tall = MB.cosmo.age(zzall).value # , use_flat=True, **cosmo)
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
@@ -699,6 +677,16 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)
+
+    ax4.set_xlim(Txmin, Txmax)
+    ax4.set_ylim(y3min-0.05, y3max)
+    ax4.set_xscale('log')
+
+    ax4.set_yticks([-0.8, -0.4, 0., 0.4])
+    ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+    #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    #ax3.yaxis.labelpad = -2
+    ax4.yaxis.labelpad = -2
 
     ax1.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax2.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
@@ -712,27 +700,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax4t.set_xscale('log')
     ax4t.set_xlim(Txmin, Txmax)
 
-    ax4.set_xlim(Txmin, Txmax)
-    ax4.set_ylim(y3min-0.05, y3max)
-    ax4.set_xscale('log')
-
-    ax4.set_yticks([-0.8, -0.4, 0., 0.4])
-    ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
-    #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    #ax3.yaxis.labelpad = -2
-    ax4.yaxis.labelpad = -2
-
     ax1t.set_xticklabels(zredl[:])
     ax1t.set_xticks(Tzz[:])
     ax1t.tick_params(axis='x', labelcolor='k')
     ax1t.xaxis.set_ticks_position('none')
-    #ax1t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
+    ax1t.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     ax2t.set_xticklabels(zredl[:])
     ax2t.set_xticks(Tzz[:])
     ax2t.tick_params(axis='x', labelcolor='k')
     ax2t.xaxis.set_ticks_position('none')
-    #ax2t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
+    ax2t.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     ax4t.set_xticklabels(zredl[:])
     ax4t.set_xticks(Tzz[:])
@@ -740,12 +718,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax4t.xaxis.set_ticks_position('none')
     ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ax2.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
-
     # Save
-    #plt.show()
-    #ax1.legend(loc=2, fontsize=8)
-    #ax2.legend(loc=3, fontsize=8)
     plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
 
 
