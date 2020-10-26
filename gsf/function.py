@@ -6,7 +6,6 @@ from scipy.integrate import simps
 import pickle as cPickle
 import os
 
-#
 c = 3.e18 # A/s
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
@@ -133,7 +132,7 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=1e5, Zbest=0, f_keep=False):
+def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=None, Zbest=0, f_keep=False):
     '''
     Purpose:
     ========
@@ -202,9 +201,12 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
                 fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
             fwz.write('\n')
-            if fitc[1]<chidef:
+            if chidef==None:
                 chidef = fitc[1]
-                out    = out_tmp
+                out = out_tmp
+            elif fitc[1]<chidef:
+                chidef = fitc[1]
+                out = out_tmp
 
     else: # Powell;
         for zz in range(len(ZZtmp)):
@@ -248,9 +250,12 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
                 fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
             fwz.write('\n')
-            if fitc[1]<chidef:
+            if chidef==None:
                 chidef = fitc[1]
-                out    = out_tmp
+                out = out_tmp
+            elif fitc[1]<chidef:
+                chidef = fitc[1]
+                out = out_tmp
 
     fwz.close()
 

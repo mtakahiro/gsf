@@ -148,6 +148,9 @@ class Mainbody():
             self.band_rf['%s_res'%(self.filts_rf[ii])] = fd[:,2] / np.max(fd[:,2])
 
         # Tau comparison?
+        # -> Deprecated;
+        self.ftaucomp = 0
+        '''
         try:
             self.ftaucomp = inputs['TAU_COMP']
         except:
@@ -155,6 +158,7 @@ class Mainbody():
             self.ftaucomp = 0
             print('set to %d' % self.ftaucomp)
             pass
+        '''
 
         # Age
         try:
@@ -285,7 +289,7 @@ class Mainbody():
         # Redshift
         self.ndim += self.fzmc
 
-        print('No of params are : %d'%(self.ndim))
+        print('No. of params are : %d'%(self.ndim))
 
         # Line
         try:
@@ -942,7 +946,7 @@ class Mainbody():
         return f_add
 
 
-    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False, skip_fitz=False):
+    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False, skip_fitz=False, out=None):
         '''
         Input:
         ======
@@ -1119,26 +1123,31 @@ class Mainbody():
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
-        out, chidef, Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
-            dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
+        if not skip_fitz or out == None:
+            out, chidef, Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
+                dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
 
-        # Best fit
-        csq = out.chisqr
-        rcsq = out.redchi
-        fitc = [csq, rcsq] # Chi2, Reduced-chi2
-        ZZ = Zbest # This is really important/does affect lnprob/residual.
+            # Best fit
+            csq = out.chisqr
+            rcsq = out.redchi
+            fitc = [csq, rcsq] # Chi2, Reduced-chi2
+            ZZ = Zbest # This is really important/does affect lnprob/residual.
 
-        print('\n\n')
-        print('#####################################')
-        print('Zbest, chi are;',Zbest,chidef)
-        print('Params are;',fit_report(out))
-        print('#####################################')
-        print('\n\n')
+            print('\n\n')
+            print('#####################################')
+            print('Zbest, chi are;',Zbest,chidef)
+            print('Params are;',fit_report(out))
+            print('#####################################')
+            print('\n\n')
 
-        Av_tmp = out.params['Av'].value
-        AA_tmp = np.zeros(len(self.age), dtype='float64')
-        ZZ_tmp = np.zeros(len(self.age), dtype='float64')
-        fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
+            Av_tmp = out.params['Av'].value
+            AA_tmp = np.zeros(len(self.age), dtype='float64')
+            ZZ_tmp = np.zeros(len(self.age), dtype='float64')
+            fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
+        else:
+            csq = out.chisqr
+            rcsq = out.redchi
+            fitc = [csq, rcsq]
 
         ########################
         # Check redshift
