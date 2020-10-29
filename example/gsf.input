@@ -22,9 +22,9 @@ ZMIN -0.8
 ZMAX 0.624
 DELZ 0.2
 DIR_EXTR ./
-SPEC_FILE ./l3_nis_G150C_s00003_1d_cont_fnu.txt
-CAT_BB ./l3_nis_flux.cat
+SPEC_FILE ./data//l3_nis_G150C_s00003_1d_cont_fnu.txt
+CAT_BB ./data//l3_nis_flux.cat
 FILTER 309,310,311,308,1,4,6,202,203,204,205
 MORP moffat
-MORP_FILE ./l3_nis_f200w_G150C_s00003_moffat.txt
+MORP_FILE ./data//l3_nis_f200w_G150C_s00003_moffat.txt
 NCPU 1
