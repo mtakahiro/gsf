@@ -105,7 +105,7 @@ class Mainbody():
         try:
             self.fneb = int(inputs['ADD_NEBULAE'])
             try:
-                self.logU = float(inputs['logU'])
+                self.logU = float(inputs['lOGU'])
             except:
                 self.logU = -2.5
         except:
