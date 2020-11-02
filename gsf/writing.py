@@ -37,7 +37,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     tau0 = self.tau0
     ID0 = self.ID
     PA0 = self.PA
-    age  = self.age
+    age = self.age
     nage = self.nage
     Zall = self.Zall
 

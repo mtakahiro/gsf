@@ -695,12 +695,13 @@ class Mainbody():
             plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
-        try:
-        #if True:
+        if self.fzvis==1:
+        #try:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, self.z_prior, self.p_prior, NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
+            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, self.z_prior, self.p_prior, \
+                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -721,9 +722,10 @@ class Mainbody():
             print('\n\n')
             fit_label = 'Proposed model'
 
-        except:
-        #else:
-            print('### z fit failed. No spectral data set?')
+        #except:
+        else:
+            #print('### z fit failed. No spectral data set?')
+            print('### fzvis is set to False. z fit not happening.')
             try:
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
@@ -831,9 +833,9 @@ class Mainbody():
         self.zrecom = zrecom
         self.Czrec0 = Czrec0 * self.Cz0
         self.Czrec1 = Czrec1 * self.Cz1
-        self.z_cz   = z_cz
-        self.scl_cz0= scl_cz0
-        self.scl_cz1= scl_cz1
+        self.z_cz = z_cz
+        self.scl_cz0 = scl_cz0
+        self.scl_cz1 = scl_cz1
         self.res_cz = res_cz
 
         return flag_z

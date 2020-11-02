@@ -1,6 +1,6 @@
 
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
-    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False):
+    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True):
     '''
     Purpose:
     ========
@@ -13,9 +13,11 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     prior : Prior for redshift determination. E.g., Eazy z-probability.
     zliml : Lowest redshift for fitting range.
     zlimu : Highest redshift for fitting range.
+    f_vary: Bool. If want to fix redshift.
 
     fm_tmp, xm_tmp : Template spectrum at RF.
     fobs, eobs, xobs: Observed spectrum. (Already scaled with Cz0prev.)
+
 
     Return:
     =======
@@ -29,7 +31,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     import scipy.interpolate as interpolate
 
     fit_par_cz = Parameters()
-    fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu)
+    fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu, vary=f_vary)
     fit_par_cz.add('Cz0', value=1, min=0.5, max=1.5)
     fit_par_cz.add('Cz1', value=1, min=0.5, max=1.5)
 
