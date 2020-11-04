@@ -936,14 +936,13 @@ def filconv(band0, l0, f0, DIR, fw=False):
 
     '''
 
-    fnu  = np.zeros(len(band0), dtype='float64')
-    lcen = np.zeros(len(band0), dtype='float64')
+    fnu  = np.zeros(len(band0), dtype='float')
+    lcen = np.zeros(len(band0), dtype='float')
     if fw == True:
-        fwhm = np.zeros(len(band0), dtype='float64')
+        fwhm = np.zeros(len(band0), dtype='float')
 
     for ii in range(len(band0)):
-        #fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
-        fd = np.loadtxt(DIR + '%s.fil'%band0[ii], comments='#')
+        fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
         ffil /= np.max(ffil)
