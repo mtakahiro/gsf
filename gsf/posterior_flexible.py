@@ -13,6 +13,7 @@ class Post:
     '''
     def __init__(self, mainbody):
         self.mb = mainbody
+        self.scale = 1
 
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
@@ -106,8 +107,12 @@ class Post:
         return pars
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False):
         '''
+        Input:
+        ======
+        f_chind (bool) : If true, includes non-detection in likelihood calculation.
+
         Returns:
         ========
         log posterior
@@ -137,6 +142,13 @@ class Post:
         else:
             con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
             lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)))
+
+        # Scale likeligood; Do not make this happen yet.
+        if f_scale and self.scale == 1:
+            self.scale = np.abs(lnlike) * 0.001
+            print('scale is set to',self.scale)
+
+        lnlike /= self.scale
 
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']
