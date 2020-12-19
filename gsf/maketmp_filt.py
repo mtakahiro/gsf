@@ -651,7 +651,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
             '''
 
             #numin, numax, nmodel = 8, 3, 9
-            numin, numax, nmodel = tt, 3, 10
+            numin, numax, nmodel = tt, 3, 9
             fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
 
             if False:
