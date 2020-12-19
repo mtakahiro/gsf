@@ -393,7 +393,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         except:
             pass
 
-
     #
     # This is for UVJ color time evolution.
     #
@@ -411,9 +410,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ysump = y0p
             nopt = len(ysump)
 
+            f_50_comp = np.zeros((len(age),len(y0)),'float') 
+            # Keep each component;
+            f_50_comp[ii,:] = y0[:] * c / np.square(x0) / d
+
             if f_dust:
                 ysump[:] += y0d_cut[:nopt]
                 ysump = np.append(ysump,y0d_cut[nopt:])
+
+                # Keep each component;
+                f_50_comp_dust = y0d * c / np.square(x0d) / d
 
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
@@ -425,6 +431,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ysump[:nopt] += y0p
             if f_fill:
                 ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+            # Keep each component;
+            f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d
 
         try:
             ysum_wid = ysum * 0
@@ -449,6 +457,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             pass
 
     fwuvj.close()
+
 
     #############
     # Main result
@@ -721,7 +730,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
 
-    #
     if not f_fill:
         ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
@@ -868,15 +876,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         coltmp = fits.Column(name='wave', format='E', unit='AA', array=lbb)
         col_sed.append(coltmp)
 
-        fbb16_nu = flamtonu(lbb, fbb16*1e-18, m0set=25.0)
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=25.0)
         coltmp = fits.Column(name='fnu_16', format='E', unit='fnu(m0=25)', array=fbb16_nu)
         col_sed.append(coltmp)
 
-        fbb_nu = flamtonu(lbb, fbb*1e-18, m0set=25.0)
+        fbb_nu = flamtonu(lbb, fbb*scale, m0set=25.0)
         coltmp = fits.Column(name='fnu_50', format='E', unit='fnu(m0=25)', array=fbb_nu)
         col_sed.append(coltmp)
 
-        fbb84_nu = flamtonu(lbb, fbb84*1e-18, m0set=25.0)
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=25.0)
         coltmp = fits.Column(name='fnu_84', format='E', unit='fnu(m0=25)', array=fbb84_nu)
         col_sed.append(coltmp)
 
@@ -886,7 +894,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         # Then save full spectrum;
         col00  = []
-        col1  = fits.Column(name='wave_model', format='E', unit='AA', array=xm_tmp)
+        col1  = fits.Column(name='wave_model', format='E', unit='AA', array=x1_tot)
         col00.append(col1)
         col2  = fits.Column(name='f_model_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16[:])
         col00.append(col2)
@@ -894,6 +902,27 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         col00.append(col3)
         col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
         col00.append(col4)
+
+        # Each component
+        # Stellar
+        col1 = fits.Column(name='wave_model_stel', format='E', unit='AA', array=x0)
+        col00.append(col1)
+        for aa in range(len(age)):
+            col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
+            col00.append(col1)
+        if f_dust:
+            # dust
+            col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x0d)
+            col00.append(col1)
+            col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp_dust)
+            col00.append(col1)
+            
+        # BB for dust
+        if f_dust:
+            xbb = np.append(xbb,xbbd)
+            fybb = np.append(fybb,fybbd)
+            eybb = np.append(eybb,eybbd)
+
         col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
         col00.append(col5)
         col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) / d)
@@ -906,6 +935,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         hdr['id'] = ID
         hdr['hierarch isochrone'] = isochrone
         hdr['library'] = LIBRARY
+        hdr['scale'] = scale
 
         try:
             # Chi square:

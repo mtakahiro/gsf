@@ -109,6 +109,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
         #
         if fplt == 0:
             lammax = 40000 * (1.+MB.zgal) # AA
+            if MB.f_dust:
+                lammax = 100000 * (1.+MB.zgal) # AA
+                
             if MB.f_bpass == 1:
                 make_tmp_z0_bpass(MB, lammax=lammax)
             else:
@@ -154,8 +157,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
             from .plot_sfh import plot_sfh
             from .plot_sed import plot_sed
 
-        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=300,
-        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True, f_fill=True)
+        #plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=300,
+        #inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True, f_fill=True)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=False, save_sed=True, inputs=MB.inputs, mmax=300,

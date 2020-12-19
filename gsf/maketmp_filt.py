@@ -75,7 +75,8 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, DIR_DUST='/U
 
     #try:
     if True:
-        if dmodel == 'MW3.1_60':
+        #if dmodel == 'MW3.1_60':
+        if ndmodel == 6 or ndmodel == 1:
             data_start = 55
         else:
             data_start = 36
@@ -650,8 +651,21 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
             '''
 
             #numin, numax, nmodel = 8, 3, 9
-            numin, numax, nmodel = tt, 3, 6
+            numin, numax, nmodel = tt, 3, 10
             fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+
+            if False:
+                for nn in range(0,11,1):
+                    try:
+                        fnu_d_tmp = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nn, DIR_DUST=MB.DIR_DUST)
+                        plt.plot(lambda_d * (1+zbest), fnu_d_tmp, label='%d'%nn)
+                        plt.xlim(2000, 5000000)
+                        plt.xscale('log')
+                        plt.yscale('log')
+                    except:
+                        print('Errir in ',nn)
+                plt.legend()
+                plt.show()
 
             # ASDF
             tree_spec_dust_full.update({'fspec_'+str(tt): fnu_d})
