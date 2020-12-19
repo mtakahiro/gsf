@@ -1046,13 +1046,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         tree_spec.update({'wave_obs': xbb})
         tree_spec.update({'f_obs': fybb[:] * c / np.square(xbb[:]) / d})
         tree_spec.update({'e_obs': eybb[:] * c / np.square(xbb[:]) / d})
-        af = asdf.AsdfFile(tree_spec)
-        af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
         # grism:
         if f_grsm:
-            tree_spec.update({'f_grism_obs': fgrism})
-            tree_spec.update({'e_grism_obs': egrism})
-            tree_spec.update({'wave_grism_obs': xgrism})
+            tree_spec.update({'fg0_obs': fg0 * c/np.square(xg0)/d})
+            tree_spec.update({'eg0_obs': eg0 * c/np.square(xg0)/d})
+            tree_spec.update({'wg0_obs': xg0})
+            tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
+            tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
+            tree_spec.update({'wg1_obs': xg1})
+        af = asdf.AsdfFile(tree_spec)
+        af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
 
     #
     # SED params in plot
