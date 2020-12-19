@@ -1050,7 +1050,7 @@ class Mainbody():
         fit_params = Parameters()
         f_Alog = True
         if f_Alog:
-            Amin = -20
+            Amin = -10 #-20
             Amax = 10
             Aini = 0
         else:
