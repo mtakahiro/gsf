@@ -73,7 +73,8 @@ def run_gsf_template(inputs, fplt=0):
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label=True, f_symbol=True, \
+    f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300):
     '''
     Purpose:
     ========
@@ -157,12 +158,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None):
             from .plot_sfh import plot_sfh
             from .plot_sed import plot_sed
 
-        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=300,
-        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=True, f_fill=True)
+        plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=mmax,
+        inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_SFMS=f_SFMS, f_symbol=f_symbol)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
-        figpdf=False, save_sed=True, inputs=MB.inputs, mmax=300,
-        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=True, f_fill=True)
+        figpdf=figpdf, save_sed=save_sed, inputs=MB.inputs, mmax=mmax,
+        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill)
 
     '''
     if fplt == 4:

@@ -19,7 +19,7 @@ from .function_igm import *
 lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_fill=True, verbose=False, f_silence=True, \
+    inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
         f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01):
     '''
     Purpose:
@@ -407,7 +407,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         ax1.fill_between(age[conA], 10**SFp[:,0][conA], 10**SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
         ax1.errorbar(age, 10**SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
 
-    if f_fill:
+    if f_symbol:
         tbnd = 0.0001
         for aa in range(len(age)):
             agebin = np.arange(age[aa]-delTl[aa]/1e9, age[aa]+delTu[aa]/1e9, delTu[aa]/1e10)
@@ -457,7 +457,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label, zorder=1)
     #ax2.scatter(age[conA], ACp[:,1][conA], marker='.', c='k', s=msize)
 
-    if f_fill:
+    if f_symbol:
         tbnd = 0.0001
         mtmp = 0
         for ii in range(len(age)):
