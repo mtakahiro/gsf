@@ -726,14 +726,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ytmp16 = np.zeros(len(x1_tot), dtype='float')
     ytmp50 = np.zeros(len(x1_tot), dtype='float')
     ytmp84 = np.zeros(len(x1_tot), dtype='float')
-    ytmp_dust50 = np.zeros(len(x1_dust), dtype='float')
-
     for kk in range(len(x1_tot[:])):
         ytmp16[kk] = np.percentile(ytmp[:,kk],16)
         ytmp50[kk] = np.percentile(ytmp[:,kk],50)
         ytmp84[kk] = np.percentile(ytmp[:,kk],84)
-    for kk in range(len(x1_dust[:])):
-        ytmp_dust50[kk] = np.percentile(ytmp_dust[:,kk],50)
+    if f_dust:
+        ytmp_dust50 = np.zeros(len(x1_dust), dtype='float')
+        for kk in range(len(x1_dust[:])):
+            ytmp_dust50[kk] = np.percentile(ytmp_dust[:,kk],50)
 
     if not f_fill:
         ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
