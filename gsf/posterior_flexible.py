@@ -180,7 +180,7 @@ class Post:
             nzz = np.argmin(np.abs(zprior-vals['zmc']))
             # For something unacceptable;
             if nzz<0 or prior[nzz]<=0:
-                respr += -np.inf
+                return -np.inf
             else:
                 respr += np.log(prior[nzz])
             
