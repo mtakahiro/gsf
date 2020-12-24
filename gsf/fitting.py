@@ -42,7 +42,7 @@ class Mainbody():
         self.update_input(inputs, idman=idman)
 
 
-    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
+    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, sigz=5.0):
         '''
         Input:
         ======
@@ -58,7 +58,8 @@ class Mainbody():
         self.Mpc_cm = Mpc_cm
         self.m0set = m0set
         self.pixelscale = pixelscale
-        self.Lsun = Lsun #erg s-1
+        self.Lsun = Lsun
+        self.sigz = sigz
 
         if cosmo == None:
             from astropy.cosmology import WMAP9 as cosmo
@@ -80,8 +81,14 @@ class Mainbody():
             CAT_BB = inputs['CAT_BB']
             fd_cat = ascii.read(CAT_BB)
             iix = np.where(fd_cat['id'] == int(self.ID))
-            #iix = np.where(fd_cat['id'] == self.ID)
             self.zgal = float(fd_cat['redshift'][iix])
+            try:
+                self.zmin = self.zgal - float(fd_cat['ez_l'][iix])
+                self.zmax = self.zgal + float(fd_cat['ez_u'][iix])
+            except:
+                self.zmin = None
+                self.zmax = None
+                pass
 
         self.Cz0  = float(inputs['CZ0'])
         self.Cz1  = float(inputs['CZ1'])
@@ -915,6 +922,7 @@ class Mainbody():
             if zmax == None:
                 zmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
             fit_params.add('zmc', value=self.zgal, min=zmin, max=zmax)
+            print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(zmin, zmax))
             f_add = True
 
         # Error parameter
@@ -1169,8 +1177,8 @@ class Mainbody():
             #######################
             # Add parameters;
             #######################
-            out_keep = out #.copy()
-            f_add = self.add_param(fit_params, sigz=5.0)
+            out_keep = out
+            f_add = self.add_param(fit_params, sigz=self.sigz, zmin=self.zmin, zmax=self.zmax)
 
             # Then, minimize again.
             if f_add:
