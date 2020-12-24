@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import scipy.integrate as integrate
 from scipy.integrate import cumtrapz
+from scipy import special
 
 from .function import *
 
@@ -130,14 +131,25 @@ class Post:
 
         if f_chind:
             con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
-            # This may be a bit cost of time;
-            for nn in range(len(ey[con_up])):
-                result = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
-                if result[0] > 0:
-                    chi_nd += np.log(result[0])
+            if False:
+                # This may be a bit cost of time;
+                for nn in range(len(ey[con_up])):
+                    result = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
+                    if result[0] > 0:
+                        chi_nd += np.log(result[0])
+                con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+                lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+            else: # Or use ERF:
+                x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
+                f_erf = special.erf(x_erf)
+                if 1+f_erf == 0:
+                    lnlike = -100
+                    return lnlike
+                else:
+                    chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
 
-            con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+                con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+                lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
 
         else:
             con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.

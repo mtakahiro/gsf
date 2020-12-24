@@ -320,10 +320,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #col_ex = 'r'
         # Currently, this file is made after FILTER_SKIP;
         data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
-        x_ex    = data_ex['col2']
-        fy_ex   = data_ex['col3']
-        ey_ex   = data_ex['col4']
-        ex_ex   = data_ex['col5']
+        x_ex = data_ex['col2']
+        fy_ex = data_ex['col3']
+        ey_ex = data_ex['col4']
+        ex_ex = data_ex['col5']
 
         ax1.errorbar(x_ex, fy_ex * c / np.square(x_ex) / d, \
         xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5)
@@ -780,11 +780,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0
     if f_chind:
-        # Chi2 for non detection;
-        for nn in range(len(ey[con_up])):
-            #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
-            result = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
-            chi_nd += np.log(result[0])
+        if False:
+            # Chi2 for non detection;
+            for nn in range(len(ey[con_up])):
+                print(ey[con_up][nn])
+                #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
+                result = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
+                chi_nd += np.log(result[0])
+        else: # Or ERF:
+            from scipy import special
+            x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
+            f_erf = special.erf(x_erf)
+            chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
+
 
     # Number of degree;
     con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
