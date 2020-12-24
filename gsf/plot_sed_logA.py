@@ -227,8 +227,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Mass-to-Light ratio.
     ######################
     ms = np.zeros(len(age), dtype='float')
-    #f0 = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
-    #sedpar = f0[1]
     af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
     sedpar = af['ML']
 
@@ -398,8 +396,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     # This is for UVJ color time evolution.
     #
-    fwuvj = open(MB.DIR_OUT + ID + '_PA' + PA + '_uvj.txt', 'w')
-    fwuvj.write('# age uv vj\n')
     Asum = np.sum(A50[:])
     alp = .8
 
@@ -436,7 +432,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             # Keep each component;
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d
 
-        try:
+        # The following needs revised.
+        f_uvj = False
+        if f_uvj:
+            if jj == 0:
+                fwuvj = open(MB.DIR_OUT + ID + '_PA' + PA + '_uvj.txt', 'w')
+                fwuvj.write('# age uv vj\n')
             ysum_wid = ysum * 0
             for kk in range(0,ii+1,1):
                 tt = int(len(nage) - kk - 1)
@@ -455,10 +456,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             uvt = -2.5*log10(fu_t/fv_t)
             vjt = -2.5*log10(fv_t/fj_t)
             fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
-        except:
-            pass
-
-    fwuvj.close()
+            fwuvj.close()
 
 
     #############
@@ -891,26 +889,28 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 
     if save_sed:
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=25.0)
+        fbb_nu = flamtonu(lbb, fbb*scale, m0set=25.0)
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=25.0)
+        '''
         # Save BB model;
         col_sed = []
         coltmp = fits.Column(name='wave', format='E', unit='AA', array=lbb)
         col_sed.append(coltmp)
 
-        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=25.0)
         coltmp = fits.Column(name='fnu_16', format='E', unit='fnu(m0=25)', array=fbb16_nu)
         col_sed.append(coltmp)
 
-        fbb_nu = flamtonu(lbb, fbb*scale, m0set=25.0)
         coltmp = fits.Column(name='fnu_50', format='E', unit='fnu(m0=25)', array=fbb_nu)
         col_sed.append(coltmp)
 
-        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=25.0)
         coltmp = fits.Column(name='fnu_84', format='E', unit='fnu(m0=25)', array=fbb84_nu)
         col_sed.append(coltmp)
 
         col  = fits.ColDefs(col_sed)
         hdu0 = fits.BinTableHDU.from_columns(col)#, header=hdr)
         hdu0.writeto(MB.DIR_OUT + ID + '_PA' + PA + '_sed.fits', overwrite=True)
+        '''
 
 
         # Then save full spectrum;

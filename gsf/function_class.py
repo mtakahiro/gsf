@@ -160,21 +160,14 @@ class Func:
         hdu0 = self.af['spec_full']
         DIR_TMP = self.DIR_TMP #'./templates/'
 
-        #for pp in range(len(tau0)):
         pp = 0
         zz = nz
-        #f0 = fits.open(DIR_TMP + 'spec_' + app + '.fits')
-        #hdu0 = f0[1]
 
         # Luminosity
-        #f0    = fits.open(DIR_TMP + 'ms.fits')
-        #mshdu = f0[1]
         mshdu = self.af0['ML']
-        Ls    = np.zeros(len(AA), dtype='float32')
-        #Ls[:] = mshdu.data['Ls_'+str(zz)][:]
-        Ls[:] = self.af0['Ls']
+        Ls = mshdu['Ls_%d'%nz] 
 
-        xx   = hdu0['wavelength'] # RF;
+        xx   = hdu0['wavelength'] # at RF;
         nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
         lib  = np.zeros((len(nr), 2+1), dtype='float32')
@@ -183,13 +176,14 @@ class Func:
 
         aa = nage
         coln = int(2 + aa)
-        if kk == 0: # = Tobs.
-            colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
-        else: # Tobs - age[kk-1] where kk>=1.
-            colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp) + '_' + str(kk-1)
+        colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+        #if kk == 0: # = Tobs.
+        #    colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+        #else: # Tobs - age[kk-1] where kk>=1.
+        #    colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp) + '_' + str(kk-1)
 
-        if aa >0 and aa == kk:
-            colname = 'fspec_' + str(zz) + '_0' + '_' + str(pp)# + '_0'
+        #if aa > 0 and aa == kk:
+        #    colname = 'fspec_' + str(zz) + '_0' + '_' + str(pp)# + '_0'
 
         yy0 = hdu0[colname]/Ls[aa]
         yy  = flamtonu(xx, yy0)
