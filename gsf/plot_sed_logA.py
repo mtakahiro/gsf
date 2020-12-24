@@ -314,6 +314,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 
     # For any data removed fron fit (i.e. IRAC excess):
+    f_exclude = False
     try:
         col_ex = 'lawngreen'
         #col_ex = 'limegreen'
@@ -328,6 +329,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax1.errorbar(x_ex, fy_ex * c / np.square(x_ex) / d, \
         xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5)
         ax1.scatter(x_ex, fy_ex * c / np.square(x_ex) / d, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30)
+        f_exclude = True
     except:
         pass
 
@@ -777,9 +779,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
 
     #
-    con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim)
     chi_nd = 0.0
     if f_chind:
+        f_ex = np.zeros(len(fy), 'int')
+        for ii in range(len(fy)):
+            if xbb[ii] in x_ex:
+                f_ex[ii] = 1
+
+        con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
         if False:
             # Chi2 for non detection;
             for nn in range(len(ey[con_up])):
