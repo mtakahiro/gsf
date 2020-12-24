@@ -142,7 +142,7 @@ class Post:
             else: # Or use ERF:
                 x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
                 f_erf = special.erf(x_erf)
-                if 1+f_erf == 0:
+                if np.min(f_erf) <= -1:
                     lnlike = -100
                     return lnlike
                 else:
