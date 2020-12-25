@@ -57,8 +57,12 @@ class Post:
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
 
-        #con_res = (model>0) & (wht>0) #& (ey>0)
-        sig = np.sqrt(1./wht + (f**2*model**2))
+        sig = wht[:] * 0
+        con_res = (wht>0)
+        con_res_r = (wht==0)
+        sig[con_res] = np.sqrt(1./wht[con_res] + (f**2*model[con_res]**2))
+        sig[con_res_r] = wht[con_res_r] * 0 + np.inf
+        #sig = np.sqrt(1./wht + (f**2*model**2))
 
         if fy is None:
             print('Data is none')
@@ -108,11 +112,12 @@ class Post:
         return pars
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, lnpreject=-100):
         '''
         Input:
         ======
         f_chind (bool) : If true, includes non-detection in likelihood calculation.
+        lnpreject : A replaced value when lnprob gets -inf value.
 
         Returns:
         ========
@@ -126,7 +131,8 @@ class Post:
             f = 0
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
-        sig = np.sqrt(1./wht+f**2*model**2)
+        con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
 
         if f_chind:
@@ -137,23 +143,23 @@ class Post:
                     result = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
                     if result[0] > 0:
                         chi_nd += np.log(result[0])
-                con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-                lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+                #con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+                lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
             else: # Or use ERF:
                 x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
                 f_erf = special.erf(x_erf)
                 if np.min(f_erf) <= -1:
-                    lnlike = -100
+                    lnlike = lnpreject
                     return lnlike
                 else:
                     chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
 
-                con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-                lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
+                #con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+                lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
 
         else:
-            con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)))
+            #con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale and self.scale == 1:
@@ -180,7 +186,7 @@ class Post:
             nzz = np.argmin(np.abs(zprior-vals['zmc']))
             # For something unacceptable;
             if nzz<0 or prior[nzz]<=0:
-                return -np.inf
+                return lnpreject
             else:
                 respr += np.log(prior[nzz])
             
