@@ -26,6 +26,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     MB.SNlim : SN limit to show flux or up lim in SED.
     f_chind : If include non-detection in chi2 calculation, using Sawicki12.
     mmax : Number of mcmc realization for plot. Not for calculation.
+    f_fancy: plot each SED component.
+    f_fill: if True, and so is f_fancy, fill each SED component.
 
     Returns:
     ========
@@ -397,7 +399,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # This is for UVJ color time evolution.
     #
     Asum = np.sum(A50[:])
-    alp = .8
+    alp = .5
 
     for jj in range(len(age)):
         ii = int(len(nage) - jj - 1) # from old to young templates.
@@ -419,16 +421,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 # Keep each component;
                 f_50_comp_dust = y0d * c / np.square(x0d) / d
 
-            if f_fill:
-                ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+            #if f_fill:
+            #    ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0., color=col[ii], alpha=alp, zorder=-3, label='')
 
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
             ysump[:nopt] += y0p
-            if f_fill:
-                ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0.5, color=col[ii], alpha=alp, zorder=-1, label='')
+            #if f_fill:
+            #    ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0., color=col[ii], alpha=alp, zorder=-3, label='')
             # Keep each component;
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d
 
@@ -589,7 +591,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
-    samples  = res
+    samples = res
 
     # Saved template;
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
@@ -610,9 +612,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # From random chain;
     alp=0.02
-
     for kk in range(0,mmax,1):
-        nr = np.random.randint(len(samples['A%d'%MB.aamin[0]]))
+        nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
         try:
             Av_tmp = samples['Av'][nr]
         except:
@@ -634,9 +635,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             except:
                 AA_tmp = 0
                 pass
-            
             try:
-                Ztest  = samples['Z'+str(len(age)-1)][nr]
+                Ztest = samples['Z'+str(len(age)-1)][nr]
                 ZZ_tmp = samples['Z'+str(ss)][nr]
             except:
                 try:
@@ -652,6 +652,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 fm_tmp += mod0_tmp
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
+            #if kk == 100:
+            #    ax1.plot(xm_tmp[:], ytmp_each[kk,:,ss], color=col[ss], linestyle='--')
 
         #
         # Dust component;
@@ -682,17 +684,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            if f_fill:
-                ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
-                ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            #if f_fill:
+            #    ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            #    ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
-            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c/ np.square(xm_tmp[:]) / d
-            if f_fill:
-                ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c / np.square(xm_tmp[:]) / d
+            #if f_fill:
+            #    ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
         #
         # Grism plot + Fuv flux + LIR.
@@ -723,20 +725,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     # Plot Median SED;
     #
-    ytmp16 = np.zeros(len(x1_tot), dtype='float')
-    ytmp50 = np.zeros(len(x1_tot), dtype='float')
-    ytmp84 = np.zeros(len(x1_tot), dtype='float')
-    for kk in range(len(x1_tot[:])):
-        ytmp16[kk] = np.percentile(ytmp[:,kk],16)
-        ytmp50[kk] = np.percentile(ytmp[:,kk],50)
-        ytmp84[kk] = np.percentile(ytmp[:,kk],84)
+    ytmp16 = np.percentile(ytmp[:,:],16,axis=0)
+    ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
+    ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
+    
     if f_dust:
-        ytmp_dust50 = np.zeros(len(x1_dust), dtype='float')
-        for kk in range(len(x1_dust[:])):
-            ytmp_dust50[kk] = np.percentile(ytmp_dust[:,kk],50)
+        ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
 
-    if not f_fill:
-        ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
+    #if not f_fill:
+    ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
 
     # Attach the data point in MB;
@@ -749,17 +746,36 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     MB.sed_flux50 = ytmp50
     MB.sed_flux84 = ytmp84
 
+    '''
     if f_fancyplot:
         # For each age;
         ytmp_each50 = np.zeros(len(xm_tmp), dtype='float')
         ytmp_each50_prior = np.zeros(len(xm_tmp), dtype='float')
         for ss in range(len(age)):
             ii = int(len(nage) - ss - 1) # from old to young templates.
-            for kk in range(len(xm_tmp[:])):
-                ytmp_each50[kk] = np.percentile(ytmp_each[:,kk,ii],50)
-            ax1.fill_between(x1_tot[::nstep_plot], ytmp_each50_prior[::nstep_plot], ytmp_each50[::nstep_plot], linestyle='None', lw=0.5, color=col[ii])
+            ytmp_each50[:] = np.percentile(ytmp_each[:,:,ii],50, axis=0)
+            ax1.fill_between(x1_tot[::nstep_plot], ytmp_each50_prior[::nstep_plot], ytmp_each50_prior[:]+ytmp_each50[::nstep_plot], linestyle='None', lw=0., color=col[ii], alpha=0.5)
             ytmp_each50_prior[:] += ytmp_each50[:]
-
+    '''
+    if f_fancyplot:
+        alp_fancy = 0.5
+        #ax1.plot(x1_tot[::nstep_plot], np.percentile(ytmp[:, ::nstep_plot], 50, axis=0), '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+        ysumtmp = ytmp[0, ::nstep_plot] * 0
+        ysumtmp2 = ytmp[:, ::nstep_plot] * 0
+        ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
+        for ss in range(len(age)):
+            ii = int(len(nage) - ss - 1) # from old to young templates.            
+            #ysumtmp += np.percentile(ytmp_each[:, ::nstep_plot, ii], 50, axis=0)
+            #ax1.plot(x1_tot[::nstep_plot], ysumtmp, linestyle='--', lw=.5, color=col[ii], alpha=0.5)
+            # !! Take median after summation;
+            ysumtmp2 += ytmp_each[:, ::nstep_plot, ii]
+            if f_fill:
+                ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.percentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
+            else:
+                ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=-3)
+            ysumtmp2_prior[:] = np.percentile(ysumtmp2[:, :], 50, axis=0)
+    elif f_fill:
+        print('f_fancyplot is False. f_fill is set to False.')
 
     #########################
     # Calculate non-det chi2
@@ -970,21 +986,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             print('Chi seems to be wrong...')
             pass
 
-        # Muv
-        MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-        hdr['MUV16'] = np.percentile(MUV[:],16)
-        hdr['MUV50'] = np.percentile(MUV[:],50)
-        hdr['MUV84'] = np.percentile(MUV[:],84)
+        try:
+            # Muv
+            MUV = -2.5 * np.log10(Fuv[:]) + 25.0
+            hdr['MUV16'] = np.percentile(MUV[:],16)
+            hdr['MUV50'] = np.percentile(MUV[:],50)
+            hdr['MUV84'] = np.percentile(MUV[:],84)
 
-        # Fuv (!= flux of Muv)
-        hdr['FUV16'] = np.percentile(Fuv28[:],16)
-        hdr['FUV50'] = np.percentile(Fuv28[:],50)
-        hdr['FUV84'] = np.percentile(Fuv28[:],84)
+            # Fuv (!= flux of Muv)
+            hdr['FUV16'] = np.percentile(Fuv28[:],16)
+            hdr['FUV50'] = np.percentile(Fuv28[:],50)
+            hdr['FUV84'] = np.percentile(Fuv28[:],84)
 
-        # LIR
-        hdr['LIR16'] = np.percentile(Lir[:],16)
-        hdr['LIR50'] = np.percentile(Lir[:],50)
-        hdr['LIR84'] = np.percentile(Lir[:],84)
+            # LIR
+            hdr['LIR16'] = np.percentile(Lir[:],16)
+            hdr['LIR50'] = np.percentile(Lir[:],50)
+            hdr['LIR84'] = np.percentile(Lir[:],84)
+        except:
+            pass
 
         # UVJ
         try:
