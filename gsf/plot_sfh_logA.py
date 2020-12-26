@@ -508,8 +508,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             zred  = [zbes, 6]
             zredl = ['$z_\mathrm{obs.}$', 6]
     elif zbes<6:
-        zred  = [zbes, 6, 7, 9]
-        zredl = ['$z_\mathrm{obs.}$', 6, 7, 9]
+        zred  = [zbes, 5, 6, 9]
+        zredl = ['$z_\mathrm{obs.}$', 5, 6, 9]
     else:
         zred  = [zbes, 12]
         zredl = ['$z_\mathrm{obs.}$', 12]
@@ -517,8 +517,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     Tzz = np.zeros(len(zred), dtype='float32')
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
-        if Tzz[zz] < TMIN:
-            Tzz[zz] = TMIN
+        if Tzz[zz] < Txmin:
+            Tzz[zz] = Txmin
     
     lsfru = 2.8
     if np.max(SFp[:,2])>2.8:
@@ -693,12 +693,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
 
+    # This has to come before set_xticks;
     ax1t.set_xscale('log')
-    ax1t.set_xlim(Txmin, Txmax)
     ax2t.set_xscale('log')
-    ax2t.set_xlim(Txmin, Txmax)
     ax4t.set_xscale('log')
-    ax4t.set_xlim(Txmin, Txmax)
 
     ax1t.set_xticklabels(zredl[:])
     ax1t.set_xticks(Tzz[:])
@@ -717,6 +715,11 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax4t.tick_params(axis='x', labelcolor='k')
     ax4t.xaxis.set_ticks_position('none')
     ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
+
+    # This has to come after set_xticks;
+    ax1t.set_xlim(Txmin, Txmax)
+    ax2t.set_xlim(Txmin, Txmax)
+    ax4t.set_xlim(Txmin, Txmax)
 
     # Save
     plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
