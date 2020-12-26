@@ -71,7 +71,7 @@ class Mainbody():
             self.ID = idman
         else:
             self.ID = inputs['ID']
-        print('Fitting : %s'%self.ID)
+        print('\nFitting : %s\n'%self.ID)
         try:
             self.PA = inputs['PA']
         except:
