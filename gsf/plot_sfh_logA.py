@@ -20,7 +20,7 @@ lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01):
+        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False):
     '''
     Purpose:
     ========
@@ -75,20 +75,28 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     else:
         fig = plt.figure(figsize=(8.2,2.8))
         fig.subplots_adjust(top=0.88, bottom=0.18, left=0.1, right=0.99, hspace=0.15, wspace=0.3)
-    ax1 = fig.add_subplot(131)
-    ax2 = fig.add_subplot(132)
-    #ax3 = fig.add_subplot(223)
-    ax4 = fig.add_subplot(133)
+
+    if skip_zhist:
+        if f_log_sfh:
+            fig = plt.figure(figsize=(5.5,2.8))
+            fig.subplots_adjust(top=0.88, bottom=0.18, left=0.1, right=0.99, hspace=0.15, wspace=0.3)
+        else:
+            fig = plt.figure(figsize=(6.2,2.8))
+            fig.subplots_adjust(top=0.88, bottom=0.18, left=0.1, right=0.99, hspace=0.15, wspace=0.3)
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+    else:
+        ax1 = fig.add_subplot(131)
+        ax2 = fig.add_subplot(132)
+        ax4 = fig.add_subplot(133)
+        ax4t = ax4.twiny()
 
     ax1t = ax1.twiny()
     ax2t = ax2.twiny()
-    #ax3t = ax3.twiny()
-    ax4t = ax4.twiny()
 
     ##################
     # Fitting Results
     ##################
-    #DIR_TMP = './templates/'
     SNlim = 3 # avobe which SN line is shown.
 
     ###########################
@@ -480,14 +488,15 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     #
     # Total Metal
     #
-    ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.5)
-    ax4.errorbar(age[conA], ZCp[:,1][conA], linestyle='-', color='k', lw=0.5, zorder=1)
-    
-    for ii in range(len(age)):
-        aa = len(age) -1 - ii
-        if msize[aa]>0:
-            ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
-            ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=2)
+    if not skip_zhist:
+        ax4.fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.5)
+        ax4.errorbar(age[conA], ZCp[:,1][conA], linestyle='-', color='k', lw=0.5, zorder=1)
+        
+        for ii in range(len(age)):
+            aa = len(age) -1 - ii
+            if msize[aa]>0:
+                ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
+                ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=2)
 
 
     #############
@@ -678,25 +687,33 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)
 
-    ax4.set_xlim(Txmin, Txmax)
-    ax4.set_ylim(y3min-0.05, y3max)
-    ax4.set_xscale('log')
+    if not skip_zhist:
+        ax4.set_xlim(Txmin, Txmax)
+        ax4.set_ylim(y3min-0.05, y3max)
+        ax4.set_xscale('log')
 
-    ax4.set_yticks([-0.8, -0.4, 0., 0.4])
-    ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
-    #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    #ax3.yaxis.labelpad = -2
-    ax4.yaxis.labelpad = -2
+        ax4.set_yticks([-0.8, -0.4, 0., 0.4])
+        ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+        #ax3.yaxis.labelpad = -2
+        ax4.yaxis.labelpad = -2
+        ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
+        ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
+        ax4t.set_xscale('log')
+
+        ax4t.set_xticklabels(zredl[:])
+        ax4t.set_xticks(Tzz[:])
+        ax4t.tick_params(axis='x', labelcolor='k')
+        ax4t.xaxis.set_ticks_position('none')
+        ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
+        ax4t.set_xlim(Txmin, Txmax)
 
     ax1.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax2.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
-    ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
-    ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
 
     # This has to come before set_xticks;
     ax1t.set_xscale('log')
     ax2t.set_xscale('log')
-    ax4t.set_xscale('log')
 
     ax1t.set_xticklabels(zredl[:])
     ax1t.set_xticks(Tzz[:])
@@ -710,16 +727,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2t.xaxis.set_ticks_position('none')
     ax2t.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ax4t.set_xticklabels(zredl[:])
-    ax4t.set_xticks(Tzz[:])
-    ax4t.tick_params(axis='x', labelcolor='k')
-    ax4t.xaxis.set_ticks_position('none')
-    ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     # This has to come after set_xticks;
     ax1t.set_xlim(Txmin, Txmax)
     ax2t.set_xlim(Txmin, Txmax)
-    ax4t.set_xlim(Txmin, Txmax)
 
     # Save
     plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
