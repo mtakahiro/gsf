@@ -131,12 +131,12 @@ class Post:
             f = 0
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
-        con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
+        con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
         sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
 
-        if f_chind:
-            con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
+        con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
+        if f_chind and len(fy[con_up])>0:
             if False:
                 # This may be a bit cost of time;
                 for nn in range(len(ey[con_up])):
