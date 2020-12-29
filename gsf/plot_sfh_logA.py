@@ -50,6 +50,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     tau0 = MB.tau0
     age = np.asarray(age)
 
+    try:
+        if not MB.ZFIX == None:
+            skip_zhist = True
+    except:
+        pass
+
     if Txmin > np.min(age):
         Txmin = np.min(age) * 0.8
 

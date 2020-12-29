@@ -78,6 +78,8 @@ class Mainbody():
             self.PA = '00'
         try:
             self.zgal = float(inputs['ZGAL'])
+            self.zmin = None
+            self.zmax = None
         except:
             CAT_BB = inputs['CAT_BB']
             fd_cat = ascii.read(CAT_BB)
@@ -1152,8 +1154,8 @@ class Mainbody():
             print('\n\n')
 
             Av_tmp = out.params['Av'].value
-            AA_tmp = np.zeros(len(self.age), dtype='float64')
-            ZZ_tmp = np.zeros(len(self.age), dtype='float64')
+            AA_tmp = np.zeros(len(self.age), dtype='float')
+            ZZ_tmp = np.zeros(len(self.age), dtype='float')
             fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
         else:
             csq = out.chisqr
@@ -1618,8 +1620,8 @@ class Mainbody():
         print('\n\n')
 
         Av_tmp = out.params['Av'].value
-        AA_tmp = np.zeros(len(self.age), dtype='float64')
-        ZZ_tmp = np.zeros(len(self.age), dtype='float64')
+        AA_tmp = np.zeros(len(self.age), dtype='float')
+        ZZ_tmp = np.zeros(len(self.age), dtype='float')
         fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
 
         ########################
