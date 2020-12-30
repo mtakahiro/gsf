@@ -17,7 +17,7 @@ def get_ind(wave,flux):
     lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
     lmr     = [4336, 5206, 5318, 5363, 5950, 4892, 4688, 5945, 5729, 5802, 5366, 5366, 6105, 6417]
 
-    W = np.zeros(len(lml), dtype='float32')
+    W = np.zeros(len(lml), dtype='float')
     for ii in range(len(lml)):
         con_cen = (wave>lmcl[ii]) & (wave<lmcr[ii])
         con_sid = ((wave<lmcl[ii]) & (wave>lml[ii])) | ((wave<lmr[ii]) & (wave>lmcr[ii]))
@@ -93,14 +93,14 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     tree_lick = {}
 
     print('tau is the width of each age bin.')
-    tau_age = np.zeros(Na,dtype='float64')
-    age_age = np.zeros(Na,dtype='float64')
+    tau_age = np.zeros(Na,dtype='float')
+    age_age = np.zeros(Na,dtype='float')
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
             spall = [] # For sps model
-            ms = np.zeros(Na, dtype='float32')
-            Ls = np.zeros(Na, dtype='float32')
-            LICK = np.zeros((Na,len(INDICES)), dtype='float32')
+            ms = np.zeros(Na, dtype='float')
+            Ls = np.zeros(Na, dtype='float')
+            LICK = np.zeros((Na,len(INDICES)), dtype='float')
             tau0_old = 0
             for ss in range(Na):
                 #
@@ -299,8 +299,8 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, BPASS_DIR='/astro/udfcen3/T
     tree_ML = {}
     tree_lick = {}
 
-    tau_age = np.zeros(Na,dtype='float64')
-    age_age = np.zeros(Na,dtype='float64')
+    tau_age = np.zeros(Na,dtype='float')
+    age_age = np.zeros(Na,dtype='float')
     for zz in range(len(Z)):
         #
         # open spectral file;
@@ -332,9 +332,9 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, BPASS_DIR='/astro/udfcen3/T
         # 'tau is the width of each age bin.'
         for pp in range(len(tau0)):
             spall = [] # For sps model
-            ms = np.zeros(Na, dtype='float32')
-            Ls = np.zeros(Na, dtype='float32')
-            LICK = np.zeros((Na,len(INDICES)), dtype='float32')
+            ms = np.zeros(Na, dtype='float')
+            Ls = np.zeros(Na, dtype='float')
+            LICK = np.zeros((Na,len(INDICES)), dtype='float')
             tau0_old = 0
 
             for ss in range(Na):
