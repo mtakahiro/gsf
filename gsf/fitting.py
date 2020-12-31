@@ -160,15 +160,6 @@ class Mainbody():
         # Tau comparison?
         # -> Deprecated;
         self.ftaucomp = 0
-        '''
-        try:
-            self.ftaucomp = inputs['TAU_COMP']
-        except:
-            print('No entry: TAU_COMP')
-            self.ftaucomp = 0
-            print('set to %d' % self.ftaucomp)
-            pass
-        '''
 
         # Age
         try:
@@ -228,8 +219,7 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
-                print('\n')
-                print('##########################')
+                print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
@@ -251,8 +241,7 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
-                print('\n')
-                print('##########################')
+                print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
@@ -265,8 +254,7 @@ class Mainbody():
             Avfix = float(inputs['AVFIX'])
             self.AVFIX = Avfix
             self.nAV = 0
-            print('\n')
-            print('##########################')
+            print('\n##########################')
             print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
         except:
             try:
@@ -280,7 +268,8 @@ class Mainbody():
             except:
                 self.nAV = 1
 
-        #try:
+        # Z evolution;
+        print('\n##########################')
         if int(inputs['ZEVOL']) == 1:
             self.ZEVOL = 1
             self.ndim = int(len(self.nage) * 2 + self.nAV) # age, Z, and Av.
@@ -298,7 +287,7 @@ class Mainbody():
 
         # Redshift
         self.ndim += self.fzmc
-
+        print('\n##########################')
         print('No. of params are : %d'%(self.ndim))
 
         # Line
@@ -372,6 +361,7 @@ class Mainbody():
         else:
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
         '''
+        print('\n')
 
 
     def get_lines(self, LW0):

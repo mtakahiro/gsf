@@ -68,16 +68,22 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     import gsf
 
     nimf = MB.nimf
-    Z  = MB.Zall #np.arange(-1.2,0.4249,0.05)
     age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
     tau0 = MB.tau0 #[0.01,0.02,0.03],
     fneb = MB.fneb #0,
     logU = MB.logU #-2.5,
-    DIR_TMP= MB.DIR_TMP #'./templates/'
-
-    NZ = len(Z)
+    DIR_TMP = MB.DIR_TMP #'./templates/'
     Na = len(age)
 
+    # Z needs special care in z0 script, to avoid Zfix.
+    #Z = MB.Zall
+    Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
+    delZ_tmp = float(MB.inputs['DELZ'])
+    if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
+        delZ_tmp = 0.0001
+    Z = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    NZ = len(Z)
+    
     # Current age in Gyr;
     age_univ = MB.cosmo.age(0).value
 
@@ -187,13 +193,11 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
 
                     col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
                     col02.append(col3)
-
                     # ASDF
                     tree_spec.update({'wavelength': wave})
 
                 col4  = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
                 col02.append(col4)
-
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
@@ -223,15 +227,22 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
 
     # Write;
     for aa in range(len(age)):
-        #hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
         tree.update({'realtau%d(Gyr)'%(aa): tau_age[aa]})
     for aa in range(len(age)):
-        #hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
         tree.update({'realage%d(Gyr)'%(aa): age_age[aa]})
+    for aa in range(len(age)):
+        tree.update({'age%d'%(aa): age[aa]})
+    for aa in range(len(Z)):
+        tree.update({'Z%d'%(aa): Z[aa]})
+    for aa in range(len(tau0)):
+        tree.update({'tau0%d'%(aa): tau0[aa]})
 
+    # Index, Mass-to-light;
     tree.update({'spec' : tree_spec})
     tree.update({'ML' : tree_ML})
     tree.update({'lick' : tree_lick})
+
+    # Save
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
 

@@ -4,10 +4,9 @@ import numpy as np
 import scipy
 import sys
 import os
-
-from astropy.io import fits
 from scipy.integrate import simps
 
+from astropy.io import fits,ascii
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
 
@@ -41,7 +40,6 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, DIR_DUST='/U
     '''
     from .function import fnutonu
     import scipy.interpolate as interpolate
-    from astropy.io import ascii
 
     Htokg = 1.66054e-27 # kg/H
     kgtomsun = 1.989e+30 # kg/Msun
@@ -86,7 +84,6 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, DIR_DUST='/U
         fd = ascii.read(file_dust, data_start=data_start)
 
         wave = fd['col1'] # in mu m.
-        #flux = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
         flux = fd['col2'] # erg/s H-1
         flux_dens = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
         
@@ -144,6 +141,50 @@ def sim_spec(lmin, fin, sn):
     return frand, erand
 
 
+def check_library(MB, af):
+    '''
+    Purpose:
+    ========
+    Check library if it has a consistency setup as input file.
+
+    Return:
+    =======
+    True is no problem. 
+    '''
+
+    # Z needs special care in z0 script, to avoid Zfix.
+    Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
+    delZ_tmp = float(MB.inputs['DELZ'])
+    if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
+        delZ_tmp = 0.0001
+    Zall = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    
+    flag = True
+    # Matallicity:
+    for aa in range(len(Zall)):
+        if Zall[aa] != af['Z%d'%(aa)]:
+            print('Z:', Zall[aa], af['Z%d'%(aa)])
+            flag = False
+    # Age:
+    for aa in range(len(MB.age)):
+        if MB.age[aa] != af['age%d'%(aa)]:
+            print('age:', MB.age[aa], af['age%d'%(aa)])
+            flag = False
+
+    # Tau (e.g. ssp/csp):
+    for aa in range(len(MB.tau0)):
+        if MB.tau0[aa] != af['tau0%d'%(aa)]:
+            print('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
+            flag = False
+
+    # IMF:
+    if MB.nimf != af['nimf']:
+        print('nimf:', MB.nimf, af['nimf'])
+        flag = False
+
+    return flag
+
+
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     '''
     Purpose:
@@ -158,6 +199,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     age (array) : Age, in Gyr.
     fneb (int)  : flag for adding nebular emissionself.
     '''    
+    import asdf
+
     inputs = MB.inputs
     ID = MB.ID #inputs['ID']
     PA = MB.PA #inputs['PA']
@@ -165,17 +208,22 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     nage = MB.nage #np.arange(0,len(age),1)
     Z  = MB.Zall #=np.arange(-1.2,0.45,0.1),
     fneb = MB.fneb
-    DIR_TMP = MB.DIR_TMP# './templates/'
+    DIR_TMP = MB.DIR_TMP # './templates/'
     zbest = MB.zgal
     tau0 = MB.tau0
 
     fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
 
-    import asdf
     af = asdf.open(DIR_TMP + 'spec_all.asdf')
     mshdu = af['ML']
     spechdu = af['spec']
+
+    # Consistency check:
+    flag = check_library(MB, af)
+    if not flag:
+        print('\n!!!\nThere is inconsistency in z0 library and input file. Exiting.\n!!!\n')
+        sys.exit()
 
     # ASDF Big tree;
     # Create header;
@@ -296,7 +344,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     #############################
     # READ BB photometry from CAT_BB:
     #############################
-    from astropy.io import ascii
     if CAT_BB:
         #fd0 = np.loadtxt(CAT_BB, comments='#')
         fd0 = ascii.read(CAT_BB)
@@ -370,7 +417,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     #############################
     # Getting Morphology params.
     #############################
-    Amp    = 0
+    Amp = 0
     f_morp = False
     if f_spec:
         try:
@@ -379,7 +426,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
                 try:
                     mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
                     #fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                    from astropy.io import ascii
                     fm    = ascii.read(DIR_EXTR + mor_file)
                     Amp   = fm['A']
                     gamma = fm['gamma']
