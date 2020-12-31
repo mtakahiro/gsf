@@ -143,7 +143,6 @@ class Post:
                     result = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
                     if result[0] > 0:
                         chi_nd += np.log(result[0])
-                #con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
                 lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
             else: # Or use ERF:
                 x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)

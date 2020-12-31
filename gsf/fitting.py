@@ -217,8 +217,8 @@ class Mainbody():
             try:
                 self.ZFIX = float(inputs['ZFIX'])
                 self.delZ = 0.0001
-                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX+self.delZ
-                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
+                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
             except:
@@ -226,9 +226,9 @@ class Mainbody():
                 self.delZ = float(inputs['DELZ'])
                 if self.Zmax == self.Zmin or self.delZ==0:
                     self.delZ = 0.0001
-                    self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ) # in logZsun
+                    self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
                 else:
-                    self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+                    self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
         else:
             self.Zsun= 0.020
             Zbpass   = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
@@ -1126,7 +1126,8 @@ class Mainbody():
                 if np.min(self.Zall)==np.max(self.Zall):
                     fit_params.add('Z'+str(aa), value=np.min(self.Zall), vary=False)
                 else:
-                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
+                    #fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
+                    fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
 
         ####################################
         # Initial Metallicity Determination
