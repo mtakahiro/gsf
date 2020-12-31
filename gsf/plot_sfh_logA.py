@@ -173,7 +173,35 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                 delT[aa] = tau_lim
             else:
                 delT[aa] = delTu[aa] + delTl[aa]
+    else: # This is only true when CSP...
+        for aa in range(len(age)):
+            if aa == 0:
+                delTl[aa] = age[aa]
+                delTu[aa] = (age[aa+1]-age[aa])/2.
+                delT[aa]  = delTu[aa] + delTl[aa]
+            elif Tuni < age[aa]:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = Tuni-age[aa] #delTl[aa] #10.
+                delT[aa]  = delTu[aa] + delTl[aa]
+            elif aa == len(age)-1:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = Tuni - age[aa]
+                delT[aa]  = delTu[aa] + delTl[aa]
+            else:
+                delTl[aa] = (age[aa]-age[aa-1])/2.
+                delTu[aa] = (age[aa+1]-age[aa])/2.
+                if age[aa]+delTu[aa]>Tuni:
+                    delTu[aa] = Tuni-age[aa]
+                delT[aa] = delTu[aa] + delTl[aa]
 
+            '''
+            if delT[aa] < tau_lim:
+                # This is because fsps has the minimum tau = tau_lim
+                delT[aa] = tau_lim
+            elif delT[aa] <= 0:
+                delT[aa] = 1e10
+            '''
+    '''
     else: # This is only true when CSP...
         for aa in range(len(age)):
             if aa == 0:
@@ -198,7 +226,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                 delT[aa] = tau_lim
             elif delT[aa] <= 0:
                 delT[aa] = 1e10
-
+    '''
+    con_delt = (delT<=0)
+    delT[con_delt] = 1e10
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
@@ -324,11 +354,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                 except:
                     ZZtmp[aa] = MB.ZFIX
 
-            nZtmp      = bfnc.Z2NZ(ZZtmp[aa])
+            nZtmp = bfnc.Z2NZ(ZZtmp[aa])
             mslist[aa] = sedpar['ML_'+str(nZtmp)][aa]
-
-            ml = mloss['ms_'+str(nZtmp)][aa]
-
             Arand = np.random.uniform(-eA[aa],eA[aa])
             Zrand = np.random.uniform(-eZ[aa],eZ[aa])
 

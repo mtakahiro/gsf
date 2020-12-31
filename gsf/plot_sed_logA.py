@@ -871,7 +871,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         con_sed = (eybb>0)
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
 
-
         # Calculate EW, if there is excess band;
         try:
             iix2 = []

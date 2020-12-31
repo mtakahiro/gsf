@@ -1103,10 +1103,12 @@ class Mainbody():
             try:
                 Avmin = float(inputs['AVMIN'])
                 Avmax = float(inputs['AVMAX'])
+                Avini = (Avmax+Avmin)/2.
+                Avini = 0.
                 if Avmin == Avmax:
-                    fit_params.add('Av', value=(Avmax+Avmin)/2., vary=False)
+                    fit_params.add('Av', value=Avini, vary=False)
                 else:
-                    fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+                    fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
             except:
                 Avmin = 0.0
                 Avmax = 4.0
@@ -1566,10 +1568,12 @@ class Mainbody():
             try:
                 Avmin = float(inputs['AVMIN'])
                 Avmax = float(inputs['AVMAX'])
+                Avini = (Avmax+Avmin)/2.
+                Avini = 0.
                 if Avmin == Avmax:
-                    fit_params.add('Av', value=(Avmax+Avmin)/2., vary=False)
+                    fit_params.add('Av', value=Avini, vary=False)
                 else:
-                    fit_params.add('Av', value=(Avmax+Avmin)/2., min=Avmin, max=Avmax)
+                    fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
             except:
                 Avmin = 0.0
                 Avmax = 4.0

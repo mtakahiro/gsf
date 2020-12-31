@@ -169,8 +169,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     eflux = eflux0[con]
 
                 # Mass-Luminosity
-                ms[ss]  = sp.stellar_mass
-                Ls[ss]  = 10**sp.log_lbol
+                ms[ss] = sp.stellar_mass # Survived mass
+                Ls[ss] = 10**sp.log_lbol
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if ss == 0 and pp == 0 and zz == 0:
