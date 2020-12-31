@@ -185,7 +185,7 @@ def check_library(MB, af):
     return flag
 
 
-def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001):
     '''
     Purpose:
     ========
@@ -202,18 +202,17 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
     import asdf
 
     inputs = MB.inputs
-    ID = MB.ID #inputs['ID']
-    PA = MB.PA #inputs['PA']
-    age  = MB.age #=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
-    nage = MB.nage #np.arange(0,len(age),1)
-    Z  = MB.Zall #=np.arange(-1.2,0.45,0.1),
+    ID = MB.ID
+    PA = MB.PA
+    age = MB.age
+    nage = MB.nage
+    Z = MB.Zall
     fneb = MB.fneb
-    DIR_TMP = MB.DIR_TMP # './templates/'
+    DIR_TMP = MB.DIR_TMP
     zbest = MB.zgal
     tau0 = MB.tau0
-
-    fnc  = MB.fnc #Func(ID, PA, Z, nage) # Set up the number of Age/ZZ
-    bfnc = MB.bfnc #Basic(Z)
+    fnc = MB.fnc
+    bfnc = MB.bfnc
 
     af = asdf.open(DIR_TMP + 'spec_all.asdf')
     mshdu = af['ML']
@@ -281,9 +280,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000):
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         f_dust = True
-        print('FIR is implemented.')
+        print('FIR is implemented.\n')
     except:
-        print('No FIR is implemented.')
+        print('No FIR is implemented.\n')
         f_dust = False
         pass
 

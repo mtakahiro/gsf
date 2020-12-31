@@ -38,7 +38,7 @@ def get_ind(wave,flux):
     return W
 
 
-def make_tmp_z0(MB, lammin=100, lammax=160000):
+def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     '''
     Purpose:
     ========
@@ -106,6 +106,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
             spall = [] # For sps model
             ms = np.zeros(Na, dtype='float')
             Ls = np.zeros(Na, dtype='float')
+            mlost = np.zeros(Na, dtype='float')
             LICK = np.zeros((Na,len(INDICES)), dtype='float')
             tau0_old = 0
             for ss in range(Na):
@@ -126,7 +127,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     agetmp = age[ss]
                 # 3.SSP;
                 else: # =Negative tau;
-                    tautmp = 0.001
+                    tautmp = tau_lim
                     agetmp = age[ss]
 
                 # Keep tau in header;
@@ -164,6 +165,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True)
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
+                mlost[ss] =  sp.stellar_mass / sp.formed_mass
 
                 if fneb == 1:
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
@@ -217,13 +219,15 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     tree_lick.update({INDICES[ll]+'_'+str(zz): LICK[:,ll]})
 
                 col1 = fits.Column(name='ms_'+str(zz), format='E', unit='Msun', array=ms)
-                # ASDF
                 tree_ML.update({'ms_'+str(zz): ms})
                 col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
-                # ASDF
                 tree_ML.update({'Ls_'+str(zz): Ls})
+                col3 = fits.Column(name='fm_'+str(zz), format='E', unit='', array=mlost)
+                tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
+
                 col01.append(col1)
                 col01.append(col2)
+                col01.append(col3)
 
     # Write;
     for aa in range(len(age)):
@@ -247,7 +251,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
 
 
-def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
+def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
+    BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
     '''
     #
     # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
@@ -408,17 +413,16 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, BPASS_DIR='/astro/udfcen3/T
 
                     flux0  = fd_sed['col%d'%(iis+2)] #sp.get_spectrum(tage=age[ss], peraa=True)
                     ms[ss] = fd_stm['col2'][iistm]
-                    #print(age[ss],age_temp[iis]/1e9,iis+2)
 
                 # Keep tau in header;
                 tau_age[ss] = tautmp
                 age_age[ss] = agetmp
 
                 # Then. add flux if tau > 0.
-                con   = (wave0>lammin) & (wave0<lammax)
+                con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
 
-                Ls[ss]     = np.sum(flux0) # BPASS sed is in Lsun.
+                Ls[ss] = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if ss == 0 and pp == 0 and zz == 0:
@@ -461,14 +465,11 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, BPASS_DIR='/astro/udfcen3/T
                     tree_lick.update({INDICES[ll]+'_'+str(zz): LICK[:,ll]})
 
                 col1 = fits.Column(name='ms_'+str(zz), format='E', unit='Msun', array=ms)
-                # ASDF
                 tree_ML.update({'ms_'+str(zz): ms})
                 col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
-                # ASDF
                 tree_ML.update({'Ls_'+str(zz): Ls})
                 col01.append(col1)
                 col01.append(col2)
-
 
     # Write;
     for aa in range(len(age)):
