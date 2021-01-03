@@ -224,7 +224,7 @@ class Mainbody():
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.delZ = float(inputs['DELZ'])
-                if self.Zmax == self.Zmin or self.delZ==0:
+                if self.Zmax == self.Zmin or self.delZ == 0:
                     self.delZ = 0.0001
                     self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
                 else:
@@ -1115,7 +1115,7 @@ class Mainbody():
                 if self.age[aa] == 99 or self.age[aa]>agemax:
                     fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
                 else:
-                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
+                    fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
         else:
             try:
                 ZFIX = float(inputs['ZFIX'])
@@ -1232,7 +1232,8 @@ class Mainbody():
             # MCMC;
             if self.f_mcmc:
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], \
-                    f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+                    #f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),])
+                    f_disp=self.f_disp, moves=[(emcee.moves.KDEMove(),1.0),(emcee.moves.DEMove(), 0.), (emcee.moves.DESnookerMove(), 0.),])
 
                 res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                     params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
