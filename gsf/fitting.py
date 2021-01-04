@@ -1232,8 +1232,8 @@ class Mainbody():
             # MCMC;
             if self.f_mcmc:
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], \
-                    #f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),])
-                    f_disp=self.f_disp, moves=[(emcee.moves.KDEMove(),1.0),(emcee.moves.DEMove(), 0.), (emcee.moves.DESnookerMove(), 0.),])
+                    f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),])
+                    #f_disp=self.f_disp, moves=[(emcee.moves.KDEMove(),1.0),(emcee.moves.DEMove(), 0.), (emcee.moves.DESnookerMove(), 0.),])
 
                 res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                     params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)

@@ -112,7 +112,7 @@ class Post:
         return pars
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, lnpreject=-100):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, lnpreject=-1e10):
         '''
         Input:
         ======
@@ -148,11 +148,9 @@ class Post:
                 x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
                 f_erf = special.erf(x_erf)
                 if np.min(f_erf) <= -1:
-                    lnlike = lnpreject
-                    return lnlike
+                    return lnpreject
                 else:
                     chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
-
                 #con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
                 lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
 
