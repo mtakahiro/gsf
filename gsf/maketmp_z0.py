@@ -76,12 +76,15 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     Na = len(age)
 
     # Z needs special care in z0 script, to avoid Zfix.
-    #Z = MB.Zall
-    Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
-    delZ_tmp = float(MB.inputs['DELZ'])
-    if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
-        delZ_tmp = 0.0001
-    Z = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    if False:
+        # If this is implemented, make sure maketemp at z is also consistent.
+        Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
+        delZ_tmp = float(MB.inputs['DELZ'])
+        if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
+            delZ_tmp = 0.0001
+        Z = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    else:
+        Z = MB.Zall
     NZ = len(Z)
     
     # Current age in Gyr;

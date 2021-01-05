@@ -252,7 +252,7 @@ class Func:
 
         nmodel = np.argmin(np.abs(T-self.age[:]))
         if T - self.age[nmodel] != 0:
-            print('T=%.2 is not found in age library. T=%.2 is used.'%(T,self.age[nmodel]))
+            print('T=%.2f is not found in age library. T=%.2f is used.'%(T,self.age[nmodel]))
 
         coln= int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + nmodel)
         nr  = lib[:, 0]

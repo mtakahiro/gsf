@@ -153,11 +153,14 @@ def check_library(MB, af):
     '''
 
     # Z needs special care in z0 script, to avoid Zfix.
-    Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
-    delZ_tmp = float(MB.inputs['DELZ'])
-    if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
-        delZ_tmp = 0.0001
-    Zall = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    if False:
+        Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
+        delZ_tmp = float(MB.inputs['DELZ'])
+        if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
+            delZ_tmp = 0.0001
+        Zall = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    else:
+        Zall = MB.Zall
     
     flag = True
     # Matallicity:

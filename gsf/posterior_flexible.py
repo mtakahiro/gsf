@@ -38,13 +38,6 @@ class Post:
 
             # Add dust flux to opt/IR grid.
             model[:] += model_dust[:n_optir]
-            '''try:
-                print(vals['MDUST'])
-                print(model_dust[:n_optir],x1_dust[:n_optir])
-                print(model_dust[n_optir:],x1_dust[n_optir:])
-            except:
-                pass
-            '''
             # then append only FIR flux grid.
             model = np.append(model,model_dust[n_optir:])
             x1 = np.append(x1,x1_dust[n_optir:])
@@ -62,7 +55,6 @@ class Post:
         con_res_r = (wht==0)
         sig[con_res] = np.sqrt(1./wht[con_res] + (f**2*model[con_res]**2))
         sig[con_res_r] = wht[con_res_r] * 0 + np.inf
-        #sig = np.sqrt(1./wht + (f**2*model**2))
 
         if fy is None:
             print('Data is none')
@@ -135,7 +127,8 @@ class Post:
         sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
 
-        con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
+        #con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
+        con_up = (ey>0) & (fy/ey<=SNlim)
         if f_chind and len(fy[con_up])>0:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = special.erf(x_erf)
@@ -144,17 +137,17 @@ class Post:
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
             #con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
             #con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
             lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
         # Scale likeligood; Do not make this happen yet.
-        if f_scale and self.scale == 1:
-            self.scale = np.abs(lnlike) * 0.001
-            print('scale is set to',self.scale)
-
-        lnlike /= self.scale
+        if f_scale:
+            if self.scale == 1:
+                self.scale = np.abs(lnlike) * 0.001
+                print('scale is set to',self.scale)
+            lnlike /= self.scale
 
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']
@@ -179,4 +172,7 @@ class Post:
                 respr += np.log(prior[nzz])
             
         lnposterior = lnlike + respr
+        if not np.isfinite(lnposterior):
+            return -np.inf
+
         return lnposterior
