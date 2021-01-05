@@ -801,7 +801,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 if xbb[ii] in x_ex:
                     f_ex[ii] = 1
 
-        con_up = (fy==0) & (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
+        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
         if False:
             # Chi2 for non detection;
             for nn in range(len(ey[con_up])):
