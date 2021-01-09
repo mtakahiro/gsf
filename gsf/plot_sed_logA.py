@@ -891,9 +891,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
  
             # Luminosity;
             #Lsun = 3.839 * 1e33 #erg s-1
-            L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale # A * erg/s/A/cm2 * cm2
-            L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale # A * erg/s/A/cm2 * cm2
-            L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale # A * erg/s/A/cm2 * cm2
+            L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
+            L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
+            L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
             '''
             SFR16 = 10**(np.log10(L16) - 41.35)
             SFR50 = 10**(np.log10(L50) - 41.35)
