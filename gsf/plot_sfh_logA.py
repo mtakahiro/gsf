@@ -561,17 +561,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Writing SED param in a fits file;
     # Header
     prihdr = fits.Header()
-    prihdr['ID']     = ID
-    prihdr['PA']     = PA
-    prihdr['z']      = zbes
-    prihdr['RA']     = RA
-    prihdr['DEC']    = DEC
+    prihdr['ID'] = ID
+    prihdr['PA'] = PA
+    prihdr['z'] = zbes
+    prihdr['RA'] = RA
+    prihdr['DEC'] = DEC
     # Add rejuv properties;
-    prihdr['f_rejuv']= f_rejuv
+    prihdr['f_rejuv'] = f_rejuv
     prihdr['t_quen'] = t_quench
-    prihdr['t_rejuv']= t_rejuv
+    prihdr['t_rejuv'] = t_rejuv
     # SFR
-    prihdr['tset_SFR']= tset_SFR_SED
+    prihdr['tset_SFR'] = tset_SFR_SED
     # Version;
     import gsf
     prihdr['version'] = gsf.__version__
@@ -590,7 +590,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     col01.append(col50)        
 
     # SFR based on SED
-    col50 = fits.Column(name='SFR', format='E', unit='Msun/yr', array=SFR_SED_med[:])
+    col50 = fits.Column(name='SFR', format='E', unit='logMsun/yr', array=SFR_SED_med[:])
     col01.append(col50)
 
     # Metallicity_MW
@@ -621,7 +621,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     col01.append(col50)
 
     #
-    colms  = fits.ColDefs(col01)
+    colms = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
     file_sfh_param = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_param.fits'

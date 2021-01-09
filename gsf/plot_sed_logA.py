@@ -851,7 +851,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         iix = []
         for ii in range(len(fbb)):
-            #iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
             iix.append(ii)
         con_sed = ()
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
@@ -877,9 +876,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             for ii in range(len(fy_ex)):
                 iix2.append(np.argmin(np.abs(lbb[:]-x_ex[ii])))
 
+            # Rest-frame EW;
+            # Note about 16/84 in fbb
+            EW16 = (fy_ex * c / np.square(x_ex) / d - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
             EW50 = (fy_ex * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW16 = (fy_ex * c / np.square(x_ex) / d - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW84 = (fy_ex * c / np.square(x_ex) / d - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW84 = (fy_ex * c / np.square(x_ex) / d - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
 
             EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
             EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) / d - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
@@ -887,6 +888,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             cnt50 = fbb[iix2]
             cnt16 = fbb16[iix2]
             cnt84 = fbb84[iix2]
+ 
+            # Luminosity;
+            #Lsun = 3.839 * 1e33 #erg s-1
+            L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale # A * erg/s/A/cm2 * cm2
+            L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale # A * erg/s/A/cm2 * cm2
+            L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale # A * erg/s/A/cm2 * cm2
+            '''
+            SFR16 = 10**(np.log10(L16) - 41.35)
+            SFR50 = 10**(np.log10(L50) - 41.35)
+            SFR84 = 10**(np.log10(L84) - 41.35)
+            '''
 
             ew_label = []
             for ii in range(len(fy_ex)):
@@ -908,26 +920,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=25.0)
         fbb_nu = flamtonu(lbb, fbb*scale, m0set=25.0)
         fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=25.0)
-        '''
-        # Save BB model;
-        col_sed = []
-        coltmp = fits.Column(name='wave', format='E', unit='AA', array=lbb)
-        col_sed.append(coltmp)
-
-        coltmp = fits.Column(name='fnu_16', format='E', unit='fnu(m0=25)', array=fbb16_nu)
-        col_sed.append(coltmp)
-
-        coltmp = fits.Column(name='fnu_50', format='E', unit='fnu(m0=25)', array=fbb_nu)
-        col_sed.append(coltmp)
-
-        coltmp = fits.Column(name='fnu_84', format='E', unit='fnu(m0=25)', array=fbb84_nu)
-        col_sed.append(coltmp)
-
-        col  = fits.ColDefs(col_sed)
-        hdu0 = fits.BinTableHDU.from_columns(col)#, header=hdr)
-        hdu0.writeto(MB.DIR_OUT + ID + '_PA' + PA + '_sed.fits', overwrite=True)
-        '''
-
 
         # Then save full spectrum;
         col00  = []
@@ -1021,7 +1013,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             hdr['zj84'] = np.percentile(UVJ[:,3],84)
         except:
             print('\nError when writinf UVJ colors;\n')
-            #print(np.percentile(UVJ[:,0],[16,50,84]))
             pass
 
         # EW;
@@ -1035,6 +1026,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 hdr['HIERARCH cnt_%s_16'%(ew_label[ii])]= cnt16[ii]
                 hdr['HIERARCH cnt_%s_50'%(ew_label[ii])]= cnt50[ii]
                 hdr['HIERARCH cnt_%s_84'%(ew_label[ii])]= cnt84[ii]
+                hdr['L_%s_16'%(ew_label[ii])] = L16[ii]
+                hdr['L_%s_50'%(ew_label[ii])] = L50[ii]
+                hdr['L_%s_84'%(ew_label[ii])] = L84[ii]
         except:
             pass
 
@@ -1067,6 +1061,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         tree_spec.update({'f_model_16': ytmp16})
         tree_spec.update({'f_model_50': ytmp50})
         tree_spec.update({'f_model_84': ytmp84})
+
+        # EW;
+        try:
+            for ii in range(len(EW50)):
+                tree_spec.update({'EW_%s_16'%(ew_label[ii]): EW16[ii]})
+                tree_spec.update({'EW_%s_50'%(ew_label[ii]): EW50[ii]})
+                tree_spec.update({'EW_%s_84'%(ew_label[ii]): EW84[ii]})
+                tree_spec.update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii]})
+                tree_spec.update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii]})
+                tree_spec.update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii]})
+                tree_spec.update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii]})
+                tree_spec.update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii]})
+                tree_spec.update({'L_%s_16'%(ew_label[ii]): L16[ii]})
+                tree_spec.update({'L_%s_50'%(ew_label[ii]): L50[ii]})
+                tree_spec.update({'L_%s_84'%(ew_label[ii]): L84[ii]})
+        except:
+            pass
+
         # Each component
         # Stellar
         tree_spec.update({'wave_model_stel': x0})
@@ -1088,6 +1100,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
             tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
             tree_spec.update({'wg1_obs': xg1})
+
         af = asdf.AsdfFile(tree_spec)
         af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
 
