@@ -21,7 +21,7 @@ lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False):
+        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1):
     '''
     Purpose:
     ========
@@ -32,6 +32,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     flim : Lower limit for plotting an age bin.
     lsfrl : Lower limit for SFR, in logMsun/yr
     f_SFMS : If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
+    tset_SFR_SED : in Gyr. Time scale over which SFR estimate is averaged.
     '''
     if f_silence:
         import matplotlib
@@ -272,7 +273,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             print('No simulation file (%s).\nError may be underestimated.' % meanfile)
         eA = age * 0
         eZ = age * 0
-        eAv= 0
+        eAv = 0
 
     mm = 0
 
@@ -280,7 +281,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Get SED based SFR
     #####################
     f_SFRSED_plot = False
-    tset_SFR_SED = 0.03 # Gyr
     SFR_SED = np.zeros(mmax,dtype='float')
 
     # ASDF;
@@ -288,7 +288,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
-            
 
     AAtmp = np.zeros(len(age), dtype='float')
     ZZtmp = np.zeros(len(age), dtype='float')
