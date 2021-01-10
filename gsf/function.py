@@ -299,8 +299,26 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
 
 
 def get_SFMS(red,age,mass,IMF=1):
+    '''
+    Purpose:
+    ========
+    To get SFMS at age ago from z=red.
+
+    Input:
+    ======
+    red : Observed redshift
+    age : lookback time, in Gyr (array).
+    mass : stellar mass (array) at each age, in Msun (not logM). 
+
+    Return:
+    =======
+    SFR, in logMsun/yr.
+
+    Note:
+    =====
     # From Speagle+14 Eq28;
     # Chabrier IMF, default
+    '''
     from astropy.cosmology import WMAP9
     cosmo = WMAP9
 

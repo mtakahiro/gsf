@@ -353,6 +353,14 @@ class Mainbody():
             self.f_mcmc = True
             self.f_nested = False
 
+        # Force Age to Age fix?:
+        try:
+            if int(inputs['FORCE_AGE'])==1:
+                self.force_agefix = True
+            else:
+                self.force_agefix = False
+        except:
+            self.force_agefix = False
 
         '''
         # Read Observed Data
@@ -1075,13 +1083,12 @@ class Mainbody():
                 if self.age[aa] == 99:
                     fit_params.add('A'+str(aa), value=Amin, vary=False)
                     self.ndim -= 1
-                elif self.age[aa]>agemax:
+                elif self.age[aa]>agemax and not self.force_agefix:
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
                     fit_params.add('A'+str(aa), value=Amin, vary=False)
                     self.ndim -= 1
                 else:
                     fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
-
 
         #####################
         # Dust attenuation
@@ -1541,7 +1548,7 @@ class Mainbody():
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
                     fit_params.add('A'+str(aa), value=0, vary=False)
-                elif self.age[aa]>agemax:
+                elif self.age[aa]>agemax and not self.force_agefix:
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
                     fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
