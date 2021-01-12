@@ -389,12 +389,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ACp = np.zeros((len(age),3), dtype='float')
     ZMp = np.zeros((len(age),3), dtype='float')
     ZCp = np.zeros((len(age),3), dtype='float')
+    ZLp = np.zeros((len(age),3), dtype='float')
     SFp = np.zeros((len(age),3), dtype='float')
     for aa in range(len(age)):
        AMp[aa,:] = np.percentile(AM[aa,:], [16,50,84])
        ACp[aa,:] = np.percentile(AC[aa,:], [16,50,84])
        ZMp[aa,:] = np.percentile(ZM[aa,:], [16,50,84])
        ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
+       ZLp[aa,:] = np.percentile(ZL[aa,:], [16,50,84])
        SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
 
     SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
@@ -604,7 +606,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     col01.append(col50)
 
     # Metallicity_LW
-    ZCP = [ZL[0,0], ZL[0,1], ZL[0,2]]
+    #ZCP = [ZL[0,0], ZL[0,1], ZL[0,2]]
+    ZCP = [ZLp[0,0], ZLp[0,1], ZLp[0,2]]
     col50 = fits.Column(name='Z_LW', format='E', unit='logZsun', array=ZCP[:])
     col01.append(col50)
 
