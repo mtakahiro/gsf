@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os.path
 import string
 from astropy.cosmology import WMAP9 as cosmo
+import asdf
 
 # From gsf
 from .fitting import Mainbody
@@ -82,8 +83,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     Run all steps.
 
     '''
-    
-    flag_suc = 0
 
     ######################
     # Read from Input file
@@ -105,7 +104,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     #
     # Make templates based on input redsfift.
     #
-    if fplt == 0 or fplt == 1 or fplt == 2:
+    if fplt == 0 or fplt == 1:
         #
         # 0. Make basic templates
         #
@@ -119,21 +118,23 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
             else:
                 make_tmp_z0(MB, lammax=lammax)
 
-
         #
         # 1. Start making redshifted templates.
         #
-        if fplt < 2:
-            maketemp(MB, tau_lim=tau_lim)
+        maketemp(MB, tau_lim=tau_lim)
 
+    # Read temp from asdf;
+    # This has to happend after fplt==1 and before fplt>=2.
+    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
+    flag_suc = 0
+    if fplt <= 2:
         #
         # 2. Mian fitting part.
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
-
         flag_suc = MB.main(cornerplot=cornerplot)
-
         while (flag_suc and flag_suc!=-1):
 
             print('\n\n')
@@ -145,11 +146,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
             print('\n\n')
 
             flag_suc = MB.main(cornerplot=cornerplot)
+            # If still in the loop, read again.
+            MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
 
         # Total calculation time
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
-
 
     if fplt <= 3 and flag_suc != -1:# and False:
         if f_Alog:

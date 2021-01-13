@@ -39,6 +39,10 @@ class Func:
         except:
             pass
 
+        # Already Read or not;
+        self.f_af = False
+        self.f_af0 = False
+
     def demo(self):
         ZZ = self.ZZ
         AA = self.AA
@@ -47,28 +51,26 @@ class Func:
     #############################
     # Load template in obs range.
     #############################
-    def open_spec_fits(self, MB, fall=0):
+    def open_spec_fits(self, fall=0):
         '''
         '''
-        ID0 = MB.ID
-        PA0 = MB.PA
-        tau0= MB.tau0 #[0.01,0.02,0.03]
+        ID0 = self.MB.ID
+        PA0 = self.MB.PA
+        tau0= self.MB.tau0 #[0.01,0.02,0.03]
 
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         # ASDF;
         if fall == 0:
             app = ''
-            hdu0 = self.af['spec']
+            hdu0 = self.MB.af['spec']
         elif fall == 1:
             app = 'all_'
-            hdu0 = self.af['spec_full']
+            hdu0 = self.MB.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
         for pp in range(len(tau0)):
@@ -94,30 +96,30 @@ class Func:
 
         return lib
 
-    def open_spec_dust_fits(self, MB, fall=0):
+    def open_spec_dust_fits(self, fall=0):
         '''
         ##################################
         # Load dust template in obs range.
         ##################################
         '''
-        ID0 = MB.ID
-        PA0 = MB.PA
-        tau0= MB.tau0 #[0.01,0.02,0.03]
+        ID0 = self.MB.ID
+        PA0 = self.MB.PA
+        tau0= self.MB.tau0 #[0.01,0.02,0.03]
 
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if fall == 0:
             app = ''
-            hdu0 = self.af['spec_dust']
+            hdu0 = self.MB.af['spec_dust']
         elif fall == 1:
             app = 'all_'
-            hdu0 = self.af['spec_dust_full']
+            hdu0 = self.MB.af['spec_dust_full']
 
         DIR_TMP = self.DIR_TMP
         nr = hdu0['colnum']
@@ -154,18 +156,18 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
-        hdu0 = self.af['spec_full']
+        hdu0 = self.MB.af['spec_full']
         DIR_TMP = self.DIR_TMP #'./templates/'
 
         pp = 0
         zz = nz
 
         # Luminosity
-        mshdu = self.af0['ML']
+        mshdu = self.MB.af0['ML']
         Ls = mshdu['Ls_%d'%nz] 
 
         xx   = hdu0['wavelength'] # at RF;
@@ -356,9 +358,6 @@ class Func:
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
         Mtot = 0
 
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
-
         if self.MB.fzmc == 1:
             '''
             try:
@@ -380,12 +379,13 @@ class Func:
         Av00 = par['Av']
 
         for aa in range(len(AA)):
-            try:
-                Ztest = par['Z'+str(len(AA)-1)] # instead of 'ZEVOL'
+            if self.MB.ZEVOL==1 or aa == 0:
                 Z = par['Z'+str(aa)]
-            except:
+                NZ = bfnc.Z2NZ(Z)
+            else:
                 # This is in the case with ZEVO=0.
-                Z = par['Z0']
+                #Z = par['Z0']
+                pass
 
             # Check limit;
             if par['A'+str(aa)] < self.MB.Amin:
@@ -405,10 +405,9 @@ class Func:
             else:
                 A00 = par['A'+str(aa)]
 
-            NZ = bfnc.Z2NZ(Z)
             coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
 
-            sedpar = self.af['ML'] # For M/L
+            sedpar = self.MB.af['ML'] # For M/L
             mslist = sedpar['ML_'+str(NZ)][aa]
             Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
@@ -523,12 +522,13 @@ class Func:
         Av00 = par.params['Av'].value
         for aa in range(len(AA)):
             nmodel = aa
-            try:
-                Ztest = par.params['Z'+str(len(AA)-1)].value # instead of 'ZEVOL'
-                Z = par.params['Z'+str(aa)].value
-            except:
+            if self.MB.ZEVOL==1 or aa == 0:
+                Z = par.params['Z'+str(aa)]
+                NZ = bfnc.Z2NZ(Z)
+            else:
                 # This is in the case with ZEVO=0.
-                Z = par.params['Z0'].value
+                #Z = par['Z0']
+                pass
 
             # Is A in logspace?
             if f_Alog:
@@ -538,8 +538,6 @@ class Func:
                     A00 = 0
             else:
                 A00 = par.params['A'+str(aa)].value
-
-            NZ  = bfnc.Z2NZ(Z)
 
             #coln = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
             coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)

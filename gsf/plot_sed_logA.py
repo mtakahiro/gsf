@@ -336,15 +336,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     #####################################
     # Open ascii file and stock to array.
-    lib = fnc.open_spec_fits(MB,fall=0)
-    lib_all = fnc.open_spec_fits(MB,fall=1)
+    lib = fnc.open_spec_fits(fall=0)
+    lib_all = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
-        lib_dust = fnc.open_spec_dust_fits(MB,fall=0)
-        lib_dust_all = fnc.open_spec_dust_fits(MB,fall=1)
+        lib_dust = fnc.open_spec_dust_fits(fall=0)
+        lib_dust_all = fnc.open_spec_dust_fits(fall=1)
 
     #II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(nage)-1
@@ -1770,8 +1770,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ###########################
     # Open result file
     ###########################
-    lib     = fnc.open_spec_fits(MB,fall=0)
-    lib_all = fnc.open_spec_fits(MB,fall=1)
+    lib     = fnc.open_spec_fits(fall=0)
+    lib_all = fnc.open_spec_fits(fall=1)
 
     file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
     hdul = fits.open(file) # open a FITS file

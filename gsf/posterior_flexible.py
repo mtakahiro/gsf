@@ -27,9 +27,7 @@ class Post:
         Returns:
         ========
         residual of model and data.
-
         '''
-
         vals = pars.valuesdict()
         model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
 
@@ -157,19 +155,20 @@ class Post:
         respr = 0
 
         # Prior from dynamical mass:
-        flat_prior = False
+        flat_prior = True #False
         gauss_prior = True
         if gauss_prior and self.gauss_Mdyn == None:
             self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
             #self.gauss_cnst = self.gauss_Mdyn.pdf(self.mb.logMdyn)
+            #print('Defined gaussian')
 
         if self.mb.f_Mdyn:
             #logMtmp = self.get_mass(vals)
             logMtmp = self.mb.logMtmp
             #print(logMtmp)
             if flat_prior:
-                if logMtmp > self.mb.logMdyn:
-                    #print(lnpreject,logMtmp,self.mb.logMdyn)
+                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn:
+                    #print(lnpreject,logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
                     return lnpreject
                 else:
                     respr += 0

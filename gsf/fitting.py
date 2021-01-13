@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-from lmfit import Model, Parameters, minimize, fit_report, Minimizer
+from lmfit import Model, Parameters, minimize, fit_report#, Minimizer
 from numpy import log10
 import pickle as cPickle
 import os.path
@@ -12,7 +12,6 @@ from scipy import stats
 from scipy.stats import norm
 from astropy.io import fits,ascii
 import corner
-import asdf
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
@@ -20,6 +19,7 @@ from .zfit import check_redshift
 #from .plot_sed import *
 from .writing import get_param
 from .function_class import Func
+from .minimizer import Minimizer
 
 ############################
 py_v = (sys.version_info[0])
@@ -972,7 +972,8 @@ class Mainbody():
         return f_add
 
 
-    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, verbose=False, skip_fitz=False, out=None):
+    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, \
+        f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True, f_shuffle=True):
         '''
         Input:
         ======
@@ -980,6 +981,8 @@ class Mainbody():
         skip_fitz (bool): Skip redshift fit.
         sigz (float): confidence interval for redshift fit.
         ezmin (float): minimum error in redshift
+
+        f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
 
         '''
         import emcee
@@ -1009,11 +1012,11 @@ class Mainbody():
         #self.bfnc = Basic(self.Zall)
 
         # Load Spectral library;
-        self.lib = self.fnc.open_spec_fits(self, fall=0)
-        self.lib_all = self.fnc.open_spec_fits(self, fall=1)
+        self.lib = self.fnc.open_spec_fits(fall=0)
+        self.lib_all = self.fnc.open_spec_fits(fall=1)
         if self.f_dust:
-            self.lib_dust = self.fnc.open_spec_dust_fits(self, fall=0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
+            self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
 
         # For MCMC;
         self.nmc      = int(self.inputs['NMC'])
@@ -1114,6 +1117,8 @@ class Mainbody():
         try:
             Avfix = float(inputs['AVFIX'])
             fit_params.add('Av', value=Avfix, vary=False)
+            self.Avmin = Avfix
+            self.Avmax = Avfix
         except:
             try:
                 Avmin = float(inputs['AVMIN'])
@@ -1245,6 +1250,7 @@ class Mainbody():
             ################################
             print('\nMinimizer Defined\n')
             
+            '''
             ncpu0 = int(multiprocess.cpu_count()/2)
             try:
                 ncpu = int(inputs['NCPU'])
@@ -1254,10 +1260,12 @@ class Mainbody():
                 ncpu = ncpu0
                 pass
             print('No. of CPU is set to %d'%(ncpu))
+            '''
+            ncpu = 0
 
             print('######################')
             print('### Starting emcee ###')
-            print('######################')
+            print('######################\n')
             start_mc = timeit.default_timer()
 
             # MCMC;
@@ -1266,9 +1274,9 @@ class Mainbody():
                     f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),],\
                     nan_policy='omit')
 
-                f_shuffle = False
-                #f_shuffle = True
+                #f_shuffle = False
                 if f_shuffle: # this causes error...
+                    print('Initial shuffle in walkers is on.\n')
                     #pos = np.zeros((self.nwalk, self.ndim),'float')
                     pos = 1e-5 * np.random.randn(self.nwalk, self.ndim)
                     for ii in range(pos.shape[0]):
@@ -1277,15 +1285,20 @@ class Mainbody():
                             if out.params[key].vary == True:
                                 pos[ii,aa] = out.params[key].value
                                 if np.random.uniform(0,1) > (1. - 1./self.ndim):
-                                    print(aa,ii,'Shuffle')
+                                    #print(aa,ii,'Shuffle')
                                     if key[:2] == 'Av':
+                                        #print(pos[ii,aa], end=' ')
                                         pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
+                                        #print(pos[ii,aa])
                                     elif key[0] == 'A':
                                         #pos[ii,aa] += np.random.uniform(self.Amin, self.Amax)/10
-                                        pos[ii,aa] += np.random.uniform(-1, 1)
-                                    elif key[0] == 'Z':
-                                        #pos[ii,aa] += np.random.uniform(self.Zmin, self.Zmax)/10
                                         pos[ii,aa] += np.random.uniform(-0.2, 0.2)
+                                    elif key[0] == 'Z':
+                                        if self.delZ>0.01:
+                                            pos[ii,aa] += np.random.uniform(-self.delZ, self.delZ)
+                                        else:
+                                            pos[ii,aa] += 0
+    
                                 aa += 1
 
                     # Run emcee;
@@ -1299,12 +1312,16 @@ class Mainbody():
                     #sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust))
                     #sampler.run_mcmc(pos, self.nmc, progress=True)
 
-                if True:
+                print('Converged at %d/%d'%(res.steps,self.nmc))
+                self.nmc = res.steps
+
+                if f_plot_accept:
                     plt.plot(res.acceptance_fraction)
                     plt.xlabel('walker')
                     plt.ylabel('acceptance fraction')
-                    plt.savefig('accept.png')
+                    plt.savefig('%s/accept_%s.png'%(self.DIR_OUT,self.ID))
 
+                # This is already burnt in.
                 flatchain = res.flatchain
                 var_names = res.var_names
                 params_value = {}
@@ -1393,7 +1410,8 @@ class Mainbody():
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
-            burnin   = int(self.nmc/2)
+            #burnin   = int(self.nmc/2)
+            burnin   = 0 # Since already burnt in.
             savepath = self.DIR_OUT
             cpklname = 'chain_' + self.ID + '_PA' + self.PA + '_corner.cpkl'
             savecpkl({'chain':flatchain,

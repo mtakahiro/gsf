@@ -49,6 +49,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     fil_path = self.DIR_FILT
     nmc  = self.nmc
     ndim = self.ndim
+    nwalker = self.nwalk
 
     #samples = res.chain[:, :, :].reshape((-1, ndim))
     samples = res.flatchain
@@ -172,6 +173,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['tcalc']  = tcalc
     prihdr['chi2']   = fitc[0]
     prihdr['chi2nu'] = fitc[1]
+    prihdr['nmc'] = nmc
+    prihdr['nwalker'] = nwalker
     import gsf
     prihdr['version'] = gsf.__version__
     prihdu = fits.PrimaryHDU(header=prihdr)

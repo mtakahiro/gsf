@@ -5,6 +5,7 @@ import scipy
 import sys
 import os
 from scipy.integrate import simps
+import asdf
 
 from astropy.io import fits,ascii
 from astropy.modeling.models import Moffat1D
@@ -202,7 +203,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     age (array) : Age, in Gyr.
     fneb (int)  : flag for adding nebular emissionself.
     '''    
-    import asdf
 
     inputs = MB.inputs
     ID = MB.ID
@@ -518,16 +518,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     col02 = []
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
-            Zbest   = Z[zz]
-            Na      = len(age)
-            Nz      = 1
-            param   = np.zeros((Na, 6), dtype='float')
-            param[:,2] = 1e99
-            Ntmp    = 1
-            chi2    = np.zeros(Ntmp) + 1e99
-            snorm   = np.zeros(Ntmp)
-            agebest = np.zeros(Ntmp)
-            avbest  = np.zeros(Ntmp)
+            Zbest = Z[zz]
+            Na = len(age)
+            Ntmp = 1
             age_univ= MB.cosmo.age(zbest).value #, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
@@ -661,7 +654,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             Temp = np.arange(DT0,DT1,dDT)
 
         dellam_d = 1e3
-        lambda_d = np.arange(1e3,1e7,dellam_d) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um; This has to be wide enough, to cut dust contribution at <1um.
+        lambda_d = np.arange(1e3, 1e7, dellam_d) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um; This has to be wide enough, to cut dust contribution at <1um.
 
         '''
         # c in AA/s.
@@ -811,3 +804,5 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             else:
                 fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
     fw.close()
+
+    print('Done making templates at z=%.2f.\n'%zbest)
