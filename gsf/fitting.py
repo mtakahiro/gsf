@@ -100,9 +100,15 @@ class Mainbody():
 
         # Mdyn;
         try:
-            self.Mdyn = float(inputs['MDYN'])
-            self.f_Mdyn = True
+            #self.Mdyn = float(inputs['MDYN'])
+            if int(inputs['F_MDYN']) == 1:
+                self.f_Mdyn = True
+            else:
+                self.f_Mdyn = False
         except:
+            self.f_Mdyn = False
+
+        if self.f_Mdyn:
             CAT_BB = inputs['CAT_BB']
             self.fd_cat = ascii.read(CAT_BB)
             iix = np.where(self.fd_cat['id'] == int(self.ID))
@@ -112,9 +118,12 @@ class Mainbody():
                 self.f_Mdyn = True
             except:
                 self.f_Mdyn = False
-        self.f_Mdyn = True
-        self.logMdyn = 11.1
-        self.elogMdyn = 0.1
+
+        print('f_Mdyn is set to %s\n'%self.f_Mdyn)
+        
+        #self.f_Mdyn = True
+        #self.logMdyn = 11.1
+        #self.elogMdyn = 0.1
 
         #if self.f_Mdyn:
         #    # If Mdyn is included.
