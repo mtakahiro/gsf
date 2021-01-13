@@ -39,9 +39,6 @@ class Func:
         except:
             pass
 
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
-
     def demo(self):
         ZZ = self.ZZ
         AA = self.AA
@@ -61,6 +58,9 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
+
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         # ASDF;
         if fall == 0:
@@ -109,6 +109,9 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+
         if fall == 0:
             app = ''
             hdu0 = self.af['spec_dust']
@@ -150,6 +153,9 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
+
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
         hdu0 = self.af['spec_full']
@@ -349,6 +355,9 @@ class Func:
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
         Mtot = 0
+
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if self.MB.fzmc == 1:
             '''

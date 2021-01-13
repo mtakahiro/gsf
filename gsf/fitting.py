@@ -116,9 +116,9 @@ class Mainbody():
         self.logMdyn = 11.1
         self.elogMdyn = 0.1
 
-        if self.f_Mdyn:
-            # If Mdyn is included.
-            self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        #if self.f_Mdyn:
+        #    # If Mdyn is included.
+        #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
 
         # Scaling for grism; 
         self.Cz0  = float(inputs['CZ0'])
