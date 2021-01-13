@@ -355,7 +355,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         if int(id0[ii0]) !=  int(ID):
             print('Cannot find the column for [ID: %d] in the input BB catalog!'%(int(ID)))
             return -1
-        id  = fd0['id'][ii0]
+        id = fd0['id'][ii0]
 
         fbb = np.zeros(len(SFILT), dtype='float')
         ebb = np.zeros(len(SFILT), dtype='float')
@@ -531,12 +531,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             age_univ= MB.cosmo.age(zbest).value #, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
-                lm0    = spechdu['wavelength']
+                lm0 = spechdu['wavelength']
 
-            lmbest   = np.zeros((Ntmp, len(lm0)), dtype='float')
-            fbest    = np.zeros((Ntmp, len(lm0)), dtype='float')
+            lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
+            fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
-            fbestbb  = np.zeros((Ntmp, len(SFILT)), dtype='float')
+            fbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
 
             A = np.zeros(Na, dtype='float') + 1
 

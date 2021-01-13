@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import scipy.integrate as integrate
 from scipy.integrate import cumtrapz
-from scipy import special
+from scipy import special,stats
 
 from .function import *
 
@@ -15,6 +15,7 @@ class Post:
     def __init__(self, mainbody):
         self.mb = mainbody
         self.scale = 1
+        self.gauss_Mdyn = None
 
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
@@ -104,7 +105,7 @@ class Post:
         return pars
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, lnpreject=-1e10):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, lnpreject=-np.inf, f_like=False):
         '''
         Input:
         ======
@@ -127,7 +128,6 @@ class Post:
         sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
 
-        #con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
         con_up = (ey>0) & (fy/ey<=SNlim)
         if f_chind and len(fy[con_up])>0:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
@@ -149,15 +149,41 @@ class Post:
                 print('scale is set to',self.scale)
             lnlike /= self.scale
 
+        # If no prior, return log likeligood.
+        if f_like:
+            return lnlike
+
+        # Prior
+        respr = 0
+
+        # Prior from dynamical mass:
+        flat_prior = False
+        gauss_prior = True
+        if gauss_prior and self.gauss_Mdyn == None:
+            self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
+            #self.gauss_cnst = self.gauss_Mdyn.pdf(self.mb.logMdyn)
+
+        if self.mb.f_Mdyn:
+            #logMtmp = self.get_mass(vals)
+            logMtmp = self.mb.logMtmp
+            #print(logMtmp)
+            if flat_prior:
+                if logMtmp > self.mb.logMdyn:
+                    #print(lnpreject,logMtmp,self.mb.logMdyn)
+                    return lnpreject
+                else:
+                    respr += 0
+            elif gauss_prior:
+                p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
+                respr += np.log(p_gauss)
+
+
         #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
         #Av   = vals['Av']
         #if Av<0:
         #     return -np.inf
         #else:
         #    respr = 0 #np.log(1)
-
-        # Prior
-        respr = 0
 
         # Prior for redshift:
         if self.mb.fzmc == 1:
@@ -174,5 +200,42 @@ class Post:
         lnposterior = lnlike + respr
         if not np.isfinite(lnposterior):
             return -np.inf
-
         return lnposterior
+
+    """
+    def get_mass(self,pars):
+        '''
+        Purpose:
+        ========
+        Quickly calculate stellar mass for a given param set.
+
+        Return:
+        =======
+        Stellar mass in logMsun.
+        '''
+        sedpar = self.af['ML'] # For M/L
+
+        Mtot = 0
+        for aa in range(len(self.mb.age)):
+            # Checking AA limit too;
+            if pars['A%d'%aa] < self.mb.Amin or pars['A%d'%aa] > self.mb.Amax:
+                return np.inf
+
+            if self.mb.Zevol == 1:
+                # Checking Z limit too;
+                if pars['Z%d'%aa] < self.mb.Zmin or pars['Z%d'%aa] > self.mb.Zmax:
+                    return np.inf
+                ZZtmp = pars['Z%d'%aa]
+                nZtmp = self.mb.bfnc.Z2NZ(ZZtmp)
+            else:
+                # Checking Z limit too;
+                if pars['Z%d'%0] < self.mb.Zmin or pars['Z%d'%0] > self.mb.Zmax:
+                    return np.inf
+                #ZZtmp = pars['Z%d'%0]
+                nZtmp = aa #self.mb.bfnc.Z2NZ(ZZtmp)
+
+            mslist = sedpar['ML_'+str(nZtmp)][aa]
+            Mtot += 10**(pars['A%d'%aa] + np.log10(mslist))
+        
+        return np.log10(Mtot)
+    """

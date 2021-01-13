@@ -39,6 +39,9 @@ class Func:
         except:
             pass
 
+        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+
     def demo(self):
         ZZ = self.ZZ
         AA = self.AA
@@ -60,8 +63,6 @@ class Func:
         bfnc = self.MB.bfnc #Basic(ZZ)
 
         # ASDF;
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
         if fall == 0:
             app = ''
             hdu0 = self.af['spec']
@@ -108,9 +109,6 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        # ASDF;
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
         if fall == 0:
             app = ''
             hdu0 = self.af['spec_dust']
@@ -153,9 +151,6 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        # ASDF;
-        self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-        self.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
         app = 'all'
         hdu0 = self.af['spec_full']
         DIR_TMP = self.DIR_TMP #'./templates/'
@@ -341,36 +336,40 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, zgal, lib, f_Alog=True, Amin=-10):
+    def tmp04(self, par, zgal, lib, f_Alog=True):
         '''
         Purpose:
         ========
         # Making model template with a given param set.
         # Also dust attenuation.
         '''
-
         tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
+        Mtot = 0
+
         if self.MB.fzmc == 1:
+            '''
             try:
                 zmc = par['zmc']
             except:
                 zmc = zgal
+            '''
+            zmc = par['zmc']
         else:
             zmc = zgal
 
-        if len(tau0)>1:
-            pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-            pp  = int(pp0[0])
-            if pp>=len(tau0):
-                pp += -1
-        else:
-            pp  = 0
+        pp = 0
 
+        # AV limit;
+        if par['Av'] < self.MB.Avmin:
+            par['Av'] = self.MB.Avmin
+        if par['Av'] > self.MB.Avmax:
+            par['Av'] = self.MB.Avmax
         Av00 = par['Av']
+
         for aa in range(len(AA)):
             try:
                 Ztest = par['Z'+str(len(AA)-1)] # instead of 'ZEVOL'
@@ -379,17 +378,30 @@ class Func:
                 # This is in the case with ZEVO=0.
                 Z = par['Z0']
 
+            # Check limit;
+            if par['A'+str(aa)] < self.MB.Amin:
+                par['A'+str(aa)] = self.MB.Amin
+            if par['A'+str(aa)] > self.MB.Amax:
+                par['A'+str(aa)] = self.MB.Amax
+            # Z limit:
+            if aa == 0 or self.MB.Zevol == 1:
+                if par['Z%d'%aa] < self.MB.Zmin:
+                    par['Z%d'%aa] = self.MB.Zmin
+                if par['Z%d'%aa] > self.MB.Zmax:
+                    par['Z%d'%aa] = self.MB.Zmax
+
             # Is A in logspace?
             if f_Alog:
-                if par['A'+str(aa)]>Amin:
-                    A00 = 10**par['A'+str(aa)]
-                else:
-                    A00 = 0
+                A00 = 10**par['A'+str(aa)]
             else:
                 A00 = par['A'+str(aa)]
 
             NZ = bfnc.Z2NZ(Z)
             coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+
+            sedpar = self.af['ML'] # For M/L
+            mslist = sedpar['ML_'+str(NZ)][aa]
+            Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
             if aa == 0:
                 nr = lib[:, 0]
@@ -423,15 +435,17 @@ class Func:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
 
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
         nrd_yyd[:,0] = nrd[:]
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
 
         b = nrd_yyd
         nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
+
+        self.MB.logMtmp = np.log10(Mtot)
 
         return yyd_sort, xxd_sort
 

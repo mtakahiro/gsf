@@ -55,7 +55,7 @@ def run_gsf_template(inputs, fplt=0):
     MB.lib = MB.fnc.open_spec_fits(MB, fall=0)
     MB.lib_all = MB.fnc.open_spec_fits(MB, fall=1)
     if MB.f_dust:
-        MB.lib_dust     = MB.fnc.open_spec_dust_fits(MB, fall=0)
+        MB.lib_dust = MB.fnc.open_spec_dust_fits(MB, fall=0)
         MB.lib_dust_all = MB.fnc.open_spec_dust_fits(MB, fall=1)
 
     # How to get SED?

@@ -63,9 +63,9 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     Zb   = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
     if self.f_dust:
-        Mdustmc = np.zeros(3, dtype='float32')
-        nTdustmc= np.zeros(3, dtype='float32')
-        Tdustmc = np.zeros(3, dtype='float32')
+        Mdustmc = np.zeros(3, dtype='float')
+        nTdustmc= np.zeros(3, dtype='float')
+        Tdustmc = np.zeros(3, dtype='float')
 
     # ASDF;
     af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '_PA' + PA0 + '.asdf')
@@ -114,13 +114,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
 
     AAvmc = [Avmc]
-    try:
+    if self.fzmc:
         zmc = np.percentile(res.flatchain['zmc'][burnin:], [16,50,84])
-    except:
+    else:
         zmc = z_cz
 
-    AA_tmp = np.zeros(len(age), dtype='float32')
-    ZZ_tmp = np.zeros(len(age), dtype='float32')
+    AA_tmp = np.zeros(len(age), dtype='float')
+    ZZ_tmp = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
 
     #
@@ -235,6 +235,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     hdu = fits.HDUList([prihdu, dathdu])
     hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
 
+    '''
     ##########
     # LINES
     ##########
@@ -247,7 +248,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         else:
             fw.write('%s %s %d 0 0 0 0 0 0 0 0 0\n'%(ID0, PA0, LW[ii]))
     fw.close()
-
+    '''
 
 
 def get_index(mmax=300):
@@ -261,21 +262,21 @@ def get_index(mmax=300):
         mmax = int(nmc/2.)
 
     # RF color
-    uv = np.zeros(int(mmax), dtype='float32')
-    bv = np.zeros(int(mmax), dtype='float32')
-    vj = np.zeros(int(mmax), dtype='float32')
-    zj = np.zeros(int(mmax), dtype='float32')
+    uv = np.zeros(int(mmax), dtype='float')
+    bv = np.zeros(int(mmax), dtype='float')
+    vj = np.zeros(int(mmax), dtype='float')
+    zj = np.zeros(int(mmax), dtype='float')
 
     # Lick indeces
-    Dn4  = np.zeros(int(mmax), dtype='float32')
-    Mgb  = np.zeros(int(mmax), dtype='float32')
-    Fe52 = np.zeros(int(mmax), dtype='float32')
-    Fe53 = np.zeros(int(mmax), dtype='float32')
-    Mg1  = np.zeros(int(mmax), dtype='float32')
-    Mg2  = np.zeros(int(mmax), dtype='float32')
-    G4300= np.zeros(int(mmax), dtype='float32')
-    NaD  = np.zeros(int(mmax), dtype='float32')
-    Hb   = np.zeros(int(mmax), dtype='float32')
+    Dn4  = np.zeros(int(mmax), dtype='float')
+    Mgb  = np.zeros(int(mmax), dtype='float')
+    Fe52 = np.zeros(int(mmax), dtype='float')
+    Fe53 = np.zeros(int(mmax), dtype='float')
+    Mg1  = np.zeros(int(mmax), dtype='float')
+    Mg2  = np.zeros(int(mmax), dtype='float')
+    G4300= np.zeros(int(mmax), dtype='float')
+    NaD  = np.zeros(int(mmax), dtype='float')
+    Hb   = np.zeros(int(mmax), dtype='float')
 
     for mm in range(0,mmax,1):
         rn = np.random.randint(len(res.flatchain['A0']))

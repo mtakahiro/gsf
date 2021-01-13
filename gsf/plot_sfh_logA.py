@@ -361,12 +361,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             ACs = 0
             ALs = 0
             for bb in range(aa, len(age), 1):
-                tmpAA       = 10**np.random.uniform(-eA[bb],eA[bb])
-                tmpTT       = np.random.uniform(-delT[bb]/1e9,delT[bb]/1e9)
+                tmpAA = 10**np.random.uniform(-eA[bb],eA[bb])
+                tmpTT = np.random.uniform(-delT[bb]/1e9,delT[bb]/1e9)
                 TC[aa, mm] += (age[bb]+tmpTT) * 10**AAtmp[bb] * mslist[bb] * tmpAA
                 TL[aa, mm] += (age[bb]+tmpTT) * 10**AAtmp[bb] * tmpAA
-                ACs        += 10**AAtmp[bb] * mslist[bb] * tmpAA
-                ALs        += 10**AAtmp[bb] * tmpAA
+                ACs += 10**AAtmp[bb] * mslist[bb] * tmpAA
+                ALs += 10**AAtmp[bb] * tmpAA
 
             TC[aa, mm] /= ACs
             TL[aa, mm] /= ALs
@@ -577,57 +577,32 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     import gsf
     prihdr['version'] = gsf.__version__
 
-    prihdu = fits.PrimaryHDU(header=prihdr)
-
-    col01 = []
-    # Redshift
+    percs = [16,50,84]
     zmc = hdul[1].data['zmc']
-    col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
-    col01.append(col50)
-
-    # Stellar mass
     ACP = [ACp[0,0], ACp[0,1], ACp[0,2]]
-    col50 = fits.Column(name='Mstel', format='E', unit='logMsun', array=ACP[:])
-    col01.append(col50)        
-
-    # SFR based on SED
-    col50 = fits.Column(name='SFR', format='E', unit='logMsun/yr', array=SFR_SED_med[:])
-    col01.append(col50)
-
-    # Metallicity_MW
     ZCP = [ZCp[0,0], ZCp[0,1], ZCp[0,2]]
-    col50 = fits.Column(name='Z_MW', format='E', unit='logZsun', array=ZCP[:])
-    col01.append(col50)
-
-    # Age_mw
+    ZLP = [ZLp[0,0], ZLp[0,1], ZLp[0,2]]
     con = (~np.isnan(TC[0,:]))
-    para = [np.percentile(TC[0,:][con],16), np.percentile(TC[0,:][con],50), np.percentile(TC[0,:][con],84)]
-    col50 = fits.Column(name='T_MW', format='E', unit='logGyr', array=para[:])
-    col01.append(col50)
-
-    # Metallicity_LW
-    #ZCP = [ZL[0,0], ZL[0,1], ZL[0,2]]
-    ZCP = [ZLp[0,0], ZLp[0,1], ZLp[0,2]]
-    col50 = fits.Column(name='Z_LW', format='E', unit='logZsun', array=ZCP[:])
-    col01.append(col50)
-
-    # Age_lw
+    TMW = [np.percentile(TC[0,:][con],16), np.percentile(TC[0,:][con],50), np.percentile(TC[0,:][con],84)]
     con = (~np.isnan(TL[0,:]))
-    para = [np.percentile(TL[0,:][con],16), np.percentile(TL[0,:][con],50), np.percentile(TL[0,:][con],84)]
-    col50 = fits.Column(name='T_LW', format='E', unit='logGyr', array=para[:])
-    col01.append(col50)
-
-    # Dust
-    para = [Avtmp[0], Avtmp[1], Avtmp[2]]
-    col50 = fits.Column(name='AV', format='E', unit='mag', array=para[:])
-    col01.append(col50)
-
-    #
-    colms = fits.ColDefs(col01)
-    dathdu = fits.BinTableHDU.from_columns(colms)
-    hdu = fits.HDUList([prihdu, dathdu])
-    file_sfh_param = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_param.fits'
-    hdu.writeto(file_sfh_param, overwrite=True)
+    TLW = [np.percentile(TL[0,:][con],16), np.percentile(TL[0,:][con],50), np.percentile(TL[0,:][con],84)]
+    for ii in range(len(percs)):
+        prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH Mstel_%d'%percs[ii]] = ('%.3f'%ACP[ii], 'Stellar mass, logMsun')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH Z_MW_%d'%percs[ii]] = ('%.3f'%ZCP[ii], 'Mass-weighted metallicity, logZsun')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH Z_LW_%d'%percs[ii]] = ('%.3f'%ZLP[ii], 'Light-weighted metallicity, logZsun')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH T_MW_%d'%percs[ii]] = ('%.3f'%TMW[ii], 'Mass-weighted age, logGyr')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted agelogGyr')
+    for ii in range(len(percs)):
+        prihdr['AV_%d'%percs[ii]] = ('%.3f'%Avtmp[ii], 'Dust attenuation, mag')
+    prihdu = fits.PrimaryHDU(header=prihdr)
 
     # For SFH plot;
     t0 = Tuni - age[:]
@@ -638,23 +613,23 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     col02.append(col50)
     col50 = fits.Column(name='time_u', format='E', unit='Gyr', array=age[:]+delTl[:]/1e9)
     col02.append(col50)
-    col50 = fits.Column(name='logSFR16', format='E', unit='Msun/yr', array=SFp[:,0])
+    col50 = fits.Column(name='SFR16', format='E', unit='logMsun/yr', array=SFp[:,0])
     col02.append(col50)
-    col50 = fits.Column(name='logSFR50', format='E', unit='Msun/yr', array=SFp[:,1])
+    col50 = fits.Column(name='SFR50', format='E', unit='logMsun/yr', array=SFp[:,1])
     col02.append(col50)
-    col50 = fits.Column(name='logSFR84', format='E', unit='Msun/yr', array=SFp[:,2])
+    col50 = fits.Column(name='SFR84', format='E', unit='logMsun/yr', array=SFp[:,2])
     col02.append(col50)
-    col50 = fits.Column(name='logMstel16', format='E', unit='Msun', array=ACp[:,0])
+    col50 = fits.Column(name='Mstel16', format='E', unit='logMsun', array=ACp[:,0])
     col02.append(col50)
-    col50 = fits.Column(name='logMstel50', format='E', unit='Msun', array=ACp[:,1])
+    col50 = fits.Column(name='Mstel50', format='E', unit='logMsun', array=ACp[:,1])
     col02.append(col50)
-    col50 = fits.Column(name='logMstel84', format='E', unit='Msun', array=ACp[:,2])
+    col50 = fits.Column(name='Mstel84', format='E', unit='logMsun', array=ACp[:,2])
     col02.append(col50)
-    col50 = fits.Column(name='logZ16', format='E', unit='logZsun', array=ZCp[:,0])
+    col50 = fits.Column(name='Z16', format='E', unit='logZsun', array=ZCp[:,0])
     col02.append(col50)
-    col50 = fits.Column(name='logZ50', format='E', unit='logZsun', array=ZCp[:,1])
+    col50 = fits.Column(name='Z50', format='E', unit='logZsun', array=ZCp[:,1])
     col02.append(col50)
-    col50 = fits.Column(name='logZ84', format='E', unit='logZsun', array=ZCp[:,2])
+    col50 = fits.Column(name='Z84', format='E', unit='logZsun', array=ZCp[:,2])
     col02.append(col50)
     
     colms  = fits.ColDefs(col02)

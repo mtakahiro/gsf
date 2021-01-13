@@ -12,6 +12,7 @@ from scipy import stats
 from scipy.stats import norm
 from astropy.io import fits,ascii
 import corner
+import asdf
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
@@ -82,17 +83,44 @@ class Mainbody():
             self.zmax = None
         except:
             CAT_BB = inputs['CAT_BB']
-            fd_cat = ascii.read(CAT_BB)
-            iix = np.where(fd_cat['id'] == int(self.ID))
-            self.zgal = float(fd_cat['redshift'][iix])
+            self.fd_cat = ascii.read(CAT_BB)
+            iix = np.where(self.fd_cat['id'] == int(self.ID))
+            self.zgal = float(self.fd_cat['redshift'][iix])
             try:
-                self.zmin = self.zgal - float(fd_cat['ez_l'][iix])
-                self.zmax = self.zgal + float(fd_cat['ez_u'][iix])
+                self.zmin = self.zgal - float(self.fd_cat['ez_l'][iix])
+                self.zmax = self.zgal + float(self.fd_cat['ez_u'][iix])
             except:
                 self.zmin = None
                 self.zmax = None
-                pass
 
+        # Data directory;
+        self.DIR_TMP  = inputs['DIR_TEMP']
+        if not os.path.exists(self.DIR_TMP):
+            os.mkdir(self.DIR_TMP)
+
+        # Mdyn;
+        try:
+            self.Mdyn = float(inputs['MDYN'])
+            self.f_Mdyn = True
+        except:
+            CAT_BB = inputs['CAT_BB']
+            self.fd_cat = ascii.read(CAT_BB)
+            iix = np.where(self.fd_cat['id'] == int(self.ID))
+            try:
+                self.logMdyn = float(self.fd_cat['logMdyn'][iix])
+                self.elogMdyn = float(self.fd_cat['elogMdyn'][iix])
+                self.f_Mdyn = True
+            except:
+                self.f_Mdyn = False
+        self.f_Mdyn = True
+        self.logMdyn = 11.1
+        self.elogMdyn = 0.1
+
+        if self.f_Mdyn:
+            # If Mdyn is included.
+            self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+
+        # Scaling for grism; 
         self.Cz0  = float(inputs['CZ0'])
         self.Cz1  = float(inputs['CZ1'])
 
@@ -121,11 +149,6 @@ class Mainbody():
         except:
             self.fneb = 0
             self.logU = 0
-
-        # Data directory;
-        self.DIR_TMP  = inputs['DIR_TEMP']
-        if not os.path.exists(self.DIR_TMP):
-            os.mkdir(self.DIR_TMP)
 
         # Outpu directory;
         try:
@@ -258,8 +281,8 @@ class Mainbody():
             print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
         except:
             try:
-                Avmin = float(inputs['AVMIN'])
-                Avmax = float(inputs['AVMAX'])
+                Avmin = self.Avmin #float(inputs['AVMIN'])
+                Avmax = self.Avmax #float(inputs['AVMAX'])
                 if Avmin == Avmax:
                     self.nAV = 0
                     self.AVFIX = Avmin
@@ -362,13 +385,6 @@ class Mainbody():
         except:
             self.force_agefix = False
 
-        '''
-        # Read Observed Data
-        if self.f_dust:
-            self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=True)
-        else:
-            self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
-        '''
         print('\n')
 
 
@@ -738,10 +754,11 @@ class Mainbody():
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
                 print('Redshift error is taken from input file.')
-                if ezl<ezmin:
+                '''if ezl<ezmin:
                     ezl = ezmin #0.03
                 if ezu<ezmin:
                     ezu = ezmin #0.03
+                '''
             except:
                 ezl = ezmin
                 ezu = ezmin
@@ -760,8 +777,6 @@ class Mainbody():
 
         # New template at zrecom;
         xm_s = xm_tmp / (1+self.zgal) * (1+zrecom)
-        #fm_s = np.interp(x_cz, xm_s[con_cz], fm_tmp[con_cz])
-        #fm_s = np.interp(x_cz, xm_s, fm_tmp)
         fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(x_cz)
         whtl = 1/np.square(ey_cz)
@@ -1070,6 +1085,9 @@ class Mainbody():
             Amin = 0
             Amax = 1e3
             Aini = 1
+        self.Amin = Amin
+        self.Amax = Amax
+        self.Aini = Aini
         
         if len(self.age) != len(self.aamin):
             for aa in range(len(self.age)):
@@ -1104,8 +1122,12 @@ class Mainbody():
                 Avini = 0.
                 if Avmin == Avmax:
                     fit_params.add('Av', value=Avini, vary=False)
+                    self.Avmin = Avini
+                    self.Avmax = Avini
                 else:
                     fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
+                    self.Avmin = Avmin
+                    self.Avmax = Avmax
             except:
                 Avmin = 0.0
                 Avmax = 4.0
@@ -1113,6 +1135,8 @@ class Mainbody():
                 Avini = 0.5
                 print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
                 fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
+                self.Avmin = Avmin
+                self.Avmax = Avmax
 
         #####################
         # Metallicity
@@ -1239,12 +1263,48 @@ class Mainbody():
             # MCMC;
             if self.f_mcmc:
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], \
-                    f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),])
-                    #f_disp=self.f_disp, moves=[(emcee.moves.KDEMove(),1.0),(emcee.moves.DEMove(), 0.), (emcee.moves.DESnookerMove(), 0.),])
+                    f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),],\
+                    nan_policy='omit')
 
-                res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                    params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
-                
+                f_shuffle = False
+                #f_shuffle = True
+                if f_shuffle: # this causes error...
+                    #pos = np.zeros((self.nwalk, self.ndim),'float')
+                    pos = 1e-5 * np.random.randn(self.nwalk, self.ndim)
+                    for ii in range(pos.shape[0]):
+                        aa = 0
+                        for aatmp,key in enumerate(out.params.valuesdict()):
+                            if out.params[key].vary == True:
+                                pos[ii,aa] = out.params[key].value
+                                if np.random.uniform(0,1) > (1. - 1./self.ndim):
+                                    print(aa,ii,'Shuffle')
+                                    if key[:2] == 'Av':
+                                        pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
+                                    elif key[0] == 'A':
+                                        #pos[ii,aa] += np.random.uniform(self.Amin, self.Amax)/10
+                                        pos[ii,aa] += np.random.uniform(-1, 1)
+                                    elif key[0] == 'Z':
+                                        #pos[ii,aa] += np.random.uniform(self.Zmin, self.Zmax)/10
+                                        pos[ii,aa] += np.random.uniform(-0.2, 0.2)
+                                aa += 1
+
+                    # Run emcee;
+                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                        pos=pos,\
+                        params=out.params, is_weighted=True, workers=ncpu)
+                else:
+                    # Run emcee;
+                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                        params=out.params, is_weighted=True, workers=ncpu)
+                    #sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust))
+                    #sampler.run_mcmc(pos, self.nmc, progress=True)
+
+                if True:
+                    plt.plot(res.acceptance_fraction)
+                    plt.xlabel('walker')
+                    plt.ylabel('acceptance fraction')
+                    plt.savefig('accept.png')
+
                 flatchain = res.flatchain
                 var_names = res.var_names
                 params_value = {}
@@ -1466,13 +1526,13 @@ class Mainbody():
             self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
 
         # For MCMC;
-        self.nmc      = int(self.inputs['NMC'])
-        self.nwalk    = int(self.inputs['NWALK'])
-        self.nmc_cz   = int(self.inputs['NMCZ'])
+        self.nmc = int(self.inputs['NMC'])
+        self.nwalk = int(self.inputs['NWALK'])
+        self.nmc_cz = int(self.inputs['NMCZ'])
         self.nwalk_cz = int(self.inputs['NWALKZ'])
-        self.Zevol    = int(self.inputs['ZEVOL'])
-        self.fzvis    = int(self.inputs['ZVIS'])
-        self.fneld    = int(self.inputs['FNELD'])
+        self.Zevol = int(self.inputs['ZEVOL'])
+        self.fzvis = int(self.inputs['ZVIS'])
+        self.fneld = int(self.inputs['FNELD'])
 
         try:
             self.ntemp = int(self.inputs['NTEMP'])
@@ -1517,6 +1577,7 @@ class Mainbody():
         # Add parameters
         ###############################
         f_Alog = True
+        '''
         if f_Alog:
             Amin = -10
             Amax = 10
@@ -1525,6 +1586,7 @@ class Mainbody():
             Amin = 0
             Amax = 1e3
             Aini = 1
+        '''
         agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
         try:
@@ -1543,7 +1605,7 @@ class Mainbody():
                 if aa not in aamin:
                     fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+                    fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
         except:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99:
@@ -1552,7 +1614,7 @@ class Mainbody():
                     print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
                     fit_params.add('A'+str(aa), value=0, vary=False)
                 else:
-                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+                    fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
 
         #####################
         # Dust attenuation

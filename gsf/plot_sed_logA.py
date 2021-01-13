@@ -746,17 +746,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     MB.sed_flux50 = ytmp50
     MB.sed_flux84 = ytmp84
 
-    '''
-    if f_fancyplot:
-        # For each age;
-        ytmp_each50 = np.zeros(len(xm_tmp), dtype='float')
-        ytmp_each50_prior = np.zeros(len(xm_tmp), dtype='float')
-        for ss in range(len(age)):
-            ii = int(len(nage) - ss - 1) # from old to young templates.
-            ytmp_each50[:] = np.percentile(ytmp_each[:,:,ii],50, axis=0)
-            ax1.fill_between(x1_tot[::nstep_plot], ytmp_each50_prior[::nstep_plot], ytmp_each50_prior[:]+ytmp_each50[::nstep_plot], linestyle='None', lw=0., color=col[ii], alpha=0.5)
-            ytmp_each50_prior[:] += ytmp_each50[:]
-    '''
     if f_fancyplot:
         alp_fancy = 0.5
         #ax1.plot(x1_tot[::nstep_plot], np.percentile(ytmp[:, ::nstep_plot], 50, axis=0), '-', lw=.5, color='gray', zorder=-1, alpha=1.)
@@ -894,11 +883,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
             L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
             L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-            '''
-            SFR16 = 10**(np.log10(L16) - 41.35)
-            SFR50 = 10**(np.log10(L50) - 41.35)
-            SFR84 = 10**(np.log10(L84) - 41.35)
-            '''
 
             ew_label = []
             for ii in range(len(fy_ex)):
@@ -1108,24 +1092,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # SED params in plot
     #
     if f_label:
-        try:
-            fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_param.fits')[1].data
-            if f_dust:
-                label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-                %(ID, zbes, fd['Mstel'][1], MD50, fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2)
-                ylabel = ymax*0.45
-            else:
-                label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-                %(ID, zbes, fd['Mstel'][1], fd['Z_MW'][1], fd['T_MW'][1], fd['AV'][1], fin_chi2)
-                ylabel = ymax*0.32
+        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits')[0].header
+        if f_dust:
+            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            #%(ID, zbes, fd['Mstel_50'], MD50, fd['Z_MW_50'], fd['T_MW_50'], fd['AV_50'], fin_chi2)
+            ylabel = ymax*0.45
+        else:
+            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            ylabel = ymax*0.32
 
-            ax1.text(2400, ylabel,\
-            label,\
-            fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
-        except:
-            print('\nFile is missing : _param.fits\n')
-            pass
-
+        ax1.text(2400, ylabel, label,\
+        fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
+        
     #######################################
     ax1.xaxis.labelpad = -3
     if f_grsm:
@@ -1840,11 +1820,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     Cz1   = hdul[0].header['Cz1']
     zbes  = hdul[0].header['z']
     zscl  = (1.+zbes)
-
-    try:
-        os.makedirs(DIR_OUT)
-    except:
-        pass
 
     # plot Configuration
     if MB.fzmc == 1:
