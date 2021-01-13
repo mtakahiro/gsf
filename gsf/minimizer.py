@@ -1052,7 +1052,8 @@ class Minimizer:
     def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
               ntemps=1, pos=None, reuse_sampler=False, workers=1,
               float_behavior='posterior', is_weighted=True, seed=None,
-              progress=True):
+              progress=True,
+              check_converge=True, nevery=1000):
         """Bayesian sampling of the posterior distribution using the `emcee`
         Markov Chain Monte Carlo package.
 
@@ -1339,13 +1340,11 @@ class Minimizer:
 
         # now do a production run, sampling all the time
         try:
-            check_converge = True
             if check_converge: # TM; 2021.Jan.13
                 # Now we'll sample for up to max_n steps
                 index = 0
                 old_tau = np.inf
                 autocorr = np.empty(steps)
-                nevery = 1000
 
                 for sample in self.sampler.sample(p0, iterations=steps, progress=True):
                     # Only check convergence every 100 steps

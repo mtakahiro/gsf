@@ -972,8 +972,9 @@ class Mainbody():
         return f_add
 
 
-    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, \
-        f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True, f_shuffle=True):
+    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
+    f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
+    f_shuffle=True, check_converge=True):
         '''
         Input:
         ======
@@ -983,8 +984,9 @@ class Mainbody():
         ezmin (float): minimum error in redshift
 
         f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
-
+        check_converge (bool): Check convergence at every certain number.
         '''
+        
         import emcee
         try:
             import multiprocess
@@ -1274,6 +1276,11 @@ class Mainbody():
                     f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),],\
                     nan_policy='omit')
 
+                # Check convergence every number;
+                nevery = int(self.nmc/100)
+                if nevery < 100:
+                    nevery = 100
+
                 #f_shuffle = False
                 if f_shuffle: # this causes error...
                     print('Initial shuffle in walkers is on.\n')
@@ -1303,12 +1310,14 @@ class Mainbody():
 
                     # Run emcee;
                     res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                        pos=pos,\
-                        params=out.params, is_weighted=True, workers=ncpu)
+                        pos=pos,
+                        params=out.params, is_weighted=True, workers=ncpu,
+                        check_converge=check_converge, nevery=nevery)
                 else:
                     # Run emcee;
                     res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                        params=out.params, is_weighted=True, workers=ncpu)
+                        params=out.params, is_weighted=True, workers=ncpu,
+                        check_converge=check_converge, nevery=nevery)
                     #sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust))
                     #sampler.run_mcmc(pos, self.nmc, progress=True)
 
