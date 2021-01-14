@@ -370,6 +370,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
             spall = [] # For sps model
             ms = np.zeros(Na, dtype='float')
             Ls = np.zeros(Na, dtype='float')
+            mlost = np.zeros(Na, dtype='float')
             LICK = np.zeros((Na,len(INDICES)), dtype='float')
             tau0_old = 0
 
@@ -441,6 +442,8 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 # Then. add flux if tau > 0.
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
+                # Temp
+                mlost[ss] =  1.0 #sp.stellar_mass / sp.formed_mass
 
                 Ls[ss] = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
@@ -488,8 +491,12 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 tree_ML.update({'ms_'+str(zz): ms})
                 col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
                 tree_ML.update({'Ls_'+str(zz): Ls})
+                col3 = fits.Column(name='fm_'+str(zz), format='E', unit='', array=mlost)
+                tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
+
                 col01.append(col1)
                 col01.append(col2)
+                col01.append(col3)
 
     # Write;
     for aa in range(len(age)):
