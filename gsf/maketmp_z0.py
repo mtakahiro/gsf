@@ -493,15 +493,22 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
     # Write;
     for aa in range(len(age)):
-        #hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
         tree.update({'realtau%d(Gyr)'%(aa): tau_age[aa]})
     for aa in range(len(age)):
-        #hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
         tree.update({'realage%d(Gyr)'%(aa): age_age[aa]})
+    for aa in range(len(age)):
+        tree.update({'age%d'%(aa): age[aa]})
+    for aa in range(len(Z)):
+        tree.update({'Z%d'%(aa): Z[aa]})
+    for aa in range(len(tau0)):
+        tree.update({'tau0%d'%(aa): tau0[aa]})
 
+    # Index, Mass-to-light;
     tree.update({'spec' : tree_spec})
     tree.update({'ML' : tree_ML})
     tree.update({'lick' : tree_lick})
+
+    # Save
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
 
