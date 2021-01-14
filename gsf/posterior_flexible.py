@@ -107,7 +107,7 @@ class Post:
 
 
     def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-    lnpreject=-np.inf, f_like=False, flat_prior=True, gauss_prior=True):
+    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True):
         '''
         Input:
         ======
@@ -167,7 +167,7 @@ class Post:
             #print(logMtmp)
             if flat_prior:
                 if logMtmp > self.mb.logMdyn + self.mb.elogMdyn:
-                    #print(lnpreject,logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
+                    #print(logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
                     return lnpreject
                 else:
                     respr += 0

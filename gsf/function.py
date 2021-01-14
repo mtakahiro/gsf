@@ -615,8 +615,9 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
 
 
 def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
+    '''
     #
-    # From Kriek&Conroy13
+    # Dust model by Kriek&Conroy13
     # lm (float array) : wavelength, at RF.
     # fl (float array) : fnu
     # Av (float)       : mag
@@ -625,6 +626,7 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     # gamma: See Eq.1
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
+    '''
     Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron

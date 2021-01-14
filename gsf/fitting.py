@@ -331,8 +331,24 @@ class Mainbody():
         # Dust model specification;
         try:
             self.dust_model = int(inputs['DUST_MODEL'])
+            if self.dust_model == 0:
+                self.dust_model_name = 'Calz'
+            elif self.dust_model == 1:
+                self.dust_model_name = 'MW'
+            elif self.dust_model == 2:
+                self.dust_model_name = 'LMC'
+            elif self.dust_model == 3:
+                self.dust_model_name = 'SMC'
+            elif self.dust_model == 4:
+                self.dust_model_name = 'KriekConroy'
+            else:
+                print('Unknown number for dust attenuation. Calzetti.')
+                self.dust_model = 0
+                self.dust_model_name = 'Calz'
         except:
             self.dust_model = 0
+            self.dust_model_name = 'Calz'
+        print('Dust attenuation is set to %s\n'%self.dust_model_name)
 
         # If FIR data;
         try:
