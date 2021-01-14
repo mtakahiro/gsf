@@ -1302,9 +1302,9 @@ class Mainbody():
                     nan_policy='omit')
 
                 # Check convergence every number;
-                nevery = int(self.nmc/100)
-                if nevery < 100:
-                    nevery = 100
+                nevery = int(self.nmc/10)
+                if nevery < 1000:
+                    nevery = 1000
 
                 #f_shuffle = False
                 if f_shuffle: # this causes error...
