@@ -29,10 +29,12 @@ class Post:
         residual of model and data.
         '''
         vals = pars.valuesdict()
-        model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
+        #model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
+        model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:
-            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
+            #model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
+            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
             n_optir = len(model)
 
             # Add dust flux to opt/IR grid.
@@ -86,14 +88,15 @@ class Post:
         Returns:
             tuple: a new tuple or array with the transformed parameters.
         """
-        ii = 0
-        for key in self.params:
-            if self.params[key].vary:
-                cmin = self.params[key].min
-                cmax = self.params[key].max
-                cprim = pars[ii]
-                pars[ii] = cprim*(cmax-cmin) + cmin
-                ii += 1
+        if False:
+            ii = 0
+            for key in self.params:
+                if self.params[key].vary:
+                    cmin = self.params[key].min
+                    cmax = self.params[key].max
+                    cprim = pars[ii]
+                    pars[ii] = cprim*(cmax-cmin) + cmin
+                    ii += 1
         '''
         mmu = 0.     # mean of Gaussian prior on m
         msigma = 10. # standard deviation of Gaussian prior on m
@@ -103,16 +106,19 @@ class Post:
         return pars
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, lnpreject=-np.inf, f_like=False):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
+    lnpreject=-np.inf, f_like=False, flat_prior=True, gauss_prior=True):
         '''
         Input:
         ======
         f_chind (bool) : If true, includes non-detection in likelihood calculation.
         lnpreject : A replaced value when lnprob gets -inf value.
+        flat_prior : Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
+        gauss_prior : Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
 
         Returns:
         ========
-        log posterior
+        If f_like, log Likelihood. Else, log Posterior prob.
 
         '''
         vals = pars.valuesdict()
@@ -134,10 +140,8 @@ class Post:
                 return lnpreject
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
-            #con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
-            #con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
             lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
         # Scale likeligood; Do not make this happen yet.
@@ -154,15 +158,10 @@ class Post:
         # Prior
         respr = 0
 
-        # Prior from dynamical mass:
-        flat_prior = True #False
-        gauss_prior = True
-        if gauss_prior and self.gauss_Mdyn == None:
-            self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
-            #self.gauss_cnst = self.gauss_Mdyn.pdf(self.mb.logMdyn)
-            #print('Defined gaussian')
-
         if self.mb.f_Mdyn:
+            # Prior from dynamical mass:
+            if gauss_prior and self.gauss_Mdyn == None:
+                self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
             #logMtmp = self.get_mass(vals)
             logMtmp = self.mb.logMtmp
             #print(logMtmp)

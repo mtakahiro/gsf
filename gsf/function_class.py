@@ -139,7 +139,6 @@ class Func:
                 plt.close()
                 plt.plot(lib[:,1],lib[:,coln],linestyle='-')
                 plt.show()
-                hoge
         return lib
 
 
@@ -344,12 +343,170 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, zgal, lib, f_Alog=True):
+    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False):
         '''
         Purpose:
         ========
         # Making model template with a given param set.
         # Also dust attenuation.
+
+        Input:
+        ======
+        nprec : Precision when redshift is refined. 
+        '''
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        Mtot = 0
+
+        if f_val:
+            par = par.params
+
+        if self.MB.fzmc == 1:
+            zmc = par['zmc']
+        else:
+            zmc = self.MB.zgal
+
+        pp = 0
+
+        # AV limit;
+        if par['Av'] < self.MB.Avmin:
+            par['Av'] = self.MB.Avmin
+        if par['Av'] > self.MB.Avmax:
+            par['Av'] = self.MB.Avmax
+        Av00 = par['Av']
+
+        for aa in range(len(AA)):
+            if self.MB.ZEVOL==1 or aa == 0:
+                Z = par['Z'+str(aa)]
+                NZ = bfnc.Z2NZ(Z)
+            else:
+                pass
+
+            # Check limit;
+            if par['A'+str(aa)] < self.MB.Amin:
+                par['A'+str(aa)] = self.MB.Amin
+            if par['A'+str(aa)] > self.MB.Amax:
+                par['A'+str(aa)] = self.MB.Amax
+            # Z limit:
+            if aa == 0 or self.MB.Zevol == 1:
+                if par['Z%d'%aa] < self.MB.Zmin:
+                    par['Z%d'%aa] = self.MB.Zmin
+                if par['Z%d'%aa] > self.MB.Zmax:
+                    par['Z%d'%aa] = self.MB.Zmax
+
+            # Is A in logspace?
+            if f_Alog:
+                A00 = 10**par['A'+str(aa)]
+            else:
+                A00 = par['A'+str(aa)]
+
+            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+
+            sedpar = self.MB.af['ML'] # For M/L
+            mslist = sedpar['ML_'+str(NZ)][aa]
+            Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
+
+            if aa == 0:
+                nr = self.MB.lib[:, 0]
+                xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+                yy = A00 * self.MB.lib[:, coln]
+            else:
+                yy += A00 * self.MB.lib[:, coln]
+
+        self.MB.logMtmp = np.log10(Mtot)
+        # How much does this cost in time?
+        if round(zmc,nprec) != round(self.MB.zgal,nprec):
+            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
+            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+            yy_s = fint(xx_s)
+        else:
+            xx_s = xx
+            yy_s = yy
+
+        xx = xx_s
+        yy = yy_s
+
+        if self.dust_model == 0:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 1:
+            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
+        elif self.dust_model == 2: # LMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+        elif self.dust_model == 3: # SMC
+            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
+            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
+        else:
+            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        xxd *= (1.+zmc)
+
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+        nrd_yyd[:,0] = nrd[:]
+        nrd_yyd[:,1] = yyd[:]
+        nrd_yyd[:,2] = xxd[:]
+
+        '''
+        b = nrd_yyd
+        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
+        return yyd_sort, xxd_sort
+        '''
+        nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+        return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+
+    def tmp04_dust(self, par, nprec=1):
+        '''
+        Purpose:
+        ========
+        # Making model template with a given param setself.
+        # Also dust attenuation.
+        '''
+        tau0= self.tau0 #[0.01,0.02,0.03]
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = self.MB.bfnc #Basic(ZZ)
+        DIR_TMP = self.MB.DIR_TMP #'./templates/'
+
+        try:
+            m_dust = par['MDUST']
+            t_dust = par['TDUST']
+        except: # This is exception for initial minimizing;
+            m_dust = -99
+            t_dust = 0
+
+        nr = self.MB.lib_dust[:,0]
+        xx = self.MB.lib_dust[:,1] # This is OBSERVED wavelength range at z=zgal
+        coln= 2+int(t_dust+0.5)
+        yy = 10**m_dust * self.MB.lib_dust[:,coln]
+
+        if self.MB.fzmc == 1:
+            zmc = par.params['zmc'].value
+        else:
+            zmc = self.MB.zgal
+
+        # How much does this cost in time?
+        if round(zmc,nprec) != round(self.MB.zgal,nprec):
+            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
+            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+            yy_s = fint(xx_s)
+        else:
+            xx_s = xx
+            yy_s = yy
+
+        return yy_s, xx_s
+
+    def tmp04_val(self, par0, zgal, lib, f_Alog=True, Amin=-10, nprec=1):
+        '''
+        Purpose:
+        ========
+        # Making model template with a given param set.
+        # Also dust attenuation.
+
+        Input:
+        ======
+        nprec : Precision when redshift is refined. 
         '''
         tau0= self.tau0 #[0.01,0.02,0.03]
         ZZ = self.ZZ
@@ -358,13 +515,9 @@ class Func:
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
         Mtot = 0
 
+        par = par0.params
+
         if self.MB.fzmc == 1:
-            '''
-            try:
-                zmc = par['zmc']
-            except:
-                zmc = zgal
-            '''
             zmc = par['zmc']
         else:
             zmc = zgal
@@ -383,8 +536,6 @@ class Func:
                 Z = par['Z'+str(aa)]
                 NZ = bfnc.Z2NZ(Z)
             else:
-                # This is in the case with ZEVO=0.
-                #Z = par['Z0']
                 pass
 
             # Check limit;
@@ -418,8 +569,9 @@ class Func:
             else:
                 yy += A00 * lib[:, coln]
 
+        self.MB.logMtmp = np.log10(Mtot)
         # How much does this cost in time?
-        if True: #round(zmc,3) != round(zgal,3):
+        if round(zmc,nprec) != round(zgal,nprec):
             xx_s = xx / (1+zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
             yy_s = fint(xx_s)
@@ -429,6 +581,7 @@ class Func:
 
         xx = xx_s
         yy = yy_s
+
         if self.dust_model == 0:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         elif self.dust_model == 1:
@@ -448,137 +601,14 @@ class Func:
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
 
+        '''
         b = nrd_yyd
         nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
         yyd_sort = nrd_yyd_sort[:,1]
         xxd_sort = nrd_yyd_sort[:,2]
-
-        self.MB.logMtmp = np.log10(Mtot)
-
         return yyd_sort, xxd_sort
-
-
-    def tmp04_dust(self, par, zgal, lib):
         '''
-        Purpose:
-        ========
-        # Making model template with a given param setself.
-        # Also dust attenuation.
-        '''
+        nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+        return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
-        tau0= self.tau0 #[0.01,0.02,0.03]
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
-
-        try:
-            m_dust = par['MDUST']
-            t_dust = par['TDUST']
-        except: # This is exception for initial minimizing;
-            m_dust = -99
-            t_dust = 0
-
-        nr = lib[:,0]
-        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
-        coln= 2+int(t_dust+0.5)
-        yy = 10**m_dust * lib[:,coln]
-        try:
-            zmc = par.params['zmc'].value
-        except:
-            zmc = zgal
-
-        # How much does this cost in time?
-        if True: #round(zmc,3) != round(zgal,3):
-            xx_s = xx / (1+zgal) * (1+zmc)
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            yy_s = fint(xx_s)
-        else:
-            xx_s = xx
-            yy_s = yy
-
-        return yy_s, xx_s
-
-
-    def tmp04_val(self, par, zgal, lib, f_Alog=True, Amin=-10):
-        '''
-        '''
-        tau0= self.tau0 #[0.01,0.02,0.03]
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
-
-        try:
-            zmc = par.params['zmc'].value
-        except:
-            zmc = zgal
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp  = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
-
-        Av00 = par.params['Av'].value
-        for aa in range(len(AA)):
-            nmodel = aa
-            if self.MB.ZEVOL==1 or aa == 0:
-                Z = par.params['Z'+str(aa)]
-                NZ = bfnc.Z2NZ(Z)
-            else:
-                # This is in the case with ZEVO=0.
-                #Z = par['Z0']
-                pass
-
-            # Is A in logspace?
-            if f_Alog:
-                if par.params['A'+str(aa)].value>Amin:
-                    A00 = 10**par.params['A'+str(aa)].value
-                else:
-                    A00 = 0
-            else:
-                A00 = par.params['A'+str(aa)].value
-
-            #coln = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
-            coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
-            if aa == 0:
-                nr  = lib[:, 0]
-                xx  = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy  = A00 * lib[:, coln]
-            else:
-                yy += A00 * lib[:, coln]
-
-        # How much does this cost in time?
-        if zmc != zgal:
-            xx_s = xx / (1+zgal) * (1+zmc)
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            yy_s = fint(xx_s)
-        else:
-            xx_s = xx
-            yy_s = yy
-
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        xxd *= (1.+zmc)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
-
-        return yyd_sort, xxd_sort
+        

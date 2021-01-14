@@ -1303,15 +1303,24 @@ class Mainbody():
                                 if np.random.uniform(0,1) > (1. - 1./self.ndim):
                                     #print(aa,ii,'Shuffle')
                                     if key[:2] == 'Av':
-                                        #print(pos[ii,aa], end=' ')
                                         pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
-                                        #print(pos[ii,aa])
+                                        if pos[ii,aa] < self.Avmin:
+                                            pos[ii,aa] = self.Avmin
+                                        if pos[ii,aa] > self.Avmax:
+                                            pos[ii,aa] = self.Avmax
                                     elif key[0] == 'A':
-                                        #pos[ii,aa] += np.random.uniform(self.Amin, self.Amax)/10
                                         pos[ii,aa] += np.random.uniform(-0.2, 0.2)
+                                        if pos[ii,aa] < self.Amin:
+                                            pos[ii,aa] = self.Amin
+                                        if pos[ii,aa] > self.Amax:
+                                            pos[ii,aa] = self.Amax
                                     elif key[0] == 'Z':
                                         if self.delZ>0.01:
-                                            pos[ii,aa] += np.random.uniform(-self.delZ, self.delZ)
+                                            pos[ii,aa] += np.random.uniform(-self.delZ*3, self.delZ*3)
+                                            if pos[ii,aa] < self.Zmin:
+                                                pos[ii,aa] = self.Zmin
+                                            if pos[ii,aa] > self.Zmax:
+                                                pos[ii,aa] = self.Zmax
                                         else:
                                             pos[ii,aa] += 0
     
@@ -1330,8 +1339,11 @@ class Mainbody():
                     #sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust))
                     #sampler.run_mcmc(pos, self.nmc, progress=True)
 
-                print('Converged at %d/%d'%(res.steps,self.nmc))
-                self.nmc = res.steps
+                try:
+                    print('Converged at %d/%d'%(res.steps,self.nmc))
+                    self.nmc = res.steps
+                except:
+                    res.steps = self.nmc
 
                 if f_plot_accept:
                     plt.plot(res.acceptance_fraction)
@@ -1354,7 +1366,7 @@ class Mainbody():
                 maxmcmc = self.nmc    # maximum MCMC chain length
                 nthreads = ncpu       # use one CPU core
                 bound = 'multi'   # use MutliNest algorithm for bounds
-                sample = 'unif'   # uniform sampling
+                sample = 'unif' #'rwalk' # uniform sampling
                 tol = 0.1         # the stopping criterion
                 ndim_nest = self.ndim #0
                 '''
@@ -1377,13 +1389,10 @@ class Mainbody():
                 bound=bound, sample=sample, nlive=nlive, ptform_args=ptform_args, logl_args=logl_args, logl_kwargs=logl_kwargs)
 
                 # Run;
-                sampler.run_nested(dlogz=tol, print_progress=self.f_disp) 
-                
-                #sampler.save_samples = True
-                #sampler.save_bounds = True
+                sampler.run_nested(dlogz=tol, maxiter=maxmcmc, print_progress=self.f_disp)                 
                 res0 = sampler.results # get results dictionary from sampler
 
-                # Just for dammy;
+                # Dammy just to get structures;
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=False, \
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
                 res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
@@ -1411,8 +1420,8 @@ class Mainbody():
                         for key in var_names:
                             self.params[key].value = params_value[key]
 
+                # Inserting result from res0 into res structure;
                 res = get_res(flatchain, var_names, params_value, res)
-                print(params_value)
 
             else:
                 print('Failed. Exiting.')
@@ -1727,7 +1736,7 @@ class Mainbody():
         Av_tmp = out.params['Av'].value
         AA_tmp = np.zeros(len(self.age), dtype='float')
         ZZ_tmp = np.zeros(len(self.age), dtype='float')
-        fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
+        fm_tmp, xm_tmp = fnc.tmp04(out, f_val=True)
 
         ########################
         # Check redshift

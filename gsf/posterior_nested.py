@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import scipy.integrate as integrate
 from scipy.integrate import cumtrapz
+from scipy import special,stats
 
 from .function import *
 
@@ -28,22 +29,16 @@ class Post_nested:
 
         '''
 
-        vals = pars.valuesdict()
-        model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
+        vals = pars #.valuesdict()
+        model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:
-            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
+            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
             n_optir = len(model)
 
             # Add dust flux to opt/IR grid.
             model[:] += model_dust[:n_optir]
-            '''try:
-                print(vals['MDUST'])
-                print(model_dust[:n_optir],x1_dust[:n_optir])
-                print(model_dust[n_optir:],x1_dust[n_optir:])
-            except:
-                pass
-            '''
+
             # then append only FIR flux grid.
             model = np.append(model,model_dust[n_optir:])
             x1 = np.append(x1,x1_dust[n_optir:])
@@ -80,6 +75,7 @@ class Post_nested:
                 ii += 1
         return self.params
 
+
     def residual_nest(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
         Input:
@@ -95,10 +91,10 @@ class Post_nested:
 
         vals = self.get_dict(pars)
 
-        model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
+        model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:
-            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
+            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
             n_optir = len(model)
 
             # Add dust flux to opt/IR grid.
@@ -150,14 +146,17 @@ class Post_nested:
             tuple: a new tuple or array with the transformed parameters.
         """
 
-        ii = 0
-        for key in self.params:
-            if self.params[key].vary:
-                cmin = self.params[key].min
-                cmax = self.params[key].max
-                cprim = pars[ii]
-                pars[ii] = cprim*(cmax-cmin) + cmin
-                ii += 1
+        #prior = np.zeros(len(pars),'float')
+        if True:
+            ii = 0
+            for key in self.params:
+                if self.params[key].vary:
+                    cmin = self.params[key].min
+                    cmax = self.params[key].max
+                    cprim = pars[ii]
+                    pars[ii] = cprim*(cmax-cmin) + cmin
+                    ii += 1
+
         '''
         mmu = 0.     # mean of Gaussian prior on m
         msigma = 10. # standard deviation of Gaussian prior on m
@@ -167,7 +166,7 @@ class Post_nested:
         return pars
 
 
-    def lnlike(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0):
+    def lnlike(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, lnpreject=-np.inf):
         '''
         Returns:
         ========
@@ -185,32 +184,26 @@ class Post_nested:
             f = 0
 
         resid, model = self.residual_nest(pars, fy, ey, wht, f_fir, out=True)
-        sig = np.sqrt(1./wht+f**2*model**2)
+        con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
+        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
 
-        if f_chind:
-            con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
-            # This may be a bit cost of time;
-            for nn in range(len(ey[con_up])):
-                result = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
-                if result[0] > 0:
-                    chi_nd += np.log(result[0])
-
-            con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
-
+        con_up = (ey>0) & (fy/ey<=SNlim)
+        if f_chind and len(fy[con_up])>0:
+            x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
+            f_erf = special.erf(x_erf)
+            if np.min(f_erf) <= -1:
+                return lnpreject
+            else:
+                chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
-            con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)))
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
-        #lnlike += 700000
-        #print(norm - 0.5*chisq)
-        #print(lnlike)
-        #print(vals,lnlike)
         return lnlike
 
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0):
+    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, lnpreject=-np.inf):
         '''
         Returns:
         ========
@@ -218,30 +211,28 @@ class Post_nested:
 
         '''
 
-        vals   = pars.valuesdict()
+        vals = pars #.valuesdict()
         if self.mb.ferr == 1:
             f = vals['f']
         else:
             f = 0
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
-        sig = np.sqrt(1./wht+f**2*model**2)
+        con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
+        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
 
-        if f_chind:
-            con_up = (fy==0) & (fy/ey<=SNlim) & (ey>0)
-            # This may be a bit cost of time;
-            for nn in range(len(ey[con_up])):
-                result = integrate.quad(lambda xint: self.func_tmp(xint, ey[con_up][nn]/SNlim, model[con_up][nn]), -ey[con_up][nn], ey[con_up][nn], limit=100)
-                if result[0] > 0:
-                    chi_nd += np.log(result[0])
-
-            con_res = (model>=0) & (wht>0) & (fy>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)) - 2 * chi_nd)
-
+        con_up = (ey>0) & (fy/ey<=SNlim)
+        if f_chind and len(fy[con_up])>0:
+            x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
+            f_erf = special.erf(x_erf)
+            if np.min(f_erf) <= -1:
+                return lnpreject
+            else:
+                chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
-            con_res = (model>=0) & (wht>0) # Instead of model>0, model>=0 is for Lyman limit where flux=0.
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig[con_res]**2)))
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
         respr = 0 # Flat prior...
         lnposterior = lnlike + respr
