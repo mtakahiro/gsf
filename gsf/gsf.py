@@ -114,7 +114,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
                 lammax = 2000000 * (1.+MB.zgal) # AA
                 
             if MB.f_bpass == 1:
-                make_tmp_z0_bpass(MB, lammax=lammax, tau_lim=tau_lim)
+                make_tmp_z0_bpass(MB, lammax=lammax)#, tau_lim=tau_lim
             else:
                 make_tmp_z0(MB, lammax=lammax)
 

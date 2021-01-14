@@ -543,11 +543,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             ftmp_nu_int = np.zeros((Na, len(lm)), dtype='float')
             spec_av_tmp = np.zeros((Na, len(lm)), dtype='float')
 
-            ms    = np.zeros(Na, dtype='float')
-            Ls    = np.zeros(Na, dtype='float')
+            ms = np.zeros(Na, dtype='float')
+            Ls = np.zeros(Na, dtype='float')
             ms[:] = mshdu['ms_'+str(zz)][:] # [:] is necessary.
             Ls[:] = mshdu['Ls_'+str(zz)][:]
-            Fuv   = np.zeros(Na, dtype='float')
+            Fuv = np.zeros(Na, dtype='float')
 
             for ss in range(Na):
                 wave = spechdu['wavelength']

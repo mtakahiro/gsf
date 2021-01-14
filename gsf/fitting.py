@@ -1343,13 +1343,15 @@ class Mainbody():
                                 aa += 1
 
                     # Run emcee;
-                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    #res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    res = mini.emcee(burn=0, steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                         pos=pos,
                         params=out.params, is_weighted=True, workers=ncpu,
                         check_converge=check_converge, nevery=nevery)
                 else:
                     # Run emcee;
-                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    #res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    res = mini.emcee(burn=0, steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                         params=out.params, is_weighted=True, workers=ncpu,
                         check_converge=check_converge, nevery=nevery)
                     #sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust))
@@ -1453,8 +1455,8 @@ class Mainbody():
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
-            #burnin   = int(self.nmc/2)
-            burnin   = 0 # Since already burnt in.
+            burnin   = int(self.nmc/2)
+            #burnin   = 0 # Since already burnt in.
             savepath = self.DIR_OUT
             cpklname = 'chain_' + self.ID + '_PA' + self.PA + '_corner.cpkl'
             savecpkl({'chain':flatchain,
