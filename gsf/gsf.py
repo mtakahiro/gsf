@@ -8,11 +8,9 @@ import asdf
 
 # From gsf
 from .fitting import Mainbody
-from .function_class import Func
-from .basic_func import Basic
-from .maketmp_filt import maketemp
-from .maketmp_z0 import make_tmp_z0
-from .maketmp_z0 import make_tmp_z0_bpass
+from .maketmp_filt import maketemp,maketemp_tau
+from .function_class import Func,Func_tau
+from .basic_func import Basic,Basic_tau
 
 import timeit
 start = timeit.default_timer()
@@ -39,10 +37,17 @@ def run_gsf_template(inputs, fplt=0):
     #
     if fplt<1:
         lammax = 160000 / (1.+MB.zgal) # AA
-        if MB.f_bpass == 1:
-            make_tmp_z0_bpass(MB, lammax=lammax)
+        if MB.SFH_FORM == -99:
+            if MB.f_bpass == 1:
+                from .maketmp_z0 import make_tmp_z0_bpass
+                make_tmp_z0_bpass(MB, lammax=lammax)
+            else:
+                from .maketmp_z0 import make_tmp_z0
+                make_tmp_z0(MB, lammax=lammax)
         else:
+            from .maketmp_z0_tau import make_tmp_z0
             make_tmp_z0(MB, lammax=lammax)
+            
 
     #
     # 1. Start making redshifted templates.
@@ -98,9 +103,13 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     #
     # Then load Func and Basic with param range.
     #
-    MB.fnc  = Func(MB) # Set up the number of Age/ZZ
-    MB.bfnc = Basic(MB)
-    
+    if MB.SFH_FORM == -99:
+        MB.fnc = Func(MB) # Set up the number of Age/ZZ
+        MB.bfnc = Basic(MB)
+    else:
+        MB.fnc = Func_tau(MB) # Set up the number of Age/ZZ
+        MB.bfnc = Basic_tau(MB)
+        
     #
     # Make templates based on input redsfift.
     #
@@ -108,20 +117,29 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         #
         # 0. Make basic templates
         #
-        if fplt == 0:
+        if fplt==0:
             lammax = 40000 * (1.+MB.zgal) # AA
             if MB.f_dust:
                 lammax = 2000000 * (1.+MB.zgal) # AA
-                
-            if MB.f_bpass == 1:
-                make_tmp_z0_bpass(MB, lammax=lammax)#, tau_lim=tau_lim
+
+            if MB.SFH_FORM == -99:
+                if MB.f_bpass == 1:
+                    from .maketmp_z0 import make_tmp_z0_bpass
+                    make_tmp_z0_bpass(MB, lammax=lammax)
+                else:
+                    from .maketmp_z0 import make_tmp_z0
+                    make_tmp_z0(MB, lammax=lammax)
             else:
+                from .maketmp_z0_tau import make_tmp_z0
                 make_tmp_z0(MB, lammax=lammax)
 
         #
         # 1. Start making redshifted templates.
         #
-        maketemp(MB, tau_lim=tau_lim)
+        if MB.SFH_FORM == -99:
+            maketemp(MB, tau_lim=tau_lim)
+        else:
+            maketemp_tau(MB, tau_lim=tau_lim)
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
@@ -155,8 +173,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
     if fplt <= 3 and flag_suc != -1:# and False:
         if f_Alog:
-            from .plot_sfh_logA import plot_sfh
-            from .plot_sed_logA import plot_sed            
+            if MB.SFH_FORM == -99:
+                from .plot_sfh_logA import plot_sfh
+                from .plot_sed_logA import plot_sed            
+            else:
+                from .plot_sfh_logA import plot_sfh_tau as plot_sfh
+                from .plot_sed_logA import plot_sed_tau as plot_sed            
         else:
             from .plot_sfh import plot_sfh
             from .plot_sed import plot_sed

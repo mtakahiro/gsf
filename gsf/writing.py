@@ -38,7 +38,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     ID0 = self.ID
     PA0 = self.PA
     age = self.age
-    nage = self.nage
     Zall = self.Zall
 
     fnc  = self.fnc #Func(ID0, PA0, Zall, nage) # Set up the number of Age/ZZ
@@ -58,11 +57,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     ##############################
     # Best parameters
-    Amc  = np.zeros((len(age),3), dtype='float')
-    Ab   = np.zeros(len(age), dtype='float')
-    Zmc  = np.zeros((len(age),3), dtype='float')
-    Zb   = np.zeros(len(age), dtype='float')
+    Amc = np.zeros((len(age),3), dtype='float')
+    Ab = np.zeros(len(age), dtype='float')
+    Zmc = np.zeros((len(age),3), dtype='float')
+    Zb = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
+    AGEmc = np.zeros((len(age),3), dtype='float')
+    TAUmc = np.zeros((len(age),3), dtype='float')
     if self.f_dust:
         Mdustmc = np.zeros(3, dtype='float')
         nTdustmc= np.zeros(3, dtype='float')
@@ -86,28 +87,37 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             Ab[aa] = -99
             Amc[aa,:] = [-99,-99,-99]
             pass
-        try:
-            Zb[aa] = res.params['Z'+str(aa)].value
-            Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
-        except:
+        if aa == 0 or self.ZEVOL:
             try:
-                Zb[aa] = res.params['Z0'].value
-                Zmc[aa,:] = np.percentile(res.flatchain['Z0'][burnin:], [16,50,84])
+                Zb[aa] = res.params['Z'+str(aa)].value
+                Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
             except:
                 Zb[aa] = self.ZFIX
                 Zmc[aa,:] = [self.ZFIX,self.ZFIX,self.ZFIX]
 
-        NZbest[aa]= bfnc.Z2NZ(Zb[aa])
-        ms[aa] = sedpar['ML_' +  str(NZbest[aa])][aa]
-        try:
-            msmc0[:] += 10**res.flatchain['A' + str(aa)][burnin:] * ms[aa]
-        except:
-            pass
+        if self.SFH_FORM == -99:
+            NZbest = bfnc.Z2NZ(Zb[aa])
+            ms[aa] = sedpar['ML_' +  str(NZbest)][aa]
+            try:
+                msmc0[:] += 10**res.flatchain['A' + str(aa)][burnin:] * ms[aa]
+            except:
+                pass
+        else:
+            taub = res.params['TAU'+str(aa)].value
+            ageb = res.params['AGE'+str(aa)].value
+            NZbest,NTAU,NAGE = bfnc.Z2NZ(Zb[aa],taub,ageb)
+            ms[aa] = sedpar['ML_%d_%d'%(NZbest, NTAU)][NAGE]
+            try:
+                msmc0[:] += 10**res.flatchain['A' + str(aa)][burnin:] * ms[aa]
+            except:
+                pass
 
-    msmc  = np.percentile(msmc0, [16,50,84])
+            AGEmc[aa,:] = np.percentile(res.flatchain['AGE'+str(aa)][burnin:], [16,50,84])
+            TAUmc[aa,:] = np.percentile(res.flatchain['TAU'+str(aa)][burnin:], [16,50,84])
 
+    #
+    msmc = np.percentile(msmc0, [16,50,84])
     try:
-    #if True:
         Avb = res.params['Av'].value
         Avmc = np.percentile(res.flatchain['Av'][burnin:], [16,50,84])
     except:
@@ -193,6 +203,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         col50 = fits.Column(name='Z'+str(aa), format='E', unit='logZsun', array=Zmc[aa][:])
         col01.append(col50)
 
+    for aa in range(len(AGEmc)):
+        col50 = fits.Column(name='AGE'+str(aa), format='E', unit='logGyr', array=AGEmc[aa][:])
+        col01.append(col50)
+    for aa in range(len(TAUmc)):
+        col50 = fits.Column(name='TAU'+str(aa), format='E', unit='logGyr', array=TAUmc[aa][:])
+        col01.append(col50)
+
     if self.f_dust:
         Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
         if self.DT0 == self.DT1 or self.DT0 + self.dDT <= self.DT1:
@@ -238,20 +255,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     hdu = fits.HDUList([prihdu, dathdu])
     hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
 
-    '''
-    ##########
-    # LINES
-    ##########
-    LW, fLW = self.get_lines(self.LW0)
-    fw = open(self.DIR_OUT + 'table_' + ID0 + '_PA' + PA0 + '_lines.txt', 'w')
-    fw.write('# ID PA WL Fcont50 Fcont16 Fcont84 Fline50 Fline16 Fline84 EW50 EW16 EW84\n')
-    for ii in range(len(LW)):
-        if fLW[ii] == 1:
-            fw.write('%s %s %d %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'%(ID0, PA0, LW[ii], np.median(Fcont[ii,:]), np.percentile(Fcont[ii,:],16), np.percentile(Fcont[ii,:],84), np.median(Fline[ii,:]), np.percentile(Fline[ii,:],16), np.percentile(Fline[ii,:],84), np.median(EW[ii,:]), np.percentile(EW[ii,:],16), np.percentile(EW[ii,:],84)))
-        else:
-            fw.write('%s %s %d 0 0 0 0 0 0 0 0 0\n'%(ID0, PA0, LW[ii]))
-    fw.close()
-    '''
 
 
 def get_index(mmax=300):

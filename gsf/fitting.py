@@ -193,43 +193,71 @@ class Mainbody():
         # -> Deprecated;
         self.ftaucomp = 0
 
-        # Age
+        # Check if func model for SFH;
         try:
-            self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
-            self.nage = np.arange(0,len(self.age),1)
+            self.SFH_FORM = int(inputs['SFH_FORM'])
         except:
-            try:
-                self.delage = float(inputs['DELAGE'])
-            except:
-                self.delage = 0.1
-            try:
-                self.agemax = float(inputs['AGEMAX'])
-                self.agemin = float(inputs['AGEMIN'])
-            except:
-                self.agemax = 14.0
-                self.agemin = 0.003
-            logage = np.arange(np.log10(self.agemin), np.log10(self.agemax), self.delage)
-            self.age = 10**logage
-            self.nage = np.arange(0,len(self.age),1)
+            self.SFH_FORM = -99
 
-        try:
-            self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
-            aamin = []
-            print('\n')
-            print('##########################')
-            print('AGEFIX is found.\nAge will be fixed to:')
-            for age_tmp in self.age_fix:
-                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
-                aamin.append(ageind)
-                print('%6s Gyr'%(self.age[ageind]))
-            print('##########################')
-            self.aamin = aamin
-        except:
+        # This is for non-functional form for SFH;
+        if self.SFH_FORM == -99:
+            # Age
+            try:
+                self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
+            except:
+                try:
+                    self.delage = float(inputs['DELAGE'])
+                except:
+                    self.delage = 0.1
+                try:
+                    self.agemax = float(inputs['AGEMAX'])
+                    self.agemin = float(inputs['AGEMIN'])
+                except:
+                    self.agemax = 14.0
+                    self.agemin = 0.003
+                logage = np.arange(np.log10(self.agemin), np.log10(self.agemax), self.delage)
+                self.age = 10**logage
+
+            try:
+                self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
+                aamin = []
+                print('\n')
+                print('##########################')
+                print('AGEFIX is found.\nAge will be fixed to:')
+                for age_tmp in self.age_fix:
+                    ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
+                    aamin.append(ageind)
+                    print('%6s Gyr'%(self.age[ageind]))
+                print('##########################')
+                self.aamin = aamin
+            except:
+                aamin = []
+                for nn,age_tmp in enumerate(self.age):
+                    aamin.append(nn)
+                self.aamin = aamin
+
+            #self.npeak = np.arange(0,len(self.age),1)
+            self.npeak = len(self.age)
+            
+        else: # This is for functional form for SFH;
+            self.agemax = float(inputs['AGEMAX'])
+            self.agemin = float(inputs['AGEMIN'])
+            self.delage = float(inputs['DELAGE'])
+            self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
+            self.nage = len(self.ageparam)
+
+            self.taumax = float(inputs['TAUMAX'])
+            self.taumin = float(inputs['TAUMIN'])
+            self.deltau = float(inputs['DELTAU'])
+            self.tau = np.arange(self.taumin, self.taumax, self.deltau)
+            self.ntau = len(self.tau)
+
+            self.npeak = int(inputs['NPEAK'])
+            self.age = np.arange(0,self.npeak,1) # This is meaningless.
             aamin = []
             for nn,age_tmp in enumerate(self.age):
                 aamin.append(nn)
             self.aamin = aamin
-            pass
 
         # SNlimit;
         try:
@@ -263,8 +291,8 @@ class Mainbody():
                     self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
         else:
             self.Zsun= 0.020
-            Zbpass   = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
-            Zbpass   = np.log10(np.asarray(Zbpass)/self.Zsun)
+            Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
+            Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
             try:
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
@@ -290,8 +318,8 @@ class Mainbody():
             print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
         except:
             try:
-                Avmin = self.Avmin #float(inputs['AVMIN'])
-                Avmax = self.Avmax #float(inputs['AVMAX'])
+                self.Avmin = float(inputs['AVMIN'])
+                self.Avmax = float(inputs['AVMAX'])
                 if Avmin == Avmax:
                     self.nAV = 0
                     self.AVFIX = Avmin
@@ -299,23 +327,40 @@ class Mainbody():
                     self.nAV = 1
             except:
                 self.nAV = 1
+                self.Avmin = 0
+                self.Avmax = 4.0
 
         # Z evolution;
         print('\n##########################')
-        if int(inputs['ZEVOL']) == 1:
-            self.ZEVOL = 1
-            self.ndim = int(len(self.nage) * 2 + self.nAV) # age, Z, and Av.
-            print('Metallicity evolution is on.')
+        if self.SFH_FORM:
+            if int(inputs['ZEVOL']) == 1:
+                self.ZEVOL = 1
+                self.ndim = int(self.npeak * 2 + self.nAV) # age, Z, and Av.
+                print('Metallicity evolution is on.')
+            else:
+                self.ZEVOL = 0
+                print('Metallicity evolution is off.')
+                try:
+                    ZFIX = float(inputs['ZFIX'])
+                    self.nZ = 0
+                except:
+                    self.nZ = 1
+                self.ndim = int(self.npeak + self.nZ + self.nAV) # age, Z, and Av.
         else:
-            self.ZEVOL = 0
-            print('Metallicity evolution is off.')
-            try:
-                ZFIX = float(inputs['ZFIX'])
-                self.nZ = 0
-            except:
-                self.nZ = 1
+            if int(inputs['ZEVOL']) == 1:
+                self.ZEVOL = 1
+                self.ndim = int(self.npeak * 3 + self.nAV) # age, Z, and Av.
+                print('Metallicity evolution is on.')
+            else:
+                self.ZEVOL = 0
+                print('Metallicity evolution is off.')
+                try:
+                    ZFIX = float(inputs['ZFIX'])
+                    self.nZ = 0
+                except:
+                    self.nZ = 1
+                self.ndim = int(self.npeak*2 + self.nZ + self.nAV) # age, Z, and Av.
 
-            self.ndim = int(len(self.nage) + self.nZ + self.nAV) # age, Z, and Av.
 
         # Redshift
         self.ndim += self.fzmc
@@ -519,7 +564,7 @@ class Mainbody():
         # Sort data along wave?
         f_sort = False
         if f_sort:
-            nrd_yyd = np.zeros((len(NR),6), dtype='float32')
+            nrd_yyd = np.zeros((len(NR),6), dtype='float')
             nrd_yyd[:,0] = NR
             nrd_yyd[:,1] = x
             nrd_yyd[:,2] = fy
@@ -569,7 +614,7 @@ class Mainbody():
         import scipy.interpolate as interpolate
 
         zspace = np.arange(zliml,zlimu,delzz)
-        chi2s  = np.zeros((len(zspace),2), 'float32')
+        chi2s  = np.zeros((len(zspace),2), 'float')
         if prior == None:
             prior = zspace[:] * 0 + 1.0
 
@@ -610,7 +655,7 @@ class Mainbody():
             vals  = pars.valuesdict()
 
             xm_s = xm_tmp * (1+z)
-            fm_s = np.zeros(len(xm_tmp),'float32')
+            fm_s = np.zeros(len(xm_tmp),'float')
 
             for nn in range(len(fm_tmp[:,0])):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
@@ -999,7 +1044,7 @@ class Mainbody():
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=False, check_converge=True):
+    f_shuffle=True, check_converge=True):
         '''
         Input:
         ======
@@ -1046,13 +1091,13 @@ class Mainbody():
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
 
         # For MCMC;
-        self.nmc      = int(self.inputs['NMC'])
-        self.nwalk    = int(self.inputs['NWALK'])
-        self.nmc_cz   = int(self.inputs['NMCZ'])
+        self.nmc = int(self.inputs['NMC'])
+        self.nwalk = int(self.inputs['NWALK'])
+        self.nmc_cz = int(self.inputs['NMCZ'])
         self.nwalk_cz = int(self.inputs['NWALKZ'])
-        self.Zevol    = int(self.inputs['ZEVOL'])
-        self.fzvis    = int(self.inputs['ZVIS'])
-        self.fneld    = int(self.inputs['FNELD'])
+        self.Zevol = int(self.inputs['ZEVOL'])
+        self.fzvis = int(self.inputs['ZVIS'])
+        self.fneld = int(self.inputs['FNELD'])
         if self.f_nested:
             print('Nested sample is on. Nelder is used for time saving analysis.')
             self.fneld = 1 
@@ -1118,25 +1163,39 @@ class Mainbody():
         self.Amin = Amin
         self.Amax = Amax
         self.Aini = Aini
-        
-        if len(self.age) != len(self.aamin):
-            for aa in range(len(self.age)):
-                if aa not in self.aamin:
-                    fit_params.add('A'+str(aa), value=Amin, vary=False)
-                    self.ndim -= 1                    
-                else:
-                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+
+        if self.SFH_FORM==-99:
+            if len(self.age) != len(self.aamin):
+                for aa in range(len(self.age)):
+                    if aa not in self.aamin:
+                        fit_params.add('A'+str(aa), value=Amin, vary=False)
+                        self.ndim -= 1                    
+                    else:
+                        fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+            else:
+                for aa in range(len(self.age)):
+                    if self.age[aa] == 99:
+                        fit_params.add('A'+str(aa), value=Amin, vary=False)
+                        self.ndim -= 1
+                    elif self.age[aa]>agemax and not self.force_agefix:
+                        print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
+                        fit_params.add('A'+str(aa), value=Amin, vary=False)
+                        self.ndim -= 1
+                    else:
+                        fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
         else:
-            for aa in range(len(self.age)):
-                if self.age[aa] == 99:
-                    fit_params.add('A'+str(aa), value=Amin, vary=False)
-                    self.ndim -= 1
-                elif self.age[aa]>agemax and not self.force_agefix:
-                    print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                    fit_params.add('A'+str(aa), value=Amin, vary=False)
-                    self.ndim -= 1
-                else:
-                    fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+            for aa in range(self.npeak):
+                tauini = (self.taumin+self.taumax)/2.
+                ageini = (self.agemin + self.agemax)/2.
+
+                fit_params.add('A%d'%aa, value=self.Aini, min=self.Amin, max=self.Amax)
+                fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
+                fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=self.agemax)
+
+                if self.ZEVOL or aa == 0:
+                    fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
+
+
 
         #####################
         # Dust attenuation
@@ -1197,7 +1256,7 @@ class Mainbody():
         ####################################
         # Get initial parameters
         if not skip_fitz or out == None:
-            out, chidef, Zbest = get_leastsq(inputs, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
+            out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
                 dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
 
             # Best fit
@@ -1216,7 +1275,7 @@ class Mainbody():
             Av_tmp = out.params['Av'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            fm_tmp, xm_tmp = fnc.tmp04_val(out, self.zgal, self.lib)
+            fm_tmp, xm_tmp = fnc.tmp04(out, f_val=True)
         else:
             csq = out.chisqr
             rcsq = out.redchi
@@ -1307,7 +1366,7 @@ class Mainbody():
                     nevery = 1000
 
                 #f_shuffle = False
-                if f_shuffle: # this causes error...
+                if f_shuffle and self.SFH_FORM==-99: # this needs update for functional form.
                     print('Initial shuffle in walkers is on.\n')
                     #pos = np.zeros((self.nwalk, self.ndim),'float')
                     pos = 1e-5 * np.random.randn(self.nwalk, self.ndim)
@@ -1316,7 +1375,7 @@ class Mainbody():
                         for aatmp,key in enumerate(out.params.valuesdict()):
                             if out.params[key].vary == True:
                                 pos[ii,aa] = out.params[key].value
-                                if np.random.uniform(0,1) > (1. - 1./self.ndim):
+                                if np.random.uniform(0,1) > 0.5: #(1. - 1./self.ndim):
                                     #print(aa,ii,'Shuffle')
                                     if key[:2] == 'Av':
                                         pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
@@ -1326,6 +1385,7 @@ class Mainbody():
                                             pos[ii,aa] = self.Avmax
                                     elif key[0] == 'A':
                                         pos[ii,aa] += np.random.uniform(-0.2, 0.2)
+                                        #pos[ii,aa] += np.random.uniform(-1, 1)
                                         if pos[ii,aa] < self.Amin:
                                             pos[ii,aa] = self.Amin
                                         if pos[ii,aa] > self.Amax:
@@ -1347,15 +1407,13 @@ class Mainbody():
                     res = mini.emcee(burn=0, steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                         pos=pos,
                         params=out.params, is_weighted=True, workers=ncpu,
-                        check_converge=check_converge, nevery=nevery)
+                        check_converge=check_converge, nevery=nevery, float_behavior='posterior')
                 else:
-                    # Run emcee;
+                    # Run emcee without pos;
                     #res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                     res = mini.emcee(burn=0, steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                         params=out.params, is_weighted=True, workers=ncpu,
-                        check_converge=check_converge, nevery=nevery)
-                    #sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust))
-                    #sampler.run_mcmc(pos, self.nmc, progress=True)
+                        check_converge=check_converge, nevery=nevery, float_behavior='posterior')
 
                 try:
                     print('Converged at %d/%d'%(res.steps,self.nmc))
@@ -1363,6 +1421,7 @@ class Mainbody():
                 except:
                     res.steps = self.nmc
 
+                print(res.bic)
                 if f_plot_accept:
                     plt.plot(res.acceptance_fraction)
                     plt.xlabel('walker')
@@ -1640,16 +1699,6 @@ class Mainbody():
         # Add parameters
         ###############################
         f_Alog = True
-        '''
-        if f_Alog:
-            Amin = -10
-            Amax = 10
-            Aini = 0
-        else:
-            Amin = 0
-            Amax = 1e3
-            Aini = 1
-        '''
         agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
         fit_params = Parameters()
         try:
@@ -1735,7 +1784,7 @@ class Mainbody():
         ####################################
         # Get initial parameters
         print('Start quick fit;')
-        out,chidef,Zbest = get_leastsq(inputs,self.Zall,self.fneld,self.age,fit_params,class_post.residual,\
+        out,chidef,Zbest = get_leastsq(self, self.Zall,self.fneld,self.age,fit_params,class_post.residual,\
             dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
 
         # Best fit

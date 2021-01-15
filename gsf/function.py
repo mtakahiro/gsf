@@ -17,6 +17,42 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
+def get_ind(wave,flux):
+    '''
+    Purpose:
+    ========
+    Get Lick index for input input
+
+    Return:
+    =======
+    equivalent width
+    '''
+    
+    lml     = [4268, 5143, 5233, 5305, 5862, 4828, 4628, 4985, 5669, 5742, 4895, 4895, 5818, 6068]
+    lmcl    = [4283, 5161, 5246, 5312, 5879, 4848, 4648, 5005, 5689, 5762, 5069, 5154, 5938, 6191]
+    lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
+    lmr     = [4336, 5206, 5318, 5363, 5950, 4892, 4688, 5945, 5729, 5802, 5366, 5366, 6105, 6417]
+
+    W = np.zeros(len(lml), dtype='float')
+    for ii in range(len(lml)):
+        con_cen = (wave>lmcl[ii]) & (wave<lmcr[ii])
+        con_sid = ((wave<lmcl[ii]) & (wave>lml[ii])) | ((wave<lmr[ii]) & (wave>lmcr[ii]))
+
+        Ic = np.mean(flux[con_cen])
+        Is = np.mean(flux[con_sid])
+
+        delam = lmcr[ii] - lmcl[ii]
+
+        if ii < 10:
+            W[ii] = (1. - Ic/Is) * delam
+        elif 1. - Ic/Is > 0:
+            W[ii] = -2.5 * np.log10(1. - Ic/Is)
+        else:
+            W[ii] = -99
+
+    return W
+
+
 def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", emojis=['']):
     '''
     Call in a loop to create terminal progress bar
@@ -132,7 +168,7 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=None, Zbest=0, f_keep=False):
+def get_leastsq(MB, ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=None, Zbest=0, f_keep=False):
     '''
     Purpose:
     ========
@@ -157,19 +193,15 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
         fit_name = 'leastsq'
 
     fwz.write('# minimizer: %s\n' % fit_name)
-
     #fit_name = 'trust-exact'# Need trust region
     #fit_name = 'trust-constr'
     #if fneld == 1 or fneld == 2: # Nelder;
     if True: # Nelder;
         for zz in range(len(ZZtmp)):
             ZZ = ZZtmp[zz]
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
+            for aa in range(len(age)):
+                if MB.ZEVOL == 1 or aa == 0:
                     fit_params['Z'+str(aa)].value = ZZ
-            else:
-                aa = 0
-                fit_params['Z'+str(aa)].value = ZZ
 
             out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
             keys = fit_report(out_tmp).split('\n')
@@ -195,64 +227,10 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
 
             Av_tmp = out_tmp.params['Av'].value
             fwz.write(' %.5f'%(Av_tmp))
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
-                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
-            else:
-                aa = 0
-                ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                fwz.write(' %.5f'%(ZZ_tmp[aa]))
-
-            fwz.write('\n')
-            if chidef==None:
-                chidef = fitc[1]
-                out = out_tmp
-            elif fitc[1]<chidef:
-                chidef = fitc[1]
-                out = out_tmp
-
-    '''
-    else: # Powell;
-        for zz in range(len(ZZtmp)):
-            ZZ = ZZtmp[zz]
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
-                    fit_params['Z'+str(aa)].value = ZZ
-            else:
-                aa = 0
-                fit_params['Z'+str(aa)].value = ZZ
-
-            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # powel is the more accurate.
-            keys = fit_report(out_tmp).split('\n')
-            csq  = 99999
-            rcsq = 99999
-            for key in keys:
-                if key[4:7] == 'chi':
-                    skey = key.split(' ')
-                    csq  = float(skey[14])
-                if key[4:7] == 'red':
-                    skey = key.split(' ')
-                    rcsq = float(skey[7])
-
-            fitc = [csq, rcsq] # Chi2, Reduced-chi2
-            fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
-
-            AA_tmp = np.zeros(len(age), dtype='float')
-            ZZ_tmp = np.zeros(len(age), dtype='float')
             for aa in range(len(age)):
-                AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
-                fwz.write(' %.5f'%(AA_tmp[aa]))
-
-            Av_tmp = out_tmp.params['Av'].value
-            fwz.write(' %.5f'%(Av_tmp))
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
+                if MB.ZEVOL == 1 or aa == 0:
                     ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
                     fwz.write(' %.5f'%(ZZ_tmp[aa]))
-            else:
-                aa = 0
-                fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
             fwz.write('\n')
             if chidef==None:
@@ -261,7 +239,6 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
             elif fitc[1]<chidef:
                 chidef = fitc[1]
                 out = out_tmp
-    '''
 
     fwz.close()
 
@@ -420,6 +397,8 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
         I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
         I2  = simps(lamS*1.,lamS)                  #Numerator
         fnu = I1/I2                               #Average flux density
+    else:
+        fnu = None
     return fnu
 
 def data_int(lmobs, lmtmp, ftmp):

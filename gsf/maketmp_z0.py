@@ -4,38 +4,9 @@ import matplotlib.pyplot as plt
 import os
 from astropy.io import ascii
 
+from .function import get_ind
+
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
-
-def get_ind(wave,flux):
-    '''
-    Purpose:
-    ========
-    Get Lick index for input input
-    '''
-    lml     = [4268, 5143, 5233, 5305, 5862, 4828, 4628, 4985, 5669, 5742, 4895, 4895, 5818, 6068]
-    lmcl    = [4283, 5161, 5246, 5312, 5879, 4848, 4648, 5005, 5689, 5762, 5069, 5154, 5938, 6191]
-    lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
-    lmr     = [4336, 5206, 5318, 5363, 5950, 4892, 4688, 5945, 5729, 5802, 5366, 5366, 6105, 6417]
-
-    W = np.zeros(len(lml), dtype='float')
-    for ii in range(len(lml)):
-        con_cen = (wave>lmcl[ii]) & (wave<lmcr[ii])
-        con_sid = ((wave<lmcl[ii]) & (wave>lml[ii])) | ((wave<lmr[ii]) & (wave>lmcr[ii]))
-
-        Ic = np.mean(flux[con_cen])
-        Is = np.mean(flux[con_sid])
-
-        delam = lmcr[ii] - lmcl[ii]
-
-        if ii < 10:
-            W[ii] = (1. - Ic/Is) * delam
-        elif 1. - Ic/Is > 0:
-            W[ii] = -2.5 * np.log10(1. - Ic/Is)
-        else:
-            W[ii] = -99
-
-    # Return equivalent width
-    return W
 
 
 def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):

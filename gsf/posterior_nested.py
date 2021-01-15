@@ -90,7 +90,6 @@ class Post_nested:
         '''
 
         vals = self.get_dict(pars)
-
         model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:

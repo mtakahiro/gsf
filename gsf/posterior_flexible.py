@@ -16,8 +16,9 @@ class Post:
         self.mb = mainbody
         self.scale = 1
         self.gauss_Mdyn = None
+        self.Na = len(self.mb.age)
 
-    def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
+    def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False):
         '''
         Input:
         ======
@@ -28,12 +29,13 @@ class Post:
         ========
         residual of model and data.
         '''
-        vals = pars.valuesdict()
-        #model, x1 = self.mb.fnc.tmp04(vals, self.mb.zgal, self.mb.lib)
+        if f_val:
+            vals = pars
+        else:
+            vals = pars.valuesdict()
         model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:
-            #model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals, self.mb.zgal, self.mb.lib_dust)
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
             n_optir = len(model)
 
@@ -102,12 +104,40 @@ class Post:
         msigma = 10. # standard deviation of Gaussian prior on m
         m = mmu + msigma*ndtri(mprime) # convert back to m
         '''
-
         return pars
 
+    def swap_pars(self, pars):
+        '''
+        '''
+        Amax = -99
+        aamax = 0
+        for aa in range(self.Na):
+            if pars['A%d'%aa]>Amax:
+                Amax = pars['A%d'%aa]
+                aamax = aa
+        if aamax>0:
+            Amax2 = pars['A%d'%(aamax-1)]
+            pars['A%d'%(aamax-1)] = Amax
+            pars['A%d'%aamax] = Amax2
+        return pars
+
+    def swap_pars_inv(self, pars):
+        '''
+        '''
+        Amax = -99
+        aamax = self.Na-1
+        for aa in range(self.Na):
+            if pars['A%d'%aa]>Amax:
+                Amax = pars['A%d'%aa]
+                aamax = aa
+        if aamax<self.Na-1:
+            Amax2 = pars['A%d'%(aamax+1)]
+            pars['A%d'%(aamax+1)] = Amax
+            pars['A%d'%aamax] = Amax2
+        return pars
 
     def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True):
+    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0):
         '''
         Input:
         ======
@@ -121,13 +151,16 @@ class Post:
         If f_like, log Likelihood. Else, log Posterior prob.
 
         '''
-        vals = pars.valuesdict()
+        if f_val:
+            vals = pars
+        else:
+            vals = pars.valuesdict()
         if self.mb.ferr == 1:
             f = vals['f']
         else:
             f = 0
 
-        resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True)
+        resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
         sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0
@@ -166,22 +199,23 @@ class Post:
             logMtmp = self.mb.logMtmp
             #print(logMtmp)
             if flat_prior:
-                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn:
+                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
+                    #pars = self.swap_pars(pars)
                     #print(logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
                     return lnpreject
                 else:
                     respr += 0
             elif gauss_prior:
+                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
+                    #pars = self.swap_pars(pars)
+                    #return lnpreject
+                    pass
+                #elif logMtmp < self.mb.logMdyn - self.mb.elogMdyn * nsigma:
+                #    pars = self.swap_pars_inv(pars)
+                #    return lnpreject
                 p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
                 respr += np.log(p_gauss)
 
-
-        #print(np.log(2 * 3.14 * 1) * len(sig[con_res]), np.sum(np.log(2 * 3.14 * sig[con_res]**2)))
-        #Av   = vals['Av']
-        #if Av<0:
-        #     return -np.inf
-        #else:
-        #    respr = 0 #np.log(1)
 
         # Prior for redshift:
         if self.mb.fzmc == 1:
@@ -194,11 +228,15 @@ class Post:
                 return lnpreject
             else:
                 respr += np.log(prior[nzz])
-            
+
         lnposterior = lnlike + respr
+        #lnposterior = respr
+        #print(self.mb.logMtmp, self.mb.logMdyn, respr)
+        #print(self.mb.logMtmp, respr)
         if not np.isfinite(lnposterior):
             return -np.inf
         return lnposterior
+
 
     """
     def get_mass(self,pars):
