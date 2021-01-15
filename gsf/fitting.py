@@ -999,7 +999,7 @@ class Mainbody():
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=True, check_converge=True):
+    f_shuffle=False, check_converge=True):
         '''
         Input:
         ======
