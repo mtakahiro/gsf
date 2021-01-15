@@ -300,8 +300,9 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]/Gyr
     tau0 = MB.tau0 #[0.01,0.02,0.03],
     fneb = MB.fneb #0,
-    print('Currently, BPASS does not have option of nebular emission.')
-    fneb = 0
+    if fneb == 1:
+        print('Currently, BPASS does not have option of nebular emission.')
+        fneb = 0
     logU = MB.logU #-2.5,
     DIR_TMP= MB.DIR_TMP #'./templates/'
 
@@ -359,6 +360,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
         wave0   = fd_sed['col1']
         age_stm = fd_stm['col1']
+        mass_formed = fd_stm['col2'][0]
 
         ncols = 52
         nage_temp = np.arange(2,ncols+1,1)
@@ -375,6 +377,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
             tau0_old = 0
 
             for ss in range(Na):
+                mass_formed_tot = 0
                 flux0 = np.zeros(len(wave0),'float')
                 #
                 # Determining tau for each age bin;
@@ -387,7 +390,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         for sstmp in con_tau[0][-1:]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
-                            #print(age[ss],age_temp[sstmp]/1e9,sstmp+2)
+                            mass_formed_tot += mass_formed
                     else:
                         tautmp = age[ss] - age[ss-1]
                         agetmp = age[ss] - (age[ss]-age[ss-1])/2.
@@ -395,7 +398,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         for sstmp in con_tau[0][-1:]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
-                            #print(age[ss],age_temp[sstmp]/1e9,sstmp+2)
+                            mass_formed_tot += mass_formed
 
                 elif tau0[pp] > 0.0:
                     if ss==0 and age[ss]<tau0[pp]:
@@ -405,6 +408,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         for sstmp in con_tau[0]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
+                            mass_formed_tot += mass_formed
 
                     elif (age[ss]-age[ss-1]) < tau0[pp]:
                         tautmp = age[ss] - age[ss-1]
@@ -413,6 +417,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         for sstmp in con_tau[0]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
+                            mass_formed_tot += mass_formed
 
                     else:
                         tautmp = tau0[pp]
@@ -421,6 +426,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         for sstmp in con_tau[0]:
                             flux0  += fd_sed['col%d'%(sstmp+2)][:]
                             ms[ss] += fd_stm['col2'][sstmp]
+                            mass_formed_tot += mass_formed
 
                 else: # =Negative tau; SSP
                     iis   = np.argmin(np.abs(age[ss] - age_temp[:]/1e9))
@@ -434,6 +440,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
                     flux0  = fd_sed['col%d'%(iis+2)] #sp.get_spectrum(tage=age[ss], peraa=True)
                     ms[ss] = fd_stm['col2'][iistm]
+                    mass_formed_tot += mass_formed
 
                 # Keep tau in header;
                 tau_age[ss] = tautmp
@@ -443,7 +450,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
                 # Temp
-                mlost[ss] =  1.0 #sp.stellar_mass / sp.formed_mass
+                mlost[ss] =  ms[ss] / mass_formed_tot
 
                 Ls[ss] = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
