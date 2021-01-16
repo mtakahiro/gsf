@@ -1807,7 +1807,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
                 AA_tmp = 0
             vals['A%d'%ss] = np.log10(AA_tmp)
 
-            if ss == 0 or MB.ZEVEOL:
+            if ss == 0 or MB.ZEVOL:
                 try:
                     ZZtmp = samples['Z%d'%ss][nr]
                 except:

@@ -384,7 +384,7 @@ class Func:
             if par['A'+str(aa)] > self.MB.Amax:
                 par['A'+str(aa)] = self.MB.Amax
             # Z limit:
-            if aa == 0 or self.MB.Zevol == 1:
+            if aa == 0 or self.MB.ZEVOL == 1:
                 if par['Z%d'%aa] < self.MB.Zmin:
                     par['Z%d'%aa] = self.MB.Zmin
                 if par['Z%d'%aa] > self.MB.Zmax:
@@ -408,6 +408,7 @@ class Func:
                 yy = A00 * self.MB.lib[:, coln]
             else:
                 yy += A00 * self.MB.lib[:, coln]
+
 
         self.MB.logMtmp = np.log10(Mtot)
         # How much does this cost in time?
@@ -680,12 +681,7 @@ class Func_tau:
 
                     colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
                     colnall = int(2 + zz * self.MB.ntau * self.MB.nage + tt * self.MB.nage + ss) # 2 takes account of wavelength and AV columns.
-                    '''
-                    if colnall == 150:
-                        print(Z,TT,TA,colname,hdu0[colname])
-                    if colnall == 151:
-                        print(Z,TT,TA,colname,hdu0[colname])
-                    '''
+                                        
                     lib[:,colnall] = hdu0[colname]
 
         return lib
@@ -855,7 +851,7 @@ class Func_tau:
     """
 
 
-    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=True, lib_all=False):
+    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False):
         '''
         Purpose:
         ========
@@ -946,7 +942,9 @@ class Func_tau:
                 else:
                     yy += A00 * self.MB.lib[:, coln]
 
-        #print(yy,A00,coln)
+        #if np.isnan(yy[0]):
+        #    return xx,xx*0
+
         self.MB.logMtmp = np.log10(Mtot)
         # How much does this cost in time?
         if round(zmc,nprec) != round(self.MB.zgal,nprec):

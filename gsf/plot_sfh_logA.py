@@ -780,7 +780,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     age = MB.age
     nage = MB.nage
     tau0 = MB.tau0
-    age = np.asarray(age)
+    ageparam = MB.ageparam
 
     try:
         if not MB.ZFIX == None:
@@ -1014,19 +1014,19 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     while mm<mmax:
         mtmp  = np.random.randint(len(samples))# + Nburn
 
-        Av_tmp  = samples['Av'][mtmp]
+        Av_tmp = samples['Av'][mtmp]
         for aa in range(MB.npeak):
             AAtmp = samples['A%d'%aa][mtmp]
             ltautmp = samples['TAU%d'%aa][mtmp]
             lagetmp = samples['AGE%d'%aa][mtmp]
-            try:
-                ZZtmp = samples['Z%d'%aa][mtmp]
-            except:
-                ZZtmp = MB.ZFIX
+            if aa == 0 or MB.ZEVOL:
+                try:
+                    ZZtmp = samples['Z%d'%aa][mtmp]
+                except:
+                    ZZtmp = MB.ZFIX
 
             nZtmp,nttmp,natmp = bfnc.Z2NZ(ZZtmp, ltautmp, lagetmp)
             mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
-            #print(mslist,AAtmp)
 
             if aa == 0:
                 xSF[:,mm], ySF[:,mm], yMS[:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, ML=AAtmp*mslist)
@@ -1086,9 +1086,9 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Get SFMS in log10;
     #############
     IMF = int(inputs['NIMF'])
-    SFMS_16 = get_SFMS(zbes,age,10**ACp[:,0],IMF=IMF)
-    SFMS_50 = get_SFMS(zbes,age,10**ACp[:,1],IMF=IMF)
-    SFMS_84 = get_SFMS(zbes,age,10**ACp[:,2],IMF=IMF)
+    SFMS_16 = get_SFMS(zbes,tt,10**ACp[:,0],IMF=IMF)
+    SFMS_50 = get_SFMS(zbes,tt,10**ACp[:,1],IMF=IMF)
+    SFMS_84 = get_SFMS(zbes,tt,10**ACp[:,2],IMF=IMF)
 
     #try:
     if False:

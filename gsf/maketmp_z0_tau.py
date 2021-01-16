@@ -2,6 +2,7 @@ import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import os
+import sys
 from astropy.io import ascii
 
 from .function import get_ind
@@ -87,8 +88,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     tree_lick = {}
 
     print('tau is the width of each age bin.')
-    tau_age = np.zeros(Na,dtype='float')
-    age_age = np.zeros(Na,dtype='float')
     for zz in range(len(Z)):
         for ss in range(len(tau)):
             if 10**tau[ss]<0.01:
@@ -108,8 +107,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                 print('Log normal is used. !!')
 
             print(zz, sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8") , ss)
-            ms   = np.zeros(Na)
-            Ls   = np.zeros(Na)
+            ms = np.zeros(Na)
+            Ls = np.zeros(Na)
             LICK = np.zeros((Na,len(INDICES)), dtype='float')
             mlost = np.zeros(Na, dtype='float')
 
@@ -127,6 +126,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
                 ms[tt] = sp.stellar_mass
+                if np.isnan(ms[tt]):
+                    print('Error at tau element at',tt)
+                    sys.exit()
+
                 Ls[tt] = 10**sp.log_lbol
                 LICK[tt,:] = get_ind(wave, flux)
                 mlost[tt] = sp.stellar_mass / sp.formed_mass

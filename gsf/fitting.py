@@ -238,11 +238,16 @@ class Mainbody():
 
             #self.npeak = np.arange(0,len(self.age),1)
             self.npeak = len(self.age)
+            self.nage = np.arange(0,len(self.age),1)
             
         else: # This is for functional form for SFH;
             self.agemax = float(inputs['AGEMAX'])
             self.agemin = float(inputs['AGEMIN'])
             self.delage = float(inputs['DELAGE'])
+            agemax_tmp = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
+            if self.agemax > agemax_tmp:
+                self.agemax = agemax_tmp
+
             self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
             self.nage = len(self.ageparam)
 
@@ -1095,7 +1100,7 @@ class Mainbody():
         self.nwalk = int(self.inputs['NWALK'])
         self.nmc_cz = int(self.inputs['NMCZ'])
         self.nwalk_cz = int(self.inputs['NWALKZ'])
-        self.Zevol = int(self.inputs['ZEVOL'])
+        self.ZEVOL = int(self.inputs['ZEVOL'])
         self.fzvis = int(self.inputs['ZVIS'])
         self.fneld = int(self.inputs['FNELD'])
         if self.f_nested:
@@ -1652,7 +1657,7 @@ class Mainbody():
         self.nwalk = int(self.inputs['NWALK'])
         self.nmc_cz = int(self.inputs['NMCZ'])
         self.nwalk_cz = int(self.inputs['NWALKZ'])
-        self.Zevol = int(self.inputs['ZEVOL'])
+        self.ZEVOL = int(self.inputs['ZEVOL'])
         self.fzvis = int(self.inputs['ZVIS'])
         self.fneld = int(self.inputs['FNELD'])
 
