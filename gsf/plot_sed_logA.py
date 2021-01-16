@@ -849,9 +849,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         zorder=2, alpha=1.0, marker='d', s=50)
 
     else:
-        lbb, fbb, lfwhm   = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
-        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
 
         iix = []
         for ii in range(len(fbb)):
@@ -2001,9 +2001,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         zorder=2, alpha=1.0, marker='d', s=50)
 
     else:
-        lbb, fbb, lfwhm   = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
-        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
 
         iix = []
         for ii in range(len(fbb)):

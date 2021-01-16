@@ -935,30 +935,50 @@ def filconv_fast(filts, band, l0, f0, fw=False):
         return lcen, fnu
 
 
-def filconv(band0, l0, f0, DIR, fw=False):
+def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     '''
     Input:
     ======
     f0: Flux for spectrum, in fnu
     l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
 
-    '''
+    f_regist : If True, read filter response curve.
 
-    fnu  = np.zeros(len(band0), dtype='float')
+    '''
+    if MB==None:
+        f_regist = True
+    if f_regist:
+        lfil_lib = {}
+        ffil_lib = {}
+
+    fnu = np.zeros(len(band0), dtype='float')
     lcen = np.zeros(len(band0), dtype='float')
     if fw == True:
         fwhm = np.zeros(len(band0), dtype='float')
 
     for ii in range(len(band0)):
-        fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
-        lfil = fd[:,1]
-        ffil = fd[:,2]
-        ffil /= np.max(ffil)
-        if fw == True:
-            ffil_cum = np.cumsum(ffil)
-            ffil_cum/= ffil_cum.max()
-            con      = (ffil_cum>0.05) & (ffil_cum<0.95)
-            fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
+        if not f_regist:
+            try:
+                lfil = MB.band['%s_lam'%str(band0[ii])]
+                ffil = MB.band['%s_res'%str(band0[ii])]
+                if fw == True:
+                    fwhm = MB.band['%s_fwhm'%str(band0[ii])]
+            except:
+                f_regist = True
+                
+        if f_regist:
+            fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
+            lfil = fd[:,1]
+            ffil = fd[:,2]
+            ffil /= np.max(ffil)
+            if fw == True:
+                ffil_cum = np.cumsum(ffil)
+                ffil_cum/= ffil_cum.max()
+                con = (ffil_cum>0.05) & (ffil_cum<0.95)
+                fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])       
+
+            lfil_lib['%s'%str(band0[ii])] = lfil
+            ffil_lib['%s'%str(band0[ii])] = ffil
 
         lmin  = np.min(lfil)
         lmax  = np.max(lfil)
@@ -986,6 +1006,12 @@ def filconv(band0, l0, f0, DIR, fw=False):
         else:
             fnu[ii] = 0
 
+    if MB != None and f_regist:
+        MB.lfil_lib = lfil_lib
+        MB.ffil_lib = ffil_lib
+        if fw == True:
+            MB.filt_fwhm = fwhm
+        
     if fw:
         return lcen, fnu, fwhm
     else:

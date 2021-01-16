@@ -540,8 +540,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
             fbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
 
-            A = np.zeros(Na, dtype='float') + 1
-
             spec_mul = np.zeros((Na, len(lm0)), dtype='float')
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float')
             spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype='float')
@@ -585,7 +583,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 else:
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
-                spec_sum = 0*spec_mul[0] # This is dummy file.
                 DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
 
@@ -598,7 +595,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
-                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
+                #ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
+                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT, MB=MB, f_regist=False)
 
                 ##########################################
                 # Writing out the templates to fits table.
@@ -817,7 +815,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     print('Done making templates at z=%.2f.\n'%zbest)
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True):
     '''
     Purpose:
     ========
@@ -830,6 +828,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     Z (array)   : Stellar phase metallicity in logZsun.
     age (array) : Age, in Gyr.
     fneb (int)  : flag for adding nebular emissionself.
+    f_IGM (bool): IGM attenuation. Madau.
     '''    
 
     inputs = MB.inputs
@@ -1149,14 +1148,16 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
         for tt in range(len(tau)): # tau
             if zz == 0 and tt == 0:
-                lm0 = spechdu['wavelength']
+                nthin = 10
+                lm0 = spechdu['wavelength'][::nthin]
+                wave = lm0
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
             fbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
 
-            A = np.zeros(Na, dtype='float') + 1
+            #A = np.zeros(Na, dtype='float') + 1
 
             spec_mul = np.zeros((Na, len(lm0)), dtype='float')
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float')
@@ -1175,16 +1176,21 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
             Fuv = np.zeros(Na, dtype='float')
 
             for ss in range(Na):
-                wave = spechdu['wavelength']
+                #print(ss,tt,zz)
+                if ss == 0 and tt == 0 and zz == 0:
+                    DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
+                    wavetmp = wave*(1.+zbest)
+                    Lsun = 3.839 * 1e33 #erg s-1
+                    stmp_common = 1e10 # so 1 template is in 1e10Lsun
+
                 if fneb == 1:
-                    spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)]
+                    spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
                 else:
-                    spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)]
+                    spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
 
                 ###################
                 # IGM attenuation.
                 ###################
-                f_IGM = True
                 if f_IGM:
                     spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                 else:
@@ -1201,20 +1207,17 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 else:
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
-                spec_sum = 0*spec_mul[0] # This is dummy file.
-                DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
-                wavetmp = wave*(1.+zbest)
-
-                Lsun = 3.839 * 1e33 #erg s-1
-                stmp_common = 1e10 # so 1 template is in 1e10Lsun
-
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss] *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
 
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
-                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT)
+                
+                # Register filter response;
+                #if ss == 0 and tt == 0 and zz == 0:
+                #    filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT, fw=True, MB=MB, f_regist=True)
+                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT, MB=MB, f_regist=False)
 
                 ##########################################
                 # Writing out the templates to fits table.
@@ -1242,11 +1245,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     tree_spec_full.update({'wavelength':wavetmp})
                     tree_spec_full.update({'colnum':nd})
 
+                # ASDF
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
-                # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_ap})
-
-                # ASDF
                 tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
 
             #########################
