@@ -236,9 +236,7 @@ class Post:
                 respr += np.log(prior[nzz])
 
         lnposterior = lnlike + respr
-        #lnposterior = respr
-        #print(self.mb.logMtmp, self.mb.logMdyn, respr)
-        #print(self.mb.logMtmp, respr)
+        
         if not np.isfinite(lnposterior):
             return -np.inf
         return lnposterior

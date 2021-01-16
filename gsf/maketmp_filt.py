@@ -815,7 +815,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     print('Done making templates at z=%.2f.\n'%zbest)
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=10):
     '''
     Purpose:
     ========
@@ -829,6 +829,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     age (array) : Age, in Gyr.
     fneb (int)  : flag for adding nebular emissionself.
     f_IGM (bool): IGM attenuation. Madau.
+    nthin (int) : Thinning templates.
     '''    
 
     inputs = MB.inputs
@@ -1148,7 +1149,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
         for tt in range(len(tau)): # tau
             if zz == 0 and tt == 0:
-                nthin = 10
                 lm0 = spechdu['wavelength'][::nthin]
                 wave = lm0
 

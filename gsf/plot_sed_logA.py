@@ -1622,8 +1622,22 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         ysump = np.append(ysump,y0d_cut[nopt:])
         f_50_comp_dust = y0d * c / np.square(x0d) / d
 
+    # Plot each best fit:
+    vals_each = vals.copy()
+    for aa in range(len(age)):
+        vals_each['A%d'%aa] = -99
+    for aa in range(len(age)):
+        vals_each['A%d'%aa] = vals['A%d'%aa]
+        y0tmp, x0tmp = MB.fnc.tmp04(vals_each, f_val=False, check_bound=False, lib_all=True)
+        if aa == 0:
+            y0keep = y0tmp
+        else:
+            y0keep += y0tmp
+        ax1.plot(x0tmp, y0tmp * c / np.square(x0tmp) / d, linestyle='--', lw=0.5, color=col[aa])
+        vals_each['A%d'%aa] = 0
+
     # Plot best fit;
-    ax1.plot(x0, f_50_comp, linestyle='-', lw=0.5, color='gray')
+    ax1.plot(x0, f_50_comp, linestyle='-', lw=0.5, color='k')
 
     #############
     # Main result

@@ -1007,9 +1007,11 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     ttmin = 0.001
     tt = np.arange(ttmin,Tuni+0.5,ttmin/10)
-    ySF = np.zeros((len(tt), mmax), dtype='float') # SFR
     xSF = np.zeros((len(tt), mmax), dtype='float') # SFR
-    yMS = np.zeros((len(tt), mmax), dtype='float') # SFR
+    ySF = np.zeros((len(tt), mmax), dtype='float') # SFR
+    yMS = np.zeros((len(tt), mmax), dtype='float') # MFR
+    ySF_each = np.zeros((MB.npeak, len(tt), mmax), dtype='float') # SFR
+    yMS_each = np.zeros((MB.npeak, len(tt), mmax), dtype='float') # MFR
 
     ZZmc = np.zeros((MB.npeak, mmax), dtype='float') 
     TTmc = np.zeros((MB.npeak, mmax), dtype='float') 
@@ -1022,7 +1024,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     plot_each = True
     while mm<mmax:
         mtmp = np.random.randint(len(samples))# + Nburn
-
         if MB.nAV != 0:
             Av_tmp = samples['Av'][mtmp]
         else:
@@ -1045,12 +1046,10 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             nZtmp,nttmp,natmp = bfnc.Z2NZ(ZZtmp, ltautmp, lagetmp)
             mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
 
-            if aa == 0:
-                xSF[:,mm], ySF[:,mm], yMS[:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
-            else:
-                xSFtmp, ySFtmp, yMStmp = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
-                ySF[:,mm] += ySFtmp[:]
-                yMS[:,mm] += yMStmp[:]
+            xSF[:,mm], ySF_each[aa,:,mm], yMS_each[aa,:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
+            #xSFtmp, ySFtmp, yMStmp = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
+            ySF[:,mm] += ySF_each[aa,:,mm]
+            yMS[:,mm] += yMS_each[aa,:,mm]
 
         Av[mm] = Av_tmp
         if plot_each:
@@ -1064,13 +1063,22 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     #############
     # Plot
     #############
-    xSFp = np.zeros((len(tt),3), dtype='float32')
-    ySFp = np.zeros((len(tt),3), dtype='float32')
-    yMSp = np.zeros((len(tt),3), dtype='float32')
+    xSFp = np.zeros((len(tt),3), dtype='float')
+    ySFp = np.zeros((len(tt),3), dtype='float')
+    yMSp = np.zeros((len(tt),3), dtype='float')
+    ySFp_each = np.zeros((MB.npeak, len(tt), 3), dtype='float')
+    yMSp_each = np.zeros((MB.npeak, len(tt), 3), dtype='float')
     for ii in range(len(tt)):
         xSFp[ii,:] = np.percentile(xSF[ii,:], [16,50,84])
         ySFp[ii,:] = np.percentile(ySF[ii,:], [16,50,84])
         yMSp[ii,:] = np.percentile(yMS[ii,:], [16,50,84])
+        for aa in range(MB.npeak):
+            ySFp_each[aa,ii,:] = np.percentile(ySF_each[aa,ii,:], [16,50,84])
+            yMSp_each[aa,ii,:] = np.percentile(yMS_each[aa,ii,:], [16,50,84])
+
+    for aa in range(MB.npeak):
+        ax1.plot(xSFp[:,1], np.log10(ySFp_each[aa,:,1]), linestyle='-', color=col[aa], alpha=1., zorder=-1, lw=0.5)
+        ax2.plot(xSFp[:,1], np.log10(ySFp_each[aa,:,1]), linestyle='-', color=col[aa], alpha=1., zorder=-1, lw=0.5)
 
     ax1.plot(xSFp[:,1], np.log10(ySFp[:,1]), linestyle='-', color='k', alpha=1., zorder=-1, lw=0.5)
     ax2.plot(xSFp[:,1], np.log10(yMSp[:,1]), linestyle='-', color='k', alpha=1., zorder=-1, lw=0.5)

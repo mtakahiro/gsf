@@ -183,6 +183,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['tcalc']  = tcalc
     prihdr['chi2']   = fitc[0]
     prihdr['chi2nu'] = fitc[1]
+    prihdr['bic'] = res.bic
     prihdr['nmc'] = nmc
     prihdr['nwalker'] = nwalker
     import gsf

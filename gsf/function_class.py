@@ -801,54 +801,6 @@ class Func_tau:
         return A00 * yyd_sort, xxd_sort
 
 
-    """
-    def tmp03(self, A, tau, age, Av00, Z, zgal, lib):
-        '''
-        '''
-        ZZ = self.ZZ
-        TT = self.TT
-        LA = self.LA
-        bfnc = Basic(ZZ, TT, LA)
-
-        DIR_TMP = './templates/'
-
-        NZ, NT, NA = bfnc.Z2NZ(Z,tau,age)
-        coln   = int(2 + NZ*len(TT)*len(LA) + NT*len(LA) + NA)
-
-        nr  = lib[:, 0]
-        xx  = lib[:, 1] # This is OBSERVED waverange at z=zgal
-        yy  = lib[:, coln]
-
-        # Dust attenuation
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
-
-        xxd *= (1.+zgal)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
-
-        return A * yyd_sort, xxd_sort
-    """
-
-
     def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False):
         '''
         Purpose:
@@ -940,8 +892,6 @@ class Func_tau:
                 else:
                     yy += A00 * self.MB.lib[:, coln]
 
-        #if np.isnan(yy[0]):
-        #    return xx,xx*0
 
         self.MB.logMtmp = np.log10(Mtot)
         # How much does this cost in time?
@@ -970,13 +920,15 @@ class Func_tau:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
 
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-        return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+        if self.dust_model == 0:
+            return yyd, xxd
+        else: # finction.py needs update for other models.
+            nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+            nrd_yyd[:,0] = nrd[:]
+            nrd_yyd[:,1] = yyd[:]
+            nrd_yyd[:,2] = xxd[:]
+            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+            return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
 
     def tmp04_dust(self, par, nprec=1):

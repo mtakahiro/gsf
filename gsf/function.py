@@ -668,6 +668,9 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     #
     '''
     Kl = np.zeros(len(lm), dtype='float')
+    nrd = np.zeros(len(lm), dtype='float')
+    lmmc = np.zeros(len(lm), dtype='float')
+    flc = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -677,28 +680,40 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
     Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
     Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
+    Kl[con1] = Kl1
+    Kl[con2] = Kl2
+    Kl[con3] = Kl3
 
     #nr0 = nr[con0]
     nr1 = nr[con1]
     nr2 = nr[con2]
     nr3 = nr[con3]
+    nrd[con1] = nr[con1]
+    nrd[con2] = nr[con2]
+    nrd[con3] = nr[con3]
 
     #lmm0 = lmm[con0]
     lmm1 = lmm[con1]
     lmm2 = lmm[con2]
     lmm3 = lmm[con3]
+    lmmc[con1] = lmm[con1]
+    lmmc[con2] = lmm[con2]
+    lmmc[con3] = lmm[con3]
 
     #fl0 = fl[con0]
     fl1 = fl[con1]
     fl2 = fl[con2]
     fl3 = fl[con3]
+    flc[con1] = fl[con1]
+    flc[con2] = fl[con2]
+    flc[con3] = fl[con3]
 
-    Kl   = np.concatenate([Kl1,Kl2,Kl3])
-    nrd  = np.concatenate([nr1,nr2,nr3])
-    lmmc = np.concatenate([lmm1,lmm2,lmm3])
-    flc  = np.concatenate([fl1,fl2,fl3])
+    #Kl = np.concatenate([Kl1,Kl2,Kl3])
+    #nrd = np.concatenate([nr1,nr2,nr3])
+    #lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    #flc = np.concatenate([fl1,fl2,fl3])
 
-    Alam   = Kl * Av / Rv
+    Alam = Kl * Av / Rv
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
     if f_Alam:
@@ -708,6 +723,7 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
 
 
 def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
+    '''
     #
     # lm (float array) : wavelength, at RF, in AA.
     # fl (float array) : fnu
@@ -715,6 +731,7 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     # nr (int array)   : index, to be used for sorting.
     # Rv: =3.1 for MW.
     #
+    '''
     Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # into micron

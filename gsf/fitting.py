@@ -358,7 +358,7 @@ class Mainbody():
         else:
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
-                self.ndim = int(self.npeak * 3 + self.nAV) # age, Z, and Av.
+                self.nZ = self.npeak
                 print('Metallicity evolution is on.')
             else:
                 self.ZEVOL = 0
@@ -368,8 +368,7 @@ class Mainbody():
                     self.nZ = 0
                 except:
                     self.nZ = 1
-                self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
-
+            self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
 
         # Redshift
         self.ndim += self.fzmc
@@ -1159,19 +1158,16 @@ class Mainbody():
         f_Alog = True
         if f_Alog:
             try:
-                Amin = float(inputs['AMIN'])
-                Amax = float(inputs['AMAX'])
+                self.Amin = float(inputs['AMIN'])
+                self.Amax = float(inputs['AMAX'])
             except:
-                Amin = -5 #-20
-                Amax = 10
-            Aini = -1
+                self.Amin = -5 #-20
+                self.Amax = 10
+            self.Aini = -1
         else:
-            Amin = 0
-            Amax = 1e3
-            Aini = 1
-        self.Amin = Amin
-        self.Amax = Amax
-        self.Aini = Aini
+            self.Amin = 0
+            self.Amax = 1e3
+            self.Aini = 1
 
         if self.SFH_FORM==-99:
             if len(self.age) != len(self.aamin):
@@ -1385,26 +1381,29 @@ class Mainbody():
                     nevery = 1000
 
                 #f_shuffle = False
-                if f_shuffle and self.SFH_FORM==-99: # this needs update for functional form.
+                if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
                     print('Initial shuffle in walkers is on.\n')
                     #pos = np.zeros((self.nwalk, self.ndim),'float')
                     pos = 1e-5 * np.random.randn(self.nwalk, self.ndim)
+                    nshuf = 3.0
                     for ii in range(pos.shape[0]):
                         aa = 0
                         for aatmp,key in enumerate(out.params.valuesdict()):
                             if out.params[key].vary == True:
                                 pos[ii,aa] = out.params[key].value
-                                if np.random.uniform(0,1) > 0.5: #(1. - 1./self.ndim):
-                                    #print(aa,ii,'Shuffle')
+                                if np.random.uniform(0,1) > (1. - 1./self.ndim):
                                     if key[:2] == 'Av':
                                         pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
                                         if pos[ii,aa] < self.Avmin:
                                             pos[ii,aa] = self.Avmin
                                         if pos[ii,aa] > self.Avmax:
                                             pos[ii,aa] = self.Avmax
+                                    elif key[:3] == 'AGE':
+                                        pos[ii,aa] += np.random.uniform(-self.delage*nshuf, self.delage*nshuf)
+                                    elif key[:3] == 'TAU':
+                                        pos[ii,aa] += np.random.uniform(-self.deltau*nshuf, self.deltau*nshuf)
                                     elif key[0] == 'A':
                                         pos[ii,aa] += np.random.uniform(-0.2, 0.2)
-                                        #pos[ii,aa] += np.random.uniform(-1, 1)
                                         if pos[ii,aa] < self.Amin:
                                             pos[ii,aa] = self.Amin
                                         if pos[ii,aa] > self.Amax:
@@ -1422,15 +1421,13 @@ class Mainbody():
                                 aa += 1
 
                     # Run emcee;
-                    #res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                    res = mini.emcee(burn=0, steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                         pos=pos,
                         params=out.params, is_weighted=True, workers=ncpu,
                         check_converge=check_converge, nevery=nevery, float_behavior='posterior')
                 else:
                     # Run emcee without pos;
-                    #res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                    res = mini.emcee(burn=0, steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                         params=out.params, is_weighted=True, workers=ncpu,
                         check_converge=check_converge, nevery=nevery, float_behavior='posterior')
 
@@ -1440,7 +1437,6 @@ class Mainbody():
                 except:
                     res.steps = self.nmc
 
-                print(res.bic)
                 if f_plot_accept:
                     plt.plot(res.acceptance_fraction)
                     plt.xlabel('walker')
@@ -1487,11 +1483,12 @@ class Mainbody():
                 # Run;
                 sampler.run_nested(dlogz=tol, maxiter=maxmcmc, print_progress=self.f_disp)                 
                 res0 = sampler.results # get results dictionary from sampler
-
+                
                 # Dammy just to get structures;
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=False, \
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
-                res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu)
+                res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
+                params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior')
 
                 # Update;
                 nburn = int(self.nmc/2)
@@ -1518,6 +1515,7 @@ class Mainbody():
 
                 # Inserting result from res0 into res structure;
                 res = get_res(flatchain, var_names, params_value, res)
+                res.bic = -99
 
             else:
                 print('Failed. Exiting.')
