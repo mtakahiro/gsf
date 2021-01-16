@@ -1313,23 +1313,22 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     Asum  = np.sum(A50)
 
     # TAU MC
+    # AGE MC
     TAU50 = np.zeros(len(age), dtype='float')
     TAU16 = np.zeros(len(age), dtype='float')
     TAU84 = np.zeros(len(age), dtype='float')
-    for aa in range(len(age)):
-        TAU16[aa] = 10**hdul[1].data['TAU'+str(aa)][0]
-        TAU50[aa] = 10**hdul[1].data['TAU'+str(aa)][1]
-        TAU84[aa] = 10**hdul[1].data['TAU'+str(aa)][2]
-        vals['TAU'+str(aa)] = TAU50[aa]
-    # AGE MC
     AGE50 = np.zeros(len(age), dtype='float')
     AGE16 = np.zeros(len(age), dtype='float')
     AGE84 = np.zeros(len(age), dtype='float')
     for aa in range(len(age)):
+        TAU16[aa] = 10**hdul[1].data['TAU'+str(aa)][0]
+        TAU50[aa] = 10**hdul[1].data['TAU'+str(aa)][1]
+        TAU84[aa] = 10**hdul[1].data['TAU'+str(aa)][2]
         AGE16[aa] = 10**hdul[1].data['AGE'+str(aa)][0]
         AGE50[aa] = 10**hdul[1].data['AGE'+str(aa)][1]
         AGE84[aa] = 10**hdul[1].data['AGE'+str(aa)][2]
-        vals['AGE'+str(aa)] = AGE50[aa]
+        vals['TAU'+str(aa)] = np.log10(TAU50[aa])
+        vals['AGE'+str(aa)] = np.log10(AGE50[aa])
 
     aa = 0
     Av16 = hdul[1].data['Av'+str(aa)][0]
@@ -1372,13 +1371,13 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     except:
         f_dust = False
 
-    chi   = hdul[1].data['chi'][0]
-    chin  = hdul[1].data['chi'][1]
-    fitc  = chin
+    chi = hdul[1].data['chi'][0]
+    chin = hdul[1].data['chi'][1]
+    fitc = chin
 
-    Cz0   = hdul[0].header['Cz0']
-    Cz1   = hdul[0].header['Cz1']
-    zbes  = zp50 
+    Cz0 = hdul[0].header['Cz0']
+    Cz1 = hdul[0].header['Cz1']
+    zbes = zp50 
     zscl = (1.+zbes)
 
     ###############################

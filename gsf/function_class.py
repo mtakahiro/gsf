@@ -606,8 +606,6 @@ class Func:
 class Func_tau:
     '''
     '''
-    #c = 3.e18
-    #d = 10**(73.6/2.5)
 
     def __init__(self, MB, dust_model=0):
         '''

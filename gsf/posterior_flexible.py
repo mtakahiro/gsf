@@ -149,7 +149,6 @@ class Post:
         Returns:
         ========
         If f_like, log Likelihood. Else, log Posterior prob.
-
         '''
         if f_val:
             vals = pars
@@ -159,6 +158,13 @@ class Post:
             f = vals['f']
         else:
             f = 0
+
+        if False:
+            # Checking multiple peak model
+            if self.mb.SFH_FORM != -99 and self.mb.npeak>1:
+                for aa in range(0,self.mb.npeak-1,1):
+                    if vals['A'+str(aa)] > vals['A'+str(aa+1)]:
+                        return lnpreject
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
@@ -175,7 +181,7 @@ class Post:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
-            lnlike  = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale:
@@ -187,7 +193,7 @@ class Post:
         # If no prior, return log likeligood.
         if f_like:
             return lnlike
-
+        
         # Prior
         respr = 0
 

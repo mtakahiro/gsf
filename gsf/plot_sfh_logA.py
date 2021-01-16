@@ -1011,15 +1011,23 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     xSF = np.zeros((len(tt), mmax), dtype='float') # SFR
     yMS = np.zeros((len(tt), mmax), dtype='float') # SFR
 
+    ZZmc = np.zeros((MB.npeak, mmax), dtype='float') 
+    TTmc = np.zeros((MB.npeak, mmax), dtype='float') 
+    TAmc = np.zeros((MB.npeak, mmax), dtype='float') 
+
     if Txmin > np.min(tt):
         Txmin = np.min(tt) * 0.8
 
     mm = 0
     plot_each = True
     while mm<mmax:
-        mtmp  = np.random.randint(len(samples))# + Nburn
+        mtmp = np.random.randint(len(samples))# + Nburn
 
-        Av_tmp = samples['Av'][mtmp]
+        if MB.nAV != 0:
+            Av_tmp = samples['Av'][mtmp]
+        else:
+            Av_tmp = MB.AVFIX
+
         for aa in range(MB.npeak):
             AAtmp = samples['A%d'%aa][mtmp]
             ltautmp = samples['TAU%d'%aa][mtmp]
@@ -1030,11 +1038,13 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
                 except:
                     ZZtmp = MB.ZFIX
 
+            ZZmc[aa,mm] = ZZtmp
+            TAmc[aa,mm] = lagetmp
+            TTmc[aa,mm] = ltautmp
+
             nZtmp,nttmp,natmp = bfnc.Z2NZ(ZZtmp, ltautmp, lagetmp)
             mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
 
-            lagetmp = 0
-            ltautmp = -0.7
             if aa == 0:
                 xSF[:,mm], ySF[:,mm], yMS[:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
             else:
@@ -1067,7 +1077,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     ACp = np.zeros((len(tt),3),'float')
     SFp = np.zeros((len(tt),3),'float')
-    ZCp = np.zeros((len(tt),3),'float')
     ACp[:] = np.log10(yMSp[:,:])
     SFp[:] = np.log10(ySFp[:,:])
 
@@ -1076,9 +1085,17 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     ###################
     msize = np.zeros(len(age), dtype='float')
+    # Metal
+    ZCp = np.zeros((MB.npeak,3),'float')
+    TCp = np.zeros((MB.npeak,3),'float')
+    TTp = np.zeros((MB.npeak,3),'float')
     for aa in range(len(age)):
         if A50[aa]/Asum>flim: # if >1%
             msize[aa] = 200 * A50[aa]/Asum
+
+        ZCp[aa,:] = np.percentile(ZZmc[aa,:], [16,50,84])
+        TCp[aa,:] = np.percentile(TTmc[aa,:], [16,50,84])
+        TTp[aa,:] = np.percentile(TAmc[aa,:], [16,50,84])
 
     if False:
         conA = (msize>=0)
@@ -1210,10 +1227,9 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ACP = [ACp[0,0], ACp[0,1], ACp[0,2]]
     ZCP = [ZCp[0,0], ZCp[0,1], ZCp[0,2]]
     ZLP = ZCP #[ZLp[0,0], ZLp[0,1], ZLp[0,2]]
-    con = (~np.isnan(TC[0,:]))
-    TMW = [np.percentile(TC[0,:][con],16), np.percentile(TC[0,:][con],50), np.percentile(TC[0,:][con],84)]
-    con = (~np.isnan(TL[0,:]))
-    TLW = [np.percentile(TL[0,:][con],16), np.percentile(TL[0,:][con],50), np.percentile(TL[0,:][con],84)]
+    TLW = TTp[0,:]
+    TMW = TTp[0,:]
+    TAW = TCp[0,:]
     for ii in range(len(percs)):
         prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
     for ii in range(len(percs)):
@@ -1227,7 +1243,9 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     for ii in range(len(percs)):
         prihdr['HIERARCH T_MW_%d'%percs[ii]] = ('%.3f'%TMW[ii], 'Mass-weighted age, logGyr')
     for ii in range(len(percs)):
-        prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted agelogGyr')
+        prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted age, logGyr')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH TAU_%d'%percs[ii]] = ('%.3f'%TAW[ii], 'Tau, logGyr')
     for ii in range(len(percs)):
         prihdr['AV_%d'%percs[ii]] = ('%.3f'%Avtmp[ii], 'Dust attenuation, mag')
     prihdu = fits.PrimaryHDU(header=prihdr)

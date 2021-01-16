@@ -1192,10 +1192,20 @@ class Mainbody():
             for aa in range(self.npeak):
                 tauini = (self.taumin+self.taumax)/2.
                 ageini = (self.agemin + self.agemax)/2.
-
                 fit_params.add('A%d'%aa, value=self.Aini, min=self.Amin, max=self.Amax)
-                fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
-                fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=self.agemax)
+
+                if self.npeak>1:
+                    if aa == 0:
+                        fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
+                        fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=np.log10(1.0))
+                    else:
+                        tauini = np.log10(0.3)
+                        ageini = np.log10(1.0)
+                        fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=np.log10(0.3))
+                        fit_params.add('AGE%d'%aa, value=ageini, min=np.log10(1.0), max=self.agemax)
+                else:
+                    fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
+                    fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=self.agemax)
 
                 if self.ZEVOL or aa == 0:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
