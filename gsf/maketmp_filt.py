@@ -969,6 +969,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         print('No spec file is provided.')
         pass
 
+    if f_spec:
+        nthin = 1
+
     #############################
     # READ BB photometry from CAT_BB:
     #############################

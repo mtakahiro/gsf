@@ -1173,21 +1173,21 @@ class Mainbody():
             if len(self.age) != len(self.aamin):
                 for aa in range(len(self.age)):
                     if aa not in self.aamin:
-                        fit_params.add('A'+str(aa), value=Amin, vary=False)
+                        fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1                    
                     else:
-                        fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+                        fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
             else:
                 for aa in range(len(self.age)):
                     if self.age[aa] == 99:
-                        fit_params.add('A'+str(aa), value=Amin, vary=False)
+                        fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                     elif self.age[aa]>agemax and not self.force_agefix:
                         print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                        fit_params.add('A'+str(aa), value=Amin, vary=False)
+                        fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                     else:
-                        fit_params.add('A'+str(aa), value=Aini, min=Amin, max=Amax)
+                        fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
         else:
             for aa in range(self.npeak):
                 tauini = (self.taumin+self.taumax)/2.
