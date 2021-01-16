@@ -337,7 +337,7 @@ class Mainbody():
 
         # Z evolution;
         print('\n##########################')
-        if self.SFH_FORM:
+        if self.SFH_FORM == -99:
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.ndim = int(self.npeak * 2 + self.nAV) # age, Z, and Av.
@@ -364,7 +364,7 @@ class Mainbody():
                     self.nZ = 0
                 except:
                     self.nZ = 1
-                self.ndim = int(self.npeak*2 + self.nZ + self.nAV) # age, Z, and Av.
+                self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
 
 
         # Redshift
@@ -465,7 +465,7 @@ class Mainbody():
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
-        LW  = LW0
+        LW = LW0
         return LW, fLW
 
 

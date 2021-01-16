@@ -716,41 +716,43 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
 
 
-def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), ML=1.):
+def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
     '''
     # sfh: 1:exponential, 4:delayed exp, 5:, 6:lognormal
-    ML : Mass in 1 Amplitude.
-    t0, tau0: in Gyr
+    ML : Total Mass.
     tt: Lookback time, in Gyr
+    tau0: in Gyr
+    t0: age, in Gyr
 
     Returns:
     SFR, in Msun/yr
     MFR, in Msun
 
     '''
-    yy = np.zeros(len(tt), dtype='float') + 1e-20
-    con = (tt<t0)
+    yy = np.zeros(len(tt), dtype='float') 
+    yyms = np.zeros(len(tt), dtype='float')
+    con = (tt<=t0)
     if sfh == 1:
         yy[con] = np.exp((tt[con]-t0)/tau0)
     elif sfh == 4:
-        yy[con] = (t0 - tt[con]) * np.exp((tt[con]-t0)/tau0)
+        yy[con] = (t0-tt[con]) * np.exp((tt[con]-t0)/tau0)
     elif sfh == 6: # lognorm
         con = (tt>0)
         yy[con] = 1. / np.sqrt(2*np.pi*tau0**2) * np.exp(-(np.log(tt[con])-np.log(t0))**2/(2*tau0**2)) / tt[con]
 
     # Total mass calculation;
-    deltt = (tt[1] - tt[0]) #* 1e9
-    yy /= (1e9 * deltt) # now in Msun / yr
+    #deltt = (tt[1] - tt[0]) #* 1e9
+    yyms[:] = np.cumsum(yy[::-1])[::-1] #* deltt * 1e9 # in Msun
+    
+    # Normalization;
+    deltt = tt[1] - tt[0]
+    C = Mtot/np.max(yyms)
+    yyms *= C
+    yy *= C / deltt / 1e9 # in Msun/yr
 
-    '''
-    yyms = np.zeros(len(tt), dtype='float') + 1e-20
-    sfr_flip = yy[::-1]
-    tt_flip = tt[::-1]
-    yyms_flip = np.cumsum(sfr_flip) * deltt * 1e9
-    '''
-    yyms = np.cumsum(yy[::-1])[::-1] * deltt * 1e9 # in Msun
-
-    return tt, yy*ML, yyms*ML
+    yy[~con] = 1e-20
+    yyms[~con] = 1e-20
+    return tt, yy, yyms
 
 
 def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
@@ -771,6 +773,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     if f_silence:
         import matplotlib
         matplotlib.use("Agg")
+    else:
+        import matplotlib
 
     fnc = MB.fnc
     bfnc = MB.bfnc
@@ -834,6 +838,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Fitting Results
     ##################
     SNlim = 3 # avobe which SN line is shown.
+
 
     ###########################
     # Open result file
@@ -1000,8 +1005,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     #ZZtmp = np.zeros(len(age), dtype='float')
     #mslist= np.zeros(len(age), dtype='float')
 
-    ttmin = 0.01
-    tt = np.arange(ttmin,13,ttmin/10)
+    ttmin = 0.001
+    tt = np.arange(ttmin,Tuni+0.5,ttmin/10)
     ySF = np.zeros((len(tt), mmax), dtype='float') # SFR
     xSF = np.zeros((len(tt), mmax), dtype='float') # SFR
     yMS = np.zeros((len(tt), mmax), dtype='float') # SFR
@@ -1028,10 +1033,12 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             nZtmp,nttmp,natmp = bfnc.Z2NZ(ZZtmp, ltautmp, lagetmp)
             mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
 
+            lagetmp = 0
+            ltautmp = -0.7
             if aa == 0:
-                xSF[:,mm], ySF[:,mm], yMS[:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, ML=AAtmp*mslist)
+                xSF[:,mm], ySF[:,mm], yMS[:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
             else:
-                xSFtmp, ySFtmp, yMStmp = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, ML=AAtmp*mslist)
+                xSFtmp, ySFtmp, yMStmp = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
                 ySF[:,mm] += ySFtmp[:]
                 yMS[:,mm] += yMStmp[:]
 
