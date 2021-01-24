@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
@@ -9,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Index &mdash; gsf 1.4 documentation</title>
+  <title>Overview &mdash; gsf 1.4 documentation</title>
   
 
   
@@ -34,8 +33,10 @@
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="index" title="Index" href="#" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installing gsf" href="install.html" />
+    <link rel="prev" title="gsf’s documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -80,10 +81,13 @@
             
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-workflow">Basic Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installing gsf</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
 </ul>
 
             
@@ -129,12 +133,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Index</li>
+      <li>Overview</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
+            <a href="_sources/overview.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -146,11 +152,28 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-
-<h1 id="index">Index</h1>
-
-<div class="genindex-jumpbox">
- 
+  <div class="section" id="overview">
+<span id="id1"></span><h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>gsf is a flexible, python-based SED fitting code designed for extra-galactic science.
+gsf can fit photometric data points, simultaneously with grism spectra if provided,
+to get posterior probability of galaxy physical properties, such as stellar mass, dust attenuation,
+metallicity, as well as star formation and metallicity enrichment histories,</p>
+<p>Since it involves a Markov-Chain Monte-Carlo (MCMC) process, it usually takes more time
+(~few min to ~hour depending on the number of parameters and length of MCMC chains) than
+other SED fitting codes based on chi-square minimization.</p>
+<div class="section" id="basic-workflow">
+<h2>Basic Workflow<a class="headerlink" href="#basic-workflow" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>gsf generates a bunch of templates at z=0 based on either fsps or B-PASS. This is here where you can specify basic parameters related to the templates (IMF, Metallicity, tau).</p></li>
+<li><p>gsf shifts the templates generate above to the input redshift, both in wavelength and flux, to match up with observations including convolution with input filters and morphology if grism data.</p></li>
+<li><p>gsf runs a MCMC chain based on the minimization between data and provided templates.</p></li>
+<li><p>gsf generates graphics (SED plot and history plot).</p></li>
+</ol>
+<img alt="_images/flowchart.png" src="_images/flowchart.png" />
+</div>
+<div class="section" id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+</div>
 </div>
 
 
@@ -158,6 +181,15 @@
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="install.html" class="btn btn-neutral float-right" title="Installing gsf" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="gsf’s documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
