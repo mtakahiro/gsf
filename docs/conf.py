@@ -127,10 +127,10 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'gsftex', 'gsf Documentation',
-     '', 'manual'),
-]
+#latex_documents = [
+#    (master_doc, 'gsftex', 'gsf Documentation',
+#     '', 'manual'),
+#]
 
 
 # -- Options for manual page output ------------------------------------------
@@ -150,7 +150,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'gsf', 'gsf Documentation',
-     author, 'Motishita, T.', 'One line description of project.',
+     author, 'Takahiro Motishita', 'One line description of project.',
      'Miscellaneous'),
 ]
 
