@@ -23,7 +23,8 @@ Basic Workflow
 4. gsf generates graphics (SED plot and history plot).
 
 
-.. image:: ./flowchart.png
+.. image:: ./plot/flowchart.png
+
 
 Limitations
 -----------

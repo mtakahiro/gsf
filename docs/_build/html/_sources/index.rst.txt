@@ -13,6 +13,9 @@ gsf's documentation
    overview.rst
    install.rst
    example.rst
+   parameters.rst
+   input.rst
+   templates.rst
 
 Indices and tables
 ==================

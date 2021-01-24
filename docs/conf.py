@@ -15,6 +15,9 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 
+def setup(app):
+   app.add_stylesheet('css/custom.css')
+
 
 # -- Project information -----------------------------------------------------
 
@@ -34,6 +37,9 @@ master_doc = 'index'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.mathjax',
+    #optionally other extensions...
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -76,6 +82,7 @@ extensions = [
 ]
 
 html_theme = "sphinx_rtd_theme"
+
 
 
 '''
@@ -156,3 +163,72 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+
+
+
+# -- Options for pybtex ----------------------------------------------
+from pybtex.style.formatting.unsrt import Style as UnsrtStyle, date, pages, toplevel
+from pybtex.style.template import * # ... and anything else needed
+from pybtex.plugin import register_plugin
+
+class ADSArxivStyle(UnsrtStyle):
+
+    def format_article(self, e):
+        volume_and_pages = first_of [
+            # volume and pages, with optional issue number
+            optional [
+                join [
+                    field('volume'),
+                    optional['(', field('number'),')'],
+                    ':', pages
+                ],
+            ],
+            # pages only
+            words ['pages', pages],
+        ]
+        myurl = first_of [
+                optional_field('adsurl'),
+                join ['http://arxiv.org/abs/', optional_field('eprint')],
+                optional_field('url'),
+                optional [join ['http://dx.doi.org/', field('doi')]]
+        ]
+        template = toplevel [
+            self.format_names('author'),
+            href [myurl, self.format_title(e, 'title')] \
+                if len(myurl.format_data(e)) > 0 \
+                else tag('strong') [self.format_title(e, 'title')],
+            sentence(capfirst=False) [
+                tag('emph') [field('journal')],
+                optional[ volume_and_pages ],
+                field('year')],
+            sentence(capfirst=False) [ optional_field('note') ],
+        ]
+        return template.format_data(e)
+
+    def format_inproceedings(self, e):
+        myurl = first_of [
+                optional_field('adsurl'),
+                optional [join ['http://arxiv.org/abs/', field('eprint')]],
+                optional_field('url'),
+                optional [join ['http://dx.doi.org/', field('doi')]]
+        ]
+        template = toplevel [
+            sentence [self.format_names('author')],
+            href [myurl, self.format_title(e, 'title')] \
+                if len(myurl.format_data(e)) > 0 \
+                else tag('strong') [self.format_title(e, 'title')],
+            words [
+                'In',
+                sentence(capfirst=False) [
+                    optional[ self.format_editor(e, as_sentence=False) ],
+                    self.format_btitle(e, 'booktitle', as_sentence=False),
+                    self.format_volume_and_series(e, as_sentence=False),
+                    optional[ pages ],
+                ],
+                self.format_address_organization_publisher_date(e),
+            ],
+            sentence(capfirst=False) [ optional_field('note') ],
+        ]
+        return template.format_data(e)
+
+register_plugin('pybtex.style.formatting', 'adsarxiv', ADSArxivStyle)
