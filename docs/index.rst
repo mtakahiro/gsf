@@ -16,6 +16,7 @@ gsf's documentation
    parameters.rst
    input.rst
    templates.rst
+   output.rst
 
 Indices and tables
 ==================

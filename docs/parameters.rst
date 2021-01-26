@@ -3,7 +3,7 @@
 Parameters
 ==========
 
-If one needs a new config file
+If one needs a new config file, run the following script;
 
 .. code-block:: bash
 
@@ -190,9 +190,40 @@ Paramter Description
      - 
 
 
-**Parameters for functional-form SFHs**
+**Parameters for far-infrared components**
+(Support starts from version1.4)
 
-This is supported from version1.4.
+.. list-table::
+   :widths: 10 5 20
+   :header-rows: 1   
+   :class: tight-table   
+
+   * - Parameter
+     - Type
+     - Description
+   * - FIR_FILTER
+     - str 
+     - Filters of FIR photometry. Comma-separated string, where each string should match \*.fil files in DIR_FILT.
+   * - CAT_BB_DUST
+     - str 
+     - Directory for the FIT photometric catalog, in the same format as for CAT_BB.
+   * - TDUST_HIG
+     - float
+     - Maximum temperature.
+   * - TDUST_LOW
+     - float
+     - Minimum temperature.
+   * - TDUST_DEL
+     - float
+     - Delta T for temperature paramter, in Kelvin.
+   * - DIR_DUST
+     - str
+     - Directory for FIR templates.
+
+
+
+**Parameters for functional-form SFHs**
+(Support starts from version1.4)
 
 .. list-table::
    :widths: 10 5 20
