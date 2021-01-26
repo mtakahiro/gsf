@@ -11,7 +11,6 @@ Requirements
 - multiprocess
 - lmfit (no older than ver1.0.0)
 - emcee (no older than ver3.0.0)
-- corner
 - python-fsps (ver0.3.0)
 - fsps
 

@@ -6,7 +6,7 @@ Input files
 
 Broadband catalog
 -----------------
-gsf reads an ascii catalog specified in CAT\_BB in the configuration file. The catalog format is similar to EAzY and FAST \citep{brammer08,kriek09}, and should be;
+gsf reads the ascii catalog specified in CAT\_BB in the configuration file. The catalog format is similar to EAzY and FAST \citep{brammer08,kriek09}, and should be;
 
 # ID redshift [flux for filter 1] [flux error for filter 1]...
 
@@ -28,7 +28,7 @@ gsf will find the column with ID that matches "ID" in the configuration file.
 
 Spectral data
 -------------
-gsf reads an ascii spectral file of for the target object, in DIR\_EXTR in a configuration file. The file should be specified in [SPEC\_FILE], whose formats are;
+gsf reads the ascii spectral file for the target object, in DIR\_EXTR in the configuration file. The file should be specified in [SPEC\_FILE], whose formats are;
 
 #  Wavelength_in_AA Flux_nu Error_in_flux 
 

@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Generating templates" href="templates.html" />
     <link rel="prev" title="Parameters" href="parameters.html" /> 
 </head>
 
@@ -92,6 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#spectral-data">Spectral data</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Generating templates</a></li>
 </ul>
 
             
@@ -160,7 +162,7 @@
 <span id="input"></span><h1>Input files<a class="headerlink" href="#input-files" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="broadband-catalog">
 <h2>Broadband catalog<a class="headerlink" href="#broadband-catalog" title="Permalink to this headline">¶</a></h2>
-<p>gsf reads an ascii catalog specified in CAT_BB in the configuration file. The catalog format is similar to EAzY and FAST citep{brammer08,kriek09}, and should be;</p>
+<p>gsf reads the ascii catalog specified in CAT_BB in the configuration file. The catalog format is similar to EAzY and FAST citep{brammer08,kriek09}, and should be;</p>
 <p># ID redshift [flux for filter 1] [flux error for filter 1]…</p>
 <p>while redshift column is optional.</p>
 <p>The flux unit has to be in f_nu, with a magnitude zero point <span class="math notranslate nohighlight">\(m_0=25\)</span>, i.e.</p>
@@ -173,7 +175,7 @@ gsf will find the column with ID that matches “ID” in the configuration file
 </div>
 <div class="section" id="spectral-data">
 <h2>Spectral data<a class="headerlink" href="#spectral-data" title="Permalink to this headline">¶</a></h2>
-<p>gsf reads an ascii spectral file of for the target object, in DIR_EXTR in a configuration file. The file should be specified in [SPEC_FILE], whose formats are;</p>
+<p>gsf reads the ascii spectral file for the target object, in DIR_EXTR in the configuration file. The file should be specified in [SPEC_FILE], whose formats are;</p>
 <p>#  Wavelength_in_AA Flux_nu Error_in_flux</p>
 <p>The unit of flux and error has to be in f_nu with a magnitude zero point <span class="math notranslate nohighlight">\(m_0=25\)</span>.</p>
 <p>For grism spectra, users are asked to provide morphological parameters of the target. In the current version, gsf convolves model templates either with a 1-dimensional Moffat function,</p>
@@ -195,6 +197,8 @@ gsf will find the column with ID that matches “ID” in the configuration file
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="templates.html" class="btn btn-neutral float-right" title="Generating templates" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="parameters.html" class="btn btn-neutral float-left" title="Parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -11,7 +11,7 @@ An example data set is stored in ./gsf/examples/
     python run_gsf.py test.input <Executing-flag>
 
 
-If one needs a new config file
+If one needs a new config file (\*.input),
 
 .. code-block:: bash
 
