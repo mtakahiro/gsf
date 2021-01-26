@@ -5,7 +5,7 @@ ZGAL 2.0
 CZ0 1.0
 CZ1 1.0
 BPASS 0
-DIR_TEMP ./templates/nonebular_miles/
+DIR_TEMP ./templates/nonebular_pdv/
 DIR_FILT ./filter/
 AGE 0.01,0.03,0.1,0.3,0.5,0.7,1.0,1.5,2.0,3.0
 NIMF 0
