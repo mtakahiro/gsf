@@ -41,7 +41,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
-    PA = MB.PA
     Z = MB.Zall
     age = MB.age
     nage = MB.nage
@@ -106,7 +105,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
     try:
         zbes = hdul[0].header['zmc']
@@ -126,7 +125,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -207,7 +206,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Load Pickle
     ##############################
     samplepath = MB.DIR_OUT 
-    pfile = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    pfile = 'chain_' + ID + '_corner.cpkl'
 
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
@@ -284,7 +283,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     SFR_SED = np.zeros(mmax,dtype='float')
 
     # ASDF;
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
@@ -635,7 +634,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     colms  = fits.ColDefs(col02)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    file_sfh = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits'
+    file_sfh = MB.DIR_OUT + 'SFH_' + ID + '.fits'
     hdu.writeto(file_sfh, overwrite=True)
 
     # Attach to MB;
@@ -713,7 +712,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2t.set_xlim(Txmin, Txmax)
 
     # Save
-    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
+    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
 def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
@@ -779,7 +778,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
-    PA = MB.PA
     Z = MB.Zall
     age = MB.age
     nage = MB.nage
@@ -843,7 +841,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
     try:
         zbes = hdul[0].header['zmc']
@@ -863,7 +861,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -944,7 +942,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Load Pickle
     ##############################
     samplepath = MB.DIR_OUT 
-    pfile = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    pfile = 'chain_' + ID + '_corner.cpkl'
 
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
@@ -996,7 +994,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     SFR_SED = np.zeros(mmax,dtype='float')
 
     # ASDF;
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
@@ -1214,7 +1212,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Header
     prihdr = fits.Header()
     prihdr['ID'] = ID
-    prihdr['PA'] = PA
     prihdr['z'] = zbes
     prihdr['RA'] = RA
     prihdr['DEC'] = DEC
@@ -1289,7 +1286,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     colms  = fits.ColDefs(col02)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    file_sfh = MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits'
+    file_sfh = MB.DIR_OUT + 'SFH_' + ID + '.fits'
     hdu.writeto(file_sfh, overwrite=True)
 
     # Attach to MB;
@@ -1367,11 +1364,11 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax2t.set_xlim(Txmin, Txmax)
 
     # Save
-    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '_pcl.png', dpi=dpi)
+    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
 
-def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
+def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh=0.01):
 
     '''
@@ -1396,7 +1393,7 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
     lmmin = 10.3
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
     age = np.asarray(age)
 
@@ -1412,7 +1409,7 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
@@ -1443,7 +1440,7 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -1500,7 +1497,7 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
     # Load Pickle
     ##############################
     samplepath = './'
-    pfile = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    pfile = 'chain_' + ID + '_corner.cpkl'
 
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
@@ -1575,7 +1572,7 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
 
         Av_tmp = samples['Av'][mtmp]
 
-        f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
+        f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
         sedpar = f0[1]
         f1     = fits.open(DIR_TMP + 'ms.fits')
         mloss  = f1[1].data
@@ -1709,14 +1706,14 @@ def get_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.
 
     coldefs_spec = fits.ColDefs(col00)
     hdu = fits.BinTableHDU.from_columns(coldefs_spec)
-    hdu.writeto(DIR_TMP + 'obsspec_' + ID + '_PA' + PA + '.fits', overwrite=True)
+    hdu.writeto(DIR_TMP + 'obsspec_' + ID + '.fits', overwrite=True)
 
     coldefs_spec = fits.ColDefs(col01)
     hdu = fits.BinTableHDU.from_columns(coldefs_spec)
-    hdu.writeto(DIR_TMP + 'obshist_' + ID + '_PA' + PA + '.fits', overwrite=True)
+    hdu.writeto(DIR_TMP + 'obshist_' + ID + '.fits', overwrite=True)
 
 
-def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
+def plot_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
     
     '''
@@ -1739,7 +1736,7 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     lmmin = 10.3
 
     nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
+    fnc  = Func(ID, Z, nage, dust_model=dust_model) # Set up the number of Age/ZZ
     bfnc = Basic(Z)
     age = np.asarray(age)
 
@@ -1765,7 +1762,7 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ###########################
     # Open result file
     ###########################
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
     zbes = hdul[0].header['z']
     chinu= hdul[1].data['chi']
@@ -1785,7 +1782,7 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID + '_PA' + PA + '.cat'
+        file = 'templates/spec_obs_' + ID + '.cat'
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -1811,7 +1808,7 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     Tuni0 = (Tuni - age[:])
 
     # Open summary;
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '.fits'
     fd   = fits.open(file)[1].data
     #print(fits.open(file)[1].header)
     Avtmp = fd['Av0']
@@ -1820,14 +1817,14 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     #ax2.plot(vj[1],uv[1],color='gray',marker='s',ms=3)
 
     # SFH
-    file = DIR_TMP + 'obshist_' + ID + '_PA' + PA + '.fits'
+    file = DIR_TMP + 'obshist_' + ID + '.fits'
     fd   = fits.open(file)[1].data
     age  = fd['age']
     sfh  = fd['sfh']
     zh   = fd['zh']
 
     # Open FSPS temp;
-    file = DIR_TMP + 'obsspec_' + ID + '_PA' + PA + '.fits'
+    file = DIR_TMP + 'obsspec_' + ID + '.fits'
     fd   = fits.open(file)[1].data
     wave = fd['wavelength']
     nr   = fd['colnum']
@@ -1913,4 +1910,4 @@ def plot_evolv(MB, ID, PA, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
 
     ax3.legend(loc=3)
     #plt.show()
-    plt.savefig('hist_' + ID + '_PA' + PA + '.pdf')
+    plt.savefig('hist_' + ID + '.pdf')

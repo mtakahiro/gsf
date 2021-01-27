@@ -217,7 +217,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
     inputs = MB.inputs
     ID = MB.ID
-    PA = MB.PA
     age = MB.age
     nage = MB.nage
     Z = MB.Zall
@@ -436,14 +435,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 f_morp = True
                 try:
                     mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                    #fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                    fm    = ascii.read(DIR_EXTR + mor_file)
-                    Amp   = fm['A']
+                    fm = ascii.read(DIR_EXTR + mor_file)
+                    Amp = fm['A']
                     gamma = fm['gamma']
                     if inputs['MORP'] == 'moffat':
-                        alp   = fm['alp']
+                        alp = fm['alp']
                     else:
-                        alp   = 0
+                        alp = 0
                 except Exception:
                     print('Error in reading morphology params.')
                     print('No morphology convolution.')
@@ -746,13 +744,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
     # Save;
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all_' + ID + '_PA' + PA + '.asdf', all_array_compression='zlib')
+    af.write_to(DIR_TMP + 'spec_all_' + ID + '.asdf', all_array_compression='zlib')
 
     ##########################################
     # For observation.
     # Write out for the Multi-component fitting.
     ##########################################
-    fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
     for ii in range(len(lm)):
         if fgrs[ii]==0: # G102
@@ -776,7 +774,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
 
     fw.close()
-    fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
     if f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
@@ -787,8 +785,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     fw.close()
 
     # BB phot
-    fw     = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
-    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat', 'w')
+    fw     = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
+    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2.))
@@ -803,7 +801,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     fw_rem.close()
 
     # Dust
-    fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
     if f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
@@ -834,7 +832,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
     inputs = MB.inputs
     ID = MB.ID
-    PA = MB.PA
     age = MB.ageparam
     nage = MB.nage
     tau = MB.tau
@@ -1340,13 +1337,13 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
     # Save;
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all_' + ID + '_PA' + PA + '.asdf', all_array_compression='zlib')
+    af.write_to(DIR_TMP + 'spec_all_' + ID + '.asdf', all_array_compression='zlib')
 
     ##########################################
     # For observation.
     # Write out for the Multi-component fitting.
     ##########################################
-    fw = open(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
     for ii in range(len(lm)):
         if fgrs[ii]==0: # G102
@@ -1370,7 +1367,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
 
     fw.close()
-    fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
     if f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
@@ -1381,8 +1378,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     fw.close()
 
     # BB phot
-    fw     = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', 'w')
-    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat', 'w')
+    fw     = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
+    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
             fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2.))
@@ -1397,7 +1394,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     fw_rem.close()
 
     # Dust
-    fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '_PA' + PA + '.cat', 'w')
+    fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
     if f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:

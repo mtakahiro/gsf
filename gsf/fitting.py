@@ -73,10 +73,7 @@ class Mainbody():
         else:
             self.ID = inputs['ID']
         print('\nFitting : %s\n'%self.ID)
-        try:
-            self.PA = inputs['PA']
-        except:
-            self.PA = '00'
+
         try:
             self.zgal = float(inputs['ZGAL'])
             self.zmin = None
@@ -285,11 +282,16 @@ class Mainbody():
         if self.f_bpass == 0:
             try:
                 self.ZFIX = float(inputs['ZFIX'])
-                self.delZ = 0.0001
-                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
+                try:
+                    self.delZ = float(inputs['DELZ'])
+                    self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                except:
+                    self.delZ = 0.0001
+                    self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+                
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.delZ = float(inputs['DELZ'])
@@ -307,8 +309,8 @@ class Mainbody():
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
                     print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
                 self.ZFIX = Zbpass[iiz]
-                self.delZ = 0.0001
-                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
+                self.delZ = float(inputs['DELZ'])
+                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
@@ -494,7 +496,7 @@ class Mainbody():
         ##############
         # Spectrum
         ##############
-        dat   = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '_PA' + self.PA + '.cat', format='no_header')
+        dat   = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
         NR    = dat['col1']#dat[:,0]
         x     = dat['col2']#dat[:,1]
         fy00  = dat['col3']#dat[:,2]
@@ -513,7 +515,7 @@ class Mainbody():
         # Broadband
         ##############
         try:
-            dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '_PA' + self.PA + '.cat', format='no_header')
+            dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '.cat', format='no_header')
             NRbb = dat['col1']
             xbb  = dat['col2']
             fybb = dat['col3']
@@ -552,7 +554,7 @@ class Mainbody():
 
         # Append data;
         if add_fir:
-            dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '_PA' + self.PA + '.cat')
+            dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '.cat')
             nr_d = dat_d['col1']
             x_d = dat_d['col2']
             fy_d = dat_d['col3']
@@ -982,7 +984,7 @@ class Mainbody():
             ax1.legend(loc=0)
             
             # Save:
-            file_out = self.DIR_OUT + 'zprob_' + self.ID + '_PA' + self.PA + '.png'
+            file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
             print('Figure is saved in %s'%file_out)
 
             if f_interact:
@@ -1061,6 +1063,7 @@ class Mainbody():
         sigz (float): confidence interval for redshift fit.
         ezmin (float): minimum error in redshift
 
+        f_plot_accept (bool) : Output acceptance plot of mcmc chains.
         f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
         check_converge (bool): Check convergence at every certain number.
         '''
@@ -1079,8 +1082,7 @@ class Mainbody():
         start = timeit.default_timer()
 
         ID0 = self.ID
-        PA0 = self.PA
-
+        
         inputs = self.inputs
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
@@ -1188,6 +1190,7 @@ class Mainbody():
                         self.ndim -= 1
                     else:
                         fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
+
         else:
             for aa in range(self.npeak):
                 tauini = (self.taumin+self.taumax)/2.
@@ -1211,7 +1214,6 @@ class Mainbody():
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
 
 
-
         #####################
         # Dust attenuation
         #####################
@@ -1222,27 +1224,22 @@ class Mainbody():
             self.Avmax = Avfix
         except:
             try:
-                Avmin = float(inputs['AVMIN'])
-                Avmax = float(inputs['AVMAX'])
-                Avini = (Avmax+Avmin)/2.
-                Avini = 0.
-                if Avmin == Avmax:
-                    fit_params.add('Av', value=Avini, vary=False)
-                    self.Avmin = Avini
-                    self.Avmax = Avini
+                self.Avmin = float(inputs['AVMIN'])
+                self.Avmax = float(inputs['AVMAX'])
+                self.Avini = (self.Avmax+self.Avmin)/2.
+                self.Avini = 0.
+                if self.Avmin == self.Avmax:
+                    fit_params.add('Av', value=self.Avini, vary=False)
+                    self.Avmin = self.Avini
+                    self.Avmax = self.Avini
                 else:
-                    fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
-                    self.Avmin = Avmin
-                    self.Avmax = Avmax
+                    fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
             except:
-                Avmin = 0.0
-                Avmax = 4.0
-                Avini = (Avmax-Avmin)/2. # 0.5
-                Avini = 0.5
-                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
-                fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
-                self.Avmin = Avmin
-                self.Avmax = Avmax
+                self.Avmin = 0.
+                self.Avmax = 4.
+                self.Avini = 0.5 #(Avmax-Avmin)/2. 
+                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
+                fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
 
         #####################
         # Metallicity
@@ -1255,16 +1252,15 @@ class Mainbody():
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
         else:
             try:
-                ZFIX = float(inputs['ZFIX'])
                 aa = 0
-                fit_params.add('Z'+str(aa), value=ZFIX, vary=False)
+                fit_params.add('Z'+str(aa), value=self.ZFIX, vary=False)
             except:
                 aa = 0
                 if np.min(self.Zall)==np.max(self.Zall):
                     fit_params.add('Z'+str(aa), value=np.min(self.Zall), vary=False)
                 else:
-                    #fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
+
 
         ####################################
         # Initial Metallicity Determination
@@ -1272,7 +1268,7 @@ class Mainbody():
         # Get initial parameters
         if not skip_fitz or out == None:
             out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
-                dict['fy'], dict['ey'], dict['wht2'], self.ID, self.PA)
+                dict['fy'], dict['ey'], dict['wht2'], self.ID)
 
             # Best fit
             csq = out.chisqr
@@ -1380,7 +1376,7 @@ class Mainbody():
                 if nevery < 1000:
                     nevery = 1000
 
-                #f_shuffle = False
+                
                 if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
                     print('Initial shuffle in walkers is on.\n')
                     #pos = np.zeros((self.nwalk, self.ndim),'float')
@@ -1534,7 +1530,7 @@ class Mainbody():
             burnin   = int(self.nmc/2)
             #burnin   = 0 # Since already burnt in.
             savepath = self.DIR_OUT
-            cpklname = 'chain_' + self.ID + '_PA' + self.PA + '_corner.cpkl'
+            cpklname = 'chain_' + self.ID + '_corner.cpkl'
             savecpkl({'chain':flatchain,
                           'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
                          savepath+cpklname) # Already burn in
@@ -1560,7 +1556,7 @@ class Mainbody():
                 truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
-                fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_PA' + self.PA + '_corner.png')
+                fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_corner.png')
                 self.cornerplot_fig = fig1
 
             # Analyze MCMC results.
@@ -1651,7 +1647,6 @@ class Mainbody():
         start = timeit.default_timer()
 
         ID0 = self.ID
-        PA0 = self.PA
 
         inputs = self.inputs
         if not os.path.exists(self.DIR_TMP):
@@ -1802,7 +1797,7 @@ class Mainbody():
         # Get initial parameters
         print('Start quick fit;')
         out,chidef,Zbest = get_leastsq(self, self.Zall,self.fneld,self.age,fit_params,class_post.residual,\
-            dict['fy'], dict['ey'], dict['wht2'],self.ID,self.PA)
+            dict['fy'], dict['ey'], dict['wht2'],self.ID)
 
         # Best fit
         csq  = out.chisqr

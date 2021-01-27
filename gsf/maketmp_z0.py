@@ -314,15 +314,15 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
         # open spectral file;
         #
         if 10**(Z[zz])*Zsun>1e-4:
-            zstrtmp  = round(10**(Z[zz])*Zsun/10,5)
+            zstrtmp = round(10**(Z[zz])*Zsun/10,5)
             zstrtmp2 = '%.6s'%(zstrtmp)
-            z_str    = zstrtmp2[3:]
+            z_str = zstrtmp2[3:]
             if len(z_str)<3:
                 z_str = z_str+'0'
         elif 10**(Z[zz])*Zsun>1e-5:
-            z_str    = 'em4'
+            z_str = 'em4'
         else:
-            z_str    = 'em5'
+            z_str = 'em5'
 
         file_sed = '%sspectra-%s-imf%s.z%s.dat'%(DIR_LIB,bin_str,imf_str,z_str)
         file_stm = '%sstarmass-%s-imf%s.z%s.dat'%(DIR_LIB,bin_str,imf_str,z_str)

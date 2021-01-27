@@ -16,7 +16,7 @@ import timeit
 start = timeit.default_timer()
 
 
-def run_gsf_template(inputs, fplt=0):
+def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     '''
     Purpose:
     ========
@@ -25,36 +25,63 @@ def run_gsf_template(inputs, fplt=0):
 
     '''
 
-    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo)
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman)
+
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
 
-    MB.fnc  = Func(MB) # Set up the number of Age/ZZ
-    MB.bfnc = Basic(MB)
+    #
+    # Then load Func and Basic with param range.
+    #
+    if MB.SFH_FORM == -99:
+        MB.fnc = Func(MB) # Set up the number of Age/ZZ
+        MB.bfnc = Basic(MB)
+    else:
+        MB.fnc = Func_tau(MB) # Set up the number of Age/ZZ
+        MB.bfnc = Basic_tau(MB)
+
 
     #
     # 0. Make basic templates
     #
-    if fplt<1:
-        lammax = 160000 / (1.+MB.zgal) # AA
-        if MB.SFH_FORM == -99:
-            if MB.f_bpass == 1:
-                from .maketmp_z0 import make_tmp_z0_bpass
-                make_tmp_z0_bpass(MB, lammax=lammax)
+    if fplt == 0 or fplt == 1:
+        #
+        # 0. Make basic templates
+        #
+        if fplt==0:
+            lammax = 40000 * (1.+MB.zgal) # AA
+            if MB.f_dust:
+                lammax = 2000000 * (1.+MB.zgal) # AA
+
+            if MB.SFH_FORM == -99:
+                if MB.f_bpass == 1:
+                    from .maketmp_z0 import make_tmp_z0_bpass
+                    make_tmp_z0_bpass(MB, lammax=lammax)
+                else:
+                    from .maketmp_z0 import make_tmp_z0
+                    make_tmp_z0(MB, lammax=lammax)
             else:
-                from .maketmp_z0 import make_tmp_z0
-                make_tmp_z0(MB, lammax=lammax)
-        else:
-            from .maketmp_z0_tau import make_tmp_z0
-            make_tmp_z0(MB, lammax=lammax)
-            
+                from .maketmp_z0_tau import make_tmp_z0
+                make_tmp_z0(MB, lammax=lammax)            
 
     #
     # 1. Start making redshifted templates.
     #
     if fplt<2:
-        maketemp(MB)
+        #
+        # 1. Start making redshifted templates.
+        #
+        if MB.SFH_FORM == -99:
+            maketemp(MB, tau_lim=tau_lim)
+        else:
+            maketemp_tau(MB, tau_lim=tau_lim)
 
+    # Read temp from asdf;
+    # This has to happend after fplt==1 and before fplt>=2.
+    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
+
+    '''
     #
     # 2. Load templates
     #
@@ -63,6 +90,7 @@ def run_gsf_template(inputs, fplt=0):
     if MB.f_dust:
         MB.lib_dust = MB.fnc.open_spec_dust_fits(MB, fall=0)
         MB.lib_dust_all = MB.fnc.open_spec_dust_fits(MB, fall=1)
+    '''
 
     # How to get SED?
     if False:
@@ -143,7 +171,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
-    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
     flag_suc = 0
@@ -165,7 +193,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
             flag_suc = MB.main(cornerplot=cornerplot)
             # If still in the loop, read again.
-            MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+            MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
         # Total calculation time
         stop = timeit.default_timer()

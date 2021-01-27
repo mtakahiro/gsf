@@ -59,7 +59,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
     ID   = MB.ID
-    PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
     nage = MB.nage 
@@ -99,7 +98,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     ndim_eff = hdul[0].header['NDIM']
@@ -185,7 +184,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
         MB.dict = MB.read_data(Cz0, Cz1, zbes)
 
-    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
     NR   = MB.dict['NR'] #dat[:, 0]
     x    = MB.dict['x'] #dat[:, 1]
     fy   = MB.dict['fy'] #dat[:, 2]
@@ -229,7 +228,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Mass-to-Light ratio.
     ######################
     ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     for aa in range(len(age)):
@@ -295,7 +294,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         try:
             # For any data removed fron fit (i.e. IRAC excess):
-            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
+            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
             NR_ex = data_ex['col1']
         except:
             NR_ex = []
@@ -306,11 +305,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
         
         for ii in range(len(xbb)):
-            if NR[ii] in NR_ex[:]:
+            if NRbb[ii] in NR_ex[:]:
                 conebb_ls[ii] = False
-        
+
         ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, yerr=leng,\
-            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, linestyle='',color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
+            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, linestyle='', color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
 
 
     # For any data removed fron fit (i.e. IRAC excess):
@@ -320,7 +319,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #col_ex = 'limegreen'
         #col_ex = 'r'
         # Currently, this file is made after FILTER_SKIP;
-        data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
+        data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
         x_ex = data_ex['col2']
         fy_ex = data_ex['col3']
         ey_ex = data_ex['col4']
@@ -361,11 +360,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
         y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
 
-        #ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        #ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         
         # data;
-        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '_PA' + MB.PA + '.cat')
+        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
         NRbbd = dat_d['col1']
         xbbd = dat_d['col2']
         fybbd = dat_d['col3']
@@ -394,6 +391,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d, color='r', linestyle='', linewidth=0.5, zorder=4)
         except:
             pass
+
 
     #
     # This is for UVJ color time evolution.
@@ -438,7 +436,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         f_uvj = False
         if f_uvj:
             if jj == 0:
-                fwuvj = open(MB.DIR_OUT + ID + '_PA' + PA + '_uvj.txt', 'w')
+                fwuvj = open(MB.DIR_OUT + ID + '_uvj.txt', 'w')
                 fwuvj.write('# age uv vj\n')
             ysum_wid = ysum * 0
             for kk in range(0,ii+1,1):
@@ -534,12 +532,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         eAMu[ii] = AM84[ii] - AM50[ii]
         AC50[ii] = np.sum(AM50[ii:])
 
-
     ################
     # Lines
     ################
     LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
-    #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 6563, 6717, 6731]
     FLW = np.zeros(len(LN),dtype='int')
 
     ####################
@@ -547,13 +543,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ####################
     DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm #, **cosmo) # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
-    #dA     = MB.cosmo.angular_diameter_distance(zbes).value
-    #dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
-    #twokpc = 5.0/dkpc/0.06 # in pixel
-
     if f_grsm:
         print('This function (write_lines) needs to be revised.')
-        write_lines(ID, PA, zbes, DIR_OUT=MB.DIR_OUT)
+        write_lines(ID, zbes, DIR_OUT=MB.DIR_OUT)
 
 
     ##########################
@@ -574,11 +566,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
         print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
 
+        #ax1.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        #ax1.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
     #
     # From MCMC chain
     #
-    file  = MB.DIR_OUT + 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
     data  = loadcpkl(file)
     try:
@@ -785,9 +779,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     chi_nd = 0.0
     if f_chind:
         f_ex = np.zeros(len(fy), 'int')
-        for ii in range(len(fy)):
-            if f_exclude:
-                if xbb[ii] in x_ex:
+        if f_exclude:
+            for ii in range(len(fy)):
+                if x[ii] in x_ex:
                     f_ex[ii] = 1
 
         con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
@@ -1092,7 +1086,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # SED params in plot
     #
     if f_label:
-        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits')[0].header
+        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if f_dust:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
@@ -1194,9 +1188,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ####################
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=dpi)
+        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=dpi)
+        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
@@ -1241,7 +1235,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
     bfnc = MB.bfnc #Basic(Z)
     ID   = MB.ID
-    PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
     nage = MB.nage 
@@ -1281,7 +1274,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     ndim_eff = hdul[0].header['NDIM']
@@ -1390,7 +1383,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
         MB.dict = MB.read_data(Cz0, Cz1, zbes)
 
-    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
     NR   = MB.dict['NR'] #dat[:, 0]
     x    = MB.dict['x'] #dat[:, 1]
     fy   = MB.dict['fy'] #dat[:, 2]
@@ -1434,7 +1427,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Mass-to-Light ratio.
     ######################
     #ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     #for aa in range(len(age)):
@@ -1500,7 +1493,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         try:
             # For any data removed fron fit (i.e. IRAC excess):
-            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
+            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
             NR_ex = data_ex['col1']
         except:
             NR_ex = []
@@ -1525,7 +1518,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         #col_ex = 'limegreen'
         #col_ex = 'r'
         # Currently, this file is made after FILTER_SKIP;
-        data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '_removed.cat')
+        data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
         x_ex = data_ex['col2']
         fy_ex = data_ex['col3']
         ey_ex = data_ex['col4']
@@ -1567,7 +1560,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         #ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         
         # data;
-        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '_PA' + MB.PA + '.cat')
+        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
         NRbbd = dat_d['col1']
         xbbd = dat_d['col2']
         fybbd = dat_d['col3']
@@ -1688,7 +1681,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Plot
     #############
     ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     eAAl = np.zeros(len(age),dtype='float')
@@ -1735,7 +1728,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     if f_grsm:
         print('This function (write_lines) needs to be revised.')
-        write_lines(ID, PA, zbes, DIR_OUT=MB.DIR_OUT)
+        write_lines(ID, zbes, DIR_OUT=MB.DIR_OUT)
 
 
     ##########################
@@ -1760,7 +1753,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #
     # From MCMC chain
     #
-    file  = MB.DIR_OUT + 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
     data  = loadcpkl(file)
     try:
@@ -2263,7 +2256,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # SED params in plot
     #
     if f_label:
-        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '_PA' + PA + '.fits')[0].header
+        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if f_dust:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
@@ -2365,549 +2358,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ####################
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_PA' + PA + '_spec.pdf', dpi=dpi)
+        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_PA' + PA + '_spec.png', dpi=dpi)
-
-
-def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
-    '''
-    '''
-    import matplotlib
-    import matplotlib.cm as cm
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Zall)
-
-    fig = plt.figure(figsize=(3,3))
-    fig.subplots_adjust(top=0.96, bottom=0.14, left=0.2, right=0.96, hspace=0.15, wspace=0.25)
-    ax1 = fig.add_subplot(111)
-
-    DIR_TMP = './templates/'
-    ####################
-    # MCMC corner plot.
-    ####################
-    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(os.path.join('./'+file))
-
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        samples = data['chain'][:]
-    except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-
-
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
-    sedpar = f0[1]
-
-    getcmap   = matplotlib.cm.get_cmap('jet')
-    nc        = np.arange(0, nmc, 1)
-    col = getcmap((nc-0)/(nmc-0))
-
-    #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nmc, dtype='float')
-    Avtmp= np.zeros(nmc, dtype='float')
-    Ztmp = np.zeros(nmc, dtype='float')
-    Ttmp = np.zeros(nmc, dtype='float')
-    ACtmp= np.zeros(nmc, dtype='float')
-
-
-    for kk in range(0,5000,1):
-        #nr = kk # np.random.randint(len(samples))
-        nr = np.random.randint(len(samples))
-
-        Avtmp[kk] = samples['Av'][nr]
-        for ss in range(len(age)):
-            AA_tmp = samples['A'+str(ss)][nr]
-            ZZ_tmp = samples['Z'+str(ss)][nr]
-
-            nZtmp  = bfnc.Z2NZ(ZZ_tmp)
-            mslist = sedpar.data['ML_'+str(nZtmp)][ss]
-
-            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
-            Ttmp[kk]  += age[ss] * AA_tmp * mslist
-            ACtmp[kk] += AA_tmp * mslist
-
-        Ztmp[kk] /= ACtmp[kk]
-        Ttmp[kk] /= ACtmp[kk]
-        Ntmp[kk]  = kk
-
-
-    x1min, x1max = np.log10(0.1), np.log10(4) #np.max(A50/Asum)+0.1
-    y1min, y1max = -0.8,.6 #np.max(A50/Asum)+0.1
-
-    xbins = np.arange(x1min, x1max, 0.01)
-    ybins = np.arange(y1min, y1max, 0.01)
-
-    xycounts,_,_ = np.histogram2d(np.log10(Ttmp), np.log10(Ztmp), bins=[xbins,ybins])
-    ax1.contour(xbins[:-1], ybins[:-1], xycounts.T, 4, linewidths=np.arange(.5, 4, 0.1), colors='k')
-
-    ax1.scatter(np.log10(Ttmp), np.log10(Ztmp), c='r', s=1, marker='.', alpha=0.1)
-    #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-    #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-
-    ax1.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-    ax1.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
-
-    #ax2.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-    #ax2.set_ylabel('$A_V$/mag', fontsize=12)
-
-    #ax3.set_xlabel('$\log Z_*/Z_\odot$', fontsize=12)
-    #ax3.set_ylabel('$A_V$/mag', fontsize=12)
-
-    ax1.set_xlim(x1min, x1max)
-    ax1.set_ylim(y1min, y1max)
-
-    ax1.yaxis.labelpad = -1
-
-    plt.savefig('TZ_' + ID + '_PA' + PA + '_corner.pdf')
-    plt.close()
-
-
-def plot_corner_physparam_cum_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
-    '''
-    # Creat "cumulative" png for gif image.
-    #
-    #
-    # If you like to
-    # Creat temporal png for gif image.
-    #
-    # snlimbb: SN limit to show flux or up lim in SED.
-    #
-    '''
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Zall)
-
-    ###########################
-    # Open result file
-    ###########################
-    # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID, PA, fall=0)
-    lib_all = fnc.open_spec_fits(ID, PA, fall=1)
-
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
-    hdul = fits.open(file) # open a FITS file
-
-    # Redshift MC
-    zp50  = hdul[1].data['zmc'][1]
-    zp16  = hdul[1].data['zmc'][0]
-    zp84  = hdul[1].data['zmc'][2]
-
-    M50 = hdul[1].data['ms'][1]
-    M16 = hdul[1].data['ms'][0]
-    M84 = hdul[1].data['ms'][2]
-    print('Total stellar mass is %.2e'%(M50))
-
-    A50 = np.zeros(len(age), dtype='float')
-    A16 = np.zeros(len(age), dtype='float')
-    A84 = np.zeros(len(age), dtype='float')
-    for aa in range(len(age)):
-        A50[aa] = hdul[1].data['A'+str(aa)][1]
-        A16[aa] = hdul[1].data['A'+str(aa)][0]
-        A84[aa] = hdul[1].data['A'+str(aa)][2]
-
-    Asum  = np.sum(A50)
-    aa   = 0
-    Av50 = hdul[1].data['Av'+str(aa)][1]
-    Av16 = hdul[1].data['Av'+str(aa)][0]
-    Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float')
-    Z16 = np.zeros(len(age), dtype='float')
-    Z84 = np.zeros(len(age), dtype='float')
-    NZbest = np.zeros(len(age), dtype='int')
-    for aa in range(len(age)):
-        Z50[aa] = hdul[1].data['Z'+str(aa)][1]
-        Z16[aa] = hdul[1].data['Z'+str(aa)][0]
-        Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        NZbest[aa]= bfnc.Z2NZ(Z50[aa])
-
-
-    ZZ50 = np.sum(Z50*A50)/np.sum(A50)  # Light weighted Z.
-    chi   = hdul[1].data['chi'][0]
-    chin  = hdul[1].data['chi'][1]
-    fitc  = chin
-    Cz0   = hdul[0].header['Cz0']
-    Cz1   = hdul[0].header['Cz1']
-    zbes  = hdul[0].header['z']
-    zscl = (1.+zbes)
-
-    # Repeat no.
-    nplot = 1000
-    #DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
-    try:
-        os.makedirs(DIR_OUT)
-    except:
-        pass
-
-    # plot Configuration
-    K = 4 # No of params.
-    Par = ['$\log M_*/M_\odot$', '$\log T$/Gyr', '$A_V$/mag', '$\log Z / Z_\odot$']
-    factor = 2.0           # size of one side of one panel
-    lbdim = 0.5 * factor   # size of left/bottom margin
-    trdim = 0.2 * factor   # size of top/right margin
-    whspace = 0.02         # w/hspace size
-    plotdim = factor * K + factor * (K - 1.) * whspace
-    dim = lbdim + plotdim + trdim
-    sclfig = 0.7
-
-    # Create a new figure if one wasn't provided.
-    if fig is None:
-        fig, axes = plt.subplots(K, K, figsize=(dim*sclfig, dim*sclfig))
-    else:
-        try:
-            axes = np.array(fig.axes).reshape((K, K))
-        except:
-            raise ValueError("Provided figure has {0} axes, but data has "
-                             "dimensions K={1}".format(len(fig.axes), K))
-    # Format the figure.
-    lb = lbdim / dim
-    tr = (lbdim + plotdim) / dim
-    fig.subplots_adjust(left=lb* 1.06, bottom=lb*.9, right=tr, top=tr*.99,
-                        wspace=whspace, hspace=whspace)
-
-    # For spec plot
-    ax0 = fig.add_axes([0.62,0.61,0.37,0.33])
-    ###############################
-    # Data taken from
-    ###############################
-    DIR_TMP = './templates/'
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NR = dat[:, 0]
-    x  = dat[:, 1]
-    fy00 = dat[:, 2]
-    ey00 = dat[:, 3]
-
-    con0 = (NR<1000) #& (fy/ey>SNlim)
-    xg0  = x[con0]
-    fg0  = fy00[con0] * Cz0
-    eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
-    xg1  = x[con1]
-    fg1  = fy00[con1] * Cz1
-    eg1  = ey00[con1] * Cz1
-    con2 = (NR>=10000)#& (fy/ey>SNlim)
-    xg2  = x[con2]
-    fg2  = fy00[con2]
-    eg2  = ey00[con2]
-    fy01 = np.append(fg0,fg1)
-    fy   = np.append(fy01,fg2)
-    ey01 = np.append(eg0,eg1)
-    ey   = np.append(ey01,eg2)
-    wht=1./np.square(ey)
-
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', comments='#')
-    NRbb = dat[:, 0]
-    xbb  = dat[:, 1]
-    fybb = dat[:, 2]
-    eybb = dat[:, 3]
-    exbb = dat[:, 4]
-    snbb = fybb/eybb
-
-    conspec = (NR<10000) #& (fy/ey>1)
-    #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
-    conbb = (fybb/eybb>snlimbb)
-    ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)
-
-    conbbe = (fybb/eybb<snlimbb)
-    ax0.plot(xbb[conbbe], eybb[conbbe] * c / np.square(xbb[conbbe]) / d, 'vr', ms=10, linestyle='', linewidth=0, zorder=4)
-
-    ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
-    ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
-    ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
-    ax0.set_xlim(2200, 88000)
-    #ax1.set_xlim(12500, 16000)
-    ax0.set_xscale('log')
-    ax0.set_ylim(-0.05, ymax)
-
-
-    DIR_TMP = './templates/'
-    ####################
-    # MCMC corner plot.
-    ####################
-    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(os.path.join('./'+file))
-
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        samples = data['chain'][:]
-    except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
-    sedpar = f0[1]
-
-    import matplotlib
-    import matplotlib.cm as cm
-    getcmap   = matplotlib.cm.get_cmap('jet')
-    nc        = np.arange(0, nmc, 1)
-    col = getcmap((nc-0)/(nmc-0))
-
-    #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float')
-    lmtmp= np.zeros(nplot, dtype='float')
-    Avtmp= np.zeros(nplot, dtype='float')
-    Ztmp = np.zeros(nplot, dtype='float')
-    Ttmp = np.zeros(nplot, dtype='float')
-    ACtmp= np.zeros(nplot, dtype='float')
-
-    files = [] # For movie
-    for kk in range(0,nplot,1):
-
-        #nr = kk # np.random.randint(len(samples))
-        nr = np.random.randint(len(samples))
-        Avtmp[kk] = samples['Av'][nr]
-        #Asum = 0
-        #for ss in range(len(age)):
-        #Asum += np.sum(samples['A'+str(ss)][nr])
-        II0   = nage #[0,1,2,3] # Number for templates
-        for ss in range(len(age)):
-            ii = int(len(II0) - ss - 1) # from old to young templates.
-            AA_tmp = samples['A'+str(ii)][nr]
-            try:
-                ZZ_tmp = samples['Z'+str(ii)][nr]
-            except:
-                ZZ_tmp = samples['Z0'][nr]
-            nZtmp      = bfnc.Z2NZ(ZZ_tmp)
-            mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
-            lmtmp[kk] += AA_tmp * mslist
-            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
-            Ttmp[kk]  += age[ii] * AA_tmp * mslist
-            ACtmp[kk] += AA_tmp * mslist
-
-            # SED
-            flim = 0.05
-            if ss == 0:
-                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
-                ysump = y0p #* 1e18
-                ysum  = y0  #* 1e18
-                if AA_tmp/Asum > flim:
-                    ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
-            else:
-                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
-                ysump += y0p  #* 1e18
-                ysum  += y0_r #* 1e18
-                if AA_tmp/Asum > flim:
-                    ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
-        # Total
-        ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=0.1, color='gray', zorder=-1, label='', alpha=0.1)
-        ax0.set_xlim(2200, 88000)
-        ax0.set_xscale('log')
-        ax0.set_ylim(0., ymax)
-
-        # Convert into log
-        Ztmp[kk] /= ACtmp[kk]
-        Ttmp[kk] /= ACtmp[kk]
-        Ntmp[kk]  = kk
-
-        lmtmp[kk] = np.log10(lmtmp[kk])
-        Ztmp[kk]  = np.log10(Ztmp[kk])
-        Ttmp[kk]  = np.log10(Ttmp[kk])
-
-
-        NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
-        #NPARmin = [np.log10(M16)-0.1, -0.4, 0, -0.6]
-        #NPARmax = [np.log10(M84)+0.1, 0.5, 2., 0.5]
-        NPARmin = [np.log10(M16)-0.1, -0.4, Av16-0.1, -0.5]
-        NPARmax = [np.log10(M84)+0.1, 0.5, Av84+0.1, 0.5]
-
-        #for kk in range(0,nplot,1):
-        if kk == nplot-1:
-            # Histogram
-            for i, x in enumerate(Par):
-                ax = axes[i, i]
-                x1min, x1max = NPARmin[i], NPARmax[i]
-                nbin = 50
-                binwidth1 = (x1max-x1min)/nbin
-                bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
-                ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
-                ax.set_xlim(x1min, x1max)
-                #print(x, x1min, x1max)
-                #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-                #ax.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
-                ax.set_yticklabels([])
-                #ax.set_xticklabels([])
-                #ax.set_title('%s'%(Par[i]), fontsize=12)
-                if i == K-1:
-                    ax.set_xlabel('%s'%(Par[i]), fontsize=12)
-                if i < K-1:
-                    ax.set_xticklabels([])
-
-        # Scatter and contour
-        for i, x in enumerate(Par):
-            for j, y in enumerate(Par):
-                #print(i,j,Par[j], Par[i])
-                if i > j:
-                    ax = axes[i, j]
-                    ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
-                    ax.set_xlabel('%s'%(Par[j]), fontsize=12)
-
-                    #x1min, x1max = np.min(NPAR[j]), np.max(NPAR[j])
-                    #y1min, y1max = np.min(NPAR[i]), np.max(NPAR[i])
-                    x1min, x1max = NPARmin[j], NPARmax[j]
-                    y1min, y1max = NPARmin[i], NPARmax[i]
-                    ax.set_xlim(x1min, x1max)
-                    ax.set_ylim(y1min, y1max)
-
-                    if j==0:
-                        ax.set_ylabel('%s'%(Par[i]), fontsize=12)
-                    if j>0:
-                        ax.set_yticklabels([])
-                    if i<K-1:
-                        ax.set_xticklabels([])
-
-                if i < j:
-                    ax = axes[i, j]
-                    ax.set_xticklabels([])
-                    ax.set_yticklabels([])
-                    ax.set_frame_on(False)
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-
-                if i == j:
-                    ax = axes[i, j]
-                    ax.set_yticklabels([])
-                    if i == K-1:
-                        ax.set_xlabel('%s'%(Par[i]), fontsize=12)
-                    if i < K-1:
-                        ax.set_xticklabels([])
-
-
-        if kk%10 == 0 and out_ind == 1:
-            fname = DIR_OUT + '%d.png' % kk
-            print('Saving frame', fname)
-            plt.savefig(fname, dpi=200)
-            files.append(fname)
-
-        #plt.savefig(DIR_OUT + '%d.pdf'%(kk))
-
-    plt.savefig(DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=200)
-    plt.close()
-
-
-def write_lines(ID, PA, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
-    '''
-    '''
-    dlw   = R_grs * dw # Can affect the SFR.
-    ldw   = 7
-
-    ###################################
-    # To add lines in the plot,
-    # ,manually edit the following file
-    # so as Fcont50 have >0.
-    ###################################
-    flw = open(DIR_OUT + ID + '_PA' + PA + '_lines_fit.txt', 'w')
-    flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
-    flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
-    flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
-    flw.write('# If EW=-99, it means gaussian fit failed.\n')
-    flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
-    flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
-    try:
-        fl = np.loadtxt(DIR_OUT + 'table_' + ID + '_PA' + PA + '_lines.txt', comments='#')
-        LW      = fl[:,2]
-        Fcont50 = fl[:,3]
-        Fline50 = fl[:,6]
-        for ii in range(len(LW)):
-            if Fcont50[ii] > 0:
-                WL = LW[ii] * (1.+zbes)
-                if ii == 7:
-                    contmp = (x > WL - dlw) & (x < WL + dlw*1.5)
-                else:
-                    contmp = (x > WL - dlw) & (x < WL + dlw)
-                FLW[ii] = 1
-
-                xx   = x[contmp]
-                yy   = (fy - ysum_cut)[contmp]
-                eyy  = ey[contmp]
-                yy2  = (ysum_cut)[contmp]
-
-                xyzip = zip(xx,yy,eyy,yy2)
-                xyzip = sorted(xyzip)
-
-                xxs  = np.array([p1 for p1,p2,p3,p4 in xyzip])
-                yys  = np.array([p2 for p1,p2,p3,p4 in xyzip])
-                eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
-                yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
-
-                flux = np.zeros(len(xxs), dtype='float')
-                efl  = np.zeros(len(xxs), dtype='float')
-                for ff in range(len(xxs)):
-                    flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
-                    efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
-
-                fmed = np.median(flux) # Median of continuum, model flux
-                esum = np.sqrt(simps(efl, xxs))
-
-                try:
-                    popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL,10],sigma=eyys)
-                    xxss = xxs/zscl
-
-                    if ii == 7:
-                        popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL+20,10],sigma=eyys)
-                        xxss = xxs/zscl
-
-                    if f_grsm:
-                        ax2t.plot(xxs/zscl, (gaus(xxs,*popt)+yy2s) * c/np.square(xxs)/d, '#4682b4', linestyle='-', linewidth=1, alpha=0.8, zorder=20)
-
-                    I1 = simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
-                    I2 = I1 - simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
-                    fline = I1
-
-                    Flum = fline*Cons*1e-18 # luminosity in erg/s.
-                    elum = esum *Cons*1e-18 # luminosity in erg/s.
-                    SFR  = Flum * 6.58*1e-42
-                    print('SFR is', SFR/umag)
-                    EW_tmp   = simps( ((gaus(xxs,*popt)) * c/np.square(xxs)/d)/yy2s, xxs)
-                    EW_tmp_u = simps( ((gaus(xxs,*popt) + eyys/np.sqrt(len(xxs))) * c/np.square(xxs)/d)/yy2s, xxs)
-
-                    if ii == 7:
-                        contmp2 = (xxs/zscl>4320.) & (xxs/zscl<4380.)
-                        popt,pcov = curve_fit(gaus,xxs[contmp2], yys[contmp2], p0=[Fline50[ii],WL,10], sigma=eyys[contmp2])
-
-                        I1 = simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
-                        I2 = I1 - simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
-                        fline = I1
-
-                        Flum = fline*Cons*1e-18 # luminosity in erg/s.
-                        elum = esum *Cons*1e-18 # luminosity in erg/s.
-                        SFR  = Flum * 6.58*1e-42
-                        print('SFR, update, is', SFR/umag)
-                        EW_tmp   = simps( ((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
-                        EW_tmp_u = simps( ((gaus(xxs[contmp2],*popt) + eyys[contmp2]/np.sqrt(len(xxs[contmp2]))) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
-
-                    flw.write('%d %.2f %.2f %.2f %.2f %.2f %.2e %.2e %.2f\n'%(LW[ii],fline/umag, esum/umag, fmed/umag, EW_tmp,(EW_tmp_u-EW_tmp), Flum*1e-18/umag, elum*1e-18/umag, SFR/umag))
-
-                except Exception:
-                    fsum = np.zeros(len(xxs))
-                    for ff in range(len(fsum)):
-                        fsum[ff] = (yys[ff]+yy2s[ff])/np.square(xxs[ff])
-
-                    fline = np.sum(fsum) / d*c
-                    flw.write('%d %.2f %.2f %.2f %d %d %d %d %d\n'%(LW[ii],fline,esum,fmed, -99, 0, -99, 0, 0))
-                    pass
-
-    except:
-        pass
-    flw.close()
+        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01):
@@ -2916,6 +2369,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ========
     For summary. In the same format as plot_corner_physparam_frame.
 
+    Note:
+    =====
+    Tau model not supported.
     '''
 
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
@@ -2923,20 +2379,18 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     import matplotlib.cm as cm
     import scipy.stats as stats
 
-    nage = MB.nage #np.arange(0,len(age),1)
-    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
-    bfnc = MB.bfnc #Basic(Z)
+    nage = MB.nage 
+    fnc  = MB.fnc 
+    bfnc = MB.bfnc 
     ID   = MB.ID
-    PA   = MB.PA
     Z    = MB.Zall
     age  = MB.age
 
-    tau0 = MB.tau0 #[0.1,0.2,0.3]
+    tau0 = MB.tau0 
     dust_model = MB.dust_model
     DIR_TMP = MB.DIR_TMP
 
-    #Txmax = 4 # Max x value
-    Txmax = np.max(age) + 1.0 # Max x value
+    Txmax = np.max(age) + 1.0 
 
     ###########################
     # Open result file
@@ -2944,7 +2398,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     lib     = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1)
 
-    file = MB.DIR_OUT + 'summary_' + ID + '_PA' + PA + '.fits'
+    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -3036,7 +2490,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     snbb   = fybb/eybb
 
     # Get spec data points;
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
     NR  = dat[:, 0]
     x   = dat[:, 1]
     fy00 = dat[:, 2]
@@ -3069,7 +2523,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ####################
     # MCMC corner plot.
     ####################
-    file  = MB.DIR_OUT + 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
     data  = loadcpkl(file)
 
@@ -3083,9 +2537,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
-    #f0 = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
+    #f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
     #sedpar = f0[1]
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '_PA' + MB.PA + '.asdf')
+    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     getcmap = matplotlib.cm.get_cmap('jet')
@@ -3460,8 +2914,548 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2t.xaxis.set_ticks_position('none')
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
 
-    plt.savefig(MB.DIR_OUT + 'param_' + ID + '_PA' + PA + '_corner.png', dpi=150)
+    plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
     #plt.close()
+
+def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
+    '''
+    '''
+    import matplotlib
+    import matplotlib.cm as cm
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+    nage = np.arange(0,len(age),1)
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    bfnc = Basic(Zall)
+
+    fig = plt.figure(figsize=(3,3))
+    fig.subplots_adjust(top=0.96, bottom=0.14, left=0.2, right=0.96, hspace=0.15, wspace=0.25)
+    ax1 = fig.add_subplot(111)
+
+    DIR_TMP = './templates/'
+    ####################
+    # MCMC corner plot.
+    ####################
+    file = 'chain_' + ID + '_corner.cpkl'
+    niter = 0
+    data = loadcpkl(os.path.join('./'+file))
+
+    try:
+        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        burnin = data['burnin']
+        nmc    = data['niter']
+        nwalk  = data['nwalkers']
+        Nburn  = burnin #*20
+        samples = data['chain'][:]
+    except:
+        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+
+
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
+    sedpar = f0[1]
+
+    getcmap   = matplotlib.cm.get_cmap('jet')
+    nc        = np.arange(0, nmc, 1)
+    col = getcmap((nc-0)/(nmc-0))
+
+    #for kk in range(0,nmc,1):
+    Ntmp = np.zeros(nmc, dtype='float')
+    Avtmp= np.zeros(nmc, dtype='float')
+    Ztmp = np.zeros(nmc, dtype='float')
+    Ttmp = np.zeros(nmc, dtype='float')
+    ACtmp= np.zeros(nmc, dtype='float')
+
+
+    for kk in range(0,5000,1):
+        #nr = kk # np.random.randint(len(samples))
+        nr = np.random.randint(len(samples))
+
+        Avtmp[kk] = samples['Av'][nr]
+        for ss in range(len(age)):
+            AA_tmp = samples['A'+str(ss)][nr]
+            ZZ_tmp = samples['Z'+str(ss)][nr]
+
+            nZtmp  = bfnc.Z2NZ(ZZ_tmp)
+            mslist = sedpar.data['ML_'+str(nZtmp)][ss]
+
+            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
+            Ttmp[kk]  += age[ss] * AA_tmp * mslist
+            ACtmp[kk] += AA_tmp * mslist
+
+        Ztmp[kk] /= ACtmp[kk]
+        Ttmp[kk] /= ACtmp[kk]
+        Ntmp[kk]  = kk
+
+
+    x1min, x1max = np.log10(0.1), np.log10(4) #np.max(A50/Asum)+0.1
+    y1min, y1max = -0.8,.6 #np.max(A50/Asum)+0.1
+
+    xbins = np.arange(x1min, x1max, 0.01)
+    ybins = np.arange(y1min, y1max, 0.01)
+
+    xycounts,_,_ = np.histogram2d(np.log10(Ttmp), np.log10(Ztmp), bins=[xbins,ybins])
+    ax1.contour(xbins[:-1], ybins[:-1], xycounts.T, 4, linewidths=np.arange(.5, 4, 0.1), colors='k')
+
+    ax1.scatter(np.log10(Ttmp), np.log10(Ztmp), c='r', s=1, marker='.', alpha=0.1)
+    #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
+    #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
+
+    ax1.set_xlabel('$\log T_*$/Gyr', fontsize=12)
+    ax1.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
+
+    #ax2.set_xlabel('$\log T_*$/Gyr', fontsize=12)
+    #ax2.set_ylabel('$A_V$/mag', fontsize=12)
+
+    #ax3.set_xlabel('$\log Z_*/Z_\odot$', fontsize=12)
+    #ax3.set_ylabel('$A_V$/mag', fontsize=12)
+
+    ax1.set_xlim(x1min, x1max)
+    ax1.set_ylim(y1min, y1max)
+
+    ax1.yaxis.labelpad = -1
+
+    plt.savefig('TZ_' + ID + '_corner.pdf')
+    plt.close()
+
+
+def plot_corner_physparam_cum_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
+    '''
+    # Creat "cumulative" png for gif image.
+    #
+    #
+    # If you like to
+    # Creat temporal png for gif image.
+    #
+    # snlimbb: SN limit to show flux or up lim in SED.
+    #
+    '''
+    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+    nage = np.arange(0,len(age),1)
+    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
+    bfnc = Basic(Zall)
+
+    ###########################
+    # Open result file
+    ###########################
+    # Open ascii file and stock to array.
+    lib     = fnc.open_spec_fits(ID, PA, fall=0)
+    lib_all = fnc.open_spec_fits(ID, PA, fall=1)
+
+    file = 'summary_' + ID + '.fits'
+    hdul = fits.open(file) # open a FITS file
+
+    # Redshift MC
+    zp50  = hdul[1].data['zmc'][1]
+    zp16  = hdul[1].data['zmc'][0]
+    zp84  = hdul[1].data['zmc'][2]
+
+    M50 = hdul[1].data['ms'][1]
+    M16 = hdul[1].data['ms'][0]
+    M84 = hdul[1].data['ms'][2]
+    print('Total stellar mass is %.2e'%(M50))
+
+    A50 = np.zeros(len(age), dtype='float')
+    A16 = np.zeros(len(age), dtype='float')
+    A84 = np.zeros(len(age), dtype='float')
+    for aa in range(len(age)):
+        A50[aa] = hdul[1].data['A'+str(aa)][1]
+        A16[aa] = hdul[1].data['A'+str(aa)][0]
+        A84[aa] = hdul[1].data['A'+str(aa)][2]
+
+    Asum  = np.sum(A50)
+    aa   = 0
+    Av50 = hdul[1].data['Av'+str(aa)][1]
+    Av16 = hdul[1].data['Av'+str(aa)][0]
+    Av84 = hdul[1].data['Av'+str(aa)][2]
+    Z50 = np.zeros(len(age), dtype='float')
+    Z16 = np.zeros(len(age), dtype='float')
+    Z84 = np.zeros(len(age), dtype='float')
+    NZbest = np.zeros(len(age), dtype='int')
+    for aa in range(len(age)):
+        Z50[aa] = hdul[1].data['Z'+str(aa)][1]
+        Z16[aa] = hdul[1].data['Z'+str(aa)][0]
+        Z84[aa] = hdul[1].data['Z'+str(aa)][2]
+        NZbest[aa]= bfnc.Z2NZ(Z50[aa])
+
+
+    ZZ50 = np.sum(Z50*A50)/np.sum(A50)  # Light weighted Z.
+    chi   = hdul[1].data['chi'][0]
+    chin  = hdul[1].data['chi'][1]
+    fitc  = chin
+    Cz0   = hdul[0].header['Cz0']
+    Cz1   = hdul[0].header['Cz1']
+    zbes  = hdul[0].header['z']
+    zscl = (1.+zbes)
+
+    # Repeat no.
+    nplot = 1000
+    #DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
+    try:
+        os.makedirs(DIR_OUT)
+    except:
+        pass
+
+    # plot Configuration
+    K = 4 # No of params.
+    Par = ['$\log M_*/M_\odot$', '$\log T$/Gyr', '$A_V$/mag', '$\log Z / Z_\odot$']
+    factor = 2.0           # size of one side of one panel
+    lbdim = 0.5 * factor   # size of left/bottom margin
+    trdim = 0.2 * factor   # size of top/right margin
+    whspace = 0.02         # w/hspace size
+    plotdim = factor * K + factor * (K - 1.) * whspace
+    dim = lbdim + plotdim + trdim
+    sclfig = 0.7
+
+    # Create a new figure if one wasn't provided.
+    if fig is None:
+        fig, axes = plt.subplots(K, K, figsize=(dim*sclfig, dim*sclfig))
+    else:
+        try:
+            axes = np.array(fig.axes).reshape((K, K))
+        except:
+            raise ValueError("Provided figure has {0} axes, but data has "
+                             "dimensions K={1}".format(len(fig.axes), K))
+    # Format the figure.
+    lb = lbdim / dim
+    tr = (lbdim + plotdim) / dim
+    fig.subplots_adjust(left=lb* 1.06, bottom=lb*.9, right=tr, top=tr*.99,
+                        wspace=whspace, hspace=whspace)
+
+    # For spec plot
+    ax0 = fig.add_axes([0.62,0.61,0.37,0.33])
+    ###############################
+    # Data taken from
+    ###############################
+    DIR_TMP = './templates/'
+    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
+    NR = dat[:, 0]
+    x  = dat[:, 1]
+    fy00 = dat[:, 2]
+    ey00 = dat[:, 3]
+
+    con0 = (NR<1000) #& (fy/ey>SNlim)
+    xg0  = x[con0]
+    fg0  = fy00[con0] * Cz0
+    eg0  = ey00[con0] * Cz0
+    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    xg1  = x[con1]
+    fg1  = fy00[con1] * Cz1
+    eg1  = ey00[con1] * Cz1
+    con2 = (NR>=10000)#& (fy/ey>SNlim)
+    xg2  = x[con2]
+    fg2  = fy00[con2]
+    eg2  = ey00[con2]
+    fy01 = np.append(fg0,fg1)
+    fy   = np.append(fy01,fg2)
+    ey01 = np.append(eg0,eg1)
+    ey   = np.append(ey01,eg2)
+    wht=1./np.square(ey)
+
+    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '.cat', comments='#')
+    NRbb = dat[:, 0]
+    xbb  = dat[:, 1]
+    fybb = dat[:, 2]
+    eybb = dat[:, 3]
+    exbb = dat[:, 4]
+    snbb = fybb/eybb
+
+    conspec = (NR<10000) #& (fy/ey>1)
+    #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
+    #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
+    conbb = (fybb/eybb>snlimbb)
+    ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
+    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)
+
+    conbbe = (fybb/eybb<snlimbb)
+    ax0.plot(xbb[conbbe], eybb[conbbe] * c / np.square(xbb[conbbe]) / d, 'vr', ms=10, linestyle='', linewidth=0, zorder=4)
+
+    ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
+    ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
+    ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
+    ax0.set_xlim(2200, 88000)
+    #ax1.set_xlim(12500, 16000)
+    ax0.set_xscale('log')
+    ax0.set_ylim(-0.05, ymax)
+
+
+    DIR_TMP = './templates/'
+    ####################
+    # MCMC corner plot.
+    ####################
+    file = 'chain_' + ID + '_corner.cpkl'
+    niter = 0
+    data = loadcpkl(os.path.join('./'+file))
+
+    try:
+        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        burnin = data['burnin']
+        nmc    = data['niter']
+        nwalk  = data['nwalkers']
+        Nburn  = burnin #*20
+        samples = data['chain'][:]
+    except:
+        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
+    sedpar = f0[1]
+
+    import matplotlib
+    import matplotlib.cm as cm
+    getcmap   = matplotlib.cm.get_cmap('jet')
+    nc        = np.arange(0, nmc, 1)
+    col = getcmap((nc-0)/(nmc-0))
+
+    #for kk in range(0,nmc,1):
+    Ntmp = np.zeros(nplot, dtype='float')
+    lmtmp= np.zeros(nplot, dtype='float')
+    Avtmp= np.zeros(nplot, dtype='float')
+    Ztmp = np.zeros(nplot, dtype='float')
+    Ttmp = np.zeros(nplot, dtype='float')
+    ACtmp= np.zeros(nplot, dtype='float')
+
+    files = [] # For movie
+    for kk in range(0,nplot,1):
+
+        #nr = kk # np.random.randint(len(samples))
+        nr = np.random.randint(len(samples))
+        Avtmp[kk] = samples['Av'][nr]
+        #Asum = 0
+        #for ss in range(len(age)):
+        #Asum += np.sum(samples['A'+str(ss)][nr])
+        II0   = nage #[0,1,2,3] # Number for templates
+        for ss in range(len(age)):
+            ii = int(len(II0) - ss - 1) # from old to young templates.
+            AA_tmp = samples['A'+str(ii)][nr]
+            try:
+                ZZ_tmp = samples['Z'+str(ii)][nr]
+            except:
+                ZZ_tmp = samples['Z0'][nr]
+            nZtmp      = bfnc.Z2NZ(ZZ_tmp)
+            mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
+            lmtmp[kk] += AA_tmp * mslist
+            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
+            Ttmp[kk]  += age[ii] * AA_tmp * mslist
+            ACtmp[kk] += AA_tmp * mslist
+
+            # SED
+            flim = 0.05
+            if ss == 0:
+                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                ysump = y0p #* 1e18
+                ysum  = y0  #* 1e18
+                if AA_tmp/Asum > flim:
+                    ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
+            else:
+                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                ysump += y0p  #* 1e18
+                ysum  += y0_r #* 1e18
+                if AA_tmp/Asum > flim:
+                    ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
+        # Total
+        ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=0.1, color='gray', zorder=-1, label='', alpha=0.1)
+        ax0.set_xlim(2200, 88000)
+        ax0.set_xscale('log')
+        ax0.set_ylim(0., ymax)
+
+        # Convert into log
+        Ztmp[kk] /= ACtmp[kk]
+        Ttmp[kk] /= ACtmp[kk]
+        Ntmp[kk]  = kk
+
+        lmtmp[kk] = np.log10(lmtmp[kk])
+        Ztmp[kk]  = np.log10(Ztmp[kk])
+        Ttmp[kk]  = np.log10(Ttmp[kk])
+
+
+        NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
+        #NPARmin = [np.log10(M16)-0.1, -0.4, 0, -0.6]
+        #NPARmax = [np.log10(M84)+0.1, 0.5, 2., 0.5]
+        NPARmin = [np.log10(M16)-0.1, -0.4, Av16-0.1, -0.5]
+        NPARmax = [np.log10(M84)+0.1, 0.5, Av84+0.1, 0.5]
+
+        #for kk in range(0,nplot,1):
+        if kk == nplot-1:
+            # Histogram
+            for i, x in enumerate(Par):
+                ax = axes[i, i]
+                x1min, x1max = NPARmin[i], NPARmax[i]
+                nbin = 50
+                binwidth1 = (x1max-x1min)/nbin
+                bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
+                ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
+                ax.set_xlim(x1min, x1max)
+                #print(x, x1min, x1max)
+                #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
+                #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
+                #ax.set_xlabel('$\log T_*$/Gyr', fontsize=12)
+                #ax.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
+                ax.set_yticklabels([])
+                #ax.set_xticklabels([])
+                #ax.set_title('%s'%(Par[i]), fontsize=12)
+                if i == K-1:
+                    ax.set_xlabel('%s'%(Par[i]), fontsize=12)
+                if i < K-1:
+                    ax.set_xticklabels([])
+
+        # Scatter and contour
+        for i, x in enumerate(Par):
+            for j, y in enumerate(Par):
+                #print(i,j,Par[j], Par[i])
+                if i > j:
+                    ax = axes[i, j]
+                    ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
+                    ax.set_xlabel('%s'%(Par[j]), fontsize=12)
+
+                    #x1min, x1max = np.min(NPAR[j]), np.max(NPAR[j])
+                    #y1min, y1max = np.min(NPAR[i]), np.max(NPAR[i])
+                    x1min, x1max = NPARmin[j], NPARmax[j]
+                    y1min, y1max = NPARmin[i], NPARmax[i]
+                    ax.set_xlim(x1min, x1max)
+                    ax.set_ylim(y1min, y1max)
+
+                    if j==0:
+                        ax.set_ylabel('%s'%(Par[i]), fontsize=12)
+                    if j>0:
+                        ax.set_yticklabels([])
+                    if i<K-1:
+                        ax.set_xticklabels([])
+
+                if i < j:
+                    ax = axes[i, j]
+                    ax.set_xticklabels([])
+                    ax.set_yticklabels([])
+                    ax.set_frame_on(False)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+
+                if i == j:
+                    ax = axes[i, j]
+                    ax.set_yticklabels([])
+                    if i == K-1:
+                        ax.set_xlabel('%s'%(Par[i]), fontsize=12)
+                    if i < K-1:
+                        ax.set_xticklabels([])
+
+
+        if kk%10 == 0 and out_ind == 1:
+            fname = DIR_OUT + '%d.png' % kk
+            print('Saving frame', fname)
+            plt.savefig(fname, dpi=200)
+            files.append(fname)
+
+        #plt.savefig(DIR_OUT + '%d.pdf'%(kk))
+
+    plt.savefig(DIR_OUT + 'param_' + ID + '_corner.png', dpi=200)
+    plt.close()
+
+
+def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
+    '''
+    '''
+    dlw   = R_grs * dw # Can affect the SFR.
+    ldw   = 7
+
+    ###################################
+    # To add lines in the plot,
+    # ,manually edit the following file
+    # so as Fcont50 have >0.
+    ###################################
+    flw = open(DIR_OUT + ID + '_lines_fit.txt', 'w')
+    flw.write('# LW flux_line eflux_line flux_cont EW eEW L_line eL_line\n')
+    flw.write('# (AA) (Flam_1e-18) (Flam_1e-18) (Flam_1e-18) (AA) (AA) (erg/s) (erg/s)\n')
+    flw.write('# Error in EW is 1sigma, by pm eflux_line.\n')
+    flw.write('# If EW=-99, it means gaussian fit failed.\n')
+    flw.write('# and flux is the sum of excess at WL pm %.1f AA.\n'%(dlw))
+    flw.write('# Magnification is corrected; mu=%.3f\n'%(umag))
+    try:
+        fl = np.loadtxt(DIR_OUT + 'table_' + ID + '_lines.txt', comments='#')
+        LW      = fl[:,2]
+        Fcont50 = fl[:,3]
+        Fline50 = fl[:,6]
+        for ii in range(len(LW)):
+            if Fcont50[ii] > 0:
+                WL = LW[ii] * (1.+zbes)
+                if ii == 7:
+                    contmp = (x > WL - dlw) & (x < WL + dlw*1.5)
+                else:
+                    contmp = (x > WL - dlw) & (x < WL + dlw)
+                FLW[ii] = 1
+
+                xx   = x[contmp]
+                yy   = (fy - ysum_cut)[contmp]
+                eyy  = ey[contmp]
+                yy2  = (ysum_cut)[contmp]
+
+                xyzip = zip(xx,yy,eyy,yy2)
+                xyzip = sorted(xyzip)
+
+                xxs  = np.array([p1 for p1,p2,p3,p4 in xyzip])
+                yys  = np.array([p2 for p1,p2,p3,p4 in xyzip])
+                eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
+                yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
+
+                flux = np.zeros(len(xxs), dtype='float')
+                efl  = np.zeros(len(xxs), dtype='float')
+                for ff in range(len(xxs)):
+                    flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
+                    efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
+
+                fmed = np.median(flux) # Median of continuum, model flux
+                esum = np.sqrt(simps(efl, xxs))
+
+                try:
+                    popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL,10],sigma=eyys)
+                    xxss = xxs/zscl
+
+                    if ii == 7:
+                        popt,pcov = curve_fit(gaus,xxs,yys,p0=[Fline50[ii],WL+20,10],sigma=eyys)
+                        xxss = xxs/zscl
+
+                    if f_grsm:
+                        ax2t.plot(xxs/zscl, (gaus(xxs,*popt)+yy2s) * c/np.square(xxs)/d, '#4682b4', linestyle='-', linewidth=1, alpha=0.8, zorder=20)
+
+                    I1 = simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
+                    I2 = I1 - simps((gaus(xxs,*popt)) * c/np.square(xxs)/d, xxs)
+                    fline = I1
+
+                    Flum = fline*Cons*1e-18 # luminosity in erg/s.
+                    elum = esum *Cons*1e-18 # luminosity in erg/s.
+                    SFR  = Flum * 6.58*1e-42
+                    print('SFR is', SFR/umag)
+                    EW_tmp   = simps( ((gaus(xxs,*popt)) * c/np.square(xxs)/d)/yy2s, xxs)
+                    EW_tmp_u = simps( ((gaus(xxs,*popt) + eyys/np.sqrt(len(xxs))) * c/np.square(xxs)/d)/yy2s, xxs)
+
+                    if ii == 7:
+                        contmp2 = (xxs/zscl>4320.) & (xxs/zscl<4380.)
+                        popt,pcov = curve_fit(gaus,xxs[contmp2], yys[contmp2], p0=[Fline50[ii],WL,10], sigma=eyys[contmp2])
+
+                        I1 = simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
+                        I2 = I1 - simps((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d, xxs[contmp2])
+                        fline = I1
+
+                        Flum = fline*Cons*1e-18 # luminosity in erg/s.
+                        elum = esum *Cons*1e-18 # luminosity in erg/s.
+                        SFR  = Flum * 6.58*1e-42
+                        print('SFR, update, is', SFR/umag)
+                        EW_tmp   = simps( ((gaus(xxs[contmp2],*popt)) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
+                        EW_tmp_u = simps( ((gaus(xxs[contmp2],*popt) + eyys[contmp2]/np.sqrt(len(xxs[contmp2]))) * c/np.square(xxs[contmp2])/d)/yy2s[contmp2], xxs[contmp2])
+
+                    flw.write('%d %.2f %.2f %.2f %.2f %.2f %.2e %.2e %.2f\n'%(LW[ii],fline/umag, esum/umag, fmed/umag, EW_tmp,(EW_tmp_u-EW_tmp), Flum*1e-18/umag, elum*1e-18/umag, SFR/umag))
+
+                except Exception:
+                    fsum = np.zeros(len(xxs))
+                    for ff in range(len(fsum)):
+                        fsum[ff] = (yys[ff]+yy2s[ff])/np.square(xxs[ff])
+
+                    fline = np.sum(fsum) / d*c
+                    flw.write('%d %.2f %.2f %.2f %d %d %d %d %d\n'%(LW[ii],fline,esum,fmed, -99, 0, -99, 0, 0))
+                    pass
+
+    except:
+        pass
+    flw.close()
+
 
 
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
@@ -3484,7 +3478,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     lib     = fnc.open_spec_fits(fall=0, tau0=tau0)
     lib_all = fnc.open_spec_fits(fall=1, tau0=tau0)
 
-    file = 'summary_' + ID + '_PA' + PA + '.fits'
+    file = 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
 
     # Redshift MC
@@ -3556,7 +3550,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     # Data taken from
     ###############################
     DIR_TMP = './templates/'
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
     NR = dat[:, 0]
     x  = dat[:, 1]
     fy00 = dat[:, 2]
@@ -3580,7 +3574,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     ey   = np.append(ey01,eg2)
     wht=1./np.square(ey)
 
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '_PA' + PA + '.cat', comments='#')
+    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '.cat', comments='#')
     NRbb = dat[:, 0]
     xbb  = dat[:, 1]
     fybb = dat[:, 2]
@@ -3597,7 +3591,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     ####################
     # MCMC corner plot.
     ####################
-    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file = 'chain_' + ID + '_corner.cpkl'
     niter = 0
     data = loadcpkl(os.path.join('./'+file))
 
@@ -3611,7 +3605,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '_PA' + PA + '.fits')
+    f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
     sedpar = f0[1]
 
     import matplotlib
@@ -3935,7 +3929,7 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     ####################
     # MCMC corner plot.
     ####################
-    file = 'chain_' + ID + '_PA' + PA + '_corner.cpkl'
+    file = 'chain_' + ID + '_corner.cpkl'
     niter = 0
     data = loadcpkl(os.path.join('./'+file))
 
@@ -3956,7 +3950,7 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
     title = []
     truth = np.zeros(len(age)*2+1, dtype='float')
 
-    file_sum = 'summary_' + ID + '_PA' + PA + '.fits'
+    file_sum = 'summary_' + ID + '.fits'
     hdu      = fits.open(file_sum) # open a FITS file
 
     Asum = 0
@@ -3991,5 +3985,5 @@ def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0
         fig1 = corner.corner_TM(res, label_kwargs={'fontsize':14}, show_titles=True, titles=title, title_kwargs={"fontsize": 14, 'color':'orangered'}, plot_datapoints=False, plot_contours=True, no_fill_contours=True, plot_density=False, levels=[0.68, 0.95, 99.7], color='#4682b4', scale_hist=False, truths=truth, truth_color='orangered', labels=label)
         #, labels=label, truth_color='gray'
 
-        fig1.savefig('SPEC_' + ID + '_PA' + PA + '_corner.pdf')
+        fig1.savefig('SPEC_' + ID + '_corner.pdf')
         plt.close()

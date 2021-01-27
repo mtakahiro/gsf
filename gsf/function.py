@@ -168,7 +168,7 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(MB, ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=None, Zbest=0, f_keep=False):
+def get_leastsq(MB, ZZtmp, fneld,age,fit_params,residual,fy,ey,wht,ID0, chidef=None, Zbest=0, f_keep=False):
     '''
     Purpose:
     ========
@@ -181,7 +181,7 @@ def get_leastsq(MB, ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chide
         print('Not enough data for quick fit. Exiting.')
         return False
 
-    file = 'Z_' + ID0 + '_PA' + PA0 + '.cat'
+    file = 'Z_' + ID0 + '.cat'
     fwz = open(file, 'w')
     fwz.write('# ID Zini chi/nu AA Av Zbest\n')
 
@@ -196,6 +196,12 @@ def get_leastsq(MB, ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chide
     #fit_name = 'trust-exact'# Need trust region
     #fit_name = 'trust-constr'
     #if fneld == 1 or fneld == 2: # Nelder;
+    
+    try:
+        ZZtmp = [MB.ZFIX]
+    except:
+        pass
+
     if True: # Nelder;
         for zz in range(len(ZZtmp)):
             ZZ = ZZtmp[zz]
@@ -967,7 +973,7 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     if f_regist:
         lfil_lib = {}
         ffil_lib = {}
-
+        
     fnu = np.zeros(len(band0), dtype='float')
     lcen = np.zeros(len(band0), dtype='float')
     if fw == True:
@@ -975,13 +981,13 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
 
     for ii in range(len(band0)):
         if not f_regist:
-            try:
-                lfil = MB.band['%s_lam'%str(band0[ii])]
-                ffil = MB.band['%s_res'%str(band0[ii])]
-                if fw == True:
-                    fwhm = MB.band['%s_fwhm'%str(band0[ii])]
-            except:
-                f_regist = True
+            #try:
+            lfil = MB.lfil_lib['%s'%str(band0[ii])]
+            ffil = MB.ffil_lib['%s'%str(band0[ii])]
+            if fw == True:
+                fwhm = MB.filt_fwhm[ii]
+            #except:
+            #    f_regist = True
                 
         if f_regist:
             fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')

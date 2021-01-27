@@ -222,7 +222,6 @@ class Post:
                 p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
                 respr += np.log(p_gauss)
 
-
         # Prior for redshift:
         if self.mb.fzmc == 1:
             zprior = self.mb.z_prior

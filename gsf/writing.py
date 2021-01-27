@@ -36,12 +36,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     tau0 = self.tau0
     ID0 = self.ID
-    PA0 = self.PA
     age = self.age
     Zall = self.Zall
 
-    fnc  = self.fnc #Func(ID0, PA0, Zall, nage) # Set up the number of Age/ZZ
-    bfnc = self.bfnc #Basic(Zall)
+    fnc  = self.fnc 
+    bfnc = self.bfnc 
 
     DIR_TMP = self.DIR_TMP
 
@@ -70,7 +69,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Tdustmc = np.zeros(3, dtype='float')
 
     # ASDF;
-    af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '_PA' + PA0 + '.asdf')
+    af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '.asdf')
     sedpar = af['ML']
     
     ms = np.zeros(len(age), dtype='float')
@@ -152,7 +151,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     ############
     # Get SN.
     ############
-    file = DIR_TMP + 'spec_obs_' + ID0 + '_PA' + PA0 + '.cat'
+    file = DIR_TMP + 'spec_obs_' + ID0 + '.cat'
     fds  = np.loadtxt(file, comments='#')
     nrs  = fds[:,0]
     lams = fds[:,1]
@@ -172,7 +171,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     # Header
     prihdr = fits.Header()
     prihdr['ID']     = ID0
-    prihdr['PA']     = PA0
     prihdr['Cz0']    = Czrec0
     prihdr['Cz1']    = Czrec1
     prihdr['z']      = zrecom
@@ -254,7 +252,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     colms = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '_PA' + PA0 + '.fits', overwrite=True)
+    hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '.fits', overwrite=True)
 
 
 
@@ -300,7 +298,7 @@ def get_index(mmax=300):
 
         # not necessary here.
         if self.f_dust:
-            model2_dust, xm_tmp_dust = fnc.tmp04_dust(ID0, PA0, par_tmp, zrecom, lib_all, tau0=tau0)
+            model2_dust, xm_tmp_dust = fnc.tmp04_dust(ID0, par_tmp, zrecom, lib_all, tau0=tau0)
             model2 = np.append(model2,model2_dust)
             xm_tmp = np.append(xm_tmp,xm_tmp_dust)
 

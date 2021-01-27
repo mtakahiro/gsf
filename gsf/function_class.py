@@ -15,7 +15,6 @@ class Func:
         dust_model (int) : 0 for Calzetti.
         '''
         self.ID = MB.ID
-        self.PA = MB.PA
         self.ZZ = MB.Zall
         self.age = MB.age
         self.AA = MB.nage
@@ -50,7 +49,6 @@ class Func:
         '''
         '''
         ID0 = self.MB.ID
-        PA0 = self.MB.PA
         tau0= self.MB.tau0 #[0.01,0.02,0.03]
 
         from astropy.io import fits
@@ -73,12 +71,10 @@ class Func:
                 Z   = ZZ[zz]
                 NZ  = bfnc.Z2NZ(Z)
                 if zz == 0 and pp == 0:
-                    #f0   = fits.open(DIR_TMP + 'spec_' + app + ID0 + '_PA' + PA0 + '.fits')
-                    #hdu0 = f0[1]
                     nr = hdu0['colnum']
                     xx = hdu0['wavelength']
 
-                    lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float32')
+                    lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float')
 
                     lib[:,0] = nr[:]
                     lib[:,1] = xx[:]
@@ -98,7 +94,6 @@ class Func:
         ##################################
         '''
         ID0 = self.MB.ID
-        PA0 = self.MB.PA
         tau0= self.MB.tau0 #[0.01,0.02,0.03]
 
         from astropy.io import fits
@@ -106,7 +101,7 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
         self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if fall == 0:
@@ -120,7 +115,7 @@ class Func:
         nr = hdu0['colnum']
         xx = hdu0['wavelength']
         
-        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float32')
+        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -150,7 +145,7 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
         self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
@@ -167,7 +162,7 @@ class Func:
         xx   = hdu0['wavelength'] # at RF;
         nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
-        lib  = np.zeros((len(nr), 2+1), dtype='float32')
+        lib  = np.zeros((len(nr), 2+1), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -201,7 +196,7 @@ class Func:
             yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
 
         xxd *= (1.+zgal)
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
         nrd_yyd[:,0] = nrd[:]
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
@@ -271,7 +266,7 @@ class Func:
 
         xxd *= (1.+zgal)
 
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
         nrd_yyd[:,0] = nrd[:]
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
@@ -325,7 +320,7 @@ class Func:
 
         xxd *= (1.+zgal)
 
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
         nrd_yyd[:,0] = nrd[:]
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
@@ -408,8 +403,7 @@ class Func:
                 yy = A00 * self.MB.lib[:, coln]
             else:
                 yy += A00 * self.MB.lib[:, coln]
-
-
+        
         self.MB.logMtmp = np.log10(Mtot)
         # How much does this cost in time?
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
@@ -486,122 +480,6 @@ class Func:
 
         return yy_s, xx_s
 
-    """
-    def tmp04_val(self, par0, zgal, lib, f_Alog=True, Amin=-10, nprec=1):
-        '''
-        Purpose:
-        ========
-        # Making model template with a given param set.
-        # Also dust attenuation.
-
-        Input:
-        ======
-        nprec : Precision when redshift is refined. 
-        '''
-        tau0= self.tau0 #[0.01,0.02,0.03]
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
-        Mtot = 0
-
-        par = par0.params
-
-        if self.MB.fzmc == 1:
-            zmc = par['zmc']
-        else:
-            zmc = zgal
-
-        pp = 0
-
-        # AV limit;
-        if par['Av'] < self.MB.Avmin:
-            par['Av'] = self.MB.Avmin
-        if par['Av'] > self.MB.Avmax:
-            par['Av'] = self.MB.Avmax
-        Av00 = par['Av']
-
-        for aa in range(len(AA)):
-            if self.MB.ZEVOL==1 or aa == 0:
-                Z = par['Z'+str(aa)]
-                NZ = bfnc.Z2NZ(Z)
-            else:
-                pass
-
-            # Check limit;
-            if par['A'+str(aa)] < self.MB.Amin:
-                par['A'+str(aa)] = self.MB.Amin
-            if par['A'+str(aa)] > self.MB.Amax:
-                par['A'+str(aa)] = self.MB.Amax
-            # Z limit:
-            if aa == 0 or self.MB.Zevol == 1:
-                if par['Z%d'%aa] < self.MB.Zmin:
-                    par['Z%d'%aa] = self.MB.Zmin
-                if par['Z%d'%aa] > self.MB.Zmax:
-                    par['Z%d'%aa] = self.MB.Zmax
-
-            # Is A in logspace?
-            if f_Alog:
-                A00 = 10**par['A'+str(aa)]
-            else:
-                A00 = par['A'+str(aa)]
-
-            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
-
-            sedpar = self.MB.af['ML'] # For M/L
-            mslist = sedpar['ML_'+str(NZ)][aa]
-            Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
-
-            if aa == 0:
-                nr = lib[:, 0]
-                xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * lib[:, coln]
-            else:
-                yy += A00 * lib[:, coln]
-
-        self.MB.logMtmp = np.log10(Mtot)
-        # How much does this cost in time?
-        if round(zmc,nprec) != round(zgal,nprec):
-            xx_s = xx / (1+zgal) * (1+zmc)
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            yy_s = fint(xx_s)
-        else:
-            xx_s = xx
-            yy_s = yy
-
-        xx = xx_s
-        yy = yy_s
-
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        xxd *= (1.+zmc)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        '''
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort = nrd_yyd_sort[:,1]
-        xxd_sort = nrd_yyd_sort[:,2]
-        return yyd_sort, xxd_sort
-        '''
-        nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-        return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
-    """
-
 
 class Func_tau:
     '''
@@ -613,7 +491,6 @@ class Func_tau:
         '''
         self.MB = MB
         self.ID = MB.ID
-        self.PA = MB.PA
         self.ZZ = MB.Zall
         self.AA = MB.nage
         self.tau = MB.tau
@@ -646,7 +523,6 @@ class Func_tau:
         '''
         '''
         ID0 = self.MB.ID
-        PA0 = self.MB.PA
 
         from astropy.io import fits
         ZZ = self.ZZ
@@ -692,7 +568,6 @@ class Func_tau:
         ##################################
         '''
         ID0 = self.MB.ID
-        PA0 = self.MB.PA
         tau0= self.MB.tau0 #[0.01,0.02,0.03]
 
         from astropy.io import fits
@@ -700,7 +575,7 @@ class Func_tau:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
         self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if fall == 0:
@@ -714,7 +589,7 @@ class Func_tau:
         nr = hdu0['colnum']
         xx = hdu0['wavelength']
         
-        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float32')
+        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -744,7 +619,7 @@ class Func_tau:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
         self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
@@ -761,7 +636,7 @@ class Func_tau:
         xx   = hdu0['wavelength'] # at RF;
         nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
-        lib  = np.zeros((len(nr), 2+1), dtype='float32')
+        lib  = np.zeros((len(nr), 2+1), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -788,7 +663,7 @@ class Func_tau:
             yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
 
         xxd *= (1.+zgal)
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float32')
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
         nrd_yyd[:,0] = nrd[:]
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
