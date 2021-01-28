@@ -357,13 +357,15 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     if CAT_BB:
         #fd0 = np.loadtxt(CAT_BB, comments='#')
         fd0 = ascii.read(CAT_BB)
-
         id0 = fd0['id']
-        ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-        if int(id0[ii0]) !=  int(ID):
-            print('Cannot find the column for [ID: %d] in the input BB catalog!'%(int(ID)))
+        #ii0 = np.argmin(np.abs(id0[:]-int(ID)))
+        #if int(id0[ii0]) !=  int(ID):
+        ii0 = np.where(id0[:]==ID)
+        try:
+            id = fd0['id'][ii0]
+        except:
+            print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
             return -1
-        id = fd0['id'][ii0]
 
         fbb = np.zeros(len(SFILT), dtype='float')
         ebb = np.zeros(len(SFILT), dtype='float')

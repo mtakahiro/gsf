@@ -562,7 +562,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     # Header
     prihdr = fits.Header()
     prihdr['ID'] = ID
-    prihdr['PA'] = PA
     prihdr['z'] = zbes
     prihdr['RA'] = RA
     prihdr['DEC'] = DEC

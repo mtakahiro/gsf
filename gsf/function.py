@@ -981,13 +981,15 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
 
     for ii in range(len(band0)):
         if not f_regist:
-            #try:
-            lfil = MB.lfil_lib['%s'%str(band0[ii])]
-            ffil = MB.ffil_lib['%s'%str(band0[ii])]
-            if fw == True:
-                fwhm = MB.filt_fwhm[ii]
-            #except:
-            #    f_regist = True
+            try:
+                lfil = MB.lfil_lib['%s'%str(band0[ii])]
+                ffil = MB.ffil_lib['%s'%str(band0[ii])]
+                if fw == True:
+                    fwhm = MB.filt_fwhm[ii]
+            except:
+                f_regist = True
+                lfil_lib = {}
+                ffil_lib = {}
                 
         if f_regist:
             fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
