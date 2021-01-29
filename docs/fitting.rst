@@ -4,7 +4,7 @@ Fitting process
 ===============
 
 gsf fits synthetic data points (generated from model templates) to input observed data points 
-based on the minimization of the following equation (as in posterior_flexible.py);
+based on minimization of the following equation (as in posterior_flexible.py);
 
 .. math::
     residual_i = (f_\mathrm{model,i} - f_\mathrm{obs,i})^2 / \sigma_\mathrm{obs,i}^2
