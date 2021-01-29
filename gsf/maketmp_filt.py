@@ -355,11 +355,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     # READ BB photometry from CAT_BB:
     #############################
     if CAT_BB:
-        #fd0 = np.loadtxt(CAT_BB, comments='#')
         fd0 = ascii.read(CAT_BB)
-        id0 = fd0['id']
-        #ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-        #if int(id0[ii0]) !=  int(ID):
+        id0 = fd0['id'].astype('str')
         ii0 = np.where(id0[:]==ID)
         try:
             id = fd0['id'][ii0]
@@ -976,8 +973,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     #############################
     if CAT_BB:
         fd0 = ascii.read(CAT_BB)
-
-        id0 = fd0['id']
+        id0 = fd0['id'].astype('str')
         ii0 = np.argmin(np.abs(id0[:]-int(ID)))
         if int(id0[ii0]) !=  int(ID):
             print('Cannot find the column for [ID: %d] in the input BB catalog!'%(int(ID)))
