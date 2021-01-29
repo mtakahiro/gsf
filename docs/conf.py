@@ -16,7 +16,7 @@
 
 
 def setup(app):
-   app.add_stylesheet('css/custom.css')
+   app.add_css_file('css/custom.css')
 
 
 # -- Project information -----------------------------------------------------
@@ -39,8 +39,10 @@ master_doc = 'index'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
+    'sphinx_automodapi.automodapi',
     #optionally other extensions...
 ]
+numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

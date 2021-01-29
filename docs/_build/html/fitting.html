@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Output files &mdash; gsf 1.4 documentation</title>
+  <title>Fitting process &mdash; gsf 1.4 documentation</title>
   
 
   
@@ -37,8 +37,7 @@
   <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Fitting process" href="fitting.html" />
-    <link rel="prev" title="Generating templates" href="templates.html" /> 
+    <link rel="prev" title="Output files" href="output.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -90,15 +89,8 @@
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="input.html">Input files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Generating templates</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Output files</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#summary-file">1.summary file</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#chain-file">2.chain file</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#sfh-file">3.SFH file</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#spectral-file">4.Spectral file</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
-<li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Fitting process</a></li>
 </ul>
 
             
@@ -144,13 +136,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Output files</li>
+      <li>Fitting process</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/output.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/fitting.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -163,39 +155,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="output-files">
-<span id="output"></span><h1>Output files<a class="headerlink" href="#output-files" title="Permalink to this headline">¶</a></h1>
-<p>gsf produces plots for the MCMC covariance matrices, star formation histories, and SED in default.
-gsf also produces the following files, so users can make their own plots for these quantities;</p>
-<ul class="simple">
-<li><p>summary_&lt;ID&gt;.fits</p></li>
-<li><p>chain_&lt;ID&gt;_corner.cpkl</p></li>
-<li><p>SFH_&lt;ID&gt;.fits</p></li>
-<li><p>gsf_spec_&lt;ID&gt;.asdf</p></li>
-</ul>
-<p>See <a class="reference external" href="https://github.com/mtakahiro/gsf/blob/version1.4/example/Plot%20SFH%20and%20SED.ipynb">this notebook</a>
-for how to use these files.</p>
-<p><a class="reference external" href="../example/Plot%20SFH%20and%20SED.ipynb">hoge</a></p>
-<div class="section" id="summary-file">
-<h2>1.summary file<a class="headerlink" href="#summary-file" title="Permalink to this headline">¶</a></h2>
-<p>summarizes percentiles (16/50/84th) for fitting parameters (e.g., amplitude)
-as well as primary physical parameters (e.g.,stellar mass). Its header also contains meta infos
-such as calculation time.</p>
-</div>
-<div class="section" id="chain-file">
-<h2>2.chain file<a class="headerlink" href="#chain-file" title="Permalink to this headline">¶</a></h2>
-<p>contains MCMC-chains.</p>
-</div>
-<div class="section" id="sfh-file">
-<h2>3.SFH file<a class="headerlink" href="#sfh-file" title="Permalink to this headline">¶</a></h2>
-<p>contains star formation rates (logSFR), stellar masses (logMstel), and metallicity (logZ)
-as a function of lookback time (time) that can be used for plot.</p>
-</div>
-<div class="section" id="spectral-file">
-<h2>4.Spectral file<a class="headerlink" href="#spectral-file" title="Permalink to this headline">¶</a></h2>
-<p>contains the best fit model spectra for each age/tau component, as well as observed fluxes and
-error.</p>
-</div>
+  <div class="section" id="fitting-process">
+<span id="fitting"></span><h1>Fitting process<a class="headerlink" href="#fitting-process" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -206,10 +167,8 @@ error.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="fitting.html" class="btn btn-neutral float-right" title="Fitting process" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-      
-        <a href="templates.html" class="btn btn-neutral float-left" title="Generating templates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="output.html" class="btn btn-neutral float-left" title="Output files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

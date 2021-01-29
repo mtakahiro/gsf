@@ -17,6 +17,8 @@ gsf's documentation
    input.rst
    templates.rst
    output.rst
+   fitting.rst
+   prior.rst
 
 Indices and tables
 ==================
