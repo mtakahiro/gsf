@@ -1103,23 +1103,42 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #######################################
     ax1.xaxis.labelpad = -3
     if f_grsm:
-        conlim = (x0>10000) & (x0<25000)
-        xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
-        ax2t.set_xlabel('')
-        ax2t.set_xlim(xgmin, xgmax)
+        if np.max(x0)<25000: # E.g. WFC3, NIRISS grisms
+            conlim = (x0>10000) & (x0<25000)
+            xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
+            ax2t.set_xlabel('')
+            ax2t.set_xlim(xgmin, xgmax)
 
-        conaa = (x0>xgmin-50) & (x0<xgmax+50)
-        ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.15
-        yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.15
+            conaa = (x0>xgmin-50) & (x0<xgmax+50)
+            ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.15
+            yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.15
 
-        ax2t.set_ylim(yminzoom, ymaxzoom)
-        ax2t.xaxis.labelpad = -2
-        if xgmax>20000:
-            ax2t.set_xticks([8000, 12000, 16000, 20000, 24000])
-            ax2t.set_xticklabels(['0.8', '1.2', '1.6', '2.0', '2.4'])
+            ax2t.set_ylim(yminzoom, ymaxzoom)
+            ax2t.xaxis.labelpad = -2
+            if xgmax>20000:
+                ax2t.set_xticks([8000, 12000, 16000, 20000, 24000])
+                ax2t.set_xticklabels(['0.8', '1.2', '1.6', '2.0', '2.4'])
+            else:
+                ax2t.set_xticks([8000, 10000, 12000, 14000, 16000])
+                ax2t.set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
         else:
-            ax2t.set_xticks([8000, 10000, 12000, 14000, 16000])
-            ax2t.set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
+            conlim = (x0>10000) & (x0<54000) # NIRSPEC spectrum;
+            xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
+            ax2t.set_xlabel('')
+            ax2t.set_xlim(xgmin, xgmax)
+
+            conaa = (x0>xgmin-50) & (x0<xgmax+50)
+            ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d) * 1.15
+            yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d) / 1.15
+
+            ax2t.set_ylim(yminzoom, ymaxzoom)
+            ax2t.xaxis.labelpad = -2
+            if xgmax>40000:
+                ax2t.set_xticks([8000, 20000, 32000, 44000, 56000])
+                ax2t.set_xticklabels(['0.8', '2.0', '3.2', '4.4', '5.6'])
+            else:
+                ax2t.set_xticks([8000, 20000, 32000, 44000])
+                ax2t.set_xticklabels(['0.8', '2.0', '3.2', '4.4'])
 
     if f_dust:
         try:

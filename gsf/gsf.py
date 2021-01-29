@@ -180,9 +180,11 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         # 2. Mian fitting part.
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
+        MB.ndim_keep = MB.ndim # This is needed for iteration.
         flag_suc = MB.main(cornerplot=cornerplot)
         while (flag_suc and flag_suc!=-1):
 
+            MB.ndim = MB.ndim_keep
             print('\n\n')
             print('Making templates...')
             print('\n\n')
