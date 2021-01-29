@@ -14,9 +14,6 @@ gsf also produces the following files, so users can make their own plots for the
 See `this notebook <https://github.com/mtakahiro/gsf/blob/version1.4/example/Plot%20SFH%20and%20SED.ipynb>`__ 
 for how to use these files.
 
-`this notebook <../example/Plot%20SFH%20and%20SED.ipynb>`__
-
-
 
 1.summary file
 --------------

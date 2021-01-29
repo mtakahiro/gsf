@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Prior" href="prior.html" />
     <link rel="prev" title="Output files" href="output.html" /> 
 </head>
 
@@ -91,6 +92,7 @@
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Generating templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Fitting process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
 </ul>
 
             
@@ -157,6 +159,23 @@
             
   <div class="section" id="fitting-process">
 <span id="fitting"></span><h1>Fitting process<a class="headerlink" href="#fitting-process" title="Permalink to this headline">¶</a></h1>
+<p>gsf fits synthetic data points (generated from model templates) to input observed data points
+based on the minimization of the following equation (as in posterior_flexible.py);</p>
+<div class="math notranslate nohighlight">
+\[residual_i = (f_\mathrm{model,i} - f_\mathrm{obs,i})^2 / \sigma_\mathrm{obs,i}^2\]</div>
+<p>where <span class="math notranslate nohighlight">\(i\)</span> runs over <span class="math notranslate nohighlight">\(n\)</span> data points, and <span class="math notranslate nohighlight">\(f\)</span> as flux and <span class="math notranslate nohighlight">\(\sigma\)</span> as 1-sigma error.</p>
+<p>Then, log likelihood is calculated as;</p>
+<div class="math notranslate nohighlight">
+\[lnlike =  -0.5 \left[ \sum_{i}^{n} \left( residual_i^2 + ln (2 \pi \sigma_i^2) \right) - 2 \chi_\mathrm{log nd} \right]\]</div>
+<p>where <span class="math notranslate nohighlight">\(\chi_\mathrm{log nd}\)</span> is contributiong from non-detection data points (<span class="math notranslate nohighlight">\(f/\sigma&lt;SN_\mathrm{limit}\)</span>);</p>
+<div class="math notranslate nohighlight">
+\[\chi_\mathrm{log nd} = \sum_{i}^{n} ln \left( \sqrt{ \frac{\pi}{2}} \sigma_\mathrm{obs,i}
+\left(1 + \mathrm{erf} (\frac{\sigma_i SN_\mathrm{limit} - f_\mathrm{model,i}}{\sqrt{2}\sigma_i}) \right) \right)\]</div>
+<p>where erf is the error function. (See Appendix in <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012PASP..124.1208S/abstract">Sawicki 2012</a> for the mathematical proof for the non-detection part.)</p>
+<p>Then log posterior is calculated by;</p>
+<div class="math notranslate nohighlight">
+\[lnpost = lnlike + lnprior\]</div>
+<p>where lnprior is log prior (see <a class="reference internal" href="prior.html"><span class="doc">Prior</span></a>).</p>
 </div>
 
 
@@ -166,6 +185,8 @@
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="prior.html" class="btn btn-neutral float-right" title="Prior" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="output.html" class="btn btn-neutral float-left" title="Output files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
