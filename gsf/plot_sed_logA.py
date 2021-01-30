@@ -336,7 +336,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #####################################
     # Open ascii file and stock to array.
     lib = fnc.open_spec_fits(fall=0)
-    lib_all = fnc.open_spec_fits(fall=1)
+    lib_all = fnc.open_spec_fits(fall=1, orig=True)
+    lib_all_conv = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
@@ -601,7 +602,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     Fuv28   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
-
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
@@ -646,8 +646,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 fm_tmp += mod0_tmp
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
-            #if kk == 100:
-            #    ax1.plot(xm_tmp[:], ytmp_each[kk,:,ss], color=col[ss], linestyle='--')
 
         #
         # Dust component;
@@ -675,27 +673,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 # Redefine??
                 ytmp = np.zeros((mmax,len(x1_tot)), dtype='float')
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
+                ytmp_comp = np.zeros((mmax,len(x1_tot)), dtype='float')
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            #if f_fill:
-            #    ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
-            #    ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c / np.square(xm_tmp[:]) / d
-            #if f_fill:
-            #    ax1.plot(x1_tot[::nstep_plot], (fm_tmp * c/ np.square(x1_tot) / d)[::nstep_plot], '-', lw=1, color='gray', zorder=-2, alpha=alp)
 
         #
         # Grism plot + Fuv flux + LIR.
         #
-        if f_grsm:
-            #if f_fill:
-            ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+        #if f_grsm:
+            #ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Get FUV flux;
         Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
@@ -729,6 +722,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+
+    # For grism;
+    if f_grsm:
+        from astropy.convolution import convolve
+        from .maketmp_filt import get_LSF
+        LSF, lmtmp = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[::nstep_plot], c=3e18)
+        spec_grsm16 = convolve(ytmp16[::nstep_plot], LSF, boundary='extend')
+        spec_grsm50 = convolve(ytmp50[::nstep_plot], LSF, boundary='extend')
+        spec_grsm84 = convolve(ytmp84[::nstep_plot], LSF, boundary='extend')
+        ax2t.plot(x1_tot[::nstep_plot], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
 
     # Attach the data point in MB;
     MB.sed_wave_obs = xbb
@@ -923,6 +926,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50)
             col00.append(col1)
             
+        # Grism;
+        if f_grsm:
+            col2  = fits.Column(name='f_model_conv_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm16)
+            col00.append(col2)
+            col3  = fits.Column(name='f_model_conv_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm50)
+            col00.append(col3)
+            col4  = fits.Column(name='f_model_conv_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm84)
+            col00.append(col4)
+
         # BB for dust
         if f_dust:
             xbb = np.append(xbb,xbbd)
@@ -1103,7 +1115,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #######################################
     ax1.xaxis.labelpad = -3
     if f_grsm:
-        if np.max(x0)<25000: # E.g. WFC3, NIRISS grisms
+        if np.max(xg0)<23000: # E.g. WFC3, NIRISS grisms
             conlim = (x0>10000) & (x0<25000)
             xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
             ax2t.set_xlabel('')
@@ -1896,7 +1908,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         # Grism plot + Fuv flux + LIR.
         if f_grsm:
-            #if f_fill:
             ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         if False:

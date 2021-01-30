@@ -45,7 +45,7 @@ class Func:
     #############################
     # Load template in obs range.
     #############################
-    def open_spec_fits(self, fall=0):
+    def open_spec_fits(self, fall=0, orig=False):
         '''
         '''
         ID0 = self.MB.ID
@@ -81,7 +81,10 @@ class Func:
 
                 for aa in range(len(AA)):
                     coln = int(2 + aa)
-                    colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+                    if orig:
+                        colname = 'fspec_orig_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+                    else:
+                        colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
                     colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
                     lib[:,colnall] = hdu0[colname]
 
@@ -519,7 +522,7 @@ class Func_tau:
     #############################
     # Load template in obs range.
     #############################
-    def open_spec_fits(self, fall=0):
+    def open_spec_fits(self, fall=0, orig=False):
         '''
         '''
         ID0 = self.MB.ID
@@ -553,7 +556,10 @@ class Func_tau:
                         lib[:,0] = nr[:]
                         lib[:,1] = xx[:]
 
-                    colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
+                    if orig:
+                        colname = 'fspec_orig_' + str(zz) + '_' + str(tt) + '_' + str(ss)
+                    else:
+                        colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
                     colnall = int(2 + zz * self.MB.ntau * self.MB.nage + tt * self.MB.nage + ss) # 2 takes account of wavelength and AV columns.
                                         
                     lib[:,colnall] = hdu0[colname]
