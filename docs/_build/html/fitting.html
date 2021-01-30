@@ -162,14 +162,14 @@
 <p>gsf fits synthetic data points (generated from model templates) to input observed data points
 based on minimization of the following equation (as in posterior_flexible.py);</p>
 <div class="math notranslate nohighlight">
-\[residual_i = (f_\mathrm{model,i} - f_\mathrm{obs,i})^2 / \sigma_\mathrm{obs,i}^2\]</div>
+\[resid_i = (f_\mathrm{model,i} - f_\mathrm{obs,i}) / \sigma_\mathrm{obs,i}\]</div>
 <p>where <span class="math notranslate nohighlight">\(i\)</span> runs over <span class="math notranslate nohighlight">\(n\)</span> data points, and <span class="math notranslate nohighlight">\(f\)</span> as flux and <span class="math notranslate nohighlight">\(\sigma\)</span> as 1-sigma error.</p>
 <p>Then, log likelihood is calculated as;</p>
 <div class="math notranslate nohighlight">
-\[lnlike =  -0.5 \left[ \sum_{i}^{n} \left( residual_i^2 + ln (2 \pi \sigma_i^2) \right) - 2 \chi_\mathrm{log nd} \right]\]</div>
+\[lnlike =  -0.5 \left[ \sum_{i}^{n} \left( resid_i^2 + ln (2 \pi \sigma_i^2) \right) - 2 \chi_\mathrm{ln nd} \right]\]</div>
 <p>where <span class="math notranslate nohighlight">\(\chi_\mathrm{log nd}\)</span> is contributiong from non-detection data points (<span class="math notranslate nohighlight">\(f/\sigma&lt;SN_\mathrm{limit}\)</span>);</p>
 <div class="math notranslate nohighlight">
-\[\chi_\mathrm{log nd} = \sum_{i}^{n} ln \left( \sqrt{ \frac{\pi}{2}} \sigma_\mathrm{obs,i}
+\[\chi_\mathrm{ln nd} = \sum_{i}^{n} ln \left( \sqrt{ \frac{\pi}{2}} \sigma_\mathrm{obs,i}
 \left(1 + \mathrm{erf} (\frac{\sigma_i SN_\mathrm{limit} - f_\mathrm{model,i}}{\sqrt{2}\sigma_i}) \right) \right)\]</div>
 <p>where erf is the error function. (See Appendix in <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012PASP..124.1208S/abstract">Sawicki 2012</a> for the mathematical proof for the non-detection part.)</p>
 <p>Then log posterior is calculated by;</p>

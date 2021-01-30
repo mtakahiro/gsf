@@ -158,6 +158,14 @@
             
   <div class="section" id="prior">
 <span id="id1"></span><h1>Prior<a class="headerlink" href="#prior" title="Permalink to this headline">¶</a></h1>
+<p>gsf calculates posterior probability through an MCMC process,
+whose concept is based on the Bayes theorem.</p>
+<p>For each parameter set in the minimizer, prior is set (posterior_flexible.py).
+In the current version, prior for most of the parameters (amplitude, metallicity,
+dust attenuation, redshift) are set flat, so that;</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}prior(\theta) &amp;= 1\ \mathrm{for}\ \theta_\mathrm{min} &lt; \theta &lt; \theta_\mathrm{max} \\
+              &amp;= 0\ \mathrm{for\ else}\end{split}\]</div>
 </div>
 
 
