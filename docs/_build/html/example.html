@@ -91,7 +91,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#executing-flag">Executing flag</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#step-by-step">Step-by-step</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#appendicies">Appendicies</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#a-specify-object-id">A. Specify object id</a></li>
 </ul>
@@ -185,44 +184,11 @@
 <h3>Executing flag<a class="headerlink" href="#executing-flag" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>0: Generating templates at z=0 (takes a while if MILES). Start from here if parameter in config file is changed. Then go to 1.</p></li>
-<li><p>1: Redshift template to z=z_input, using pre-existing z=0 templates (from step0). Then go to 2.</p></li>
-<li><p>2: Fitting part, using pre-existing z=z_input templates (from step1). Then go to 3.</p></li>
+<li><p>1: Redshift template to z=ZGAL, and prepare mock photometry that matches to the input filters and spectra, using pre-existing z=0 templates (from step0). Then go to 2.</p></li>
+<li><p>2: Fitting part, using pre-existing z=z_input templates (from Step1). If ZVIS==1, gsf will ask you if the initial redshift fit is reasonable. Then go to 3.</p></li>
 <li><p>3: Only plot SFH and SED using existing result files.</p></li>
-<li><p>6: Plot physical parameters and SED.</p></li>
+<li><p>6: Plot physical parameters and SED (optional).</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="step-by-step">
-<h2>Step-by-step<a class="headerlink" href="#step-by-step" title="Permalink to this headline">¶</a></h2>
-<p>The script above includes the followin steps, which can be run separately.</p>
-<ol class="arabic simple">
-<li><p>Generate templates at z=0.</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input <span class="m">0</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="2">
-<li><p>Generate templates at z=ZGAL, and prepare mock photometry that matches to the input filters and spectra.</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input <span class="m">1</span>
-</pre></div>
-</div>
-<p>3. Run MCMC fitting part. If ZVIS==1, gsf will ask you if the initial redshift fit is reasonable.
-You can iterate this process until you get reasonable results.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input <span class="m">2</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="4">
-<li><p>Plot your results</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input <span class="m">3</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="5">
-<li><p>Plot summary result (optional)</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input <span class="m">6</span>
-</pre></div>
 </div>
 </div>
 <div class="section" id="appendicies">
