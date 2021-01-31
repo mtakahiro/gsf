@@ -66,7 +66,7 @@ If one needs a new config file
 
     python get_configfile.py
 
-Or take a look at a `notebook <https://github.com/mtakahiro/gsf/blob/version1.4/example/Full%20spectral%20fitting.ipynb>`__.
+Or take a look at `notebooks <https://github.com/mtakahiro/gsf/tree/master/example/>`__.
 
 
 flag
