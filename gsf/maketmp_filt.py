@@ -499,9 +499,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     if f_dust:
         fdd = ascii.read(CAT_BB_DUST)
         try:
-            id0 = fdd['id']
-            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-            if int(id0[ii0]) != int(ID):
+            id0 = fdd['id'].astype('str')
+            ii0 = np.where(id0[:]==ID)
+            try:
+                id = fd0['id'][ii0]
+            except:
+                print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
                 return -1
         except:
             return -1
@@ -984,11 +987,12 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     if CAT_BB:
         fd0 = ascii.read(CAT_BB)
         id0 = fd0['id'].astype('str')
-        ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-        if int(id0[ii0]) !=  int(ID):
-            print('Cannot find the column for [ID: %d] in the input BB catalog!'%(int(ID)))
+        ii0 = np.where(id0[:]==ID)
+        try:
+            id = fd0['id'][ii0]
+        except:
+            print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
             return -1
-        id = fd0['id'][ii0]
 
         fbb = np.zeros(len(SFILT), dtype='float')
         ebb = np.zeros(len(SFILT), dtype='float')
@@ -1034,14 +1038,13 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     # Dust flux;
     if f_dust:
         fdd = ascii.read(CAT_BB_DUST)
+        id0 = fdd['id'].astype('str')
+        ii0 = np.where(id0[:]==ID)
         try:
-            id0 = fdd['id']
-            ii0 = np.argmin(np.abs(id0[:]-int(ID)))
-            if int(id0[ii0]) != int(ID):
-                return -1
+            id = fd0['id'][ii0]
         except:
+            print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
             return -1
-        id = fdd['id']
 
         fbb_d = np.zeros(len(DFILT), dtype='float')
         ebb_d = np.zeros(len(DFILT), dtype='float')
