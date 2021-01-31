@@ -245,9 +245,10 @@ class Mainbody():
             self.agemax = float(inputs['AGEMAX'])
             self.agemin = float(inputs['AGEMIN'])
             self.delage = float(inputs['DELAGE'])
-            agemax_tmp = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
+            agemax_tmp = np.log10(self.cosmo.age(self.zgal).value) #, use_flat=True, **cosmo)/cc.Gyr_s
             if self.agemax > agemax_tmp:
                 self.agemax = agemax_tmp
+                print('Age max is set to the age of the univese (%.1f) at this redshift.'%(self.cosmo.age(self.zgal).value))
 
             self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
             self.nage = len(self.ageparam)
