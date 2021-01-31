@@ -51,7 +51,7 @@ PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
     name = "gsf",
-    version = "1.3",
+    version = "1.4",
     author = "Takahiro Morishita",
     author_email = "tmorishita@stsci.edu",
     description = "SED Fitting Code for HST Grism",
@@ -69,7 +69,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
-    package_data={'gsf': ['example/*'], 'gsf': ['example/filter/*'], 'gsf': ['example/templates/*']},
+    #package_data={'gsf': ['example/*'], 'gsf': ['example/filter/*'], 'gsf': ['example/templates/*']},
     zip_safe=False,
     #install_requires=requires,
     #ext_modules = extensions,

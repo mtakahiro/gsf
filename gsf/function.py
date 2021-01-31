@@ -6,7 +6,6 @@ from scipy.integrate import simps
 import pickle as cPickle
 import os
 
-#
 c = 3.e18 # A/s
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
@@ -16,6 +15,42 @@ d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
+
+
+def get_ind(wave,flux):
+    '''
+    Purpose:
+    ========
+    Get Lick index for input input
+
+    Return:
+    =======
+    equivalent width
+    '''
+    
+    lml     = [4268, 5143, 5233, 5305, 5862, 4828, 4628, 4985, 5669, 5742, 4895, 4895, 5818, 6068]
+    lmcl    = [4283, 5161, 5246, 5312, 5879, 4848, 4648, 5005, 5689, 5762, 5069, 5154, 5938, 6191]
+    lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
+    lmr     = [4336, 5206, 5318, 5363, 5950, 4892, 4688, 5945, 5729, 5802, 5366, 5366, 6105, 6417]
+
+    W = np.zeros(len(lml), dtype='float')
+    for ii in range(len(lml)):
+        con_cen = (wave>lmcl[ii]) & (wave<lmcr[ii])
+        con_sid = ((wave<lmcl[ii]) & (wave>lml[ii])) | ((wave<lmr[ii]) & (wave>lmcr[ii]))
+
+        Ic = np.mean(flux[con_cen])
+        Is = np.mean(flux[con_sid])
+
+        delam = lmcr[ii] - lmcl[ii]
+
+        if ii < 10:
+            W[ii] = (1. - Ic/Is) * delam
+        elif 1. - Ic/Is > 0:
+            W[ii] = -2.5 * np.log10(1. - Ic/Is)
+        else:
+            W[ii] = -99
+
+    return W
 
 
 def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", emojis=['']):
@@ -31,7 +66,6 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
         fill        - Optional  : bar fill character (Str)
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     '''
-    #, emojis=['🥚','🐣','🐥','🦆']
 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     if fill == None:
@@ -55,13 +89,14 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
 
 def get_input():
     '''
-    This returns somewhat a common default input dictionary.
+    Purpose:
+    ========
+    Get a default dictionary for input params.
 
     '''
-
-    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':1, \
+    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0, \
     'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
-    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':100, 'NWALKZ':50,\
+    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,\
     'ZEVOL':0, 'ZVIS':1, 'FNELD':0}
 
     return inputs
@@ -71,16 +106,13 @@ def read_input(parfile):
     '''
     Purpose:
     ========
-    #
-    # Get info from param file.
-    #
+    Get info from param file.
 
     Return:
     =======
     Input dictionary.
 
     '''
-
     input0 = []
     input1 = []
     file = open(parfile,'r')
@@ -90,7 +122,7 @@ def read_input(parfile):
             break
         else:
             cols = str.split(line)
-            if len(cols)>0 and cols[0] != '#':
+            if len(cols)>0 and cols[0][0] != '#':
                 input0.append(cols[0])
                 input1.append(cols[1])
     file.close()
@@ -99,6 +131,24 @@ def read_input(parfile):
         inputs[input0[i]]=input1[i]
 
     return inputs
+
+
+def write_input(inputs, file_out='gsf.input'):
+    '''
+    Purpose:
+    ========
+    Get an ascii format param file.    
+
+    Return:
+    =======
+    file_out.
+    '''
+    import gsf
+    fw = open(file_out, 'w')
+    fw.write('# gsf ver %s\n'%(gsf.__version__))
+    for key in inputs.keys():
+        fw.write('%s %s\n'%(key,inputs[key]))
+    return True
 
 
 def loadcpkl(cpklfile):
@@ -118,7 +168,7 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, chidef=1e5, Zbest=0, f_keep=False):
+def get_leastsq(MB, ZZtmp, fneld,age,fit_params,residual,fy,ey,wht,ID0, chidef=None, Zbest=0, f_keep=False):
     '''
     Purpose:
     ========
@@ -131,22 +181,33 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
         print('Not enough data for quick fit. Exiting.')
         return False
 
-    file = 'Z_' + ID0 + '_PA' + PA0 + '.cat'
+    file = 'Z_' + ID0 + '.cat'
     fwz = open(file, 'w')
     fwz.write('# ID Zini chi/nu AA Av Zbest\n')
-    fwz.write('# FNELD = %d\n' % fneld)
 
-    # Nelder;
     if fneld == 1:
         fit_name = 'nelder'
+    elif fneld == 0:
+        fit_name = 'powell'
+    elif fneld == 2:
+        fit_name = 'leastsq'
+
+    fwz.write('# minimizer: %s\n' % fit_name)
+    #fit_name = 'trust-exact'# Need trust region
+    #fit_name = 'trust-constr'
+    #if fneld == 1 or fneld == 2: # Nelder;
+    
+    try:
+        ZZtmp = [MB.ZFIX]
+    except:
+        pass
+
+    if True: # Nelder;
         for zz in range(len(ZZtmp)):
             ZZ = ZZtmp[zz]
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
+            for aa in range(len(age)):
+                if MB.ZEVOL == 1 or aa == 0:
                     fit_params['Z'+str(aa)].value = ZZ
-            else:
-                aa = 0
-                fit_params['Z'+str(aa)].value = ZZ
 
             out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
             keys = fit_report(out_tmp).split('\n')
@@ -164,75 +225,26 @@ def get_leastsq(inputs,ZZtmp,fneld,age,fit_params,residual,fy,ey,wht,ID0,PA0, ch
 
             fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-            AA_tmp = np.zeros(len(age), dtype='float64')
-            ZZ_tmp = np.zeros(len(age), dtype='float64')
+            AA_tmp = np.zeros(len(age), dtype='float')
+            ZZ_tmp = np.zeros(len(age), dtype='float')
             for aa in range(len(age)):
                 AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
                 fwz.write(' %.5f'%(AA_tmp[aa]))
 
             Av_tmp = out_tmp.params['Av'].value
             fwz.write(' %.5f'%(Av_tmp))
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
-                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
-            else:
-                aa = 0
-                ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                fwz.write(' %.5f'%(ZZ_tmp[aa]))
-
-            fwz.write('\n')
-            if fitc[1]<chidef:
-                chidef = fitc[1]
-                out    = out_tmp
-    # Or
-    # Powell;
-    else:
-        fit_name='powell'
-        for zz in range(len(ZZtmp)):
-            ZZ = ZZtmp[zz]
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
-                    fit_params['Z'+str(aa)].value = ZZ
-            else:
-                aa = 0
-                fit_params['Z'+str(aa)].value = ZZ
-
-            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # powel is the more accurate.
-            keys = fit_report(out_tmp).split('\n')
-            csq  = 99999
-            rcsq = 99999
-            for key in keys:
-                if key[4:7] == 'chi':
-                    skey = key.split(' ')
-                    csq  = float(skey[14])
-                if key[4:7] == 'red':
-                    skey = key.split(' ')
-                    rcsq = float(skey[7])
-
-            fitc = [csq, rcsq] # Chi2, Reduced-chi2
-            fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
-
-            AA_tmp = np.zeros(len(age), dtype='float64')
-            ZZ_tmp = np.zeros(len(age), dtype='float64')
             for aa in range(len(age)):
-                AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
-                fwz.write(' %.5f'%(AA_tmp[aa]))
-
-            Av_tmp = out_tmp.params['Av'].value
-            fwz.write(' %.5f'%(Av_tmp))
-            if int(inputs['ZEVOL']) == 1:
-                for aa in range(len(age)):
+                if MB.ZEVOL == 1 or aa == 0:
                     ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
                     fwz.write(' %.5f'%(ZZ_tmp[aa]))
-            else:
-                aa = 0
-                fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
             fwz.write('\n')
-            if fitc[1]<chidef:
+            if chidef==None:
                 chidef = fitc[1]
-                out    = out_tmp
+                out = out_tmp
+            elif fitc[1]<chidef:
+                chidef = fitc[1]
+                out = out_tmp
 
     fwz.close()
 
@@ -276,8 +288,26 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
 
 
 def get_SFMS(red,age,mass,IMF=1):
+    '''
+    Purpose:
+    ========
+    To get SFMS at age ago from z=red.
+
+    Input:
+    ======
+    red : Observed redshift
+    age : lookback time, in Gyr (array).
+    mass : stellar mass (array) at each age, in Msun (not logM). 
+
+    Return:
+    =======
+    SFR, in logMsun/yr.
+
+    Note:
+    =====
     # From Speagle+14 Eq28;
     # Chabrier IMF, default
+    '''
     from astropy.cosmology import WMAP9
     cosmo = WMAP9
 
@@ -289,7 +319,7 @@ def get_SFMS(red,age,mass,IMF=1):
         CIMF = 0.04
         print('SFMS is shifted to Kroupa IMF.')
 
-    x  = np.log10(mass) - CIMF #np.arange(6,13,0.1)
+    x = np.log10(mass) - CIMF #np.arange(6,13,0.1)
     tz = cosmo.age(z=red).value - age # in Gyr
     y1 = (0.84 - 0.026*tz) * x - (6.51 - 0.11*tz) # in log Msun/yr
     con = (y1<=0)
@@ -311,32 +341,36 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
 
 # SFH
 def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float64')+minsfr
+    sfr = np.zeros(len(tt), dtype='float')+minsfr
     sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
 def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float64')+minsfr
+    sfr = np.zeros(len(tt), dtype='float')+minsfr
     sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
 def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
-    sfr = np.zeros(len(tt), dtype='float64')+minsfr
+    sfr = np.zeros(len(tt), dtype='float')+minsfr
     sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]<t0) | (tt[:]>tau)
     sfr[:][con] = minsfr
     return sfr
 
 def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
-    #
-    # lmtmp: Rest frame wave (AA)
-    # ftmp: Fnu ()
-    # Return: integrated flux.
-    #
+    '''
+    Input:
+    ======
+    lmtmp: Rest frame wave (AA)
+    ftmp: Fnu ()
+    Return: integrated flux.
+
+    '''
+    
     con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
@@ -369,21 +403,66 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
         I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
         I2  = simps(lamS*1.,lamS)                  #Numerator
         fnu = I1/I2                               #Average flux density
+    else:
+        fnu = None
     return fnu
 
 def data_int(lmobs, lmtmp, ftmp):
+    '''
+    Purpose:
+    ========
+
+    Input:
+    ======
     # lmobs: Observed wavelength.
     # lmtmp, ftmp: Those to be interpolated.
+    '''
+
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 
+def fnutonu(fnu, m0set=25.0, m0input=-48.6):
+    '''
+    Purpose:
+    ========
+    Convert from Fnu (cgs) to Fnu (m0=m0set)
+    
+    Inputs:
+    =======
+    fnu : flux in cgs, with magnitude zero point of m0input.
+    m0set : Target mag zero point.
+    
+    '''
+    Ctmp = 10**((48.6+m0set)/2.5)
+    fnu_new  = fnu * Ctmp
+    return fnu_new
+
+
 def flamtonu(lam, flam, m0set=25.0):
-    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    '''
+    Purpose:
+    ========
+    Convert from Flam to Fnu, with mag zeropoint of m0set.
+    
+    Inputs:
+    =======
+
+    '''
+    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     fnu  = flam * Ctmp
     return fnu
 
 def fnutolam(lam, fnu, m0set=25.0):
-    Ctmp = lam **2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    '''
+    Purpose:
+    ========
+    Convert from Fnu to Flam, with mag zeropoint of m0set.
+    
+    Inputs:
+    =======
+
+    '''
+    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     flam  = fnu / Ctmp
     return flam
 
@@ -475,7 +554,7 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
     # Eb:
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
-    Kl = np.zeros(len(lm), dtype='float64')
+    Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -521,8 +600,9 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
 
 
 def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
+    '''
     #
-    # From Kriek&Conroy13
+    # Dust model by Kriek&Conroy13
     # lm (float array) : wavelength, at RF.
     # fl (float array) : fnu
     # Av (float)       : mag
@@ -531,7 +611,8 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     # gamma: See Eq.1
     # A difference from dust_gen is Eb is defined as a function of gamma.
     #
-    Kl = np.zeros(len(lm), dtype='float64')
+    '''
+    Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -578,9 +659,11 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     else:
         return fl_cor, lmmc*10000., nrd
 
-# This function is much better than previous,
-# but is hard to impliment for the current version.
+
 def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
+    '''
+    Input:
+    ======
     #
     # lm (float array) : wavelength, at RF.
     # fl (float array) : fnu
@@ -589,7 +672,11 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     # Rv: from Calzetti+00
     # lmlimu: Upperlimit. 2.2 in Calz+00
     #
-    Kl = np.zeros(len(lm), dtype='float64')
+    '''
+    Kl = np.zeros(len(lm), dtype='float')
+    nrd = np.zeros(len(lm), dtype='float')
+    lmmc = np.zeros(len(lm), dtype='float')
+    flc = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
     con1 = (lmm<=0.63)
@@ -599,28 +686,40 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
     Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
     Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
+    Kl[con1] = Kl1
+    Kl[con2] = Kl2
+    Kl[con3] = Kl3
 
     #nr0 = nr[con0]
     nr1 = nr[con1]
     nr2 = nr[con2]
     nr3 = nr[con3]
+    nrd[con1] = nr[con1]
+    nrd[con2] = nr[con2]
+    nrd[con3] = nr[con3]
 
     #lmm0 = lmm[con0]
     lmm1 = lmm[con1]
     lmm2 = lmm[con2]
     lmm3 = lmm[con3]
+    lmmc[con1] = lmm[con1]
+    lmmc[con2] = lmm[con2]
+    lmmc[con3] = lmm[con3]
 
     #fl0 = fl[con0]
     fl1 = fl[con1]
     fl2 = fl[con2]
     fl3 = fl[con3]
+    flc[con1] = fl[con1]
+    flc[con2] = fl[con2]
+    flc[con3] = fl[con3]
 
-    Kl   = np.concatenate([Kl1,Kl2,Kl3])
-    nrd  = np.concatenate([nr1,nr2,nr3])
-    lmmc = np.concatenate([lmm1,lmm2,lmm3])
-    flc  = np.concatenate([fl1,fl2,fl3])
+    #Kl = np.concatenate([Kl1,Kl2,Kl3])
+    #nrd = np.concatenate([nr1,nr2,nr3])
+    #lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    #flc = np.concatenate([fl1,fl2,fl3])
 
-    Alam   = Kl * Av / Rv
+    Alam = Kl * Av / Rv
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
     if f_Alam:
@@ -630,6 +729,7 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
 
 
 def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
+    '''
     #
     # lm (float array) : wavelength, at RF, in AA.
     # fl (float array) : fnu
@@ -637,7 +737,8 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     # nr (int array)   : index, to be used for sorting.
     # Rv: =3.1 for MW.
     #
-    Kl = np.zeros(len(lm), dtype='float64')
+    '''
+    Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # into micron
     xx   = 1./lmm
@@ -769,8 +870,8 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
     f0 in fnu
     '''
 
-    fnu  = np.zeros(len(band0), dtype='float64')
-    lcen = np.zeros(len(band0), dtype='float64')
+    fnu  = np.zeros(len(band0), dtype='float')
+    lcen = np.zeros(len(band0), dtype='float')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + 'f%sw.fil'%str(band0[ii]), comments='#')
         lfil = fd[:,1]
@@ -810,10 +911,10 @@ def filconv_fast(filts, band, l0, f0, fw=False):
     l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
 
     '''
-    fnu  = np.zeros(len(filts), dtype='float64')
-    lcen = np.zeros(len(filts), dtype='float64')
+    fnu  = np.zeros(len(filts), dtype='float')
+    lcen = np.zeros(len(filts), dtype='float')
     if fw:
-        fwhm = np.zeros(len(filts[:]), dtype='float64')
+        fwhm = np.zeros(len(filts[:]), dtype='float')
 
     for ii in range(len(filts[:])):
         lfil = band['%s_lam'%(filts[ii])]
@@ -857,31 +958,52 @@ def filconv_fast(filts, band, l0, f0, fw=False):
         return lcen, fnu
 
 
-def filconv(band0, l0, f0, DIR, fw=False):
+def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     '''
     Input:
     ======
     f0: Flux for spectrum, in fnu
     l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
 
-    '''
+    f_regist : If True, read filter response curve.
 
-    fnu  = np.zeros(len(band0), dtype='float64')
-    lcen = np.zeros(len(band0), dtype='float64')
+    '''
+    if MB==None:
+        f_regist = True
+    if f_regist:
+        lfil_lib = {}
+        ffil_lib = {}
+        
+    fnu = np.zeros(len(band0), dtype='float')
+    lcen = np.zeros(len(band0), dtype='float')
     if fw == True:
-        fwhm = np.zeros(len(band0), dtype='float64')
+        fwhm = np.zeros(len(band0), dtype='float')
 
     for ii in range(len(band0)):
-        #fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
-        fd = np.loadtxt(DIR + '%s.fil'%band0[ii], comments='#')
-        lfil = fd[:,1]
-        ffil = fd[:,2]
-        ffil /= np.max(ffil)
-        if fw == True:
-            ffil_cum = np.cumsum(ffil)
-            ffil_cum/= ffil_cum.max()
-            con      = (ffil_cum>0.05) & (ffil_cum<0.95)
-            fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
+        if not f_regist:
+            try:
+                lfil = MB.lfil_lib['%s'%str(band0[ii])]
+                ffil = MB.ffil_lib['%s'%str(band0[ii])]
+                if fw == True:
+                    fwhm = MB.filt_fwhm[ii]
+            except:
+                f_regist = True
+                lfil_lib = {}
+                ffil_lib = {}
+                
+        if f_regist:
+            fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
+            lfil = fd[:,1]
+            ffil = fd[:,2]
+            ffil /= np.max(ffil)
+            if fw == True:
+                ffil_cum = np.cumsum(ffil)
+                ffil_cum/= ffil_cum.max()
+                con = (ffil_cum>0.05) & (ffil_cum<0.95)
+                fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])       
+
+            lfil_lib['%s'%str(band0[ii])] = lfil
+            ffil_lib['%s'%str(band0[ii])] = ffil
 
         lmin  = np.min(lfil)
         lmax  = np.max(lfil)
@@ -909,6 +1031,12 @@ def filconv(band0, l0, f0, DIR, fw=False):
         else:
             fnu[ii] = 0
 
+    if MB != None and f_regist:
+        MB.lfil_lib = lfil_lib
+        MB.ffil_lib = ffil_lib
+        if fw == True:
+            MB.filt_fwhm = fwhm
+        
     if fw:
         return lcen, fnu, fwhm
     else:
@@ -923,14 +1051,14 @@ def fil_fwhm(band0, DIR):
     #f0 in fnu
     #
     '''
-    fwhm = np.zeros(len(band0), dtype='float64')
+    fwhm = np.zeros(len(band0), dtype='float')
     for ii in range(len(band0)):
         fd = np.loadtxt(DIR + band0[ii] + '.fil', comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
 
         fsum = np.sum(ffil)
-        fcum = np.zeros(len(ffil), dtype='float64')
+        fcum = np.zeros(len(ffil), dtype='float')
         lam0,lam1 = 0,0
 
         for jj in range(len(ffil)):
@@ -1023,12 +1151,12 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
 
     Returns:
     ========
-    wht   : Processed weight, where wavelength at line exists is masked.
+    wht : Processed weight, where wavelength at line exists is masked.
     ypoly : Fitted continuum flux.
 
     '''
 
-    er   = 1./np.sqrt(wycont)
+    er  = 1./np.sqrt(wycont)
     try:
         wht2, flag_l = detect_line_man(xcont, ycont, wycont, zgal, LW, model)
     except Exception:

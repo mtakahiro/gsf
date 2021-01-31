@@ -1,9 +1,6 @@
-import numpy as np
-from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-from .function import check_line_cz_man
 
-
-def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zlimu, delzz=0.01, nmc_cz=100, nwalk_cz=10):
+def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
+    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True):
     '''
     Purpose:
     ========
@@ -11,35 +8,39 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
 
     Input:
     ======
-
     zbest : Initial value for redshift.
+    zprior : Redshift grid for prior.
     prior : Prior for redshift determination. E.g., Eazy z-probability.
     zliml : Lowest redshift for fitting range.
     zlimu : Highest redshift for fitting range.
+    f_vary: Bool. If want to fix redshift.
 
     fm_tmp, xm_tmp : Template spectrum at RF.
     fobs, eobs, xobs: Observed spectrum. (Already scaled with Cz0prev.)
 
+
     Return:
     =======
-
     res_cz  :
     fitc_cz :
-
     '''
+
+    from .function import check_line_cz_man
+    import numpy as np
+    from lmfit import Model, Parameters, minimize, fit_report, Minimizer
     import scipy.interpolate as interpolate
 
     fit_par_cz = Parameters()
-    fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu)
+    fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu, vary=f_vary)
     fit_par_cz.add('Cz0', value=1, min=0.5, max=1.5)
     fit_par_cz.add('Cz1', value=1, min=0.5, max=1.5)
 
     ##############################
     def residual_z(pars):
-        vals  = pars.valuesdict()
-        z     = vals['z']
-        Cz0s  = vals['Cz0']
-        Cz1s  = vals['Cz1']
+        vals = pars.valuesdict()
+        z = vals['z']
+        Cz0s = vals['Cz0']
+        Cz1s = vals['Cz1']
 
         xm_s = xm_tmp * (1+z)
         fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
@@ -61,8 +62,14 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
         eycon= np.append(ey01,ey2)
         wht = 1./np.square(eycon)
 
-        wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
-
+        if f_line_check:
+            try:
+                wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+            except:
+                wht2 = wht
+        else:
+            wht2 = wht
+            
         if fobs is None:
             print('Data is none')
             return fm_s
@@ -71,22 +78,21 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
 
     ###############################
     def lnprob_cz(pars):
-        resid  = residual_z(pars) # i.e. (data - model) * wht
-        z      = pars['z']
-        s_z    = 1 #pars['f_cz']
-        resid *= 1 / s_z
+        resid = residual_z(pars) # i.e. (data - model) * wht
+        z = pars['z']
+        s_z = 1 #pars['f_cz']
+        resid *= 1/s_z
         resid *= resid
-        nzz    = int(z/delzz)
+        
+        nzz = np.argmin(np.abs(zprior-z))
 
         # For something unacceptable;
-        if nzz<0 or z<zliml or z>zlimu:
+        if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
             return -np.inf
         else:
             respr = np.log(prior[nzz])
-
-        resid += np.log(2 * np.pi * s_z**2) + respr
-
-        return -0.5 * np.sum(resid)
+            resid += np.log(2 * np.pi * s_z**2)
+            return -0.5 * np.sum(resid) + respr
 
     #################################
 
@@ -109,7 +115,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, prior, NR, zliml, zl
     #Czrec0  = out_cz.params['Cz0'].value
     #Czrec1  = out_cz.params['Cz1'].value
 
-    mini_cz = Minimizer(lnprob_cz, out_cz.params) #,fcn_args=[zliml, prior, delzz])
-    res_cz  = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=5, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
+    mini_cz = Minimizer(lnprob_cz, out_cz.params)
+    #print(nthin, nwalk_cz, out_cz.params,int(nmc_cz/2))
+    res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz

@@ -1,7 +1,7 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.3.1
+version 1.4
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
 - The main purpose is to explore galaxy star formation histories with a flexible form.
@@ -47,7 +47,7 @@ Or if users create a new conda environment, by executing;
 
 .. code-block:: bash
 
-    conda create --name gsf_environment.yml
+    conda create --name environment.yml
 
 
 
@@ -65,6 +65,8 @@ If one needs a new config file
 .. code-block:: bash
 
     python get_configfile.py
+
+Or take a look at a `notebook <https://github.com/mtakahiro/gsf/blob/version1.4/example/Full%20spectral%20fitting.ipynb>`__.
 
 
 flag

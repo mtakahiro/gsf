@@ -1,0 +1,253 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Generating templates &mdash; gsf 1.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Input files" href="input.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> gsf
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing gsf</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Generating templates</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rest-frame-templates">Rest-frame templates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#shifting-templates-to-the-input-redshift">Shifting templates to the input redshift</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gsf</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Generating templates</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/templates.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="generating-templates">
+<span id="templates"></span><h1>Generating templates<a class="headerlink" href="#generating-templates" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="rest-frame-templates">
+<h2>Rest-frame templates<a class="headerlink" href="#rest-frame-templates" title="Permalink to this headline">¶</a></h2>
+<p>In this step (specifically, <cite>make_tmp_z0</cite>), gsf generates model spectral templates via python-fsps citep{foreman14}, based on the parameters
+in the configuration file. The parameters are limited from the original fsps citep{conroy09fsps},
+such as the range in metallicity, initial mass function (IMF), and ionizing parameter.</p>
+<p>It is in this step that generates templates with different ages and metallicities.
+The templates are saved in a common file, “spec_all.asdf” (irrespective to object IDs),
+for the aim of saving time. Redshifted templates (below), which are actually
+used in the fitting process, are based on this file. Therefore, if one wish to change any of
+template-critical parameters (IMF, age/metallicity range and step etc.), it is suggested to save the
+previous file to avoid overwriting, or move in another directory to avoid confusion.</p>
+<p>Age pixels determine the number of templates at different lookback times. The length of star
+formation is specified by a parameter, TAU0, in the configuration file. The length, if specified
+to a value &lt;99, is uniform in all age pixels in the current version.
+If set to 99, then the CSP is applied so that age pixels are continuously connected each other.
+If set to a negative value, then SSP is applied.</p>
+<img alt="_images/pixel.png" src="_images/pixel.png" />
+</div>
+<div class="section" id="shifting-templates-to-the-input-redshift">
+<h2>Shifting templates to the input redshift<a class="headerlink" href="#shifting-templates-to-the-input-redshift" title="Permalink to this headline">¶</a></h2>
+<p>In this step (specifically, <cite>maketemp</cite> module), gsf shifts rest-frame templates generated above
+to the input redshift and extract expected fluxes for input filters for one-to-one comparison.
+Basically there are three steps;</p>
+<ul class="simple">
+<li><p>Redshift templates:</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\mathrm{wave_{obs}} = \mathrm{wave_{rest-frame}} (1 + z)\]</div>
+<ul class="simple">
+<li><p>Scaling flux:</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\mathrm{flux_{obs}} \propto \mathrm{flux_{rest-frame}} {4 \pi d_{L}^2 \over{(1+z)}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(d_L\)</span> is luminosity distance to the input redshift.</p>
+<ul class="simple">
+<li><p>IGM attenuation:</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\mathrm{flux_{atten}} = \mathrm{flux_{int}} \exp{(-\tau)}\]</div>
+<p>where gsf applies the Madau model for IGM attenuation at <span class="math notranslate nohighlight">\(z&gt;6\)</span>.</p>
+<p>gsf will store the files generated here in a directory specified by DIR_TEMP.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="input.html" class="btn btn-neutral float-left" title="Input files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Takahiro Morishita
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

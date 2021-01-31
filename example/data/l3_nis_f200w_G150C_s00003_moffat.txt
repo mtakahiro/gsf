@@ -1,0 +1,3 @@
+# A x0 gamma alp
+# Moffat function
+0.107 0.412 4.828 1.346
