@@ -20,6 +20,8 @@ gsf's documentation
    fitting.rst
    prior.rst
 
+   modules
+
 Indices and tables
 ==================
 
