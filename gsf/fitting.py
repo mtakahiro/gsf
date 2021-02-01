@@ -1347,18 +1347,6 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            
-            '''
-            ncpu0 = int(multiprocess.cpu_count()/2)
-            try:
-                ncpu = int(inputs['NCPU'])
-                if ncpu > ncpu0:
-                    print('!!! NCPU is larger than No. of CPU. !!!')
-            except:
-                ncpu = ncpu0
-                pass
-            print('No. of CPU is set to %d'%(ncpu))
-            '''
             ncpu = 0
 
             print('######################')
@@ -1376,7 +1364,6 @@ class Mainbody():
                 nevery = int(self.nmc/10)
                 if nevery < 1000:
                     nevery = 1000
-
                 
                 if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
                     print('Initial shuffle in walkers is on.\n')
