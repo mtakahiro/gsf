@@ -7,7 +7,7 @@ from .function import *
 from .basic_func import Basic
 
 
-class Func:
+class Func():
     '''
     '''
     def __init__(self, MB, dust_model=0):
@@ -38,6 +38,8 @@ class Func:
         self.f_af0 = False
 
     def demo(self):
+        '''
+        '''
         ZZ = self.ZZ
         AA = self.AA
         return ZZ, AA

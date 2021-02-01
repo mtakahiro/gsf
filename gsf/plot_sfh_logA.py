@@ -15,7 +15,6 @@ from .function import *
 from .function_class import Func
 from .basic_func import Basic
 from .function_igm import *
-#from . import img_scale
 
 lcb   = '#4682b4' # line color, blue
 

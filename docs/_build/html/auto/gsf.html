@@ -17,25 +17,26 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
   
     
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
-    <script type="text/javascript" src="_static/js/theme.js"></script>
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
     
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="gsf" href="modules.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -49,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> gsf
+            <a href="../index.html" class="icon icon-home"> gsf
           
 
           
@@ -62,7 +63,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -80,17 +81,42 @@
             
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install.html">Installing gsf</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="input.html">Input files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="templates.html">Generating templates</a></li>
-<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
-<li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
-<li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installing gsf</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../input.html">Input files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../templates.html">Generating templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../output.html">Output files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../fitting.html">Fitting process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../prior.html">Prior</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">gsf</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">gsf package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.basic_func">gsf.basic_func module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-fitting-module">gsf.fitting module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.function">gsf.function module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.function_class">gsf.function_class module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.function_igm">gsf.function_igm module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-gsf-module">gsf.gsf module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.maketmp_filt">gsf.maketmp_filt module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.maketmp_z0">gsf.maketmp_z0 module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-maketmp-z0-tau-module">gsf.maketmp_z0_tau module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-minimizer-module">gsf.minimizer module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-plot-mz-module">gsf.plot_MZ module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-plot-sed-loga-module">gsf.plot_sed_logA module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-plot-sfh-loga-module">gsf.plot_sfh_logA module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.posterior_flexible">gsf.posterior_flexible module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-posterior-nested-module">gsf.posterior_nested module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gsf-version-module">gsf.version module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.writing">gsf.writing module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf.zfit">gsf.zfit module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-gsf">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
             
@@ -105,7 +131,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">gsf</a>
+          <a href="../index.html">gsf</a>
         
       </nav>
 
@@ -134,7 +160,9 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">gsf</a> &raquo;</li>
         
       <li>gsf package</li>
     
@@ -142,7 +170,7 @@
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/gsf.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/auto/gsf.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -171,147 +199,6 @@
 <code class="sig-name descname">Z2NZ</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">Z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.basic_func.Basic.Z2NZ" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-</dd></dl>
-
-</div>
-<div class="section" id="module-gsf.corner">
-<span id="gsf-corner-module"></span><h2>gsf.corner module<a class="headerlink" href="#module-gsf.corner" title="Permalink to this headline">¶</a></h2>
-<dl class="py function">
-<dt id="gsf.corner.corner">
-<code class="sig-prename descclassname">gsf.corner.</code><code class="sig-name descname">corner</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">xs</span></em>, <em class="sig-param"><span class="n">bins</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">range</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weights</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">color</span><span class="o">=</span><span class="default_value">'k'</span></em>, <em class="sig-param"><span class="n">smooth</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">smooth1d</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">labels</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">label_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">show_titles</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title_fmt</span><span class="o">=</span><span class="default_value">'.2f'</span></em>, <em class="sig-param"><span class="n">title_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">truths</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">truth_color</span><span class="o">=</span><span class="default_value">'#4682b4'</span></em>, <em class="sig-param"><span class="n">scale_hist</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">quantiles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fig</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max_n_ticks</span><span class="o">=</span><span class="default_value">5</span></em>, <em class="sig-param"><span class="n">top_ticks</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">use_math_text</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">hist_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">hist2d_kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.corner.corner" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a <em>sick</em> corner plot showing the projections of a data set in a
-multi-dimensional space. kwargs are passed to hist2d() or used for
-<cite>matplotlib</cite> styling.</p>
-<dl class="simple">
-<dt>xs<span class="classifier">array_like[nsamples, ndim]</span></dt><dd><p>The samples. This should be a 1- or 2-dimensional array. For a 1-D
-array this results in a simple histogram. For a 2-D array, the zeroth
-axis is the list of samples and the next axis are the dimensions of
-the space.</p>
-</dd>
-<dt>bins<span class="classifier">int or array_like[ndim,]</span></dt><dd><p>The number of bins to use in histograms, either as a fixed value for
-all dimensions, or as a list of integers for each dimension.</p>
-</dd>
-<dt>weights<span class="classifier">array_like[nsamples,]</span></dt><dd><p>The weight of each sample. If <cite>None</cite> (default), samples are given
-equal weight.</p>
-</dd>
-<dt>color<span class="classifier">str</span></dt><dd><p>A <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> style color for all histograms.</p>
-</dd>
-<dt>smooth, smooth1d<span class="classifier">float</span></dt><dd><p>The standard deviation for Gaussian kernel passed to
-<cite>scipy.ndimage.gaussian_filter</cite> to smooth the 2-D and 1-D histograms
-respectively. If <cite>None</cite> (default), no smoothing is applied.</p>
-</dd>
-<dt>labels<span class="classifier">iterable (ndim,)</span></dt><dd><p>A list of names for the dimensions. If a <code class="docutils literal notranslate"><span class="pre">xs</span></code> is a
-<code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, labels will default to column names.</p>
-</dd>
-<dt>label_kwargs<span class="classifier">dict</span></dt><dd><p>Any extra keyword arguments to send to the <cite>set_xlabel</cite> and
-<cite>set_ylabel</cite> methods.</p>
-</dd>
-<dt>show_titles<span class="classifier">bool</span></dt><dd><p>Displays a title above each 1-D histogram showing the 0.5 quantile
-with the upper and lower errors supplied by the quantiles argument.</p>
-</dd>
-<dt>title_fmt<span class="classifier">string</span></dt><dd><p>The format string for the quantiles given in titles. If you explicitly
-set <code class="docutils literal notranslate"><span class="pre">show_titles=True</span></code> and <code class="docutils literal notranslate"><span class="pre">title_fmt=None</span></code>, the labels will be
-shown as the titles. (default: <code class="docutils literal notranslate"><span class="pre">.2f</span></code>)</p>
-</dd>
-<dt>title_kwargs<span class="classifier">dict</span></dt><dd><p>Any extra keyword arguments to send to the <cite>set_title</cite> command.</p>
-</dd>
-<dt>range<span class="classifier">iterable (ndim,)</span></dt><dd><p>A list where each element is either a length 2 tuple containing
-lower and upper bounds or a float in range (0., 1.)
-giving the fraction of samples to include in bounds, e.g.,
-[(0.,10.), (1.,5), 0.999, etc.].
-If a fraction, the bounds are chosen to be equal-tailed.</p>
-</dd>
-<dt>truths<span class="classifier">iterable (ndim,)</span></dt><dd><p>A list of reference values to indicate on the plots.  Individual
-values can be omitted by using <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
-</dd>
-<dt>truth_color<span class="classifier">str</span></dt><dd><p>A <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> style color for the <code class="docutils literal notranslate"><span class="pre">truths</span></code> makers.</p>
-</dd>
-<dt>scale_hist<span class="classifier">bool</span></dt><dd><p>Should the 1-D histograms be scaled in such a way that the zero line
-is visible?</p>
-</dd>
-<dt>quantiles<span class="classifier">iterable</span></dt><dd><p>A list of fractional quantiles to show on the 1-D histograms as
-vertical dashed lines.</p>
-</dd>
-<dt>verbose<span class="classifier">bool</span></dt><dd><p>If true, print the values of the computed quantiles.</p>
-</dd>
-<dt>plot_contours<span class="classifier">bool</span></dt><dd><p>Draw contours for dense regions of the plot.</p>
-</dd>
-<dt>use_math_text<span class="classifier">bool</span></dt><dd><p>If true, then axis tick labels for very large or small exponents will
-be displayed as powers of 10 rather than using <cite>e</cite>.</p>
-</dd>
-<dt>max_n_ticks: int</dt><dd><p>Maximum number of ticks to try to use</p>
-</dd>
-<dt>top_ticks<span class="classifier">bool</span></dt><dd><p>If true, label the top ticks of each axis</p>
-</dd>
-<dt>fig<span class="classifier">matplotlib.Figure</span></dt><dd><p>Overplot onto the provided figure object.</p>
-</dd>
-<dt>hist_kwargs<span class="classifier">dict</span></dt><dd><p>Any extra keyword arguments to send to the 1-D histogram plots.</p>
-</dd>
-<dt><a href="#id1"><span class="problematic" id="id2">**</span></a>hist2d_kwargs</dt><dd><p>Any remaining keyword arguments are sent to <cite>corner.hist2d</cite> to generate
-the 2-D histogram plots.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="gsf.corner.hist2d">
-<code class="sig-prename descclassname">gsf.corner.</code><code class="sig-name descname">hist2d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">bins</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">range</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">weights</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">levels</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">smooth</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">color</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">plot_datapoints</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">plot_density</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">plot_contours</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">no_fill_contours</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fill_contours</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">contour_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">contourf_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.corner.hist2d" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a 2-D histogram of samples.</p>
-<dl class="simple">
-<dt>x<span class="classifier">array_like[nsamples,]</span></dt><dd><p>The samples.</p>
-</dd>
-<dt>y<span class="classifier">array_like[nsamples,]</span></dt><dd><p>The samples.</p>
-</dd>
-<dt>levels<span class="classifier">array_like</span></dt><dd><p>The contour levels to draw.</p>
-</dd>
-<dt>ax<span class="classifier">matplotlib.Axes</span></dt><dd><p>A axes instance on which to add the 2-D histogram.</p>
-</dd>
-<dt>plot_datapoints<span class="classifier">bool</span></dt><dd><p>Draw the individual data points.</p>
-</dd>
-<dt>plot_density<span class="classifier">bool</span></dt><dd><p>Draw the density colormap.</p>
-</dd>
-<dt>plot_contours<span class="classifier">bool</span></dt><dd><p>Draw the contours.</p>
-</dd>
-<dt>no_fill_contours<span class="classifier">bool</span></dt><dd><p>Add no filling at all to the contours (unlike setting
-<code class="docutils literal notranslate"><span class="pre">fill_contours=False</span></code>, which still adds a white fill at the densest
-points).</p>
-</dd>
-<dt>fill_contours<span class="classifier">bool</span></dt><dd><p>Fill the contours.</p>
-</dd>
-<dt>contour_kwargs<span class="classifier">dict</span></dt><dd><p>Any additional keyword arguments to pass to the <cite>contour</cite> method.</p>
-</dd>
-<dt>contourf_kwargs<span class="classifier">dict</span></dt><dd><p>Any additional keyword arguments to pass to the <cite>contourf</cite> method.</p>
-</dd>
-<dt>data_kwargs<span class="classifier">dict</span></dt><dd><p>Any additional keyword arguments to pass to the <cite>plot</cite> method when
-adding the individual data points.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="gsf.corner.quantile">
-<code class="sig-prename descclassname">gsf.corner.</code><code class="sig-name descname">quantile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">q</span></em>, <em class="sig-param"><span class="n">weights</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.corner.quantile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute sample quantiles with support for weighted samples.</p>
-<p>When <code class="docutils literal notranslate"><span class="pre">weights</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, this method simply calls numpy’s percentile
-function with the values of <code class="docutils literal notranslate"><span class="pre">q</span></code> multiplied by 100.</p>
-<dl class="simple">
-<dt>x<span class="classifier">array_like[nsamples,]</span></dt><dd><p>The samples.</p>
-</dd>
-<dt>q<span class="classifier">array_like[nquantiles,]</span></dt><dd><p>The list of quantiles to compute. These should all be in the range
-<code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>.</p>
-</dd>
-<dt>weights<span class="classifier">Optional[array_like[nsamples,]]</span></dt><dd><p>An optional weight corresponding to each sample. These</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>quantiles<span class="classifier">array_like[nquantiles,]</span></dt><dd><p>The sample quantiles computed at <code class="docutils literal notranslate"><span class="pre">q</span></code>.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>ValueError</dt><dd><p>For invalid quantiles; <code class="docutils literal notranslate"><span class="pre">q</span></code> not in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code> or dimension mismatch
-between <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">weights</span></code>.</p>
-</dd>
-</dl>
 </dd></dl>
 
 </div>
@@ -828,6 +715,13 @@ fitc_cz :</p>
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="modules.html" class="btn btn-neutral float-left" title="gsf" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
