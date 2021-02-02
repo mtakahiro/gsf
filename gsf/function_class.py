@@ -7,7 +7,7 @@ from .function import *
 from .basic_func import Basic
 
 
-class Func():
+class Func:
     '''
     '''
     def __init__(self, MB, dust_model=0):
@@ -38,8 +38,6 @@ class Func():
         self.f_af0 = False
 
     def demo(self):
-        '''
-        '''
         ZZ = self.ZZ
         AA = self.AA
         return ZZ, AA
@@ -338,7 +336,7 @@ class Func():
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False):
+    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, lib_all=False):
         '''
         Purpose:
         ========
@@ -358,7 +356,10 @@ class Func():
             par = par.params
 
         if self.MB.fzmc == 1:
-            zmc = par['zmc']
+            try:
+                zmc = par['zmc']
+            except:
+                zmc = self.MB.zgal
         else:
             zmc = self.MB.zgal
 
@@ -402,12 +403,20 @@ class Func():
             mslist = sedpar['ML_'+str(NZ)][aa]
             Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
-            if aa == 0:
-                nr = self.MB.lib[:, 0]
-                xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib[:, coln]
+            if lib_all:
+                if aa == 0:
+                    nr = self.MB.lib_all[:, 0]
+                    xx = self.MB.lib_all[:, 1] # This is OBSERVED wavelength range at z=zgal
+                    yy = A00 * self.MB.lib_all[:, coln]
+                else:
+                    yy += A00 * self.MB.lib_all[:, coln]
             else:
-                yy += A00 * self.MB.lib[:, coln]
+                if aa == 0:
+                    nr = self.MB.lib[:, 0]
+                    xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+                    yy = A00 * self.MB.lib[:, coln]
+                else:
+                    yy += A00 * self.MB.lib[:, coln]
         
         self.MB.logMtmp = np.log10(Mtot)
         # How much does this cost in time?
@@ -521,11 +530,9 @@ class Func_tau:
         AA = self.AA
         return ZZ, AA
 
-    #############################
-    # Load template in obs range.
-    #############################
     def open_spec_fits(self, fall=0, orig=False):
         '''
+        Load template in obs range.
         '''
         ID0 = self.MB.ID
 
@@ -567,7 +574,6 @@ class Func_tau:
                     lib[:,colnall] = hdu0[colname]
 
         return lib
-
 
     def open_spec_dust_fits(self, fall=0):
         '''

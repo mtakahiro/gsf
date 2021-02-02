@@ -375,6 +375,7 @@ class Mainbody():
                 except:
                     self.nZ = 1
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
+        print('##########################\n')
 
         # Redshift
         self.ndim += self.fzmc
@@ -1051,10 +1052,10 @@ class Mainbody():
             fit_params.add('MDUST', value=9, min=5, max=15)
             self.ndim += 1
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
-
             f_add = True
 
         return f_add
+
 
     def set_param(self):
         '''
@@ -1274,13 +1275,16 @@ class Mainbody():
                                     pos[ii,aa] = self.Zmax
                             else:
                                 pos[ii,aa] += 0
+                        else:
+                            pos[ii,aa] += 0
+
                     aa += 1
         return pos
 
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=True, check_converge=True):
+    f_shuffle=False, check_converge=True):
         '''
         Input:
         ======
@@ -1642,6 +1646,8 @@ class Mainbody():
         # Prepare library, data, etc.
         self.prepare_class()
 
+        # Temporarily disable zmc;
+        self.fzmc = 0
         out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, self.fit_params, class_post.residual,\
             self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
@@ -1657,6 +1663,8 @@ class Mainbody():
             if self.fzvis:
                 flag_z = self.fit_redshift(xm_tmp, fm_tmp)
 
+            self.fzmc = 1
             return out,chidef,Zbest, xm_tmp, fm_tmp
         else:
+            self.fzmc = 1
             return out,chidef,Zbest

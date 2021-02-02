@@ -2450,7 +2450,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         A84[aa] = hdul[1].data['A'+str(aa)][2]
 
     Asum = np.sum(A50)
-    aa   = 0
+    aa = 0
 
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av50 = hdul[1].data['Av'+str(aa)][1]
@@ -2640,9 +2640,15 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     AMtmp84 = 0
 
     for ii in range(len(age)):
-        ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
-        ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
-        ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
+
+        if aa == 0 or MB.ZEVOL:
+            ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
+            ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
+            ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
+        else:
+            ZZ_tmp = Z50[0]
+            ZZ_tmp16 = Z16[0]
+            ZZ_tmp84 = Z84[0]
         
         try:
             AA_tmp = 10**np.max(samples['A'+str(ii)][:])
@@ -2857,7 +2863,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                             mZ = np.max(Zcont)
                             ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='gray')
                         except:
-                            #print(NPAR[j], NPAR[i])
                             print('Error occurs when density estimation. Maybe because some params are fixed.')
                             pass
 
