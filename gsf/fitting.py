@@ -1190,7 +1190,7 @@ class Mainbody():
         self.fit_params = fit_params
         return True
 
-    def prepare_class(self):
+    def prepare_class(self, add_fir=None):
         '''
         '''
         print('#################')
@@ -1202,6 +1202,9 @@ class Mainbody():
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
+
+        if add_fir == None:
+            add_fir = self.f_dust
 
         # For MCMC;
         self.nmc = int(self.inputs['NMC'])
@@ -1246,7 +1249,7 @@ class Mainbody():
         #################
         # Observed Data
         #################
-        self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
+        self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=add_fir)
 
         # Set parameters;
         self.set_param()
@@ -1339,7 +1342,7 @@ class Mainbody():
         # Get initial parameters
         if not skip_fitz or out == None:
             out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, self.fit_params, class_post.residual,\
-                self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
             # Best fit
             csq = out.chisqr

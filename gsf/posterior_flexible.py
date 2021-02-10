@@ -197,7 +197,7 @@ class Post:
         # If no prior, return log likeligood.
         if f_like:
             return lnlike
-        
+                
         # Prior
         respr = 0
 
