@@ -188,7 +188,11 @@ class Post:
             if self.scale == 1:
                 self.scale = np.abs(lnlike) * 0.001
                 print('scale is set to',self.scale)
-            lnlike /= self.scale
+            lnlike += self.scale
+
+        if np.isinf(np.abs(lnlike)):
+            print('Error in lnlike')
+            return lnpreject
 
         # If no prior, return log likeligood.
         if f_like:
@@ -237,7 +241,8 @@ class Post:
         lnposterior = lnlike + respr
         
         if not np.isfinite(lnposterior):
-            return -np.inf
+            print('Posterior unacceptable.')
+            return lnpreject
         return lnposterior
 
 
