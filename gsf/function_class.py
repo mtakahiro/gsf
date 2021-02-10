@@ -73,9 +73,7 @@ class Func:
                 if zz == 0 and pp == 0:
                     nr = hdu0['colnum']
                     xx = hdu0['wavelength']
-
                     lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float')
-
                     lib[:,0] = nr[:]
                     lib[:,1] = xx[:]
 
@@ -550,17 +548,17 @@ class Func_tau:
             hdu0 = self.MB.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
-        for zz in range(len(ZZ)):
-            for tt in range(len(self.MB.tau)):
-                for ss in range(len(self.MB.ageparam)):
-                    Z = ZZ[zz]
-                    TT = self.MB.tau[tt]
-                    TA = self.MB.ageparam[ss]
 
+        NZ = len(ZZ)
+        NT = self.MB.ntau
+        NA = self.MB.nage
+        for zz,Z in enumerate(ZZ):
+            for tt,TT in enumerate(self.MB.tau):
+                for ss,TA in enumerate(self.MB.ageparam):
                     if zz == 0 and tt == 0 and ss == 0:
                         nr = hdu0['colnum']
                         xx = hdu0['wavelength']
-                        coln = int(2 + len(ZZ) * self.MB.ntau * self.MB.nage)# + self.MB.ntau * self.MB.nage + NA)
+                        coln = int(2 + NZ * NT * NA) # + self.MB.ntau * self.MB.nage + NA)
                         lib = np.zeros((len(nr), coln), dtype='float')
                         lib[:,0] = nr[:]
                         lib[:,1] = xx[:]
@@ -569,8 +567,7 @@ class Func_tau:
                         colname = 'fspec_orig_' + str(zz) + '_' + str(tt) + '_' + str(ss)
                     else:
                         colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
-                    colnall = int(2 + zz * self.MB.ntau * self.MB.nage + tt * self.MB.nage + ss) # 2 takes account of wavelength and AV columns.
-                                        
+                    colnall = int(2 + zz * NT * NA + tt * NA + ss) # 2 takes account of wavelength and AV columns.
                     lib[:,colnall] = hdu0[colname]
 
         return lib
