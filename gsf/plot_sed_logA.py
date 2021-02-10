@@ -343,8 +343,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
-        lib_dust = fnc.open_spec_dust_fits(fall=0)
-        lib_dust_all = fnc.open_spec_dust_fits(fall=1)
+        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
+        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
 
     #II0   = nage #[0,1,2,3] # Number for templates
     iimax = len(nage)-1
@@ -358,8 +358,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
 
         
         # data;
@@ -644,6 +644,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
+
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
 
@@ -666,7 +667,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             except:
                 par['TDUST'].value = 0
 
-            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
+            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
@@ -754,7 +755,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             #ysumtmp += np.percentile(ytmp_each[:, ::nstep_plot, ii], 50, axis=0)
             #ax1.plot(x1_tot[::nstep_plot], ysumtmp, linestyle='--', lw=.5, color=col[ii], alpha=0.5)
             # !! Take median after summation;
-            ysumtmp2 += ytmp_each[:, ::nstep_plot, ii]
+            ysumtmp2[:,:len(xm_tmp)] += ytmp_each[:, ::nstep_plot, ii]
             if f_fill:
                 ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.percentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
             else:
@@ -1572,8 +1573,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
-        lib_dust = fnc.open_spec_dust_fits(fall=0)
-        lib_dust_all = fnc.open_spec_dust_fits(fall=1)
+        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
+        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
 
     # FIR dust plot;
     if f_dust:
@@ -1584,8 +1585,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
 
         #ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         #ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
@@ -1879,7 +1880,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             except:
                 par['TDUST'].value = 0
 
-            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
+            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
@@ -1888,10 +1889,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
-            model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            #if f_fill:
-            #    ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
-            #    ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            model_tot = np.interp(x1_tot,xm_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
 
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
@@ -1903,7 +1901,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         # plot random sed;
         plot_mc = True
         if plot_mc:
-            ax1.plot(xm_tmp, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax1.plot(x1_tot, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
 
 
         # Grism plot + Fuv flux + LIR.

@@ -827,9 +827,9 @@ class Func_tau:
         # Making model template with a given param setself.
         # Also dust attenuation.
         '''
-        tau0= self.tau0 #[0.01,0.02,0.03]
-        ZZ = self.ZZ
-        AA = self.AA
+        #tau0= self.tau0 #[0.01,0.02,0.03]
+        #ZZ = self.ZZ
+        #AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
 

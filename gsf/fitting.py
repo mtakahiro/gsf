@@ -1106,6 +1106,8 @@ class Mainbody():
             for aa in range(self.npeak):
                 tauini = (self.taumin+self.taumax)/2.
                 ageini = (self.agemin + self.agemax)/2.
+                #tauini = -0.8
+                #ageini = 0.0
                 fit_params.add('A%d'%aa, value=self.Aini, min=self.Amin, max=self.Amax)
 
                 if self.npeak>1:
