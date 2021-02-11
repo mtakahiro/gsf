@@ -616,7 +616,6 @@ class Func_tau:
                 plt.show()
         return lib
 
-
     def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
         '''
         #############################

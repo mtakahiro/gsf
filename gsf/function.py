@@ -168,7 +168,7 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(MB, ZZtmp, fneld,age,fit_params,residual,fy,ey,wht,ID0, chidef=None, Zbest=0, f_keep=False):
+def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, chidef=None, Zbest=0, f_keep=False):
     '''
     Purpose:
     ========
@@ -191,6 +191,8 @@ def get_leastsq(MB, ZZtmp, fneld,age,fit_params,residual,fy,ey,wht,ID0, chidef=N
         fit_name = 'powell'
     elif fneld == 2:
         fit_name = 'leastsq'
+    else:
+        fit_name = fneld
 
     fwz.write('# minimizer: %s\n' % fit_name)
     #fit_name = 'trust-exact'# Need trust region

@@ -79,7 +79,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
     MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-    MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
+    #MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
     '''
     #
@@ -109,12 +109,11 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
 
 def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label=True, f_symbol=True, \
     f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, \
-    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=True):
+    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=True, Zini=None):
     '''
     Purpose:
     ========
-    Run all steps.
-
+    gsf pipeline, which runs all steps.
     '''
 
     ######################
@@ -172,7 +171,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
     MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-    MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
+    #MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
     flag_suc = 0
     if fplt <= 2:
@@ -181,7 +180,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         #
         MB.zprev = MB.zgal #zrecom # redshift from previous run
         MB.ndim_keep = MB.ndim # This is needed for iteration.
-        flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle)
+        flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, Zini=Zini)
         while (flag_suc and flag_suc!=-1):
 
             MB.ndim = MB.ndim_keep
@@ -193,7 +192,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle)
+            flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, Zini=Zini)
             # If still in the loop, read again.
             MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 

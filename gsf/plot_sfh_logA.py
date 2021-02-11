@@ -788,7 +788,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     except:
         pass
 
-
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow_r')
     col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])

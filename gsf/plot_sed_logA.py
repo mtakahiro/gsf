@@ -228,7 +228,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Mass-to-Light ratio.
     ######################
     ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     for aa in range(len(age)):
@@ -337,16 +337,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Open ascii file and stock to array.
     lib = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1, orig=True)
-    lib_all_conv = fnc.open_spec_fits(fall=1)
+    #lib_all_conv = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
-        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
-        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
 
-    #II0   = nage #[0,1,2,3] # Number for templates
+    #II0 = nage #[0,1,2,3] # Number for templates
     iimax = len(nage)-1
 
     # FIR dust plot;
@@ -354,7 +352,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
-        #par.add('MDUST',value=-99)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
@@ -1459,7 +1456,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Mass-to-Light ratio.
     ######################
     #ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    #af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af
     sedpar = af['ML']
 
     #for aa in range(len(age)):
@@ -1566,8 +1564,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     #####################################
     # Open ascii file and stock to array.
-    lib = fnc.open_spec_fits(fall=0)
-    lib_all = fnc.open_spec_fits(fall=1)
+    MB.lib = fnc.open_spec_fits(fall=0)
+    MB.lib_all = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
@@ -1581,15 +1579,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
-        #par.add('MDUST',value=-99)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
         y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
         y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
-
-        #ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        #ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
         
         # data;
         dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
@@ -1630,8 +1624,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     alp = .5
 
     # Get total templates
-    MB.lib = lib
-    MB.lib_all = lib_all
     y0p, x0p = MB.fnc.tmp04(vals, f_val=False, check_bound=False)
     y0, x0 = MB.fnc.tmp04(vals, f_val=False, check_bound=False, lib_all=True)
 
@@ -1713,7 +1705,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Plot
     #############
     ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     eAAl = np.zeros(len(age),dtype='float')
@@ -2422,7 +2414,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ###########################
     # Open result file
     ###########################
-    lib     = fnc.open_spec_fits(fall=0)
+    lib = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1)
 
     file = MB.DIR_OUT + 'summary_' + ID + '.fits'
@@ -2566,7 +2558,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     #f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
     #sedpar = f0[1]
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     getcmap = matplotlib.cm.get_cmap('jet')

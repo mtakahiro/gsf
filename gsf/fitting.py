@@ -96,7 +96,7 @@ class Mainbody():
             os.mkdir(self.DIR_TMP)
 
         # Minimization;
-        self.fneld = int(self.inputs['FNELD'])
+        self.fneld = self.inputs['FNELD']
 
         # Mdyn;
         try:
@@ -1303,7 +1303,7 @@ class Mainbody():
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=False, check_converge=True):
+    f_shuffle=False, check_converge=True, Zini=None):
         '''
         Input:
         ======
@@ -1336,12 +1336,16 @@ class Mainbody():
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
 
+        # Initial Z:
+        if Zini == None:
+            Zini = self.Zall
+
         ####################################
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
         if not skip_fitz or out == None:
-            out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, self.fit_params, class_post.residual,\
+            out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
             self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
             # Best fit
@@ -1395,6 +1399,8 @@ class Mainbody():
                     fit_name = 'powell'
                 elif self.fneld == 2:
                     fit_name = 'leastsq'
+                else:
+                    fit_name = self.fneld
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 print(fit_report(out))
 
@@ -1645,11 +1651,15 @@ class Mainbody():
                 return -1
 
 
-    def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False):
+    def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False, Zini=None):
         '''
         Purpose:
         ========
         Fit input data with a prepared template library, to get a chi-min result.
+
+        Input:
+        ======
+        Zini : Array for initial Zs.
 
         Return:
         =======
@@ -1666,9 +1676,13 @@ class Mainbody():
         # Prepare library, data, etc.
         self.prepare_class()
 
+        # Initial Z:
+        if Zini == None:
+            Zini = self.Zall
+
         # Temporarily disable zmc;
         self.fzmc = 0
-        out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, self.fit_params, class_post.residual,\
+        out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
             self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
         if f_get_templates:
