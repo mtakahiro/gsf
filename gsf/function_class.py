@@ -499,7 +499,7 @@ class Func_tau:
 
     def __init__(self, MB, dust_model=0):
         '''
-        dust_model (int) : 0 for Calzetti.
+        dust_model (int) : 0 for Calzetti. 1 for MW. 4 for Kriek Conroy
         '''
         self.MB = MB
         self.ID = MB.ID

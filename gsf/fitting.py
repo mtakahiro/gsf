@@ -1135,7 +1135,7 @@ class Mainbody():
                         fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=np.log10(0.3))
                 else:
                     fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
-
+                    
                 # Metal;
                 if self.ZEVOL or aa == 0:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
@@ -1370,6 +1370,7 @@ class Mainbody():
             rcsq = out.redchi
             fitc = [csq, rcsq]
 
+        #hoge
         ########################
         # Check redshift
         ########################
@@ -1435,49 +1436,111 @@ class Mainbody():
 
             # MCMC;
             if self.f_mcmc:
-                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
-                    f_disp=self.f_disp, nan_policy='omit',\
-                    moves=emcee.moves.RedBlueMove())
-                    #moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),],\
-
-                # Check convergence every number;
-                nevery = int(self.nmc/10)
-                if nevery < 1000:
-                    nevery = 1000
-                
-                if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
-                    print('Initial shuffle in walkers is on.\n')
+                '''
+                if False:
+                    # Case for EMCEE
                     pos = self.get_shuffle(out)
-                    # Run emcee;
-                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                        pos=pos,
-                        params=out.params, is_weighted=True, workers=ncpu,
-                        check_converge=check_converge, nevery=nevery, float_behavior='posterior')
-                else:
-                    # Run emcee without pos;
-                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                        params=out.params, is_weighted=True, workers=ncpu,
-                        check_converge=check_converge, nevery=nevery, float_behavior='posterior')
+                    sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, \
+                        args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
+                        moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),],\
+                        kwargs={'f_val': True, 'out': out},\
+                        )
+                    sampler.run_mcmc(pos, self.nmc, progress=True)
+                    flat_samples = sampler.get_chain(discard=0, thin=10, flat=True)
 
-                try:
-                    print('Converged at %d/%d'%(res.steps,self.nmc))
-                    self.nmc = res.steps
-                except:
-                    res.steps = self.nmc
+                    if True:
+                        fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
+                        samples = sampler.get_chain()
+                        for i in range(self.ndim):
+                            ax = axes[i]
+                            ax.plot(samples[:, :, i], "k", alpha=0.3)
+                            ax.set_xlim(0, len(samples))
+                            ax.yaxis.set_label_coords(-0.1, 0.5)
+                        axes[-1].set_xlabel("step number")
+                        plt.savefig('tmp.png')
 
-                if f_plot_accept:
-                    plt.close()
-                    plt.plot(res.acceptance_fraction)
-                    plt.xlabel('walker')
-                    plt.ylabel('acceptance fraction')
-                    plt.savefig('%s/accept_%s.png'%(self.DIR_OUT,self.ID))
+                    # Similar for nested;
+                    # Dammy just to get structures;
+                    dammy = 0
+                    mini = Minimizer(class_post.lnprob, dammy, fcn_args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], f_disp=False, \
+                        moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+                    res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
+                    params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)
 
-                # This is already burnt in.
-                flatchain = res.flatchain
-                var_names = res.var_names
-                params_value = {}
-                for key in var_names:
-                    params_value[key] = res.params[key].value
+                    # Update;
+                    nburn = int(self.nmc/2)
+                    var_names = []#res.var_names
+                    params_value = {}
+                    ii = 0
+                    for key in out.params:
+                        if out.params[key].vary:
+                            var_names.append(key)
+                            params_value[key] = np.median(flat_samples[nburn:,ii])
+                            ii += 1
+
+                    import pandas as pd
+                    flatchain = pd.DataFrame(data=flat_samples[nburn:,:], columns=var_names)
+
+                    class get_res:
+                        def __init__(self, flatchain, var_names, params_value, res):
+                            self.flatchain = flatchain
+                            self.var_names = var_names
+                            self.params_value = params_value
+                            self.params = res.params
+                            for key in var_names:
+                                self.params[key].value = params_value[key]
+
+                    # Inserting result from res0 into res structure;
+                    res = get_res(flatchain, var_names, params_value, res)
+                    res.bic = -99
+                '''
+
+                if True:
+                    # lmfit;
+                    mini = Minimizer(class_post.lnprob, out.params, 
+                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust],
+                    f_disp=self.f_disp, nan_policy='omit',
+                    moves=[(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),])
+
+                    # Check convergence every number;
+                    nevery = int(self.nmc/10)
+                    if nevery < 1000:
+                        nevery = 1000
+                    
+                    if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
+                        print('Initial shuffle in walkers is on.\n')
+                        pos = self.get_shuffle(out)
+                        # Run emcee;
+                        res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                            pos=pos,
+                            params=out.params, is_weighted=True, workers=ncpu,
+                            check_converge=check_converge, nevery=nevery, float_behavior='posterior')
+                    else:
+                        # Run emcee without pos;
+                        res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                            params=out.params, is_weighted=False, workers=ncpu,
+                            check_converge=check_converge, nevery=nevery, float_behavior='posterior')
+
+                
+                    try:
+                        print('Converged at %d/%d'%(res.steps,self.nmc))
+                        self.nmc = res.steps
+                    except:
+                        res.steps = self.nmc
+
+                    if f_plot_accept:
+                        plt.close()
+                        plt.plot(res.acceptance_fraction)
+                        plt.xlabel('walker')
+                        plt.ylabel('acceptance fraction')
+                        plt.savefig('%s/accept_%s.png'%(self.DIR_OUT,self.ID))
+
+                    # This is already burnt in.
+                    flatchain = res.flatchain
+                    var_names = res.var_names
+                    params_value = {}
+                    for key in var_names:
+                        params_value[key] = res.params[key].value
 
             elif self.f_nested:
                 import dynesty
@@ -1488,7 +1551,7 @@ class Mainbody():
                 nthreads = ncpu       # use one CPU core
                 bound = 'multi'   # use MutliNest algorithm for bounds
                 sample = 'unif' #'rwalk' # uniform sampling
-                tol = 0.1         # the stopping criterion
+                tol = 0.01         # the stopping criterion
                 ndim_nest = self.ndim #0
 
                 #pars, fy, ey, wht, f_fir
@@ -1551,7 +1614,6 @@ class Mainbody():
             print('### MCMC part took %.1f sec ###'%(tcalc_mc))
             print('###############################')
 
-
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
@@ -1578,6 +1640,7 @@ class Mainbody():
                 for par in var_names:
                     val_truth.append(params_value[par])
 
+                print(val_truth)
                 fig1 = corner.corner(flatchain, labels=var_names, \
                 label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
                 title_kwargs={"fontsize": 14}, \

@@ -1198,9 +1198,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 else:
                     spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
 
-                ###################
+                ##################
                 # IGM attenuation.
-                ###################
+                ##################
                 if f_IGM:
                     spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                 else:

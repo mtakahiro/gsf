@@ -69,7 +69,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Tdustmc = np.zeros(3, dtype='float')
 
     # ASDF;
-    af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '.asdf')
+    af = self.af #asdf.open(DIR_TMP + 'spec_all_' + ID0 + '.asdf')
     sedpar = af['ML']
     
     ms = np.zeros(len(age), dtype='float')

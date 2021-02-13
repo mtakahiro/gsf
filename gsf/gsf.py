@@ -166,7 +166,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         if MB.SFH_FORM == -99:
             maketemp(MB, tau_lim=tau_lim)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim)
+            maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
