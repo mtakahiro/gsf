@@ -300,7 +300,6 @@ class Post:
                 if out.params[key].vary:
                     cmin = out.params[key].min
                     cmax = out.params[key].max
-                    #print(cmin,cmax,out.params[key],dammy[ii])
                     if dammy[ii]<cmin or dammy[ii]>cmax:
                         return lnpreject
                     vals[key].value = dammy[ii]
@@ -316,6 +315,7 @@ class Post:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = special.erf(x_erf)
             if np.min(f_erf) <= -1:
+                print('Err func failed.')
                 return lnpreject
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )

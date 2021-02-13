@@ -195,58 +195,54 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
         fit_name = fneld
 
     fwz.write('# minimizer: %s\n' % fit_name)
-    #fit_name = 'trust-exact'# Need trust region
-    #fit_name = 'trust-constr'
-    #if fneld == 1 or fneld == 2: # Nelder;
-    
+
     try:
         ZZtmp = [MB.ZFIX]
     except:
         pass
 
-    if True: # Nelder;
-        for zz in range(len(ZZtmp)):
-            ZZ = ZZtmp[zz]
-            for aa in range(len(age)):
-                if MB.ZEVOL == 1 or aa == 0:
-                    fit_params['Z'+str(aa)].value = ZZ
+    for zz in range(len(ZZtmp)):
+        ZZ = ZZtmp[zz]
+        for aa in range(len(age)):
+            if MB.ZEVOL == 1 or aa == 0:
+                fit_params['Z'+str(aa)].value = ZZ
 
-            out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
-            keys = fit_report(out_tmp).split('\n')
-            csq  = 99999
-            rcsq = 99999
-            for key in keys:
-                if key[4:7] == 'chi':
-                    skey = key.split(' ')
-                    csq  = float(skey[14])
-                if key[4:7] == 'red':
-                    skey = key.split(' ')
-                    rcsq = float(skey[7])
+        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
+        keys = fit_report(out_tmp).split('\n')
+        csq  = 99999
+        rcsq = 99999
+        for key in keys:
+            if key[4:7] == 'chi':
+                skey = key.split(' ')
+                csq  = float(skey[14])
+            if key[4:7] == 'red':
+                skey = key.split(' ')
+                rcsq = float(skey[7])
 
-            fitc = [csq, rcsq] # Chi2, Reduced-chi2
+        fitc = [csq, rcsq] # Chi2, Reduced-chi2
 
-            fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
+        fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-            AA_tmp = np.zeros(len(age), dtype='float')
-            ZZ_tmp = np.zeros(len(age), dtype='float')
-            for aa in range(len(age)):
-                AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
-                fwz.write(' %.5f'%(AA_tmp[aa]))
+        AA_tmp = np.zeros(len(age), dtype='float')
+        ZZ_tmp = np.zeros(len(age), dtype='float')
+        for aa in range(len(age)):
+            AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
+            fwz.write(' %.5f'%(AA_tmp[aa]))
 
-            Av_tmp = out_tmp.params['Av'].value
-            fwz.write(' %.5f'%(Av_tmp))
-            for aa in range(len(age)):
-                if MB.ZEVOL == 1 or aa == 0:
-                    ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
-                    fwz.write(' %.5f'%(ZZ_tmp[aa]))
+        Av_tmp = out_tmp.params['Av'].value
+        fwz.write(' %.5f'%(Av_tmp))
+        for aa in range(len(age)):
+            if MB.ZEVOL == 1 or aa == 0:
+                ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
+                fwz.write(' %.5f'%(ZZ_tmp[aa]))
 
-            fwz.write('\n')
-            if chidef==None:
-                chidef = fitc[1]
-                out = out_tmp
-            elif fitc[1]<chidef:
-                chidef = fitc[1]
-                out = out_tmp
+        fwz.write('\n')
+        if chidef==None:
+            chidef = fitc[1]
+            out = out_tmp
+        elif fitc[1]<chidef:
+            chidef = fitc[1]
+            out = out_tmp
 
     fwz.close()
 

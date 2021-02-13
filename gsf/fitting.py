@@ -248,10 +248,6 @@ class Mainbody():
             self.agemax = float(inputs['AGEMAX'])
             self.agemin = float(inputs['AGEMIN'])
             self.delage = float(inputs['DELAGE'])
-            agemax_tmp = np.log10(self.cosmo.age(self.zgal).value) #, use_flat=True, **cosmo)/cc.Gyr_s
-            if self.agemax > agemax_tmp:
-                self.agemax = agemax_tmp
-                print('Age max is set to the age of the univese (%.1f) at this redshift.'%(self.cosmo.age(self.zgal).value))
 
             self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
             self.nage = len(self.ageparam)
@@ -1117,14 +1113,19 @@ class Mainbody():
                     self.ndim -= 1
                     print('AGEFIX is found. Set to %.2f'%(AGEFIX))
                 except:
+                    tcosmo = np.log10(self.cosmo.age(self.zgal).value) 
+                    agemax_tmp = self.agemax
+                    if agemax_tmp > tcosmo:
+                        agemax_tmp = tcosmo
+                        print('Maximum age is set to the age of the univese (%.1fGyr) at this redshift.'%(self.cosmo.age(self.zgal).value))
                     if self.npeak>1:
                         if aa == 0:
                             fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=np.log10(1.0))
                         else:
                             ageini = np.log10(1.0)
-                            fit_params.add('AGE%d'%aa, value=ageini, min=np.log10(1.0), max=self.agemax)
+                            fit_params.add('AGE%d'%aa, value=ageini, min=np.log10(1.0), max=agemax_tmp)
                     else:
-                        fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=self.agemax)
+                        fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=agemax_tmp)
 
                 # Check Tau fix;
                 if self.npeak>1:
@@ -1256,18 +1257,19 @@ class Mainbody():
     
         return True
 
-    def get_shuffle(self, out, nshuf=3.0):
+    def get_shuffle(self, out, nshuf=3.0, amp=1e-4):
         '''
         Purpose:
         ========
         Shuffle initial parameter sets in walkers.
         '''
-        pos = 1e-5 * np.random.randn(self.nwalk, self.ndim)
+        pos = amp * np.random.randn(self.nwalk, self.ndim)
         for ii in range(pos.shape[0]):
             aa = 0
             for aatmp,key in enumerate(out.params.valuesdict()):
                 if out.params[key].vary == True:
-                    pos[ii,aa] = out.params[key].value
+                    pos[ii,aa] += out.params[key].value
+                    #pos[ii,aa] = out.params[key].value
                     if np.random.uniform(0,1) > (1. - 1./self.ndim):
                         if key[:2] == 'Av':
                             pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
@@ -1303,7 +1305,7 @@ class Mainbody():
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=False, check_converge=True, Zini=None):
+    f_shuffle=False, amp_shuffle=1e-2, check_converge=True, Zini=None):
         '''
         Input:
         ======
@@ -1435,40 +1437,92 @@ class Mainbody():
             start_mc = timeit.default_timer()
 
             # MCMC;
+            check_converge = True
             if self.f_mcmc:
-                '''
-                if False:
+                #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
+                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                if True:
                     # Case for EMCEE
-                    pos = self.get_shuffle(out)
-                    sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob, \
+                    nburn = int(self.nmc/2)
+                    if f_shuffle:
+                        pos = self.get_shuffle(out, amp=amp_shuffle)
+                    else:
+                        pos = amp_shuffle * np.random.randn(self.nwalk, self.ndim)
+                        aa = 0
+                        for aatmp,key in enumerate(out.params.valuesdict()):
+                            if out.params[key].vary:
+                                pos[:,aa] += out.params[key].value
+                                aa += 1
+
+                    sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
-                        moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),],\
+                        moves=moves,\
                         kwargs={'f_val': True, 'out': out},\
                         )
-                    sampler.run_mcmc(pos, self.nmc, progress=True)
-                    flat_samples = sampler.get_chain(discard=0, thin=10, flat=True)
 
+                    if check_converge:
+                        # Check convergence every number;
+                        nevery = int(self.nmc/10)
+                        nconverge = 10.
+                        if nevery < 1000:
+                            nevery = 1000
+                        index = 0
+                        old_tau = np.inf
+                        autocorr = np.empty(self.nmc)
+                        for sample in sampler.sample(pos, iterations=self.nmc, progress=True):
+                            # Only check convergence every "nevery" steps
+                            if sampler.iteration % nevery:
+                                continue
+
+                            # Compute the autocorrelation time so far
+                            # Using tol=0 means that we'll always get an estimate even
+                            # if it isn't trustworthy
+                            tau = sampler.get_autocorr_time(tol=0)
+                            autocorr[index] = np.mean(tau)
+                            index += 1
+
+                            # Check convergence
+                            converged = np.all(tau * 100 < sampler.iteration)
+                            converged &= np.all(np.abs(old_tau - tau) / tau < nconverge)
+                            if converged:
+                                print('Converged at %d/%d\n'%(index*nevery,self.nmc))
+                                nburn = int(index*nevery / 50) # Burn 50%
+                                self.nmc = index*nevery
+                                break
+                            old_tau = tau
+                    else:
+                        sampler.run_mcmc(pos, self.nmc, progress=True)
+                    flat_samples = sampler.get_chain(discard=nburn, thin=10, flat=True)
+                        
                     if True:
                         fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
                         samples = sampler.get_chain()
+                        labels = []
+                        for key in out.params.valuesdict():
+                            if out.params[key].vary:
+                                labels.append(key)
                         for i in range(self.ndim):
                             ax = axes[i]
                             ax.plot(samples[:, :, i], "k", alpha=0.3)
                             ax.set_xlim(0, len(samples))
                             ax.yaxis.set_label_coords(-0.1, 0.5)
+                            ax.set_ylabel(labels[i])
                         axes[-1].set_xlabel("step number")
-                        plt.savefig('tmp.png')
+                        plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
 
                     # Similar for nested;
-                    # Dammy just to get structures;
+                    # Dummy just to get structures;
+                    print('\nRunning dummy sampler. Disregard message from here;\n')
                     dammy = 0
-                    mini = Minimizer(class_post.lnprob, dammy, fcn_args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], f_disp=False, \
-                        moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
+                    mini = Minimizer(class_post.lnprob, out.params, 
+                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], f_disp=False,
+                    moves=moves\
+                    )
                     res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
                     params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)
+                    print('\nto here.\n')
 
                     # Update;
-                    nburn = int(self.nmc/2)
                     var_names = []#res.var_names
                     params_value = {}
                     ii = 0
@@ -1493,9 +1547,8 @@ class Mainbody():
                     # Inserting result from res0 into res structure;
                     res = get_res(flatchain, var_names, params_value, res)
                     res.bic = -99
-                '''
 
-                if True:
+                if False:
                     # lmfit;
                     mini = Minimizer(class_post.lnprob, out.params, 
                     fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust],
@@ -1520,7 +1573,6 @@ class Mainbody():
                         res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
                             params=out.params, is_weighted=False, workers=ncpu,
                             check_converge=check_converge, nevery=nevery, float_behavior='posterior')
-
                 
                     try:
                         print('Converged at %d/%d'%(res.steps,self.nmc))
@@ -1636,17 +1688,17 @@ class Mainbody():
             # MCMC corner plot.
             ####################
             if cornerplot:
+                levels = [0.68, 0.95, 0.997]
+                quantiles = [0.01, 0.99]
                 val_truth = []
                 for par in var_names:
                     val_truth.append(params_value[par])
-
-                print(val_truth)
                 fig1 = corner.corner(flatchain, labels=var_names, \
-                label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
+                label_kwargs={'fontsize':16}, quantiles=quantiles, show_titles=False, \
                 title_kwargs={"fontsize": 14}, \
                 truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
-                plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
+                plot_density=False, levels=levels, truth_color='gray', color='#4682b4')
                 fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_corner.png')
                 self.cornerplot_fig = fig1
 
