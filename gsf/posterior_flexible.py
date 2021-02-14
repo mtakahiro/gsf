@@ -33,6 +33,7 @@ class Post:
             vals = pars
         else:
             vals = pars.valuesdict()
+
         model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:
@@ -305,7 +306,8 @@ class Post:
                     vals[key].value = dammy[ii]
                     ii += 1
 
-        resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
+        #resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
+        resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True)
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
         sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
         chi_nd = 0.0

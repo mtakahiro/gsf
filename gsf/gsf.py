@@ -194,7 +194,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
             if MB.SFH_FORM == -99:
                 maketemp(MB, tau_lim=tau_lim)
             else:
-                maketemp_tau(MB, tau_lim=tau_lim)
+                maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
 
             print('\n\n')
             print('Going into another trial with updated templates and redshift.')

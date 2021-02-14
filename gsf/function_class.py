@@ -757,9 +757,8 @@ class Func_tau:
             tau,age = par['TAU%d'%aa],par['AGE%d'%aa]
 
             NZ, NT, NA = bfnc.Z2NZ(Z,tau,age)
-            coln = int(2 + NZ*len(self.MB.tau)*len(self.MB.ageparam) + NT*len(self.MB.ageparam) + NA)
-            sedpar = self.MB.af['ML'] # For M/L
-            mslist = sedpar['ML_'+str(NZ)+'_'+str(NT)][NA]
+            coln = int(2 + NZ*self.MB.ntau*self.MB.nage + NT*self.MB.nage + NA)
+            mslist = self.MB.af['ML']['ML_'+str(NZ)+'_'+str(NT)][NA]
             Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
             if lib_all:

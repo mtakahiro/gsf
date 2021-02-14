@@ -1125,6 +1125,7 @@ class Mainbody():
                             ageini = np.log10(1.0)
                             fit_params.add('AGE%d'%aa, value=ageini, min=np.log10(1.0), max=agemax_tmp)
                     else:
+                        #fit_params.add('AGE%d'%aa, value=0.0, min=0.0, max=0.01)
                         fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=agemax_tmp)
 
                 # Check Tau fix;
@@ -1135,6 +1136,7 @@ class Mainbody():
                         tauini = np.log10(0.3)
                         fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=np.log10(0.3))
                 else:
+                    #fit_params.add('TAU%d'%aa, value=-0.8, min=-0.8, max=-0.79)
                     fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
                     
                 # Metal;
@@ -1513,9 +1515,9 @@ class Mainbody():
                     # Similar for nested;
                     # Dummy just to get structures;
                     print('\nRunning dummy sampler. Disregard message from here;\n')
-                    dammy = 0
                     mini = Minimizer(class_post.lnprob, out.params, 
-                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], f_disp=False,
+                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
+                    f_disp=False, nan_policy='omit',
                     moves=moves\
                     )
                     res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
@@ -1623,7 +1625,7 @@ class Mainbody():
                 sampler.run_nested(dlogz=tol, maxiter=maxmcmc, print_progress=self.f_disp)                 
                 res0 = sampler.results # get results dictionary from sampler
                 
-                # Dammy just to get structures;
+                # Dummy just to get structures;
                 mini = Minimizer(class_post.lnprob, out.params, fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], f_disp=False, \
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
                 res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
