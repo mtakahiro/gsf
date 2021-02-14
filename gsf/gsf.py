@@ -166,12 +166,14 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         if MB.SFH_FORM == -99:
             maketemp(MB, tau_lim=tau_lim)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
+            maketemp_tau(MB, tau_lim=tau_lim)
 
     # Read temp from asdf;
-    # This has to happend after fplt==1 and before fplt>=2.
-    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-    #MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
+    # Template must be registered before fplt>=2.
+    try:
+        aftmp = MB.af
+    except:
+        MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
     flag_suc = 0
     if fplt <= 2:
@@ -187,14 +189,20 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
             print('\n\n')
             print('Making templates...')
             print('\n\n')
-            maketemp(MB)
+
+            # Make temp at the new z
+            if MB.SFH_FORM == -99:
+                maketemp(MB, tau_lim=tau_lim)
+            else:
+                maketemp_tau(MB, tau_lim=tau_lim)
+
             print('\n\n')
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
             flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
             # If still in the loop, read again.
-            MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+            #MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
         # Total calculation time
         stop = timeit.default_timer()

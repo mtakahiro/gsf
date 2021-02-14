@@ -315,7 +315,6 @@ class Post:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = special.erf(x_erf)
             if np.min(f_erf) <= -1:
-                print('Err func failed.')
                 return lnpreject
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
@@ -337,7 +336,7 @@ class Post:
         # If no prior, return log likeligood.
         if f_like:
             return lnlike
-                
+
         # Prior
         respr = 0
 

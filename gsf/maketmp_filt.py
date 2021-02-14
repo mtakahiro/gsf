@@ -315,7 +315,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     zbest = MB.zgal
     tau0 = MB.tau0
 
-    af = asdf.open(DIR_TMP + 'spec_all.asdf')
+    try:
+        af = MB.af0
+    except:
+        af = asdf.open(DIR_TMP + 'spec_all.asdf')
+        MB.af0 = af
+
     mshdu = af['ML']
     spechdu = af['spec']
 
@@ -757,6 +762,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     # Save;
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all_' + ID + '.asdf', all_array_compression='zlib')
+
+    # Re-register
+    MB.af = af
 
     ##########################################
     # For observation.
@@ -1348,6 +1356,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     # Save;
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all_' + ID + '.asdf', all_array_compression='zlib')
+
+    # Re-register
+    MB.af = af
 
     ##########################################
     # For observation.
