@@ -1555,7 +1555,7 @@ class Mainbody():
                     mini = Minimizer(class_post.lnprob, out.params, 
                     fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust],
                     f_disp=self.f_disp, nan_policy='omit',
-                    moves=[(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),])
+                    moves=moves)
 
                     # Check convergence every number;
                     nevery = int(self.nmc/10)
