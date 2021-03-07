@@ -355,7 +355,7 @@ class Func:
 
         if self.MB.fzmc == 1:
             try:
-                zmc = par['zmc']
+                zmc = par['zmc'].value
             except:
                 zmc = self.MB.zgal
         else:
@@ -417,7 +417,7 @@ class Func:
                     yy += A00 * self.MB.lib[:, coln]
         
         self.MB.logMtmp = np.log10(Mtot)
-        # How much does this cost in time?
+
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
@@ -697,9 +697,9 @@ class Func_tau:
         ======
         nprec : Precision when redshift is refined. 
         '''
-        ZZ = self.ZZ # Metal
-        AA = self.AA # Amp
-        bfnc = self.MB.bfnc #Basic(ZZ)
+        ZZ = self.ZZ
+        AA = self.AA 
+        bfnc = self.MB.bfnc
         Mtot = 0
         pp = 0
 
@@ -707,7 +707,10 @@ class Func_tau:
             par = par.params
 
         if self.MB.fzmc == 1:
-            zmc = par['zmc']
+            try:
+                zmc = par['zmc'].value
+            except:
+                zmc = self.MB.zgal
         else:
             zmc = self.MB.zgal
 
@@ -776,10 +779,11 @@ class Func_tau:
                 else:
                     yy += A00 * self.MB.lib[:, coln]
 
-
+        # Keep logM
         self.MB.logMtmp = np.log10(Mtot)
-        # How much does this cost in time?
-        if round(zmc,nprec) != round(self.MB.zgal,nprec):
+
+        # Redshift refinement;
+        if round(zmc,nprec) != round(self.MB.zgal,nprec): # Not sure how much this costs in time.
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
             yy_s = fint(xx_s)

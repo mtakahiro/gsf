@@ -810,7 +810,6 @@ class Mainbody():
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
         if self.fzvis==1:
-        #try:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
@@ -821,7 +820,6 @@ class Mainbody():
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
             zrecom = z_cz[1]
-            #if f_scale:
             Czrec0 = scl_cz0[1]
             Czrec1 = scl_cz1[1]
 
@@ -835,20 +833,12 @@ class Mainbody():
             print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
-
-        #except:
         else:
-            #print('### z fit failed. No spectral data set?')
             print('### fzvis is set to False. z fit not happening.')
             try:
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
                 print('Redshift error is taken from input file.')
-                '''if ezl<ezmin:
-                    ezl = ezmin #0.03
-                if ezu<ezmin:
-                    ezu = ezmin #0.03
-                '''
             except:
                 ezl = ezmin
                 ezu = ezmin
