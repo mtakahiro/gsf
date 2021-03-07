@@ -113,7 +113,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
             mlost = np.zeros(Na, dtype='float')
 
             for tt in range(len(age)):
-                if sfh==6:
+                if sfh==6: # Tabular SFH.
                     tuniv_hr  = np.arange(0,age_univ,0.01) # in Gyr
                     T0 = np.log(10**age[tt])
                     sfh_hr_in = get_lognorm(tuniv_hr, tau[ss], T0) # tau in log Gyr
@@ -138,12 +138,12 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
                     esptmp.params['gas_logu'] = logU # ionization parameter
                     esp = esptmp
-                    print('Nebular is also added, with logU=%.2f.'%(logU))
-                    ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
+                    if ss == 0:
+                        print('Nebular is also added, with logU=%.2f.'%(logU))
+                    ewave0, eflux0 = esp.get_spectrum(tage=10**age[tt], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
 
-                #if zz == 0 and ss == 0 and tt == 0:
                 if zz == 0 and ss == 0 and tt == 0:
                     # ASDF Big tree;
                     # Create header;
