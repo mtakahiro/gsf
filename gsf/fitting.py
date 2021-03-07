@@ -355,7 +355,11 @@ class Mainbody():
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
                 except:
-                    self.nZ = 1
+                    if self.Zall.max()-self.Zall.min() < self.delZ:
+                        self.nZ = 0
+                        self.ZFIX = self.Zall.max()
+                    else:
+                        self.nZ = 1
                 self.ndim = int(self.npeak + self.nZ + self.nAV) # age, Z, and Av.
         else:
             if int(inputs['ZEVOL']) == 1:
@@ -369,7 +373,11 @@ class Mainbody():
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
                 except:
-                    self.nZ = 1
+                    if self.Zall.max()-self.Zall.min() < self.delZ:
+                        self.nZ = 0
+                        self.ZFIX = self.Zall.max()
+                    else:
+                        self.nZ = 1
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
         print('##########################\n')
 
