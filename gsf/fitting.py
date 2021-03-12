@@ -331,9 +331,9 @@ class Mainbody():
             try:
                 self.Avmin = float(inputs['AVMIN'])
                 self.Avmax = float(inputs['AVMAX'])
-                if Avmin == Avmax:
+                if self.Avmin == self.Avmax:
                     self.nAV = 0
-                    self.AVFIX = Avmin
+                    self.AVFIX = self.Avmin
                 else:
                     self.nAV = 1
             except:
