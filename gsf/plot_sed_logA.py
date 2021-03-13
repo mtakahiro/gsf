@@ -1777,18 +1777,18 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #
     # From MCMC chain
     #
-    file = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
+    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
-    data = loadcpkl(file)
-    #try:
-    ndim = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-    burnin = data['burnin']
-    nmc = data['niter']
-    nwalk = data['nwalkers']
-    Nburn = burnin #*20
-    res = data['chain'][:]
-    #except:
-    #    if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+    data  = loadcpkl(file)
+    try:
+        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        burnin = data['burnin']
+        nmc    = data['niter']
+        nwalk  = data['nwalkers']
+        Nburn  = burnin #*20
+        res    = data['chain'][:]
+    except:
+        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
     samples = res
 
