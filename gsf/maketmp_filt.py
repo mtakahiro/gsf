@@ -290,6 +290,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
 
     return LSF, lm
 
+
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001):
     '''
     Purpose:
@@ -833,7 +834,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     print('Done making templates at z=%.2f.\n'%zbest)
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=10):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1):
     '''
     Purpose:
     ========

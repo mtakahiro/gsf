@@ -291,17 +291,17 @@ class Mainbody():
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
-                
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.delZ = float(inputs['DELZ'])
                 if self.Zmax == self.Zmin or self.delZ == 0:
-                    self.delZ = 0.0001
-                    self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
+                    self.delZ = 0.0
+                    self.ZFIX = self.Zmin
+                    self.Zall = np.asarray([self.ZFIX]) #np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
                 else:
                     self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
         else:
-            self.Zsun= 0.020
+            self.Zsun = 0.020
             Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
             Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
             try:
@@ -331,9 +331,9 @@ class Mainbody():
             try:
                 self.Avmin = float(inputs['AVMIN'])
                 self.Avmax = float(inputs['AVMAX'])
-                if self.Avmin == self.Avmax:
+                if Avmin == Avmax:
                     self.nAV = 0
-                    self.AVFIX = self.Avmin
+                    self.AVFIX = Avmin
                 else:
                     self.nAV = 1
             except:
@@ -355,9 +355,8 @@ class Mainbody():
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
                 except:
-                    if self.Zall.max()-self.Zall.min() < self.delZ:
+                    if np.max(self.Zall) == np.min(self.Zall):
                         self.nZ = 0
-                        self.ZFIX = self.Zall.max()
                     else:
                         self.nZ = 1
                 self.ndim = int(self.npeak + self.nZ + self.nAV) # age, Z, and Av.
@@ -373,11 +372,11 @@ class Mainbody():
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
                 except:
-                    if self.Zall.max()-self.Zall.min() < self.delZ:
+                    if np.max(self.Zall) == np.min(self.Zall):
                         self.nZ = 0
-                        self.ZFIX = self.Zall.max()
                     else:
                         self.nZ = 1
+                    
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
         print('##########################\n')
 
@@ -810,6 +809,7 @@ class Mainbody():
             plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
 
         if self.fzvis==1:
+        #try:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
@@ -820,6 +820,7 @@ class Mainbody():
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
             zrecom = z_cz[1]
+            #if f_scale:
             Czrec0 = scl_cz0[1]
             Czrec1 = scl_cz1[1]
 
@@ -833,12 +834,20 @@ class Mainbody():
             print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
+
+        #except:
         else:
+            #print('### z fit failed. No spectral data set?')
             print('### fzvis is set to False. z fit not happening.')
             try:
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
                 print('Redshift error is taken from input file.')
+                '''if ezl<ezmin:
+                    ezl = ezmin #0.03
+                if ezu<ezmin:
+                    ezu = ezmin #0.03
+                '''
             except:
                 ezl = ezmin
                 ezu = ezmin
@@ -1138,8 +1147,9 @@ class Mainbody():
                     fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
                     
                 # Metal;
-                if self.ZEVOL or aa == 0:
-                    fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
+                #if self.ZEVOL or aa == 0:
+                #    fit_params.add('Z'+str(aa), value=self.Zmin, min=self.Zmin, max=self.Zmax)
+
 
         #####################
         # Dust attenuation

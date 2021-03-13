@@ -659,7 +659,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     y2ticks = np.arange(y2min, y2max, dely2)
     ax2.set_yticks(y2ticks)
-    ax2.set_yticklabels(np.arange(y2min, y2max, 0.1), minor=False)
+    ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)
@@ -1310,7 +1310,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     y2ticks = np.arange(y2min, y2max, dely2)
     ax2.set_yticks(y2ticks)
-    ax2.set_yticklabels(np.arange(y2min, y2max, 0.1), minor=False)
+    ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)
