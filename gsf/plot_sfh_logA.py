@@ -1255,11 +1255,11 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # For SFH plot;
     t0 = Tuni - age[:]
     col02 = []
-    col50 = fits.Column(name='time', format='E', unit='Gyr', array=age[:])
+    col50 = fits.Column(name='time', format='E', unit='Gyr', array=xSFp[:])#age[:])
     col02.append(col50)
-    col50 = fits.Column(name='time_l', format='E', unit='Gyr', array=age[:]-delTl[:]/1e9)
+    col50 = fits.Column(name='time_l', format='E', unit='Gyr', array=xSFp[:]-delTl[:]/1e9)
     col02.append(col50)
-    col50 = fits.Column(name='time_u', format='E', unit='Gyr', array=age[:]+delTl[:]/1e9)
+    col50 = fits.Column(name='time_u', format='E', unit='Gyr', array=xSFp[:]+delTl[:]/1e9)
     col02.append(col50)
     col50 = fits.Column(name='SFR16', format='E', unit='logMsun/yr', array=SFp[:,0])
     col02.append(col50)
