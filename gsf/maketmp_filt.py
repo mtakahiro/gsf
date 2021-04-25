@@ -290,6 +290,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
 
     return LSF, lm
 
+
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001):
     '''
     Purpose:
@@ -315,7 +316,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     zbest = MB.zgal
     tau0 = MB.tau0
 
-    af = asdf.open(DIR_TMP + 'spec_all.asdf')
+    try:
+        af = MB.af0
+    except:
+        af = asdf.open(DIR_TMP + 'spec_all.asdf')
+        MB.af0 = af
+
     mshdu = af['ML']
     spechdu = af['spec']
 
@@ -758,6 +764,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all_' + ID + '.asdf', all_array_compression='zlib')
 
+    # Re-register
+    MB.af = af
+
     ##########################################
     # For observation.
     # Write out for the Multi-component fitting.
@@ -825,7 +834,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     print('Done making templates at z=%.2f.\n'%zbest)
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=10):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1):
     '''
     Purpose:
     ========
@@ -1198,9 +1207,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 else:
                     spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
 
-                ###################
+                ##################
                 # IGM attenuation.
-                ###################
+                ##################
                 if f_IGM:
                     spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                 else:
@@ -1348,6 +1357,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     # Save;
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all_' + ID + '.asdf', all_array_compression='zlib')
+
+    # Re-register
+    MB.af = af
 
     ##########################################
     # For observation.

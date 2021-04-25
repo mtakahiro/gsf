@@ -1,21 +1,22 @@
 import numpy as np
 
-class Basic:
+class Basic(object):
     '''
-    # Function used in function_class.py
     '''
     def __init__(self, MB):
         self.ZZ = MB.Zall
         self.NZ = len(self.ZZ)
-        self.delZ = MB.delZ #ZZ[1] - ZZ[0]
+        self.delZ = MB.delZ
+
     def Z2NZ(self, Z):
         '''
-        # Conversion from Z to NZ
+        Critical function to infer NZ from Z.
         '''
         NZ = np.argmin(np.abs(self.ZZ-Z))
         return NZ
 
-class Basic_tau:
+
+class Basic_tau(object):
     '''
     '''
     def __init__(self, MB):
@@ -27,9 +28,10 @@ class Basic_tau:
         self.LA = MB.ageparam
         self.delLA = MB.delage
         
-    # Conversion from Z to NZ
     def Z2NZ(self, Z, tau, age):
-
+        '''
+        Critical function to infer NZ from Z.
+        '''
         NZ = np.argmin(np.abs(Z-self.ZZ))
         NT = np.argmin(np.abs(tau-self.TT))    
         NA = np.argmin(np.abs(age-self.LA))

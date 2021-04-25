@@ -15,7 +15,6 @@ from .function import *
 from .function_class import Func
 from .basic_func import Basic
 from .function_igm import *
-#from . import img_scale
 
 lcb   = '#4682b4' # line color, blue
 
@@ -660,7 +659,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     y2ticks = np.arange(y2min, y2max, dely2)
     ax2.set_yticks(y2ticks)
-    ax2.set_yticklabels(np.arange(y2min, y2max, 0.1), minor=False)
+    ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)
@@ -788,7 +787,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             skip_zhist = True
     except:
         pass
-
 
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow_r')
@@ -1257,11 +1255,11 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # For SFH plot;
     t0 = Tuni - age[:]
     col02 = []
-    col50 = fits.Column(name='time', format='E', unit='Gyr', array=age[:])
+    col50 = fits.Column(name='time', format='E', unit='Gyr', array=xSFp[:,1])
     col02.append(col50)
-    col50 = fits.Column(name='time_l', format='E', unit='Gyr', array=age[:]-delTl[:]/1e9)
+    col50 = fits.Column(name='time_l', format='E', unit='Gyr', array=xSFp[:,0])
     col02.append(col50)
-    col50 = fits.Column(name='time_u', format='E', unit='Gyr', array=age[:]+delTl[:]/1e9)
+    col50 = fits.Column(name='time_u', format='E', unit='Gyr', array=xSFp[:,2])
     col02.append(col50)
     col50 = fits.Column(name='SFR16', format='E', unit='logMsun/yr', array=SFp[:,0])
     col02.append(col50)
@@ -1312,7 +1310,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     y2ticks = np.arange(y2min, y2max, dely2)
     ax2.set_yticks(y2ticks)
-    ax2.set_yticklabels(np.arange(y2min, y2max, 0.1), minor=False)
+    ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     y3min, y3max = np.min(Z), np.max(Z)

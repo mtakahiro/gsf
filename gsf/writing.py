@@ -69,7 +69,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Tdustmc = np.zeros(3, dtype='float')
 
     # ASDF;
-    af = asdf.open(DIR_TMP + 'spec_all_' + ID0 + '.asdf')
+    af = self.af #asdf.open(DIR_TMP + 'spec_all_' + ID0 + '.asdf')
     sedpar = af['ML']
     
     ms = np.zeros(len(age), dtype='float')
@@ -93,6 +93,9 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             except:
                 Zb[aa] = self.ZFIX
                 Zmc[aa,:] = [self.ZFIX,self.ZFIX,self.ZFIX]
+        else:
+            Zb[aa] = Zb[0]
+            Zmc[aa,:] = Zmc[0,:]
 
         if self.SFH_FORM == -99:
             NZbest = bfnc.Z2NZ(Zb[aa])

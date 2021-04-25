@@ -33,6 +33,7 @@ class Post:
             vals = pars
         else:
             vals = pars.valuesdict()
+
         model, x1 = self.mb.fnc.tmp04(vals)
 
         if self.mb.f_dust:
@@ -146,6 +147,8 @@ class Post:
         flat_prior : Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
         gauss_prior : Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
 
+        dammy : This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
+
         Returns:
         ========
         If f_like, log Likelihood. Else, log Posterior prob.
@@ -165,6 +168,19 @@ class Post:
                 for aa in range(0,self.mb.npeak-1,1):
                     if vals['A'+str(aa)] > vals['A'+str(aa+1)]:
                         return lnpreject
+
+        # Check range:
+        if False:
+            ii = 0
+            for key in out.params:
+                if out.params[key].vary:
+                    cmin = out.params[key].min
+                    cmax = out.params[key].max
+                    #print(cmin,cmax,out.params[key],dammy[ii])
+                    if dammy[ii]<cmin or dammy[ii]>cmax:
+                        return lnpreject
+                    vals[key].value = dammy[ii]
+                    ii += 1
 
         resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
@@ -188,12 +204,16 @@ class Post:
             if self.scale == 1:
                 self.scale = np.abs(lnlike) * 0.001
                 print('scale is set to',self.scale)
-            lnlike /= self.scale
+            lnlike += self.scale
+
+        if np.isinf(np.abs(lnlike)):
+            print('Error in lnlike')
+            return lnpreject
 
         # If no prior, return log likeligood.
         if f_like:
             return lnlike
-        
+                
         # Prior
         respr = 0
 
@@ -230,14 +250,140 @@ class Post:
             nzz = np.argmin(np.abs(zprior-vals['zmc']))
             # For something unacceptable;
             if nzz<0 or prior[nzz]<=0:
+                print('z Posterior unacceptable.')
                 return lnpreject
             else:
                 respr += np.log(prior[nzz])
 
         lnposterior = lnlike + respr
-        
         if not np.isfinite(lnposterior):
-            return -np.inf
+            print('Posterior unacceptable.')
+            return lnpreject
+        return lnposterior
+
+
+    def lnprob_emcee(self, dammy, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
+    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0, out=None):
+        '''
+        Input:
+        ======
+        f_chind (bool) : If true, includes non-detection in likelihood calculation.
+        lnpreject : A replaced value when lnprob gets -inf value.
+        flat_prior : Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
+        gauss_prior : Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
+
+        dammy : This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
+
+        Returns:
+        ========
+        If f_like, log Likelihood. Else, log Posterior prob.
+        '''
+        if f_val:
+            vals = pars
+        else:
+            vals = pars.valuesdict()
+        if self.mb.ferr == 1:
+            f = vals['f']
+        else:
+            f = 0
+
+        if False:
+            # Checking multiple peak model
+            if self.mb.SFH_FORM != -99 and self.mb.npeak>1:
+                for aa in range(0,self.mb.npeak-1,1):
+                    if vals['A'+str(aa)] > vals['A'+str(aa+1)]:
+                        return lnpreject
+
+        # Check range:
+        if not out==None:
+            ii = 0
+            for key in out.params:
+                if out.params[key].vary:
+                    cmin = out.params[key].min
+                    cmax = out.params[key].max
+                    if dammy[ii]<cmin or dammy[ii]>cmax:
+                        return lnpreject
+                    vals[key].value = dammy[ii]
+                    ii += 1
+
+        #resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
+        resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True)
+        con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
+        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
+        chi_nd = 0.0
+
+        con_up = (ey>0) & (fy/ey<=SNlim)
+        if f_chind and len(fy[con_up])>0:
+            x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
+            f_erf = special.erf(x_erf)
+            if np.min(f_erf) <= -1:
+                return lnpreject
+            else:
+                chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
+        else:
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
+
+        # Scale likeligood; Do not make this happen yet.
+        if f_scale:
+            if self.scale == 1:
+                self.scale = np.abs(lnlike) * 0.001
+                print('scale is set to',self.scale)
+            lnlike += self.scale
+
+        if np.isinf(np.abs(lnlike)):
+            print('Error in lnlike')
+            return lnpreject
+
+        # If no prior, return log likeligood.
+        if f_like:
+            return lnlike
+
+        # Prior
+        respr = 0
+
+        if self.mb.f_Mdyn:
+            # Prior from dynamical mass:
+            if gauss_prior and self.gauss_Mdyn == None:
+                self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
+            #logMtmp = self.get_mass(vals)
+            logMtmp = self.mb.logMtmp
+            #print(logMtmp)
+            if flat_prior:
+                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
+                    #pars = self.swap_pars(pars)
+                    #print(logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
+                    return lnpreject
+                else:
+                    respr += 0
+            elif gauss_prior:
+                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
+                    #pars = self.swap_pars(pars)
+                    #return lnpreject
+                    pass
+                #elif logMtmp < self.mb.logMdyn - self.mb.elogMdyn * nsigma:
+                #    pars = self.swap_pars_inv(pars)
+                #    return lnpreject
+                p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
+                respr += np.log(p_gauss)
+
+        # Prior for redshift:
+        if self.mb.fzmc == 1:
+            zprior = self.mb.z_prior
+            prior = self.mb.p_prior
+
+            nzz = np.argmin(np.abs(zprior-vals['zmc']))
+            # For something unacceptable;
+            if nzz<0 or prior[nzz]<=0:
+                print('z Posterior unacceptable.')
+                return lnpreject
+            else:
+                respr += np.log(prior[nzz])
+
+        lnposterior = lnlike + respr
+        if not np.isfinite(lnposterior):
+            print('Posterior unacceptable.')
+            return lnpreject
         return lnposterior
 
 

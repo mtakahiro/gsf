@@ -228,7 +228,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Mass-to-Light ratio.
     ######################
     ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     for aa in range(len(age)):
@@ -337,16 +337,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Open ascii file and stock to array.
     lib = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1, orig=True)
-    lib_all_conv = fnc.open_spec_fits(fall=1)
+    #lib_all_conv = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
-        lib_dust = fnc.open_spec_dust_fits(fall=0)
-        lib_dust_all = fnc.open_spec_dust_fits(fall=1)
 
-    #II0   = nage #[0,1,2,3] # Number for templates
+    #II0 = nage #[0,1,2,3] # Number for templates
     iimax = len(nage)-1
 
     # FIR dust plot;
@@ -354,12 +352,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
-        #par.add('MDUST',value=-99)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
 
         
         # data;
@@ -644,6 +641,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
+
             # Each;
             ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
 
@@ -666,7 +664,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             except:
                 par['TDUST'].value = 0
 
-            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
+            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
@@ -754,7 +752,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             #ysumtmp += np.percentile(ytmp_each[:, ::nstep_plot, ii], 50, axis=0)
             #ax1.plot(x1_tot[::nstep_plot], ysumtmp, linestyle='--', lw=.5, color=col[ii], alpha=0.5)
             # !! Take median after summation;
-            ysumtmp2 += ytmp_each[:, ::nstep_plot, ii]
+            ysumtmp2[:,:len(xm_tmp)] += ytmp_each[:, ::nstep_plot, ii]
             if f_fill:
                 ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.percentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
             else:
@@ -1458,7 +1456,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Mass-to-Light ratio.
     ######################
     #ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    #af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af
     sedpar = af['ML']
 
     #for aa in range(len(age)):
@@ -1565,30 +1564,26 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     #####################################
     # Open ascii file and stock to array.
-    lib = fnc.open_spec_fits(fall=0)
-    lib_all = fnc.open_spec_fits(fall=1)
+    MB.lib = fnc.open_spec_fits(fall=0)
+    MB.lib_all = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
-        lib_dust = fnc.open_spec_dust_fits(fall=0)
-        lib_dust_all = fnc.open_spec_dust_fits(fall=1)
+        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
+        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
 
     # FIR dust plot;
     if f_dust:
         from lmfit import Parameters
         par = Parameters()
         par.add('MDUST',value=MD50)
-        #par.add('MDUST',value=-99)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust)
-
-        #ax1.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
-        #ax3t.plot(x0d, y0d * c/ np.square(x0d) / d, '--', lw=0.5, color='purple', zorder=-1, label='')
+        y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
         
         # data;
         dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
@@ -1629,8 +1624,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     alp = .5
 
     # Get total templates
-    MB.lib = lib
-    MB.lib_all = lib_all
     y0p, x0p = MB.fnc.tmp04(vals, f_val=False, check_bound=False)
     y0, x0 = MB.fnc.tmp04(vals, f_val=False, check_bound=False, lib_all=True)
 
@@ -1712,7 +1705,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Plot
     #############
     ms = np.zeros(len(age), dtype='float')
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     eAAl = np.zeros(len(age),dtype='float')
@@ -1784,18 +1777,18 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #
     # From MCMC chain
     #
-    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
+    file = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
-    data  = loadcpkl(file)
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        res    = data['chain'][:]
-    except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+    data = loadcpkl(file)
+    #try:
+    ndim = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+    burnin = data['burnin']
+    nmc = data['niter']
+    nwalk = data['nwalkers']
+    Nburn = burnin #*20
+    res = data['chain'][:]
+    #except:
+    #    if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
     samples = res
 
@@ -1879,7 +1872,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             except:
                 par['TDUST'].value = 0
 
-            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict(), zbes, lib_dust_all)
+            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
@@ -1888,10 +1881,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
-            model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            #if f_fill:
-            #    ax1.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
-            #    ax3t.plot(x1_tot, model_tot * c/ np.square(x1_tot) / d, '-', lw=1, color='gray', zorder=-2, alpha=alp)
+            model_tot = np.interp(x1_tot,xm_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
 
             ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
 
@@ -1903,7 +1893,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         # plot random sed;
         plot_mc = True
         if plot_mc:
-            ax1.plot(xm_tmp, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
+            ax1.plot(x1_tot, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
 
 
         # Grism plot + Fuv flux + LIR.
@@ -2288,17 +2278,16 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if f_dust:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
-            #%(ID, zbes, fd['Mstel_50'], MD50, fd['Z_MW_50'], fd['T_MW_50'], fd['AV_50'], fin_chi2)
+            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.45
         else:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.32
 
         ax1.text(2400, ylabel, label,\
-        fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
+        fontsize=7, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
         
     #######################################
     ax1.xaxis.labelpad = -3
@@ -2425,7 +2414,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ###########################
     # Open result file
     ###########################
-    lib     = fnc.open_spec_fits(fall=0)
+    lib = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1)
 
     file = MB.DIR_OUT + 'summary_' + ID + '.fits'
@@ -2450,7 +2439,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         A84[aa] = hdul[1].data['A'+str(aa)][2]
 
     Asum = np.sum(A50)
-    aa   = 0
+    aa = 0
 
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av50 = hdul[1].data['Av'+str(aa)][1]
@@ -2569,7 +2558,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     #f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
     #sedpar = f0[1]
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     sedpar = af['ML']
 
     getcmap = matplotlib.cm.get_cmap('jet')
@@ -2640,9 +2629,15 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     AMtmp84 = 0
 
     for ii in range(len(age)):
-        ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
-        ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
-        ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
+
+        if aa == 0 or MB.ZEVOL:
+            ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
+            ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
+            ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
+        else:
+            ZZ_tmp = Z50[0]
+            ZZ_tmp16 = Z16[0]
+            ZZ_tmp84 = Z84[0]
         
         try:
             AA_tmp = 10**np.max(samples['A'+str(ii)][:])
@@ -2857,7 +2852,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                             mZ = np.max(Zcont)
                             ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='gray')
                         except:
-                            #print(NPAR[j], NPAR[i])
                             print('Error occurs when density estimation. Maybe because some params are fixed.')
                             pass
 
@@ -3946,74 +3940,3 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             plt.savefig(fname, dpi=150)
             #files.append(fname)
             plt.close()
-
-
-def plot_corner(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],  mcmcplot=1, flim=0.05):
-    '''
-    '''
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Zall)
-
-    ####################
-    # MCMC corner plot.
-    ####################
-    file = 'chain_' + ID + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(os.path.join('./'+file))
-
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        res    = data['chain'][:]
-    except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-
-    #
-    # Get label
-    #
-    label = []
-    title = []
-    truth = np.zeros(len(age)*2+1, dtype='float')
-
-    file_sum = 'summary_' + ID + '.fits'
-    hdu      = fits.open(file_sum) # open a FITS file
-
-    Asum = 0
-    for aa in range(len(age)):
-        Asum += hdu[1].data['A'+str(aa)][1]
-
-    for aa in range(len(age)):
-        label.append(r'$A_%d$'%(aa))
-        if hdu[1].data['A'+str(aa)][1] / Asum > flim:
-            truth[aa] = hdu[1].data['A'+str(aa)][1]
-            title.append(r'$%.2f$'%(hdu[1].data['A'+str(aa)][1]/ Asum))
-        else:
-            truth[aa] = np.nan
-            title.append(r'$%.2f$'%(hdu[1].data['A'+str(aa)][1]/ Asum))
-
-    label.append(r'$A_V$')
-    truth[len(age)] = hdu[1].data['Av0'][1]
-    title.append('')
-
-    for aa in range(len(age)):
-        label.append(r'$Z_%d$'%(aa))
-        title.append('')
-        if hdu[1].data['A'+str(aa)][1] / Asum > flim:
-            truth[len(age)+1+aa] = hdu[1].data['Z'+str(aa)][1]
-        else:
-            truth[len(age)+1+aa] = np.nan
-
-
-    if mcmcplot == 1:
-        #fig1 = plt.figure(figsize=(10,10))
-        #fig1.subplots_adjust(top=0.96, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-        fig1 = corner.corner_TM(res, label_kwargs={'fontsize':14}, show_titles=True, titles=title, title_kwargs={"fontsize": 14, 'color':'orangered'}, plot_datapoints=False, plot_contours=True, no_fill_contours=True, plot_density=False, levels=[0.68, 0.95, 99.7], color='#4682b4', scale_hist=False, truths=truth, truth_color='orangered', labels=label)
-        #, labels=label, truth_color='gray'
-
-        fig1.savefig('SPEC_' + ID + '_corner.pdf')
-        plt.close()

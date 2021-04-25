@@ -95,6 +95,9 @@ class Mainbody():
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
 
+        # Minimization;
+        self.fneld = self.inputs['FNELD']
+
         # Mdyn;
         try:
             #self.Mdyn = float(inputs['MDYN'])
@@ -245,10 +248,6 @@ class Mainbody():
             self.agemax = float(inputs['AGEMAX'])
             self.agemin = float(inputs['AGEMIN'])
             self.delage = float(inputs['DELAGE'])
-            agemax_tmp = np.log10(self.cosmo.age(self.zgal).value) #, use_flat=True, **cosmo)/cc.Gyr_s
-            if self.agemax > agemax_tmp:
-                self.agemax = agemax_tmp
-                print('Age max is set to the age of the univese (%.1f) at this redshift.'%(self.cosmo.age(self.zgal).value))
 
             self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
             self.nage = len(self.ageparam)
@@ -292,17 +291,17 @@ class Mainbody():
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
-                
             except:
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.delZ = float(inputs['DELZ'])
                 if self.Zmax == self.Zmin or self.delZ == 0:
-                    self.delZ = 0.0001
-                    self.Zall = np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
+                    self.delZ = 0.0
+                    self.ZFIX = self.Zmin
+                    self.Zall = np.asarray([self.ZFIX]) #np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
                 else:
                     self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
         else:
-            self.Zsun= 0.020
+            self.Zsun = 0.020
             Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
             Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
             try:
@@ -356,7 +355,10 @@ class Mainbody():
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
                 except:
-                    self.nZ = 1
+                    if np.max(self.Zall) == np.min(self.Zall):
+                        self.nZ = 0
+                    else:
+                        self.nZ = 1
                 self.ndim = int(self.npeak + self.nZ + self.nAV) # age, Z, and Av.
         else:
             if int(inputs['ZEVOL']) == 1:
@@ -370,8 +372,13 @@ class Mainbody():
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
                 except:
-                    self.nZ = 1
+                    if np.max(self.Zall) == np.min(self.Zall):
+                        self.nZ = 0
+                    else:
+                        self.nZ = 1
+                    
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
+        print('##########################\n')
 
         # Redshift
         self.ndim += self.fzmc
@@ -701,7 +708,7 @@ class Mainbody():
         return zspace, chi2s
 
 
-    def fit_redshift(self, dict, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
+    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
         '''
         Purpose:
         ========
@@ -733,20 +740,20 @@ class Mainbody():
         zliml  = self.zgal - 0.5
 
         # Observed data;
-        sn = dict['fy']/dict['ey']
+        sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        con_cz = (dict['NR']<10000) & (sn>snlim)
-        if len(dict['fy'][con_cz])==0:
+        con_cz = (self.dict['NR']<10000) & (sn>snlim)
+        if len(self.dict['fy'][con_cz])==0:
             if f_bb_zfit:
                 con_cz = (sn>snlim)
             else:
                 return 'y'
 
-        fy_cz = dict['fy'][con_cz] # Already scaled by self.Cz0
-        ey_cz = dict['ey'][con_cz]
-        x_cz = dict['x'][con_cz] # Observed range
-        NR_cz = dict['NR'][con_cz]
+        fy_cz = self.dict['fy'][con_cz] # Already scaled by self.Cz0
+        ey_cz = self.dict['ey'][con_cz]
+        x_cz = self.dict['x'][con_cz] # Observed range
+        NR_cz = self.dict['NR'][con_cz]
 
         # kind='cubic' causes an error if len(xm_tmp)<=3;
         fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='nearest', fill_value="extrapolate")
@@ -788,6 +795,7 @@ class Mainbody():
                 zz_prob = np.arange(0,13,delzz)
                 prior_s = zz_prob * 0 + 1.
                 prior_s /= np.sum(prior_s)
+
         # Attach prior:
         self.z_prior = zz_prob
         self.p_prior = prior_s
@@ -894,7 +902,7 @@ class Mainbody():
                 except:
                     pass
 
-            plt.plot(dict['xbb'], dict['fybb'], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
+            plt.plot(self.dict['xbb'], self.dict['fybb'], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
             plt.scatter(xm_tmp, fm_tmp, color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:
@@ -968,7 +976,8 @@ class Mainbody():
 
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
-            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1))
+            ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',\
+                label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1))
             xx = yy * 0 + self.z_cz[0]
             ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
             xx = yy * 0 + self.z_cz[2]
@@ -1045,126 +1054,30 @@ class Mainbody():
             #fit_params.add('MDUST', value=9, min=9, max=9.1)
             fit_params.add('MDUST', value=9, min=5, max=15)
             self.ndim += 1
-
-            dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
-
+            self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
             f_add = True
 
         return f_add
 
 
-    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
-    f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=True, check_converge=True):
+    def set_param(self):
         '''
-        Input:
-        ======
-        ferr : For error parameter
-        skip_fitz (bool): Skip redshift fit.
-        sigz (float): confidence interval for redshift fit.
-        ezmin (float): minimum error in redshift
-
-        f_plot_accept (bool) : Output acceptance plot of mcmc chains.
-        f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
-        check_converge (bool): Check convergence at every certain number.
+        Purpose:
+        ========
+        Set parameters
         '''
-        
-        import emcee
-        try:
-            import multiprocess
-        except:
-            import multiprocessing as multiprocess
-
-        from .posterior_flexible import Post
-
-        print('########################')
-        print('### Fitting Function ###')
-        print('########################')
-        start = timeit.default_timer()
-
-        ID0 = self.ID
-        
-        inputs = self.inputs
-        if not os.path.exists(self.DIR_TMP):
-            os.mkdir(self.DIR_TMP)
-
-        # And class;
-        #from .function_class import Func
-        #from .basic_func import Basic
-        #self.fnc  = Func(self.ID, self.PA, self.Zall, self.nage, dust_model=self.dust_model, DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
-        #self.bfnc = Basic(self.Zall)
-
-        # Load Spectral library;
-        self.lib = self.fnc.open_spec_fits(fall=0)
-        self.lib_all = self.fnc.open_spec_fits(fall=1)
-        if self.f_dust:
-            self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
-
-        # For MCMC;
-        self.nmc = int(self.inputs['NMC'])
-        self.nwalk = int(self.inputs['NWALK'])
-        self.nmc_cz = int(self.inputs['NMCZ'])
-        self.nwalk_cz = int(self.inputs['NWALKZ'])
-        self.ZEVOL = int(self.inputs['ZEVOL'])
-        self.fzvis = int(self.inputs['ZVIS'])
-        self.fneld = int(self.inputs['FNELD'])
-        if self.f_nested:
-            print('Nested sample is on. Nelder is used for time saving analysis.')
-            self.fneld = 1 
-
-        try:
-            self.ntemp = int(self.inputs['NTEMP'])
-        except:
-            self.ntemp = 1
-
-        try:
-            if int(inputs['DISP']) == 1:
-                self.f_disp = True
-            else:
-                self.f_disp = False
-        except:
-            self.f_disp = False
-
-        #
-        # Dust model specification;
-        #
-        try:
-            dust_model = int(inputs['DUST_MODEL'])
-        except:
-            dust_model = 0
-
-        fnc = self.fnc
-        bfnc = self.bfnc 
-
-        # Error parameter
-        try:
-            self.ferr = int(inputs['F_ERR'])
-        except:
-            self.ferr = 0
-            pass
-
-        #################
-        # Observed Data
-        #################
-        dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
-        self.dict = dict
-
-        # Call likelihood/prior/posterior function;
-        class_post = Post(self)
-
-        ###############################
-        # Add parameters
-        ###############################
-        agemax = self.cosmo.age(self.zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
+        print('##################')
+        print('Setting parameters')
+        print('##################\n')
+        agemax = self.cosmo.age(self.zgal).value 
         fit_params = Parameters()
         f_Alog = True
         if f_Alog:
             try:
-                self.Amin = float(inputs['AMIN'])
-                self.Amax = float(inputs['AMAX'])
+                self.Amin = float(self.inputs['AMIN'])
+                self.Amax = float(self.inputs['AMAX'])
             except:
-                self.Amin = -5 #-20
+                self.Amin = -5
                 self.Amax = 10
             self.Aini = -1
         else:
@@ -1198,35 +1111,58 @@ class Mainbody():
                 ageini = (self.agemin + self.agemax)/2.
                 fit_params.add('A%d'%aa, value=self.Aini, min=self.Amin, max=self.Amax)
 
+                # Check AGE fix; TBD.
+                try:
+                    AGEFIX = float(self.inputs['AGEFIX'])
+                    fit_params.add('AGE%d'%aa, value=AGEFIX, vary=False)
+                    self.agemin = AGEFIX
+                    self.agemax = AGEFIX
+                    self.ndim -= 1
+                    print('AGEFIX is found. Set to %.2f'%(AGEFIX))
+                except:
+                    tcosmo = np.log10(self.cosmo.age(self.zgal).value) 
+                    agemax_tmp = self.agemax
+                    if agemax_tmp > tcosmo:
+                        agemax_tmp = tcosmo
+                        print('Maximum age is set to the age of the univese (%.1fGyr) at this redshift.'%(self.cosmo.age(self.zgal).value))
+                    if self.npeak>1:
+                        if aa == 0:
+                            fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=np.log10(1.0))
+                        else:
+                            ageini = np.log10(1.0)
+                            fit_params.add('AGE%d'%aa, value=ageini, min=np.log10(1.0), max=agemax_tmp)
+                    else:
+                        #fit_params.add('AGE%d'%aa, value=0.0, min=0.0, max=0.01)
+                        fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=agemax_tmp)
+
+                # Check Tau fix;
                 if self.npeak>1:
                     if aa == 0:
                         fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
-                        fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=np.log10(1.0))
                     else:
                         tauini = np.log10(0.3)
-                        ageini = np.log10(1.0)
                         fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=np.log10(0.3))
-                        fit_params.add('AGE%d'%aa, value=ageini, min=np.log10(1.0), max=self.agemax)
                 else:
+                    #fit_params.add('TAU%d'%aa, value=-0.8, min=-0.8, max=-0.79)
                     fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
-                    fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=self.agemax)
-
-                if self.ZEVOL or aa == 0:
-                    fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
+                    
+                # Metal;
+                #if self.ZEVOL or aa == 0:
+                #    fit_params.add('Z'+str(aa), value=self.Zmin, min=self.Zmin, max=self.Zmax)
 
 
         #####################
         # Dust attenuation
         #####################
         try:
-            Avfix = float(inputs['AVFIX'])
+            Avfix = float(self.inputs['AVFIX'])
             fit_params.add('Av', value=Avfix, vary=False)
             self.Avmin = Avfix
             self.Avmax = Avfix
         except:
             try:
-                self.Avmin = float(inputs['AVMIN'])
-                self.Avmax = float(inputs['AVMAX'])
+                self.Avmin = float(self.inputs['AVMIN'])
+                self.Avmax = float(self.inputs['AVMAX'])
                 self.Avini = (self.Avmax+self.Avmin)/2.
                 self.Avini = 0.
                 if self.Avmin == self.Avmax:
@@ -1245,7 +1181,7 @@ class Mainbody():
         #####################
         # Metallicity
         #####################
-        if int(inputs['ZEVOL']) == 1:
+        if int(self.inputs['ZEVOL']) == 1:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99 or self.age[aa]>agemax:
                     fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
@@ -1262,14 +1198,167 @@ class Mainbody():
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
 
+        self.fit_params = fit_params
+        return True
+
+    def prepare_class(self, add_fir=None):
+        '''
+        '''
+        print('#################')
+        print('Preparing library')
+        print('#################\n')
+       # Load Spectral library;
+        self.lib = self.fnc.open_spec_fits(fall=0)
+        self.lib_all = self.fnc.open_spec_fits(fall=1)
+        if self.f_dust:
+            self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
+
+        if add_fir == None:
+            add_fir = self.f_dust
+
+        # For MCMC;
+        self.nmc = int(self.inputs['NMC'])
+        self.nwalk = int(self.inputs['NWALK'])
+        self.nmc_cz = int(self.inputs['NMCZ'])
+        self.nwalk_cz = int(self.inputs['NWALKZ'])
+        self.ZEVOL = int(self.inputs['ZEVOL'])
+        self.fzvis = int(self.inputs['ZVIS'])
+        #self.fneld = int(self.inputs['FNELD'])
+        if self.f_nested:
+            print('Nested sample is on. Nelder is used for time saving analysis.')
+            self.fneld = 1 
+
+        try:
+            self.ntemp = int(self.inputs['NTEMP'])
+        except:
+            self.ntemp = 1
+
+        try:
+            if int(inputs['DISP']) == 1:
+                self.f_disp = True
+            else:
+                self.f_disp = False
+        except:
+            self.f_disp = False
+
+        #
+        # Dust model specification;
+        #
+        try:
+            dust_model = int(self.inputs['DUST_MODEL'])
+        except:
+            dust_model = 0
+
+        # Error parameter
+        try:
+            self.ferr = int(self.inputs['F_ERR'])
+        except:
+            self.ferr = 0
+            pass
+
+        #################
+        # Observed Data
+        #################
+        self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=add_fir)
+
+        # Set parameters;
+        self.set_param()
+    
+        return True
+
+    def get_shuffle(self, out, nshuf=3.0, amp=1e-4):
+        '''
+        Purpose:
+        ========
+        Shuffle initial parameter sets in walkers.
+        '''
+        pos = amp * np.random.randn(self.nwalk, self.ndim)
+        for ii in range(pos.shape[0]):
+            aa = 0
+            for aatmp,key in enumerate(out.params.valuesdict()):
+                if out.params[key].vary == True:
+                    pos[ii,aa] += out.params[key].value
+                    #pos[ii,aa] = out.params[key].value
+                    if np.random.uniform(0,1) > (1. - 1./self.ndim):
+                        if key[:2] == 'Av':
+                            pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
+                            if pos[ii,aa] < self.Avmin:
+                                pos[ii,aa] = self.Avmin
+                            if pos[ii,aa] > self.Avmax:
+                                pos[ii,aa] = self.Avmax
+                        elif key[:3] == 'AGE':
+                            pos[ii,aa] += np.random.uniform(-self.delage*nshuf, self.delage*nshuf)
+                        elif key[:3] == 'TAU':
+                            pos[ii,aa] += np.random.uniform(-self.deltau*nshuf, self.deltau*nshuf)
+                        elif key[0] == 'A':
+                            pos[ii,aa] += np.random.uniform(-0.2, 0.2)
+                            if pos[ii,aa] < self.Amin:
+                                pos[ii,aa] = self.Amin
+                            if pos[ii,aa] > self.Amax:
+                                pos[ii,aa] = self.Amax
+                        elif key[0] == 'Z':
+                            if self.delZ>0.01:
+                                pos[ii,aa] += np.random.uniform(-self.delZ*3, self.delZ*3)
+                                if pos[ii,aa] < self.Zmin:
+                                    pos[ii,aa] = self.Zmin
+                                if pos[ii,aa] > self.Zmax:
+                                    pos[ii,aa] = self.Zmax
+                            else:
+                                pos[ii,aa] += 0
+                        else:
+                            pos[ii,aa] += 0
+
+                    aa += 1
+        return pos
+
+
+    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
+    f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
+    f_shuffle=False, amp_shuffle=1e-2, check_converge=True, Zini=None):
+        '''
+        Input:
+        ======
+        ferr : For error parameter
+        skip_fitz (bool): Skip redshift fit.
+        sigz (float): confidence interval for redshift fit.
+        ezmin (float): minimum error in redshift
+        f_plot_accept (bool) : Output acceptance plot of mcmc chains.
+        f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
+        check_converge (bool): Check convergence at every certain number.
+        '''
+        import emcee
+        try:
+            import multiprocess
+        except:
+            import multiprocessing as multiprocess
+
+        from .posterior_flexible import Post
+
+        # Call likelihood/prior/posterior function;
+        class_post = Post(self)
+
+        # Prepare library, data, etc.
+        self.prepare_class()
+
+        print('########################')
+        print('### Fitting Function ###')
+        print('########################')
+        start = timeit.default_timer()        
+        if not os.path.exists(self.DIR_TMP):
+            os.mkdir(self.DIR_TMP)
+
+        # Initial Z:
+        if Zini == None:
+            Zini = self.Zall
 
         ####################################
         # Initial Metallicity Determination
         ####################################
         # Get initial parameters
         if not skip_fitz or out == None:
-            out, chidef, Zbest = get_leastsq(self, self.Zall, self.fneld, self.age, fit_params, class_post.residual,\
-                dict['fy'], dict['ey'], dict['wht2'], self.ID)
+            out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
             # Best fit
             csq = out.chisqr
@@ -1287,19 +1376,20 @@ class Mainbody():
             Av_tmp = out.params['Av'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            fm_tmp, xm_tmp = fnc.tmp04(out, f_val=True)
+            fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
         else:
             csq = out.chisqr
             rcsq = out.redchi
             fitc = [csq, rcsq]
 
+        #hoge
         ########################
         # Check redshift
         ########################
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(dict, xm_tmp, fm_tmp)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp)
 
         #################################################
         # Gor for mcmc phase
@@ -1312,7 +1402,7 @@ class Mainbody():
             # Add parameters;
             #######################
             out_keep = out
-            f_add = self.add_param(fit_params, sigz=self.sigz, zmin=self.zmin, zmax=self.zmax)
+            f_add = self.add_param(self.fit_params, sigz=self.sigz, zmin=self.zmin, zmax=self.zmax)
 
             # Then, minimize again.
             if f_add:
@@ -1322,7 +1412,9 @@ class Mainbody():
                     fit_name = 'powell'
                 elif self.fneld == 2:
                     fit_name = 'leastsq'
-                out = minimize(class_post.residual, fit_params, args=(dict['fy'], dict['ey'], dict['wht2'], self.f_dust), method=fit_name) # It needs to define out with redshift constrain.
+                else:
+                    fit_name = self.fneld
+                out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 print(fit_report(out))
 
                 # Fix params to what we had before.
@@ -1347,18 +1439,6 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            
-            '''
-            ncpu0 = int(multiprocess.cpu_count()/2)
-            try:
-                ncpu = int(inputs['NCPU'])
-                if ncpu > ncpu0:
-                    print('!!! NCPU is larger than No. of CPU. !!!')
-            except:
-                ncpu = ncpu0
-                pass
-            print('No. of CPU is set to %d'%(ncpu))
-            '''
             ncpu = 0
 
             print('######################')
@@ -1367,85 +1447,162 @@ class Mainbody():
             start_mc = timeit.default_timer()
 
             # MCMC;
+            check_converge = True
             if self.f_mcmc:
-                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], \
-                    f_disp=self.f_disp, moves=[(emcee.moves.DEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),],\
-                    nan_policy='omit')
-
-                # Check convergence every number;
-                nevery = int(self.nmc/10)
-                if nevery < 1000:
-                    nevery = 1000
-
-                
-                if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
-                    print('Initial shuffle in walkers is on.\n')
-                    #pos = np.zeros((self.nwalk, self.ndim),'float')
-                    pos = 1e-5 * np.random.randn(self.nwalk, self.ndim)
-                    nshuf = 3.0
-                    for ii in range(pos.shape[0]):
+                #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
+                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                if True:
+                    # Case for EMCEE
+                    nburn = int(self.nmc/2)
+                    if f_shuffle:
+                        pos = self.get_shuffle(out, amp=amp_shuffle)
+                    else:
+                        pos = amp_shuffle * np.random.randn(self.nwalk, self.ndim)
                         aa = 0
                         for aatmp,key in enumerate(out.params.valuesdict()):
-                            if out.params[key].vary == True:
-                                pos[ii,aa] = out.params[key].value
-                                if np.random.uniform(0,1) > (1. - 1./self.ndim):
-                                    if key[:2] == 'Av':
-                                        pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
-                                        if pos[ii,aa] < self.Avmin:
-                                            pos[ii,aa] = self.Avmin
-                                        if pos[ii,aa] > self.Avmax:
-                                            pos[ii,aa] = self.Avmax
-                                    elif key[:3] == 'AGE':
-                                        pos[ii,aa] += np.random.uniform(-self.delage*nshuf, self.delage*nshuf)
-                                    elif key[:3] == 'TAU':
-                                        pos[ii,aa] += np.random.uniform(-self.deltau*nshuf, self.deltau*nshuf)
-                                    elif key[0] == 'A':
-                                        pos[ii,aa] += np.random.uniform(-0.2, 0.2)
-                                        if pos[ii,aa] < self.Amin:
-                                            pos[ii,aa] = self.Amin
-                                        if pos[ii,aa] > self.Amax:
-                                            pos[ii,aa] = self.Amax
-                                    elif key[0] == 'Z':
-                                        if self.delZ>0.01:
-                                            pos[ii,aa] += np.random.uniform(-self.delZ*3, self.delZ*3)
-                                            if pos[ii,aa] < self.Zmin:
-                                                pos[ii,aa] = self.Zmin
-                                            if pos[ii,aa] > self.Zmax:
-                                                pos[ii,aa] = self.Zmax
-                                        else:
-                                            pos[ii,aa] += 0
-    
+                            if out.params[key].vary:
+                                pos[:,aa] += out.params[key].value
                                 aa += 1
 
-                    # Run emcee;
-                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                        pos=pos,
-                        params=out.params, is_weighted=True, workers=ncpu,
-                        check_converge=check_converge, nevery=nevery, float_behavior='posterior')
-                else:
-                    # Run emcee without pos;
-                    res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                        params=out.params, is_weighted=True, workers=ncpu,
-                        check_converge=check_converge, nevery=nevery, float_behavior='posterior')
+                    sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
+                        args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
+                        moves=moves,\
+                        kwargs={'f_val': True, 'out': out},\
+                        )
 
-                try:
-                    print('Converged at %d/%d'%(res.steps,self.nmc))
-                    self.nmc = res.steps
-                except:
-                    res.steps = self.nmc
+                    if check_converge:
+                        # Check convergence every number;
+                        nevery = int(self.nmc/10)
+                        nconverge = 10.
+                        if nevery < 1000:
+                            nevery = 1000
+                        index = 0
+                        old_tau = np.inf
+                        autocorr = np.empty(self.nmc)
+                        for sample in sampler.sample(pos, iterations=self.nmc, progress=True):
+                            # Only check convergence every "nevery" steps
+                            if sampler.iteration % nevery:
+                                continue
 
-                if f_plot_accept:
-                    plt.plot(res.acceptance_fraction)
-                    plt.xlabel('walker')
-                    plt.ylabel('acceptance fraction')
-                    plt.savefig('%s/accept_%s.png'%(self.DIR_OUT,self.ID))
+                            # Compute the autocorrelation time so far
+                            # Using tol=0 means that we'll always get an estimate even
+                            # if it isn't trustworthy
+                            tau = sampler.get_autocorr_time(tol=0)
+                            autocorr[index] = np.mean(tau)
+                            index += 1
 
-                # This is already burnt in.
-                flatchain = res.flatchain
-                var_names = res.var_names
-                params_value = {}
-                for key in var_names:
-                    params_value[key] = res.params[key].value
+                            # Check convergence
+                            converged = np.all(tau * 100 < sampler.iteration)
+                            converged &= np.all(np.abs(old_tau - tau) / tau < nconverge)
+                            if converged:
+                                print('Converged at %d/%d\n'%(index*nevery,self.nmc))
+                                nburn = int(index*nevery / 50) # Burn 50%
+                                self.nmc = index*nevery
+                                break
+                            old_tau = tau
+                    else:
+                        sampler.run_mcmc(pos, self.nmc, progress=True)
+                    flat_samples = sampler.get_chain(discard=nburn, thin=10, flat=True)
+                        
+                    if True:
+                        fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
+                        samples = sampler.get_chain()
+                        labels = []
+                        for key in out.params.valuesdict():
+                            if out.params[key].vary:
+                                labels.append(key)
+                        for i in range(self.ndim):
+                            ax = axes[i]
+                            ax.plot(samples[:, :, i], "k", alpha=0.3)
+                            ax.set_xlim(0, len(samples))
+                            ax.yaxis.set_label_coords(-0.1, 0.5)
+                            ax.set_ylabel(labels[i])
+                        axes[-1].set_xlabel("step number")
+                        plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
+
+                    # Similar for nested;
+                    # Dummy just to get structures;
+                    print('\nRunning dummy sampler. Disregard message from here;\n')
+                    mini = Minimizer(class_post.lnprob, out.params, 
+                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
+                    f_disp=False, nan_policy='omit',
+                    moves=moves\
+                    )
+                    res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
+                    params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)
+                    print('\nto here.\n')
+
+                    # Update;
+                    var_names = []#res.var_names
+                    params_value = {}
+                    ii = 0
+                    for key in out.params:
+                        if out.params[key].vary:
+                            var_names.append(key)
+                            params_value[key] = np.median(flat_samples[nburn:,ii])
+                            ii += 1
+
+                    import pandas as pd
+                    flatchain = pd.DataFrame(data=flat_samples[nburn:,:], columns=var_names)
+
+                    class get_res:
+                        def __init__(self, flatchain, var_names, params_value, res):
+                            self.flatchain = flatchain
+                            self.var_names = var_names
+                            self.params_value = params_value
+                            self.params = res.params
+                            for key in var_names:
+                                self.params[key].value = params_value[key]
+
+                    # Inserting result from res0 into res structure;
+                    res = get_res(flatchain, var_names, params_value, res)
+                    res.bic = -99
+
+                if False:
+                    # lmfit;
+                    mini = Minimizer(class_post.lnprob, out.params, 
+                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust],
+                    f_disp=self.f_disp, nan_policy='omit',
+                    moves=moves)
+
+                    # Check convergence every number;
+                    nevery = int(self.nmc/10)
+                    if nevery < 1000:
+                        nevery = 1000
+                    
+                    if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
+                        print('Initial shuffle in walkers is on.\n')
+                        pos = self.get_shuffle(out)
+                        # Run emcee;
+                        res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                            pos=pos,
+                            params=out.params, is_weighted=True, workers=ncpu,
+                            check_converge=check_converge, nevery=nevery, float_behavior='posterior')
+                    else:
+                        # Run emcee without pos;
+                        res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
+                            params=out.params, is_weighted=False, workers=ncpu,
+                            check_converge=check_converge, nevery=nevery, float_behavior='posterior')
+                
+                    try:
+                        print('Converged at %d/%d'%(res.steps,self.nmc))
+                        self.nmc = res.steps
+                    except:
+                        res.steps = self.nmc
+
+                    if f_plot_accept:
+                        plt.close()
+                        plt.plot(res.acceptance_fraction)
+                        plt.xlabel('walker')
+                        plt.ylabel('acceptance fraction')
+                        plt.savefig('%s/accept_%s.png'%(self.DIR_OUT,self.ID))
+
+                    # This is already burnt in.
+                    flatchain = res.flatchain
+                    var_names = res.var_names
+                    params_value = {}
+                    for key in var_names:
+                        params_value[key] = res.params[key].value
 
             elif self.f_nested:
                 import dynesty
@@ -1456,17 +1613,12 @@ class Mainbody():
                 nthreads = ncpu       # use one CPU core
                 bound = 'multi'   # use MutliNest algorithm for bounds
                 sample = 'unif' #'rwalk' # uniform sampling
-                tol = 0.1         # the stopping criterion
+                tol = 0.01         # the stopping criterion
                 ndim_nest = self.ndim #0
-                '''
-                for key in out.params:
-                    print(out.params[key].vary)
-                    ndim_nest += 1
-                '''
 
                 #pars, fy, ey, wht, f_fir
                 logl_kwargs = {} #{'pars':out.params, 'fy':dict['fy'], 'ey':dict['ey'], 'wht':dict['wht2'], 'f_fir':self.f_dust}
-                logl_args = [dict['fy'], dict['ey'], dict['wht2'], self.f_dust]
+                logl_args = [self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust]
                 ptform_kwargs = {} #{'pars': out.params}
                 ptform_args = []
 
@@ -1481,8 +1633,8 @@ class Mainbody():
                 sampler.run_nested(dlogz=tol, maxiter=maxmcmc, print_progress=self.f_disp)                 
                 res0 = sampler.results # get results dictionary from sampler
                 
-                # Dammy just to get structures;
-                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[dict['fy'], dict['ey'], dict['wht2'], self.f_dust], f_disp=False, \
+                # Dummy just to get structures;
+                mini = Minimizer(class_post.lnprob, out.params, fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], f_disp=False, \
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),])
                 res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
                 params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior')
@@ -1524,7 +1676,6 @@ class Mainbody():
             print('### MCMC part took %.1f sec ###'%(tcalc_mc))
             print('###############################')
 
-
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
@@ -1547,16 +1698,17 @@ class Mainbody():
             # MCMC corner plot.
             ####################
             if cornerplot:
+                levels = [0.68, 0.95, 0.997]
+                quantiles = [0.01, 0.99]
                 val_truth = []
                 for par in var_names:
                     val_truth.append(params_value[par])
-
                 fig1 = corner.corner(flatchain, labels=var_names, \
-                label_kwargs={'fontsize':16}, quantiles=[0.16, 0.84], show_titles=False, \
+                label_kwargs={'fontsize':16}, quantiles=quantiles, show_titles=False, \
                 title_kwargs={"fontsize": 14}, \
                 truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
-                plot_density=False, levels=[0.68, 0.95, 0.997], truth_color='gray', color='#4682b4')
+                plot_density=False, levels=levels, truth_color='gray', color='#4682b4')
                 fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_corner.png')
                 self.cornerplot_fig = fig1
 
@@ -1594,9 +1746,9 @@ class Mainbody():
                 Czrec1 = self.Cz1
 
             self.zprev = self.zgal   # Input redshift for previous run
-            self.zgal  = zrecom # Recommended redshift from previous run
-            self.Cz0   = Czrec0
-            self.Cz1   = Czrec1
+            self.zgal = zrecom # Recommended redshift from previous run
+            self.Cz0 = Czrec0
+            self.Cz1 = Czrec1
             print('\n\n')
             print('Generate model templates with input redshift and Scale.')
             print('\n\n')
@@ -1610,12 +1762,10 @@ class Mainbody():
 
             flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, and Cz1 , %.5f %.5f %.5f? ([y]/n) '%(self.zrecom, self.Czrec0, self.Czrec1))
             if flag_gen == 'y' or flag_gen == '':
-
                 self.zprev = self.zgal   # Input redshift for previous run
-                self.zgal  = self.zrecom # Recommended redshift from previous run
-                self.Cz0   = self.Czrec0
-                self.Cz1   = self.Czrec1
-
+                self.zgal = self.zrecom # Recommended redshift from previous run
+                self.Cz0 = self.Czrec0
+                self.Cz1 = self.Czrec1
                 return True
 
             else:
@@ -1626,7 +1776,7 @@ class Mainbody():
                 return -1
 
 
-    def quick_fit(self, zgal, Cz0, Cz1, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False):
+    def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False, Zini=None):
         '''
         Purpose:
         ========
@@ -1634,196 +1784,46 @@ class Mainbody():
 
         Input:
         ======
-        ferr   : For error parameter
-        zgal   : Input redshift.
-        sigz (float): confidence interval for redshift fit.
-        ezmin (float): minimum error in redshift.
+        Zini : Array for initial Zs.
 
+        Return:
+        =======
+        if f_get_templates: out, chidef, Zbest, xm_tmp, fm_tmp
         '''
         from .posterior_flexible import Post
-
-        print('########################')
-        print('### Fitting Function ###')
-        print('########################')
-        start = timeit.default_timer()
-
-        ID0 = self.ID
-
-        inputs = self.inputs
-        if not os.path.exists(self.DIR_TMP):
-            os.mkdir(self.DIR_TMP)
-
-        # Load Spectral library;
-        self.lib = self.fnc.open_spec_fits(self, fall=0)
-        self.lib_all = self.fnc.open_spec_fits(self, fall=1)
-        if self.f_dust:
-            self.lib_dust = self.fnc.open_spec_dust_fits(self, fall=0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(self, fall=1)
-
-        # For MCMC;
-        self.nmc = int(self.inputs['NMC'])
-        self.nwalk = int(self.inputs['NWALK'])
-        self.nmc_cz = int(self.inputs['NMCZ'])
-        self.nwalk_cz = int(self.inputs['NWALKZ'])
-        self.ZEVOL = int(self.inputs['ZEVOL'])
-        self.fzvis = int(self.inputs['ZVIS'])
-        self.fneld = int(self.inputs['FNELD'])
-
-        try:
-            self.ntemp = int(self.inputs['NTEMP'])
-        except:
-            self.ntemp = 1
-
-        try:
-            if int(inputs['DISP']) == 1:
-                self.f_disp = True
-            else:
-                self.f_disp = False
-        except:
-            self.f_disp = False
-
-        #
-        # Dust model specification;
-        #
-        try:
-            dust_model = int(inputs['DUST_MODEL'])
-        except:
-            dust_model = 0
-
-        fnc  = self.fnc  #Func(Zall, nage, dust_model=dust_model, self.DIR_TMP=self.DIR_TMP) # Set up the number of Age/ZZ
-        bfnc = self.bfnc #Basic(Zall)
-
-        # Error parameter
-        try:
-            self.ferr = int(inputs['F_ERR'])
-        except:
-            self.ferr = 0
-            pass
-
-        #################
-        # Observed Data
-        #################
-        dict = self.read_data(self.Cz0, self.Cz1, self.zgal)
+        print('#########')
+        print('Quick fit')
+        print('#########\n')
 
         # Call likelihood/prior/posterior function;
         class_post = Post(self)
 
-        ###############################
-        # Add parameters
-        ###############################
-        f_Alog = True
-        agemax = self.cosmo.age(zgal).value #, use_flat=True, **cosmo)/cc.Gyr_s
-        fit_params = Parameters()
-        try:
-            age_fix = inputs['AGEFIX']
-            age_fix = [float(x.strip()) for x in age_fix.split(',')]
-            aamin = []
-            print('\n')
-            print('##########################')
-            print('AGEFIX is found.\nAge will be fixed to:')
-            for age_tmp in age_fix:
-                ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
-                aamin.append(ageind)
-                print('%6s Gyr'%(self.age[ageind]))
-            print('##########################')
-            for aa in range(len(self.age)):
-                if aa not in aamin:
-                    fit_params.add('A'+str(aa), value=0, vary=False)
-                else:
-                    fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
-        except:
-            for aa in range(len(self.age)):
-                if self.age[aa] == 99:
-                    fit_params.add('A'+str(aa), value=0, vary=False)
-                elif self.age[aa]>agemax and not self.force_agefix:
-                    print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
-                    fit_params.add('A'+str(aa), value=0, vary=False)
-                else:
-                    fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
+        # Prepare library, data, etc.
+        self.prepare_class()
 
-        #####################
-        # Dust attenuation
-        #####################
-        try:
-            Avfix = float(inputs['AVFIX'])
-            fit_params.add('Av', value=Avfix, vary=False)
-            print('\n')
-            print('##########################')
-            print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
-        except:
-            try:
-                Avmin = float(inputs['AVMIN'])
-                Avmax = float(inputs['AVMAX'])
-                Avini = (Avmax+Avmin)/2.
-                Avini = 0.
-                if Avmin == Avmax:
-                    fit_params.add('Av', value=Avini, vary=False)
-                else:
-                    fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
-            except:
-                Avmin = 0.0
-                Avmax = 4.0
-                Avini = (Avmax-Avmin)/2. # 0.5
-                Avini = 0.5
-                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(Avmin,Avmax,Avini))
-                fit_params.add('Av', value=Avini, min=Avmin, max=Avmax)
+        # Initial Z:
+        if Zini == None:
+            Zini = self.Zall
 
-        #####################
-        # Metallicity
-        #####################
-        if int(inputs['ZEVOL']) == 1:
-            for aa in range(len(self.age)):
-                if self.age[aa] == 99 or self.age[aa]>agemax:
-                    fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
-                else:
-                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
+        # Temporarily disable zmc;
+        self.fzmc = 0
+        out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+
+        if f_get_templates:
+            Av_tmp = out.params['Av'].value
+            AA_tmp = np.zeros(len(self.age), dtype='float')
+            ZZ_tmp = np.zeros(len(self.age), dtype='float')
+            fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
+
+            ########################
+            # Check redshift
+            ########################
+            if self.fzvis:
+                flag_z = self.fit_redshift(xm_tmp, fm_tmp)
+
+            self.fzmc = 1
+            return out,chidef,Zbest, xm_tmp, fm_tmp
         else:
-            try:
-                ZFIX = float(inputs['ZFIX'])
-                aa = 0
-                fit_params.add('Z'+str(aa), value=0, min=ZFIX, max=ZFIX+0.0001)
-                print('\n')
-                print('##########################')
-                print('ZFIX is found.\nZ will be fixed to:\n %.2f'%(ZFIX))
-            except:
-                aa = 0
-                if np.min(self.Zall)==np.max(self.Zall):
-                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall)+0.0001)
-                else:
-                    fit_params.add('Z'+str(aa), value=0, min=np.min(self.Zall), max=np.max(self.Zall))
-
-        ####################################
-        # Initial Metallicity Determination
-        ####################################
-        # Get initial parameters
-        print('Start quick fit;')
-        out,chidef,Zbest = get_leastsq(self, self.Zall,self.fneld,self.age,fit_params,class_post.residual,\
-            dict['fy'], dict['ey'], dict['wht2'],self.ID)
-
-        # Best fit
-        csq  = out.chisqr
-        rcsq = out.redchi
-        fitc = [csq, rcsq] # Chi2, Reduced-chi2
-        ZZ   = Zbest # This is really important/does affect lnprob/residual.
-
-        print('\n\n')
-        print('#####################################')
-        print('Zbest, chi are;',Zbest,chidef)
-        print('Params are;',fit_report(out))
-        print('#####################################')
-        print('\n\n')
-
-        Av_tmp = out.params['Av'].value
-        AA_tmp = np.zeros(len(self.age), dtype='float')
-        ZZ_tmp = np.zeros(len(self.age), dtype='float')
-        fm_tmp, xm_tmp = fnc.tmp04(out, f_val=True)
-
-        ########################
-        # Check redshift
-        ########################
-        if self.fzvis:
-            import matplotlib as mpl
-            mpl.use('TkAgg')
-            flag_z = self.fit_redshift(dict, xm_tmp, fm_tmp)
-
-        return out, fm_tmp, xm_tmp
+            self.fzmc = 1
+            return out,chidef,Zbest

@@ -20,7 +20,7 @@ gsf's documentation
    fitting.rst
    prior.rst
 
-   modules
+   auto/modules
 
 Indices and tables
 ==================

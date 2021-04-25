@@ -73,9 +73,7 @@ class Func:
                 if zz == 0 and pp == 0:
                     nr = hdu0['colnum']
                     xx = hdu0['wavelength']
-
                     lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float')
-
                     lib[:,0] = nr[:]
                     lib[:,1] = xx[:]
 
@@ -336,7 +334,7 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False):
+    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, lib_all=False):
         '''
         Purpose:
         ========
@@ -356,7 +354,10 @@ class Func:
             par = par.params
 
         if self.MB.fzmc == 1:
-            zmc = par['zmc']
+            try:
+                zmc = par['zmc'].value
+            except:
+                zmc = self.MB.zgal
         else:
             zmc = self.MB.zgal
 
@@ -400,15 +401,23 @@ class Func:
             mslist = sedpar['ML_'+str(NZ)][aa]
             Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
-            if aa == 0:
-                nr = self.MB.lib[:, 0]
-                xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib[:, coln]
+            if lib_all:
+                if aa == 0:
+                    nr = self.MB.lib_all[:, 0]
+                    xx = self.MB.lib_all[:, 1] # This is OBSERVED wavelength range at z=zgal
+                    yy = A00 * self.MB.lib_all[:, coln]
+                else:
+                    yy += A00 * self.MB.lib_all[:, coln]
             else:
-                yy += A00 * self.MB.lib[:, coln]
+                if aa == 0:
+                    nr = self.MB.lib[:, 0]
+                    xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+                    yy = A00 * self.MB.lib[:, coln]
+                else:
+                    yy += A00 * self.MB.lib[:, coln]
         
         self.MB.logMtmp = np.log10(Mtot)
-        # How much does this cost in time?
+
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
@@ -490,7 +499,7 @@ class Func_tau:
 
     def __init__(self, MB, dust_model=0):
         '''
-        dust_model (int) : 0 for Calzetti.
+        dust_model (int) : 0 for Calzetti. 1 for MW. 4 for Kriek Conroy
         '''
         self.MB = MB
         self.ID = MB.ID
@@ -519,11 +528,9 @@ class Func_tau:
         AA = self.AA
         return ZZ, AA
 
-    #############################
-    # Load template in obs range.
-    #############################
     def open_spec_fits(self, fall=0, orig=False):
         '''
+        Load template in obs range.
         '''
         ID0 = self.MB.ID
 
@@ -541,17 +548,17 @@ class Func_tau:
             hdu0 = self.MB.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
-        for zz in range(len(ZZ)):
-            for tt in range(len(self.MB.tau)):
-                for ss in range(len(self.MB.ageparam)):
-                    Z = ZZ[zz]
-                    TT = self.MB.tau[tt]
-                    TA = self.MB.ageparam[ss]
 
+        NZ = len(ZZ)
+        NT = self.MB.ntau
+        NA = self.MB.nage
+        for zz,Z in enumerate(ZZ):
+            for tt,TT in enumerate(self.MB.tau):
+                for ss,TA in enumerate(self.MB.ageparam):
                     if zz == 0 and tt == 0 and ss == 0:
                         nr = hdu0['colnum']
                         xx = hdu0['wavelength']
-                        coln = int(2 + len(ZZ) * self.MB.ntau * self.MB.nage)# + self.MB.ntau * self.MB.nage + NA)
+                        coln = int(2 + NZ * NT * NA) # + self.MB.ntau * self.MB.nage + NA)
                         lib = np.zeros((len(nr), coln), dtype='float')
                         lib[:,0] = nr[:]
                         lib[:,1] = xx[:]
@@ -560,12 +567,10 @@ class Func_tau:
                         colname = 'fspec_orig_' + str(zz) + '_' + str(tt) + '_' + str(ss)
                     else:
                         colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
-                    colnall = int(2 + zz * self.MB.ntau * self.MB.nage + tt * self.MB.nage + ss) # 2 takes account of wavelength and AV columns.
-                                        
+                    colnall = int(2 + zz * NT * NA + tt * NA + ss) # 2 takes account of wavelength and AV columns.
                     lib[:,colnall] = hdu0[colname]
 
         return lib
-
 
     def open_spec_dust_fits(self, fall=0):
         '''
@@ -610,7 +615,6 @@ class Func_tau:
                 plt.plot(lib[:,1],lib[:,coln],linestyle='-')
                 plt.show()
         return lib
-
 
     def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
         '''
@@ -693,9 +697,9 @@ class Func_tau:
         ======
         nprec : Precision when redshift is refined. 
         '''
-        ZZ = self.ZZ # Metal
-        AA = self.AA # Amp
-        bfnc = self.MB.bfnc #Basic(ZZ)
+        ZZ = self.ZZ
+        AA = self.AA 
+        bfnc = self.MB.bfnc
         Mtot = 0
         pp = 0
 
@@ -703,7 +707,10 @@ class Func_tau:
             par = par.params
 
         if self.MB.fzmc == 1:
-            zmc = par['zmc']
+            try:
+                zmc = par['zmc'].value
+            except:
+                zmc = self.MB.zgal
         else:
             zmc = self.MB.zgal
 
@@ -753,9 +760,8 @@ class Func_tau:
             tau,age = par['TAU%d'%aa],par['AGE%d'%aa]
 
             NZ, NT, NA = bfnc.Z2NZ(Z,tau,age)
-            coln = int(2 + NZ*len(self.MB.tau)*len(self.MB.ageparam) + NT*len(self.MB.ageparam) + NA)
-            sedpar = self.MB.af['ML'] # For M/L
-            mslist = sedpar['ML_'+str(NZ)+'_'+str(NT)][NA]
+            coln = int(2 + NZ*self.MB.ntau*self.MB.nage + NT*self.MB.nage + NA)
+            mslist = self.MB.af['ML']['ML_'+str(NZ)+'_'+str(NT)][NA]
             Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
             if lib_all:
@@ -773,10 +779,11 @@ class Func_tau:
                 else:
                     yy += A00 * self.MB.lib[:, coln]
 
-
+        # Keep logM
         self.MB.logMtmp = np.log10(Mtot)
-        # How much does this cost in time?
-        if round(zmc,nprec) != round(self.MB.zgal,nprec):
+
+        # Redshift refinement;
+        if round(zmc,nprec) != round(self.MB.zgal,nprec): # Not sure how much this costs in time.
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
             yy_s = fint(xx_s)
@@ -819,9 +826,9 @@ class Func_tau:
         # Making model template with a given param setself.
         # Also dust attenuation.
         '''
-        tau0= self.tau0 #[0.01,0.02,0.03]
-        ZZ = self.ZZ
-        AA = self.AA
+        #tau0= self.tau0 #[0.01,0.02,0.03]
+        #ZZ = self.ZZ
+        #AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
 

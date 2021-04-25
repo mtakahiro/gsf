@@ -12,14 +12,6 @@ gsf.basic\_func module
    :undoc-members:
    :show-inheritance:
 
-gsf.corner module
------------------
-
-.. automodule:: gsf.corner
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 gsf.fitting module
 ------------------
 
@@ -155,7 +147,6 @@ gsf.zfit module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------
