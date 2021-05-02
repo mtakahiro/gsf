@@ -7,14 +7,14 @@ Examples
 On-the-fly run
 --------------
 
-An example data set is stored in ./gsf/examples/
+Example data are stored in ./gsf/examples/
 
 .. code-block:: bash
 
     python run_gsf.py test.input <Executing-flag>
 
 
-If one needs a new config file (\*.input),
+If you need a new config file (\*.input), execute
 
 .. code-block:: bash
 
@@ -36,14 +36,14 @@ Appendicies
 A. Specify object id
 ~~~~~~~~~~~~~~~~~~~~
 
-You can speficy object id of your interest in the command line. This way, you do not need make a bunch of config files.
+You can speficy the object id of your interest from the command line. This way, you would not need to make a bunch of config files for each of them.
 
 .. code-block:: bash
 
     python run_gsf.py test.input  <Executing-flag> --id <id-of-target-object>
 
-Then gsf will take a look into the BB_CAT and identify object with the same id. 
-Redshift has to be either specified the config file ("ZGAL") or included in CAT_BB (column named "redshift").
+Then gsf will look into the broadband catalog ("BB_CAT"; :doc:`parameters`) and identify object with the same id. 
+Redshift has to be either specified in the config file ("ZGAL"; :doc:`parameters`) or included in the same broadband catalog (column named "redshift").
 
 
 Other examples

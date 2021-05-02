@@ -1,15 +1,4 @@
 
-
-Parameters
-==========
-
-If one needs a new config file, run the following script;
-
-.. code-block:: bash
-
-    python get_configfile.py
-
-
 Paramter Description
 --------------------
 

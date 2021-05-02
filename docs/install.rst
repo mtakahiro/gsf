@@ -26,7 +26,7 @@ Required packages will be installed by;
     pip install -r requirements.txt 
 
 
-Or if users want to create a new conda environment, execute the following command;
+Or if you want to create a new conda environment, execute the following command;
 
 .. code-block:: bash
 

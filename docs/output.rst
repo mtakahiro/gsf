@@ -3,8 +3,8 @@
 Output files
 ============
 
-gsf produces plots for the MCMC covariance matrices, star formation histories, and SED in default. 
-gsf also produces the following files, so users can make their own plots for these quantities;
+Gsf generates plots of the MCMC covariance matrices, star formation histories, and SED in default. 
+It also generates the following files, so you can make your own plots of these quantities;
 
 - summary_<ID>.fits
 - chain_<ID>_corner.cpkl
@@ -17,24 +17,23 @@ for how to use these files.
 
 1.summary file
 --------------
-summarizes percentiles (16/50/84th) for fitting parameters (e.g., amplitude) 
-as well as primary physical parameters (e.g.,stellar mass). Its header also contains meta infos
+stores statistical values (16/50/84th) for fitting parameters (e.g., amplitude) 
+as well as primary physical parameters (e.g.,stellar mass). The header also contains meta info
 such as calculation time. 
-
 
 
 2.chain file
 ------------
-contains MCMC-chains.
+stores MCMC-chains.
 
 
 3.SFH file
 ----------
-contains star formation rates (logSFR), stellar masses (logMstel), and metallicity (logZ) 
-as a function of lookback time (time) that can be used for plot.
+stores star formation rates (logSFR), stellar masses (logMstel), and metallicity (logZ) 
+as a function of lookback time (time).
 
 
 4.Spectral file
 ---------------
-contains the best fit model spectra for each age/tau component, as well as observed fluxes and 
+stores the best fit model spectra for each age/tau component, as well as observed fluxes and 
 error.

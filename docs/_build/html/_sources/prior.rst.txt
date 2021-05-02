@@ -2,7 +2,7 @@
 
 Prior
 =====
-gsf calculates posterior probability through an MCMC process, 
+Gsf calculates posterior probability through an MCMC process, 
 whose concept is based on the Bayes theorem.
 
 For each parameter set in the minimizer, prior is set (posterior_flexible.py).
@@ -14,7 +14,7 @@ dust attenuation, redshift) are set flat, so that;
                   &= 0\ \mathrm{else}.
 
 
-Below is the list of parameter ranges set in gsf.
+Below is the list of parameters and their ranges set in default.
 
 **Parameter ranges:**
 
@@ -44,3 +44,6 @@ Below is the list of parameter ranges set in gsf.
    * - TAU (tau-model)
      - [TAUMIN:TAUMAX]
      - Age of tau model, in logarithmic space. Range can be specified by TAUMIN and TAUMAX.
+   * -
+     -
+     -

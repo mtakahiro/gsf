@@ -6,13 +6,15 @@ Input files
 
 Broadband catalog
 -----------------
-gsf reads the ascii catalog specified in CAT\_BB in the configuration file. The catalog format is similar to EAzY and FAST \citep{brammer08,kriek09}, and should be;
+Gsf reads the ascii catalog specified with CAT\_BB in the configuration file. 
+The catalog format is similar to EAzY (`Brammer et al. 2008 <http://adsabs.harvard.edu/abs/2008ApJ...686.1503B>`__) 
+and FAST (`Kriek et al. 2009 <http://adsabs.harvard.edu/abs/2009ApJ...700..221K}>`__), and should be;
 
 # ID redshift [flux for filter 1] [flux error for filter 1]...
 
-while redshift column is optional.
+while redshift column is optional. If the redshift column is not included, redshift needs to be specified by "ZGAL" in the configuration file. 
 
-The flux unit has to be in f\_nu, with a magnitude zero point :math:`m_0=25`, i.e.
+The flux unit needs to be in f\_nu, with a magnitude zero point :math:`m_0=25`, i.e.
 
 .. math::
 
