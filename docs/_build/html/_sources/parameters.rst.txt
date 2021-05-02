@@ -81,6 +81,9 @@ Paramter Description
    * - VDISP
      - float
      - Velocity dispersion in km/s. Will be used to convolve templates if MORP=none.
+     * - 
+     - 
+     - 
 
 
 **Parameters for spectral templates:**
@@ -147,6 +150,9 @@ Paramter Description
    * - BPASS
      - int 
      - If 1, BPASS templates will be used. Currently not supported.
+     * - 
+     - 
+     - 
 
 
 **Parameters for a specific target:**
@@ -174,13 +180,49 @@ Paramter Description
    * - 
      - 
      - 
-   * - 
-     - 
-     - 
+
+
+**Parameters for functional-form SFHs:**
+
+.. list-table::
+  :widths: 10 5 20
+  :header-rows: 1   
+  :class: tight-table   
+
+  * - Parameter
+    - Type
+    - Description
+  * - SFH_FORM
+    - int
+    - 1: Tau-model, 4: Delayed tau-model, 5: Delayed tau-model with a transition, based on fsps.
+  * - NPEAK
+    - int
+    - Number of components for SFHs combined. (e.g., if 2, then two of SFH_FORM will be combined.)
+  * - AGEMAX
+    - float
+    - Maximum age for the functional form SFH, in log Gyr.
+  * - AGEMIN
+    - float
+    - Minimum age for the functional form SFH, in log Gyr.
+  * - DELAGE
+    - float
+    - Delta age for the age parameter, in log Gyr.
+  * - TAUMAX
+    - float
+    - Maximum tau for the functional form SFH, in log Gyr.
+  * - TAUMIN
+    - float
+    - Minimum tau for the functional form SFH, in log Gyr.
+  * - DELTAU
+    - float
+    - Delta age for the tau parameter, in log Gyr.
+  * - 
+    - 
+    - 
 
 
 **Parameters for far-infrared components:**
-(Support starts from version1.4)
+(Beta implimentation from version1.4)
 
 .. list-table::
    :widths: 10 5 20
@@ -208,63 +250,10 @@ Paramter Description
    * - DIR_DUST
      - str
      - Directory for FIR templates.
-
-
-
-**Parameters for functional-form SFHs:**
-(Support starts from version1.4)
-
-.. list-table::
-   :widths: 10 5 20
-   :header-rows: 1   
-   :class: tight-table   
-
-   * - Parameter
-     - Type
-     - Description
-   * - SFH_FORM
-     - int
-     - 1: Tau-model, 4: Delayed tau-model, 5: Delayed tau-model with a transition, based on fsps.
-   * - NPEAK
-     - int
-     - Number of components for SFHs combined. (e.g., if 2, then two of SFH_FORM will be combined.)
-   * - AGEMAX
-     - float
-     - Maximum age for the functional form SFH, in log Gyr.
-   * - AGEMIN
-     - float
-     - Minimum age for the functional form SFH, in log Gyr.
-   * - DELAGE
-     - float
-     - Delta age for the age parameter, in log Gyr.
-   * - TAUMAX
-     - float
-     - Maximum tau for the functional form SFH, in log Gyr.
-   * - TAUMIN
-     - float
-     - Minimum tau for the functional form SFH, in log Gyr.
-   * - DELTAU
-     - float
-     - Delta age for the tau parameter, in log Gyr.
-   * - 
-     - 
-     - 
-   * - 
+     * - 
      - 
      - 
 
-
-.. list-table::
-   :widths: 10 5 20
-   :header-rows: 1   
-   :class: tight-table   
-
-   * - 
-     - 
-     - 
-   * - 
-     - 
-     - 
 
 .. list-table::
    :widths: 10 5 20

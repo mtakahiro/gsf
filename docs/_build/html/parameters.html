@@ -211,157 +211,7 @@
 </tbody>
 </table>
 <p><strong>Parameters for input data:</strong></p>
-<table class="colwidths-given tight-table docutils align-default">
-<colgroup>
-<col style="width: 29%" />
-<col style="width: 14%" />
-<col style="width: 57%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>DIR_OUT</p></td>
-<td><p>str</p></td>
-<td><p>Directory for output products. If not exist, gsf will create one.</p></td>
-</tr>
-<tr class="row-odd"><td><p>DIR_TEMP</p></td>
-<td><p>str</p></td>
-<td><p>Directory for spectral templates to be stored. If not exist, gsf will create one.</p></td>
-</tr>
-<tr class="row-even"><td><p>CAT_BB</p></td>
-<td><p>str</p></td>
-<td><p>Broadband photometry catalog. Read ‘’ for its format.</p></td>
-</tr>
-<tr class="row-odd"><td><p>DIR_FILT</p></td>
-<td><p>str</p></td>
-<td><p>Directory for filter response curve files.</p></td>
-</tr>
-<tr class="row-even"><td><p>FILTER</p></td>
-<td><p>str</p></td>
-<td><p>Filters of broadband photometry. Comma-separated string, where each string should match *.fil files in DIR_FILT.</p></td>
-</tr>
-<tr class="row-odd"><td><p>SKIPFILT</p></td>
-<td><p>str</p></td>
-<td><p>List of filters that are skipped in the fitting (e.g., for IRAC excess). Comma-separated string.</p></td>
-</tr>
-<tr class="row-even"><td><p>SNLIM</p></td>
-<td><p>int</p></td>
-<td><p>SN limit for data points. If the SN is below this, then eflux of the data point is used as an upper limit.</p></td>
-</tr>
-<tr class="row-odd"><td><p>DIR_EXTR</p></td>
-<td><p>str</p></td>
-<td><p>Directory for spectroscopic data. If none, gsf will ignore and fit only to broadband data.</p></td>
-</tr>
-<tr class="row-even"><td><p>SPEC_FILE</p></td>
-<td><p>str</p></td>
-<td><p>Comma separated list for spectral files. Path is relative to DIR_EXTR.</p></td>
-</tr>
-<tr class="row-odd"><td><p>MORP</p></td>
-<td><p>str</p></td>
-<td><p>Profile shape, if grism spectra are provided. Will be used to convolve templates. “moffat”, “gauss”, or none.</p></td>
-</tr>
-<tr class="row-even"><td><p>MORP_FILE</p></td>
-<td><p>str</p></td>
-<td><p>Ascii file for morphology parameters.</p></td>
-</tr>
-<tr class="row-odd"><td><p>VDISP</p></td>
-<td><p>float</p></td>
-<td><p>Velocity dispersion in km/s. Will be used to convolve templates if MORP=none.</p></td>
-</tr>
-</tbody>
-</table>
 <p><strong>Parameters for spectral templates:</strong></p>
-<table class="colwidths-given tight-table docutils align-default">
-<colgroup>
-<col style="width: 29%" />
-<col style="width: 14%" />
-<col style="width: 57%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>AGE</p></td>
-<td><p>str</p></td>
-<td><p>Set of age pixels, lookback time, in Gyr. Comma-separated.</p></td>
-</tr>
-<tr class="row-odd"><td><p>AGEFIX</p></td>
-<td><p>str</p></td>
-<td><p>(Optional) Subset of age pixels that are used in fitting. Lookback time, in Gyr. Comma-separated.</p></td>
-</tr>
-<tr class="row-even"><td><p>TAU0</p></td>
-<td><p>int</p></td>
-<td><p>Length for star formation of each age pixel, in Gyr (0.01 to 20Gyr). If 99, CSP is applied. If negative, SSP is applied.</p></td>
-</tr>
-<tr class="row-odd"><td><p>NIMF</p></td>
-<td><p>int</p></td>
-<td><p>Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat.</p></td>
-</tr>
-<tr class="row-even"><td><p>ADD_LINES</p></td>
-<td><p>int</p></td>
-<td><p>If 1, emission lines will be added to spectral templates. 0=no, 1=yes. Only supported for fsps.</p></td>
-</tr>
-<tr class="row-odd"><td><p>LOGU</p></td>
-<td><p>float</p></td>
-<td><p>Ionizing parameter U, in log, only effective when ADD_LINES==1.</p></td>
-</tr>
-<tr class="row-even"><td><p>ZMAX</p></td>
-<td><p>float</p></td>
-<td><p>Maximum value for metalicity, in logZ.</p></td>
-</tr>
-<tr class="row-odd"><td><p>ZMIN</p></td>
-<td><p>float</p></td>
-<td><p>Minimum value for metalicity, in logZ.</p></td>
-</tr>
-<tr class="row-even"><td><p>DELZ</p></td>
-<td><p>float</p></td>
-<td><p>Resolution for metallicity, in logZ.</p></td>
-</tr>
-<tr class="row-odd"><td><p>ZFIX</p></td>
-<td><p>float</p></td>
-<td><p>(Optional) Metallicity will be fixed to this value if specified. In logZ.</p></td>
-</tr>
-<tr class="row-even"><td><p>ZEVOL</p></td>
-<td><p>int</p></td>
-<td><p>(Optional) If 1, metallicity for each age pixel will be set as a free parameter. If not, metallicity will be universal to all age pixels (or fixed if ZFIX is provided).</p></td>
-</tr>
-<tr class="row-odd"><td><p>AMAX</p></td>
-<td><p>str</p></td>
-<td><p>(Optional) Maximum value for amplitude, in normal logarithmic scale.</p></td>
-</tr>
-<tr class="row-even"><td><p>AMIN</p></td>
-<td><p>str</p></td>
-<td><p>(Optional) Minimum value for amplitude, in normal logarithmic scale.</p></td>
-</tr>
-<tr class="row-odd"><td><p>AVMAX</p></td>
-<td><p>float</p></td>
-<td><p>(Optional) Maximum value for Av (dust attenuation in V-band), in mag.</p></td>
-</tr>
-<tr class="row-even"><td><p>AVMIN</p></td>
-<td><p>float</p></td>
-<td><p>(Optional) Minimum value for Av (dust attenuation in V-band), in mag.</p></td>
-</tr>
-<tr class="row-odd"><td><p>ZMC</p></td>
-<td><p>int</p></td>
-<td><p>If 1, redshift is set as a free parameter in the primary MCMC step. Otherwise, redshift is fixed to the input parameter.</p></td>
-</tr>
-<tr class="row-even"><td><p>F_MDYN</p></td>
-<td><p>int</p></td>
-<td><p>If 1, gsf uses dynamical mass (M_dyn column in CAT_BB) as a prior. Currently not supported.</p></td>
-</tr>
-<tr class="row-odd"><td><p>BPASS</p></td>
-<td><p>int</p></td>
-<td><p>If 1, BPASS templates will be used. Currently not supported.</p></td>
-</tr>
-</tbody>
-</table>
 <p><strong>Parameters for a specific target:</strong></p>
 <table class="colwidths-given tight-table docutils align-default">
 <colgroup>
@@ -396,55 +246,9 @@
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-</tr>
 </tbody>
 </table>
-<p><strong>Parameters for far-infrared components:</strong>
-(Support starts from version1.4)</p>
-<table class="colwidths-given tight-table docutils align-default">
-<colgroup>
-<col style="width: 29%" />
-<col style="width: 14%" />
-<col style="width: 57%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>FIR_FILTER</p></td>
-<td><p>str</p></td>
-<td><p>Filters of FIR photometry. Comma-separated string, where each string should match *.fil files in DIR_FILT.</p></td>
-</tr>
-<tr class="row-odd"><td><p>CAT_BB_DUST</p></td>
-<td><p>str</p></td>
-<td><p>Directory for the FIT photometric catalog, in the same format as for CAT_BB.</p></td>
-</tr>
-<tr class="row-even"><td><p>TDUST_HIG</p></td>
-<td><p>float</p></td>
-<td><p>Maximum temperature.</p></td>
-</tr>
-<tr class="row-odd"><td><p>TDUST_LOW</p></td>
-<td><p>float</p></td>
-<td><p>Minimum temperature.</p></td>
-</tr>
-<tr class="row-even"><td><p>TDUST_DEL</p></td>
-<td><p>float</p></td>
-<td><p>Delta T for temperature paramter, in Kelvin.</p></td>
-</tr>
-<tr class="row-odd"><td><p>DIR_DUST</p></td>
-<td><p>str</p></td>
-<td><p>Directory for FIR templates.</p></td>
-</tr>
-</tbody>
-</table>
-<p><strong>Parameters for functional-form SFHs:</strong>
-(Support starts from version1.4)</p>
+<p><strong>Parameters for functional-form SFHs:</strong></p>
 <table class="colwidths-given tight-table docutils align-default">
 <colgroup>
 <col style="width: 29%" />
@@ -494,31 +298,10 @@
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-</tr>
 </tbody>
 </table>
-<table class="colwidths-given tight-table docutils align-default">
-<colgroup>
-<col style="width: 29%" />
-<col style="width: 14%" />
-<col style="width: 57%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"></th>
-<th class="head"></th>
-<th class="head"></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
+<p><strong>Parameters for far-infrared components:</strong>
+(Beta implimentation from version1.4)</p>
 <table class="colwidths-given tight-table docutils align-default">
 <colgroup>
 <col style="width: 29%" />
