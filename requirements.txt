@@ -4,6 +4,7 @@ multiprocess
 lmfit==1.0.0
 emcee==3.0.2
 corner==2.0.1
+numpy>=1.18
 sphinx_automodapi
 # git+https://github.com/dfm/python-fsps
-git+https://github.com/spacetelescope/mirage
+git+https://github.com/mtakahiro/gsf
