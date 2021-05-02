@@ -1,6 +1,5 @@
 import numpy as np
 from astropy.io import fits
-from lmfit import Parameters
 import asdf
 
 from .function import filconv, calc_Dn4
@@ -136,10 +135,12 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     ZZ_tmp = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
 
+    '''
     #
     # Get mcmc model templates, plus some indicies.
     #
     # This is just for here;
+    from lmfit import Parameters
     fit_params = Parameters()
     for aa in range(len(age)):
         fit_params.add('A'+str(aa), value=1., min=0, max=10000)
@@ -149,7 +150,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             fit_params.add('Z'+str(aa), value=0.0, min=-10, max=10)
         except:
             pass
-
+    '''
 
     ############
     # Get SN.
