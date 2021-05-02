@@ -2,7 +2,6 @@ from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
 import os
-import numpy
 
 try:
     from Cython.Build import cythonize
