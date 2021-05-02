@@ -1,3 +1,9 @@
+"""
+This includes the main part of gsf.
+
+Original copyright:
+   Copyright (c) 2021 Takahiro Morishita, STScI
+"""
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -38,6 +44,26 @@ fLW = np.zeros(len(LW), dtype='int')
 
 
 class Mainbody():
+    '''
+    The list of (possible) `Mainbody` attributes is given below:
+
+    Attributes
+    ----------
+    nimf : int 
+        0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08.
+    Z : float array
+        Stellar phase metallicity in logZsun.
+    age : float array
+        Age, in Gyr.
+    fneb : int
+        flag for adding nebular emission. 0: No, 1: Yes.
+    logU : float
+        Ionizing parameter, in logU.
+    tau0 : float array
+        Width of age bin. If you want to fix it to a specific value, set it to >0.01, in Gyr.
+        Otherwise, it would be either minimum value (=0.01; if one age bin), 
+        or the width to the next age bin.
+    '''
 
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         self.update_input(inputs, idman=idman)
@@ -45,11 +71,19 @@ class Mainbody():
 
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, sigz=5.0):
         '''
-        Input:
-        ======
-        parfile : Ascii file that lists parameters for everything.
-        Mpc_cm : cm/Mpc
-        pixelscale : arcsec/pixel
+        The purpose of this module is to register/update the parameter attributes in `Mainbody`
+        by visiting the configuration file.
+
+        Parameters
+        ----------
+        inputs : str
+            Configuration file that lists parameters.
+
+        Mpc_cm : float, optional
+            Conversion factor from Mpc-to-cm
+
+        pixelscale : float, optional
+            Conversion factor from pixel-to-arcsec
 
         '''
 
@@ -484,20 +518,20 @@ class Mainbody():
 
     def read_data(self, Cz0, Cz1, zgal, add_fir=False, idman=None):
         '''
-        Input:
-        ======
-        Cz0, Cz1 : Normalization coeffs for grism spectra.
-        zgal : Current redshift estimate.
-        idman : Manual input id.
+        Parameters
+        ----------
+        Cz0, Cz1 : float
+            Normalization coefficients for grism spectra. Cz0 for G102, Cz1 for G141.
+        zgal : float
+            Current redshift estimate.
 
-        Return:
-        =======
+        Returns
+        -------
         Dictionary.
 
-        Note:
-        =====
-        Can be used for any SFH
-
+        Notes
+        -----
+        This modeule can be used for any SFHs.
         '''
         print('READ data with Cz0=%.2f, Cz0=%.2f, zgal=%.2f'%(Cz0, Cz1, zgal))
 
@@ -608,26 +642,33 @@ class Mainbody():
 
     def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
         '''
-        Purpose:
-        ========
-        Search redshift space to find the best redshift and probability distribution.
+        This module explores the redshift space to find the best redshift and probability distribution.
 
-        Input:
-        ======
-        fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
-        xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].
+        Parameters
+        ----------
+        dict : dictionary
+            Dictionary that includes input data.
 
-        prior : Prior for redshift determination. E.g., Eazy z-probability.
-        zliml : Lowest redshift for fitting range.
-        zlimu : Highest redshift for fitting range.
+        xm_tmp : numpy.array
+            Wavelength array, common for fm_tmp below, at z=0. Should be in [len(wavelength)].
+        fm_tmp : numpy.array
+            Fluxes for various templates. Should be in a shape of [ n * len(wavelength)], 
+            where n is the number templates.
+        zliml : float
+            Lowest redshift for fitting range.
+        zlimu : float
+            Highest redshift for fitting range.
+        prior : numpy.array
+            Prior used for the redshift determination. E.g., Eazy z-probability.
+        method : str
+            Method for minimization. The option must be taken from lmfit. Powell is more accurate. Nelder is faster.
 
-        method : powell is more accurate. nelder is faster.
-
-        Return:
-        =======
-        zspace : Numpy array of redshift grid.
-        chi2s  : Numpy array of chi2 values corresponding to zspace.
-
+        Returns
+        -------
+        zspace : numpy.array 
+            Array for redshift grid.
+        chi2s : numpy.array
+            Array of chi2 values corresponding to zspace.
         '''
         import scipy.interpolate as interpolate
 
@@ -710,25 +751,31 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
         '''
-        Purpose:
-        ========
-        Find an optimal redshift, before going into a big fit, by using several templates.
+        Find the best-fit redshift, before going into a big fit, through an interactive inspection.
+        This module is effective only when spec data is provided.
 
-        Input:
-        ======
-        delzz : Delta z in redshift search space
-        zliml : Lower limit range for redshift
-        zlimu : Upper limit range for redshift
-        ezmin : Minimum redshift uncertainty.
-        snlim : SN limit for data points. Those below the number will be cut from the fit.
-        f_bb_zfit : Redshift fitting if only BB data. If False, return nothing.
-        f_line_check : If True, line masking.
+        Parameters
+        ----------
+        delzz : float
+            Delta z in redshift search space
+        zliml : float
+            Lower limit range for redshift
+        zlimu : float
+            Upper limit range for redshift
+        ezmin : float
+            Minimum redshift uncertainty.
+        snlim : float
+            SN limit for data points. Those below the number will be cut from the fit.
+        f_bb_zfit : bool
+            Redshift fitting if only BB data. If False, returns nothing.
+        f_line_check : bool
+            If True, line masking.
+        priors : dict, optional
+            Dictionary that contains z (redshift grid) and chi2 (chi-square).
 
-        priors (optional): Dictionary that contains z (redshift grid) and chi2 (chi-square).
-
-        Note:
-        =====
-        Spectrum must be provided to make this work.
+        Notes
+        -----
+        Spectral data must be provided to make this work.
 
         '''
         import scipy.interpolate as interpolate
@@ -955,16 +1002,12 @@ class Mainbody():
 
     def get_zdist(self, f_interact=False):
         '''
-        Purpose:
-        ========
-        Save fig of z-distribution.
+        Saves a plot of z-distribution.
 
-        Input:
-        ======
-        f_interact : If true, the function returns figure ax.
-
-        Note:
-        =====
+        Parameters
+        ----------
+        f_interact : bool
+            If true, this module returns figure ax.
         '''
 
         try: # if spectrum;
@@ -1012,12 +1055,8 @@ class Mainbody():
 
     def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
         '''
-        Purpose:
-        ========
-        Add parameters.
+        Add new parameters.
 
-        Note:
-        =====
         '''
 
         f_add = False
@@ -1062,9 +1101,7 @@ class Mainbody():
 
     def set_param(self):
         '''
-        Purpose:
-        ========
-        Set parameters
+        Set parameters.
         '''
         print('##################')
         print('Setting parameters')
@@ -1269,9 +1306,7 @@ class Mainbody():
 
     def get_shuffle(self, out, nshuf=3.0, amp=1e-4):
         '''
-        Purpose:
-        ========
-        Shuffle initial parameter sets in walkers.
+        Shuffles initial parameters of each walker, to give it extra randomeness.
         '''
         pos = amp * np.random.randn(self.nwalk, self.ndim)
         for ii in range(pos.shape[0]):
@@ -1317,15 +1352,24 @@ class Mainbody():
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
     f_shuffle=False, amp_shuffle=1e-2, check_converge=True, Zini=None):
         '''
-        Input:
-        ======
-        ferr : For error parameter
-        skip_fitz (bool): Skip redshift fit.
-        sigz (float): confidence interval for redshift fit.
-        ezmin (float): minimum error in redshift
-        f_plot_accept (bool) : Output acceptance plot of mcmc chains.
-        f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
-        check_converge (bool): Check convergence at every certain number.
+        Main module of this script.
+
+        Parameters
+        ----------
+        ferr : float
+            Used for error parameter.
+        skip_fitz : bool 
+            Skip redshift fit.
+        sigz : float 
+            Confidence interval for redshift fit (i.e. n-sigma).
+        ezmin : float 
+            minimum error in redshift
+        f_plot_accept : bool
+            Output acceptance plot of mcmc chains.
+        f_shuffle : bool
+            Randomly shuffle some of initial parameters in walkers.
+        check_converge : bool
+            Check convergence at every certain number.
         '''
         import emcee
         try:
@@ -1778,17 +1822,16 @@ class Mainbody():
 
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False, Zini=None):
         '''
-        Purpose:
-        ========
-        Fit input data with a prepared template library, to get a chi-min result.
+        Fits input data with a prepared template library, to get a chi-min result.
 
-        Input:
-        ======
-        Zini : Array for initial Zs.
+        Parameters:
+        -----------
+        Zini : array
+            Array for initial values for metallicity.
 
-        Return:
-        =======
-        if f_get_templates: out, chidef, Zbest, xm_tmp, fm_tmp
+        Returns
+        -------
+        out, chidef, Zbest, xm_tmp, fm_tmp (if f_get_templates is set True).
         '''
         from .posterior_flexible import Post
         print('#########')

@@ -41,6 +41,7 @@ master_doc = 'index'
 extensions = [
     'sphinx.ext.autodoc',
     "sphinx_rtd_theme",
+    "sphinx_automodapi.automodapi",
 ]
 html_theme = "sphinx_rtd_theme"
 

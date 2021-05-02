@@ -20,43 +20,34 @@ def get_lognorm(t, ltau0, T0=-10):
 
 
 def make_tmp_z0(MB, lammin=100, lammax=160000): 
-    '''
-    Purpose:
-    ========
-    #
-    # This is for the preparation of
-    # default template, with FSPS, at z=0.
-    #
-    # Should be run before SED fitting.
-    #
-    #
+    """
+    This is for the preparation of default template, with FSPS, at z=0.
+    Should be run before SED fitting.
 
-    Input:
-    ======
-    Template:
-    nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
-    Z (array)  : Stellar phase metallicity in logZsun.
-    fneb (int) : flag for adding nebular emissionself.
-    logU (float): ionizing parameter, in logU.
-    tau0 (float array): Width of age bin. If you want to fix, put >0.01 (Gyr).
-    
-    SFH:
-    age (array): Age, in logGyr.
-    tau (array): Tau, in logGyr.
+    Parameters
+    ----------
+    :class:`gsf.fitting.Mainbody` : class
+        Mainbody class, that contains attributes.
 
-    #  Otherwise, it would be either minimum value (=0.01; if one age bin), or
-    #  the width to the next age bin.
-    '''
+    lammin : float, optional
+        Minimum value of the rest-frame wavelength of the template, in AA.
+
+    lammax : float, optional
+        Maximum value of the rest-frame wavelength of the template, in AA.
+
+    tau_lim : float, optional
+        Maximum value of tau of the template, in Gyr. Tau smaller than this 
+        value would be approximated by SSP.
+    """
     import asdf
     import fsps
     import gsf
 
     nimf = MB.nimf
     age = MB.ageparam
-    #tau0 = MB.tau0 #[0.01,0.02,0.03],
-    fneb = MB.fneb #0,
-    logU = MB.logU #-2.5,
-    DIR_TMP = MB.DIR_TMP #'./templates/'
+    fneb = MB.fneb
+    logU = MB.logU
+    DIR_TMP = MB.DIR_TMP
     Na = len(age)
 
     tau = MB.tau

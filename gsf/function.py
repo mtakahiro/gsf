@@ -19,15 +19,12 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 def get_ind(wave,flux):
     '''
-    Purpose:
-    ========
-    Get Lick index for input input
+    Gets Lick index for input input
 
-    Return:
-    =======
+    Returns
+    -------
     equivalent width
-    '''
-    
+    '''    
     lml     = [4268, 5143, 5233, 5305, 5862, 4828, 4628, 4985, 5669, 5742, 4895, 4895, 5818, 6068]
     lmcl    = [4283, 5161, 5246, 5312, 5879, 4848, 4648, 5005, 5689, 5762, 5069, 5154, 5938, 6191]
     lmcr    = [4318, 5193, 5286, 5352, 5911, 4877, 4668, 5925, 5709, 5782, 5134, 5197, 5996, 6274]
@@ -55,16 +52,26 @@ def get_ind(wave,flux):
 
 def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r", emojis=['']):
     '''
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    Call in a loop to create terminal progress bar.
+
+    Parameters
+    ----------
+    iteration : int 
+        current iteration
+    total : int 
+        total iterations
+    prefix : str
+        prefix string
+    suffix : str
+        suffix string
+    decimals : int
+        positive number of decimals in percent complete
+    length : int
+        character length of bar
+    fill : str
+        bar fill character
+    printEnd : str 
+        end character
     '''
 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
@@ -89,9 +96,7 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
 
 def get_input():
     '''
-    Purpose:
-    ========
-    Get a default dictionary for input params.
+    Gets a default dictionary for input params.
 
     '''
     inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0, \
@@ -104,12 +109,10 @@ def get_input():
 
 def read_input(parfile):
     '''
-    Purpose:
-    ========
-    Get info from param file.
+    Gets info from param file.
 
-    Return:
-    =======
+    Returns
+    -------
     Input dictionary.
 
     '''
@@ -135,13 +138,11 @@ def read_input(parfile):
 
 def write_input(inputs, file_out='gsf.input'):
     '''
-    Purpose:
-    ========
-    Get an ascii format param file.    
+    Gets an ascii format param file.    
 
-    Return:
-    =======
-    file_out.
+    Returns
+    -------
+    file_out
     '''
     import gsf
     fw = open(file_out, 'w')
@@ -170,10 +171,7 @@ def loadcpkl(cpklfile):
 
 def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, chidef=None, Zbest=0, f_keep=False):
     '''
-    Purpose:
-    ========
-    Get initial parameters at various Z;
-    
+    Gets initial parameters at various Z
     '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 
@@ -253,11 +251,13 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
 
 
 def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
-    #
-    # A Function to check rejuvenation;
-    #
-    # delMS: Scatter around MS. = 0.2 dex in default.
-    #
+    '''
+    A Function to check rejuvenation.
+    Parameters
+    ----------
+    delMS : float
+        Scatter around the Main Sequence. 0.2 dex, in default.
+    '''
     age_set = 1.0
     con_old = (age>=age_set)
     con_mid = (age<age_set) & (age>np.min(age))
@@ -287,24 +287,25 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
 
 def get_SFMS(red,age,mass,IMF=1):
     '''
-    Purpose:
-    ========
-    To get SFMS at age ago from z=red.
+    Gets SFMS at age ago from z=red.
 
-    Input:
-    ======
-    red : Observed redshift
-    age : lookback time, in Gyr (array).
-    mass : stellar mass (array) at each age, in Msun (not logM). 
+    Parameters
+    ----------
+    red : float
+        Observed redshift
+    age : array
+        lookback time, in Gyr.
+    mass : array
+        stellar mass (array) at each age, in Msun (not logM). 
 
-    Return:
-    =======
+    Returns
+    -------
     SFR, in logMsun/yr.
 
-    Note:
-    =====
-    # From Speagle+14 Eq28;
-    # Chabrier IMF, default
+    Notes
+    -----
+    From Speagle+14 Eq28.
+    Chabrier IMF, in default
     '''
     from astropy.cosmology import WMAP9
     cosmo = WMAP9
@@ -361,22 +362,21 @@ def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
 
 def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     '''
-    Input:
-    ======
-    lmtmp: Rest frame wave (AA)
-    ftmp: Fnu ()
-    Return: integrated flux.
+    Parameters
+    ----------
+    lmtmp : 
+        Rest frame wave (AA)
+    ftmp :
+        Fnu ()
 
+    Returns
+    -------
+    integrated flux.
     '''
     
     con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
-        '''
-        I1  = simps(spec/lamS**2*c*1.0,lamS)   #Denominator for Fnu
-        I2  = 1. #simps(1.0/lamS,lamS)                  #Numerator
-        fnu = I1/I2 #/c
-        '''
         # Equivalent to the following;
         I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
         I2  = simps(lamS*1.,lamS)        #Numerator
@@ -384,19 +384,21 @@ def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     return fnu
 
 def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
-    #
-    # lmtmp: Rest frame wave (AA)
-    # ftmp: Fnu ()
-    # Return: Convolved flux density. Not integrated sum.
-    #
+    '''
+    Parameters
+    ----------
+    lmtmp : 
+        Rest-frame wavelength, in AA.
+    ftmp : 
+        Fnu
+    
+    Returns
+    -------
+    Convolved flux density. Not integrated sum.
+    '''
     con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
-        '''
-        I1  = simps(spec/lamS**2*c*1.0*lamS,lamS)   #Denominator for Fnu
-        I2  = simps(1.0/lamS,lamS)                  #Numerator
-        fnu = I1/I2/c                               #Average flux density
-        '''
         # Equivalent to the following;
         I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
         I2  = simps(lamS*1.,lamS)                  #Numerator
@@ -407,29 +409,27 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
 
 def data_int(lmobs, lmtmp, ftmp):
     '''
-    Purpose:
-    ========
 
-    Input:
-    ======
-    # lmobs: Observed wavelength.
-    # lmtmp, ftmp: Those to be interpolated.
+    Parameters
+    ----------
+    lmobs : 
+        Observed wavelength.
+    lmtmp, ftmp: 
+        Those to be interpolated.
     '''
-
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 
 def fnutonu(fnu, m0set=25.0, m0input=-48.6):
     '''
-    Purpose:
-    ========
-    Convert from Fnu (cgs) to Fnu (m0=m0set)
+    Converts from Fnu (cgs) to Fnu (m0=m0set)
     
-    Inputs:
-    =======
-    fnu : flux in cgs, with magnitude zero point of m0input.
-    m0set : Target mag zero point.
-    
+    Parameters
+    ----------
+    fnu : 
+        flux in cgs, with magnitude zero point of m0input.
+    m0set : 
+        Target mag zero point.
     '''
     Ctmp = 10**((48.6+m0set)/2.5)
     fnu_new  = fnu * Ctmp
@@ -438,13 +438,8 @@ def fnutonu(fnu, m0set=25.0, m0input=-48.6):
 
 def flamtonu(lam, flam, m0set=25.0):
     '''
-    Purpose:
-    ========
-    Convert from Flam to Fnu, with mag zeropoint of m0set.
+    Converts from Flam to Fnu, with mag zeropoint of m0set.
     
-    Inputs:
-    =======
-
     '''
     Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     fnu  = flam * Ctmp
@@ -452,13 +447,8 @@ def flamtonu(lam, flam, m0set=25.0):
 
 def fnutolam(lam, fnu, m0set=25.0):
     '''
-    Purpose:
-    ========
-    Convert from Fnu to Flam, with mag zeropoint of m0set.
+    Converts from Fnu to Flam, with mag zeropoint of m0set.
     
-    Inputs:
-    =======
-
     '''
     Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
     flam  = fnu / Ctmp
@@ -538,20 +528,29 @@ def savecpkl(data, cpklfile, verbose=True):
     cPickle.dump(data, f, 2)
     f.close()
 
-# This function is much better than previous,
-# but is hard to impliment for the current version.
 def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
-    #
-    # For general purpose (Noll+09)
-    # lm (float array) : wavelength, at RF.
-    # fl (float array) : fnu
-    # Av (float)       : mag
-    # nr (int array)   : index, to be used for sorting.
-    # Rv: from Calzetti+00
-    # gamma:
-    # Eb:
-    # A difference from dust_gen is Eb is defined as a function of gamma.
-    #
+    '''
+    For general purpose (Noll+09).
+    This function is much better than previous, but is hard to impliment for the current version.
+    A difference from dust_gen is Eb is defined as a function of gamma.
+
+    Parameters
+    ----------
+    lm : float array
+        wavelength, at RF.
+    fl : float array
+        fnu
+    Av : float
+        in mag
+    nr : int array
+        index, to be used for sorting.
+    Rv : 
+        from Calzetti+00
+    gamma :
+        gamma.
+    Eb:
+        Eb
+    '''
     Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
@@ -599,16 +598,22 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
 
 def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
     '''
-    #
-    # Dust model by Kriek&Conroy13
-    # lm (float array) : wavelength, at RF.
-    # fl (float array) : fnu
-    # Av (float)       : mag
-    # nr (int array)   : index, to be used for sorting.
-    # Rv: from Calzetti+00
-    # gamma: See Eq.1
-    # A difference from dust_gen is Eb is defined as a function of gamma.
-    #
+    Dust model by Kriek&Conroy13
+    
+    Parameters
+    ----------
+    lm : float array
+        RF Wavelength.
+    fl : float array
+        in fnu
+    Av : float
+        in mag
+    nr : int array
+        index, to be used for sorting.
+    Rv : float
+        from Calzetti+00
+    gamma : float
+        See Eq.1
     '''
     Kl = np.zeros(len(lm), dtype='float')
 
@@ -660,16 +665,20 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
 
 def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     '''
-    Input:
-    ======
-    #
-    # lm (float array) : wavelength, at RF.
-    # fl (float array) : fnu
-    # Av (float)       : mag
-    # nr (int array)   : index, to be used for sorting.
-    # Rv: from Calzetti+00
-    # lmlimu: Upperlimit. 2.2 in Calz+00
-    #
+    Parameters
+    ----------
+    lm : float array
+        wavelength, at RF.
+    fl : float array
+        fnu
+    Av : float
+        in mag
+    nr : int array
+        index, to be used for sorting.
+    Rv : 
+        from Calzetti+00
+    lmlimu : 
+        Upper limit. 2.2 in Calz+00
     '''
     Kl = np.zeros(len(lm), dtype='float')
     nrd = np.zeros(len(lm), dtype='float')
@@ -728,7 +737,8 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
 
 def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     '''
-    #
+    Parameters
+    ----------
     # lm (float array) : wavelength, at RF, in AA.
     # fl (float array) : fnu
     # Av (float)       : mag
@@ -865,7 +875,8 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
     '''
     Convolution of templates with filter response curves.
 
-    f0 in fnu
+    Parameters
+    ----------
     '''
 
     fnu  = np.zeros(len(band0), dtype='float')
@@ -902,11 +913,14 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
 
 def filconv_fast(filts, band, l0, f0, fw=False):
     '''
-    Input:
-    ============
-    filts, band : From MB.filts and MB.band, respectively.
-    f0: Flux for spectrum, in fnu
-    l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
+    Parameters
+    ----------
+    filts, band : 
+        From MB.filts and MB.band, respectively.
+    f0: 
+        Flux for spectrum, in fnu
+    l0: 
+        Wavelength for spectrum, in AA (that matches filter response curve's.)
 
     '''
     fnu  = np.zeros(len(filts), dtype='float')
@@ -958,13 +972,14 @@ def filconv_fast(filts, band, l0, f0, fw=False):
 
 def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     '''
-    Input:
-    ======
-    f0: Flux for spectrum, in fnu
-    l0: Wavelength for spectrum, in AA (that matches filter response curve's.)
-
-    f_regist : If True, read filter response curve.
-
+    Parameters
+    ----------
+    f0 : 
+        Flux for spectrum, in fnu
+    l0 : 
+        Wavelength for spectrum, in AA (that matches filter response curve's.)
+    f_regist : 
+        If True, read filter response curve.
     '''
     if MB==None:
         f_regist = True
@@ -1043,11 +1058,10 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
 
 def fil_fwhm(band0, DIR):
     '''
-    #
-    # FWHM
-    #
-    #f0 in fnu
-    #
+    Parameters
+    ----------
+    f0 :
+        in fnu
     '''
     fwhm = np.zeros(len(band0), dtype='float')
     for ii in range(len(band0)):
@@ -1143,15 +1157,17 @@ def check_line_cz(ycont,xcont,wycont,model,zgal):
 
 def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
     '''
-    Input:
-    ========
-    LW : List for emission lines to be masked.
+    Parameters
+    ----------
+    LW : 
+        List for emission lines to be masked.
 
-    Returns:
-    ========
-    wht : Processed weight, where wavelength at line exists is masked.
-    ypoly : Fitted continuum flux.
-
+    Returns
+    -------
+    wht : 
+        Processed weight, where wavelength at line exists is masked.
+    ypoly : 
+        Fitted continuum flux.
     '''
 
     er  = 1./np.sqrt(wycont)
@@ -1203,9 +1219,10 @@ def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
 
 def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
     '''
-    #
-    # lsig (float): which sigma to detect lines.
-    #
+    Parameters
+    ----------
+    lsig : float)
+        which sigma to detect lines.
     '''
     fLW = np.zeros(len(LW), dtype='int') # flag.
     R_grs = (xcont[1] - xcont[0])

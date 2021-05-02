@@ -9,10 +9,17 @@ from .basic_func import Basic
 
 class Func:
     '''
+    The list of (possible) `Func` attributes is given below:
+
+    Attributes
+    ----------
     '''
     def __init__(self, MB, dust_model=0):
         '''
-        dust_model (int) : 0 for Calzetti.
+        Parameters
+        ----------
+        dust_model : int
+            0 for Calzetti.
         '''
         self.ID = MB.ID
         self.ZZ = MB.Zall
@@ -90,9 +97,7 @@ class Func:
 
     def open_spec_dust_fits(self, fall=0):
         '''
-        ##################################
-        # Load dust template in obs range.
-        ##################################
+        Loads dust template in obs range.
         '''
         ID0 = self.MB.ID
         tau0= self.MB.tau0 #[0.01,0.02,0.03]
@@ -135,10 +140,8 @@ class Func:
 
     def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
         '''
-        #############################
-        # Load template in obs range.
-        # But for weird template.
-        #############################
+        Load template in obs range.
+        But for weird template.
         '''
         from astropy.io import fits
         tau0= self.tau0 #[0.01,0.02,0.03]
@@ -170,13 +173,6 @@ class Func:
         aa = nage
         coln = int(2 + aa)
         colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
-        #if kk == 0: # = Tobs.
-        #    colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
-        #else: # Tobs - age[kk-1] where kk>=1.
-        #    colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp) + '_' + str(kk-1)
-
-        #if aa > 0 and aa == kk:
-        #    colname = 'fspec_' + str(zz) + '_0' + '_' + str(pp)# + '_0'
 
         yy0 = hdu0[colname]/Ls[aa]
         yy = flamtonu(xx, yy0)
@@ -204,33 +200,38 @@ class Func:
 
         b = nrd_yyd
         nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
 
 
     def get_template(self, lib, Amp=1.0, T=1.0, Av=0.0, Z=0.0, zgal=1.0, f_bb=False):
         '''
-        Purpose:
-        ========
         Gets an element template given a set of parameters.
         Not necessarily the most efficient way, but easy to use.
 
-        Input:
-        ======
-        lib : library dictionary.
-        Amp : Amplitude of template. Note that each template has Lbol = 1e10Lsun.
-        T   : Age, in Gyr.
-        Av  : Dust attenuation in mag.
-        Z   : Metallicity in log(Z/Zsun).
-        zgal: Redshift.
-        f_bb: bool, to calculate bb photometry for the spectrum requested.
+        Parameters:
+        -----------
+        lib : dict
+            library dictionary.
+        Amp : float
+            Amplitude of the target template. Note that each template has Lbol = 1e10Lsun.
+        T : float
+            Age, in Gyr.
+        Av : float
+            Dust attenuation, in mag.
+        Z : float
+            Metallicity, in log(Z/Zsun).
+        zgal : float
+            Redshift.
+        f_bb: bool
+            If calculate bb photometry for the spectrum requested.
 
-        Return:
-        =======
-        flux, wavelength : Flux in Fnu. Wave in AA.
-        lcen, lflux, if f_bb==True.
+        Returns
+            flux : float array. Flux in Fnu. 
+            wavelength : float array. Wave in AA.
+            lcen, lflux : , if f_bb==True.
 
         '''
 
@@ -336,18 +337,17 @@ class Func:
 
     def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, lib_all=False):
         '''
-        Purpose:
-        ========
-        # Making model template with a given param set.
-        # Also dust attenuation.
+        Makes model template with a given param set.
+        Also dust attenuation.
 
-        Input:
-        ======
-        nprec : Precision when redshift is refined. 
+        Parameters
+        ----------
+        nprec : int
+            Precision when redshift is refined. 
         '''
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
+        bfnc = self.MB.bfnc
         Mtot = 0
 
         if f_val:
@@ -453,16 +453,14 @@ class Func:
 
     def tmp04_dust(self, par, nprec=1):
         '''
-        Purpose:
-        ========
-        # Making model template with a given param setself.
-        # Also dust attenuation.
+        Makes model template with a given param setself.
+        Also dust attenuation.
         '''
-        tau0= self.tau0 #[0.01,0.02,0.03]
+        tau0= self.tau0
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
+        bfnc = self.MB.bfnc
+        DIR_TMP = self.MB.DIR_TMP
 
         try:
             m_dust = par['MDUST']
@@ -496,10 +494,12 @@ class Func:
 class Func_tau:
     '''
     '''
-
     def __init__(self, MB, dust_model=0):
         '''
-        dust_model (int) : 0 for Calzetti. 1 for MW. 4 for Kriek Conroy
+        Parameters:
+        -----------
+        dust_model : int
+            0 for Calzetti. 1 for MW. 4 for Kriek Conroy
         '''
         self.MB = MB
         self.ID = MB.ID
@@ -530,7 +530,7 @@ class Func_tau:
 
     def open_spec_fits(self, fall=0, orig=False):
         '''
-        Load template in obs range.
+        Loads template in obs range.
         '''
         ID0 = self.MB.ID
 
@@ -574,9 +574,7 @@ class Func_tau:
 
     def open_spec_dust_fits(self, fall=0):
         '''
-        ##################################
-        # Load dust template in obs range.
-        ##################################
+        Load dust template in obs range.
         '''
         ID0 = self.MB.ID
         tau0= self.MB.tau0 #[0.01,0.02,0.03]
@@ -618,10 +616,8 @@ class Func_tau:
 
     def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
         '''
-        #############################
-        # Load template in obs range.
-        # But for weird template.
-        #############################
+        Loads template in obs range.
+        But for weird template.
         '''
         from astropy.io import fits
         tau0= self.tau0 #[0.01,0.02,0.03]
@@ -643,10 +639,10 @@ class Func_tau:
         mshdu = self.MB.af0['ML']
         Ls = mshdu['Ls_%d'%nz] 
 
-        xx   = hdu0['wavelength'] # at RF;
-        nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
+        xx = hdu0['wavelength'] # at RF;
+        nr = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
-        lib  = np.zeros((len(nr), 2+1), dtype='float')
+        lib = np.zeros((len(nr), 2+1), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -655,7 +651,7 @@ class Func_tau:
         colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
 
         yy0 = hdu0[colname]/Ls[aa]
-        yy  = flamtonu(xx, yy0)
+        yy = flamtonu(xx, yy0)
         lib[:,2] = yy[:]
 
         if self.dust_model == 0: # Calzetti
@@ -688,14 +684,13 @@ class Func_tau:
 
     def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False):
         '''
-        Purpose:
-        ========
-        # Making model template with a given param set.
-        # Also dust attenuation.
+        Makes model template with a given param set.
+        Also dust attenuation.
 
-        Input:
-        ======
-        nprec : Precision when redshift is refined. 
+        Parameters:
+        -----------
+        nprec : int
+            Precision when redshift is refined. 
         '''
         ZZ = self.ZZ
         AA = self.AA 
@@ -821,14 +816,9 @@ class Func_tau:
 
     def tmp04_dust(self, par, nprec=1):
         '''
-        Purpose:
-        ========
-        # Making model template with a given param setself.
-        # Also dust attenuation.
+        Makes model template with a given param setself.
+        Also dust attenuation.
         '''
-        #tau0= self.tau0 #[0.01,0.02,0.03]
-        #ZZ = self.ZZ
-        #AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
         DIR_TMP = self.MB.DIR_TMP #'./templates/'
 

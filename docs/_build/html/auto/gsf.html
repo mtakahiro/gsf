@@ -13,6 +13,7 @@
   
   <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
   <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
 
   
@@ -225,29 +226,62 @@
 </div>
 <div class="section" id="module-gsf.fitting">
 <span id="gsf-fitting-module"></span><h2>gsf.fitting module<a class="headerlink" href="#module-gsf.fitting" title="Permalink to this headline">¶</a></h2>
+<p>This includes the main part of gsf.</p>
+<dl class="simple">
+<dt>Original copyright:</dt><dd><p>Copyright (c) 2021 Takahiro Morishita, STScI</p>
+</dd>
+</dl>
 <dl class="py class">
 <dt id="gsf.fitting.Mainbody">
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">gsf.fitting.</span></code><code class="sig-name descname"><span class="pre">Mainbody</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3e+18</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Mpc_cm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.08568025e+24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lsun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.839e+33</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cosmo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idman</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The list of (possible) <cite>Mainbody</cite> attributes is given below:</p>
+<dl class="simple">
+<dt>nimf<span class="classifier">int </span></dt><dd><p>0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08.</p>
+</dd>
+<dt>Z<span class="classifier">float array</span></dt><dd><p>Stellar phase metallicity in logZsun.</p>
+</dd>
+<dt>age<span class="classifier">float array</span></dt><dd><p>Age, in Gyr.</p>
+</dd>
+<dt>fneb<span class="classifier">int</span></dt><dd><p>flag for adding nebular emission. 0: No, 1: Yes.</p>
+</dd>
+<dt>logU<span class="classifier">float</span></dt><dd><p>Ionizing parameter, in logU.</p>
+</dd>
+<dt>tau0<span class="classifier">float array</span></dt><dd><p>Width of age bin. If you want to fix it to a specific value, set it to &gt;0.01, in Gyr.
+Otherwise, it would be either minimum value (=0.01; if one age bin), 
+or the width to the next age bin.</p>
+</dd>
+</dl>
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.add_param">
 <code class="sig-name descname"><span class="pre">add_param</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fit_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.add_param" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add parameters.</p>
+<dd><p>Add new parameters.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.fit_redshift">
 <code class="sig-name descname"><span class="pre">fit_redshift</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xm_tmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fm_tmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delzz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ezmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zliml</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zlimu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_bb_zfit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_line_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.fit_redshift" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find an optimal redshift, before going into a big fit, by using several templates.</p>
-<p>delzz : Delta z in redshift search space
-zliml : Lower limit range for redshift
-zlimu : Upper limit range for redshift
-ezmin : Minimum redshift uncertainty.
-snlim : SN limit for data points. Those below the number will be cut from the fit.
-f_bb_zfit : Redshift fitting if only BB data. If False, return nothing.
-f_line_check : If True, line masking.</p>
-<p>priors (optional): Dictionary that contains z (redshift grid) and chi2 (chi-square).</p>
-<p>Spectrum must be provided to make this work.</p>
+<dd><p>Find the best-fit redshift, before going into a big fit, through an interactive inspection.
+This module is effective only when spec data is provided.</p>
+<dl class="simple">
+<dt>delzz<span class="classifier">float</span></dt><dd><p>Delta z in redshift search space</p>
+</dd>
+<dt>zliml<span class="classifier">float</span></dt><dd><p>Lower limit range for redshift</p>
+</dd>
+<dt>zlimu<span class="classifier">float</span></dt><dd><p>Upper limit range for redshift</p>
+</dd>
+<dt>ezmin<span class="classifier">float</span></dt><dd><p>Minimum redshift uncertainty.</p>
+</dd>
+<dt>snlim<span class="classifier">float</span></dt><dd><p>SN limit for data points. Those below the number will be cut from the fit.</p>
+</dd>
+<dt>f_bb_zfit<span class="classifier">bool</span></dt><dd><p>Redshift fitting if only BB data. If False, returns nothing.</p>
+</dd>
+<dt>f_line_check<span class="classifier">bool</span></dt><dd><p>If True, line masking.</p>
+</dd>
+<dt>priors<span class="classifier">dict, optional</span></dt><dd><p>Dictionary that contains z (redshift grid) and chi2 (chi-square).</p>
+</dd>
+</dl>
+<p>Spectral data must be provided to make this work.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -258,26 +292,39 @@ f_line_check : If True, line masking.</p>
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.get_shuffle">
 <code class="sig-name descname"><span class="pre">get_shuffle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nshuf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.get_shuffle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Shuffle initial parameter sets in walkers.</p>
+<dd><p>Shuffles initial parameters of each walker, to give it extra randomeness.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.get_zdist">
 <code class="sig-name descname"><span class="pre">get_zdist</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f_interact</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.get_zdist" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save fig of z-distribution.</p>
-<p>f_interact : If true, the function returns figure ax.</p>
+<dd><p>Saves a plot of z-distribution.</p>
+<dl class="simple">
+<dt>f_interact<span class="classifier">bool</span></dt><dd><p>If true, this module returns figure ax.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.main">
 <code class="sig-name descname"><span class="pre">main</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cornerplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ezmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ferr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_move</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_fitz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_plot_accept</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp_shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_converge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Zini</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.main" title="Permalink to this definition">¶</a></dt>
-<dd><p>ferr : For error parameter
-skip_fitz (bool): Skip redshift fit.
-sigz (float): confidence interval for redshift fit.
-ezmin (float): minimum error in redshift
-f_plot_accept (bool) : Output acceptance plot of mcmc chains.
-f_shuffle (bool): Randomly shuffle some of initial parameters in walkers.
-check_converge (bool): Check convergence at every certain number.</p>
+<dd><p>Main module of this script.</p>
+<dl class="simple">
+<dt>ferr<span class="classifier">float</span></dt><dd><p>Used for error parameter.</p>
+</dd>
+<dt>skip_fitz<span class="classifier">bool </span></dt><dd><p>Skip redshift fit.</p>
+</dd>
+<dt>sigz<span class="classifier">float </span></dt><dd><p>Confidence interval for redshift fit (i.e. n-sigma).</p>
+</dd>
+<dt>ezmin<span class="classifier">float </span></dt><dd><p>minimum error in redshift</p>
+</dd>
+<dt>f_plot_accept<span class="classifier">bool</span></dt><dd><p>Output acceptance plot of mcmc chains.</p>
+</dd>
+<dt>f_shuffle<span class="classifier">bool</span></dt><dd><p>Randomly shuffle some of initial parameters in walkers.</p>
+</dd>
+<dt>check_converge<span class="classifier">bool</span></dt><dd><p>Check convergence at every certain number.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -288,47 +335,75 @@ check_converge (bool): Check convergence at every certain number.</p>
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.quick_fit">
 <code class="sig-name descname"><span class="pre">quick_fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">specplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ezmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ferr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_move</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_get_templates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Zini</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.quick_fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit input data with a prepared template library, to get a chi-min result.</p>
-<p>Zini : Array for initial Zs.</p>
-<p>if f_get_templates: out, chidef, Zbest, xm_tmp, fm_tmp</p>
+<dd><p>Fits input data with a prepared template library, to get a chi-min result.</p>
+<dl class="simple">
+<dt>Zini<span class="classifier">array</span></dt><dd><p>Array for initial values for metallicity.</p>
+</dd>
+</dl>
+<p>out, chidef, Zbest, xm_tmp, fm_tmp (if f_get_templates is set True).</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.read_data">
 <code class="sig-name descname"><span class="pre">read_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cz0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cz1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zgal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_fir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idman</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.read_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Cz0, Cz1 : Normalization coeffs for grism spectra.
-zgal : Current redshift estimate.
-idman : Manual input id.</p>
+<dd><dl class="simple">
+<dt>Cz0, Cz1<span class="classifier">float</span></dt><dd><p>Normalization coefficients for grism spectra. Cz0 for G102, Cz1 for G141.</p>
+</dd>
+<dt>zgal<span class="classifier">float</span></dt><dd><p>Current redshift estimate.</p>
+</dd>
+</dl>
 <p>Dictionary.</p>
-<p>Can be used for any SFH</p>
+<p>This modeule can be used for any SFHs.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.search_redshift">
 <code class="sig-name descname"><span class="pre">search_redshift</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xm_tmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fm_tmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zliml</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zlimu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delzz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lines</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'powell'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.search_redshift" title="Permalink to this definition">¶</a></dt>
-<dd><p>Search redshift space to find the best redshift and probability distribution.</p>
-<p>fm_tmp : a library for various templates. Should be in [ n * len(wavelength)].
-xm_tmp : a wavelength array, common for the templates above, at z=0. Should be in [len(wavelength)].</p>
-<p>prior : Prior for redshift determination. E.g., Eazy z-probability.
-zliml : Lowest redshift for fitting range.
-zlimu : Highest redshift for fitting range.</p>
-<p>method : powell is more accurate. nelder is faster.</p>
-<p>zspace : Numpy array of redshift grid.
-chi2s  : Numpy array of chi2 values corresponding to zspace.</p>
+<dd><p>This module explores the redshift space to find the best redshift and probability distribution.</p>
+<dl class="simple">
+<dt>dict<span class="classifier">dictionary</span></dt><dd><p>Dictionary that includes input data.</p>
+</dd>
+<dt>xm_tmp<span class="classifier">numpy.array</span></dt><dd><p>Wavelength array, common for fm_tmp below, at z=0. Should be in [len(wavelength)].</p>
+</dd>
+<dt>fm_tmp<span class="classifier">numpy.array</span></dt><dd><p>Fluxes for various templates. Should be in a shape of [ n * len(wavelength)], 
+where n is the number templates.</p>
+</dd>
+<dt>zliml<span class="classifier">float</span></dt><dd><p>Lowest redshift for fitting range.</p>
+</dd>
+<dt>zlimu<span class="classifier">float</span></dt><dd><p>Highest redshift for fitting range.</p>
+</dd>
+<dt>prior<span class="classifier">numpy.array</span></dt><dd><p>Prior used for the redshift determination. E.g., Eazy z-probability.</p>
+</dd>
+<dt>method<span class="classifier">str</span></dt><dd><p>Method for minimization. The option must be taken from lmfit. Powell is more accurate. Nelder is faster.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>zspace<span class="classifier">numpy.array </span></dt><dd><p>Array for redshift grid.</p>
+</dd>
+<dt>chi2s<span class="classifier">numpy.array</span></dt><dd><p>Array of chi2 values corresponding to zspace.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.set_param">
 <code class="sig-name descname"><span class="pre">set_param</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.set_param" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set parameters</p>
+<dd><p>Set parameters.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.fitting.Mainbody.update_input">
 <code class="sig-name descname"><span class="pre">update_input</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3e+18</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Mpc_cm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.08568025e+24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lsun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.839e+33</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cosmo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idman</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.fitting.Mainbody.update_input" title="Permalink to this definition">¶</a></dt>
-<dd><p>parfile : Ascii file that lists parameters for everything.
-Mpc_cm : cm/Mpc
-pixelscale : arcsec/pixel</p>
+<dd><p>The purpose of this module is to register/update the parameter attributes in <cite>Mainbody</cite>
+by visiting the configuration file.</p>
+<dl class="simple">
+<dt>inputs<span class="classifier">str</span></dt><dd><p>Configuration file that lists parameters.</p>
+</dd>
+<dt>Mpc_cm<span class="classifier">float, optional</span></dt><dd><p>Conversion factor from Mpc-to-cm</p>
+</dd>
+<dt>pixelscale<span class="classifier">float, optional</span></dt><dd><p>Conversion factor from pixel-to-arcsec</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -369,29 +444,48 @@ pixelscale : arcsec/pixel</p>
 <dl class="py function">
 <dt id="gsf.function.check_line_cz_man">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">check_line_cz_man</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ycont</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xcont</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wycont</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zgal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">LW</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[2800,</span> <span class="pre">3347,</span> <span class="pre">3727,</span> <span class="pre">3799,</span> <span class="pre">3836,</span> <span class="pre">3869,</span> <span class="pre">4102,</span> <span class="pre">4341,</span> <span class="pre">4861,</span> <span class="pre">4960,</span> <span class="pre">5008,</span> <span class="pre">5175,</span> <span class="pre">6563,</span> <span class="pre">6717,</span> <span class="pre">6731]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.check_line_cz_man" title="Permalink to this definition">¶</a></dt>
-<dd><p>LW : List for emission lines to be masked.</p>
-<p>wht : Processed weight, where wavelength at line exists is masked.
-ypoly : Fitted continuum flux.</p>
+<dd><dl class="simple">
+<dt>LW<span class="classifier"></span></dt><dd><p>List for emission lines to be masked.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>wht<span class="classifier"></span></dt><dd><p>Processed weight, where wavelength at line exists is masked.</p>
+</dd>
+<dt>ypoly<span class="classifier"></span></dt><dd><p>Fitted continuum flux.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.check_line_man">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">check_line_man</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xcont</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wht</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zgal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">LW</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[2800,</span> <span class="pre">3347,</span> <span class="pre">3727,</span> <span class="pre">3799,</span> <span class="pre">3836,</span> <span class="pre">3869,</span> <span class="pre">4102,</span> <span class="pre">4341,</span> <span class="pre">4861,</span> <span class="pre">4960,</span> <span class="pre">5008,</span> <span class="pre">5175,</span> <span class="pre">6563,</span> <span class="pre">6717,</span> <span class="pre">6731]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lsig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.check_line_man" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# lsig (float): which sigma to detect lines.
-#</p>
+<dd><dl class="simple">
+<dt>lsig<span class="classifier">float)</span></dt><dd><p>which sigma to detect lines.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.check_rejuv">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">check_rejuv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">age</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SF</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MS</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SFMS_50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lm_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delMS</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.check_rejuv" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A Function to check rejuvenation.
+Parameters
+———-
+delMS : float</p>
+<blockquote>
+<div><p>Scatter around the Main Sequence. 0.2 dex, in default.</p>
+</div></blockquote>
+</dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.data_int">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">data_int</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lmobs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmtmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftmp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.data_int" title="Permalink to this definition">¶</a></dt>
-<dd><p># lmobs: Observed wavelength.
-# lmtmp, ftmp: Those to be interpolated.</p>
+<dd><dl class="simple">
+<dt>lmobs<span class="classifier"></span></dt><dd><p>Observed wavelength.</p>
+</dd>
+<dt>lmtmp, ftmp: </dt><dd><p>Those to be interpolated.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -407,41 +501,70 @@ ypoly : Fitted continuum flux.</p>
 <dl class="py function">
 <dt id="gsf.function.dust_calz">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">dust_calz</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Rv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmlimu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.115</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.dust_calz" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# lm (float array) : wavelength, at RF.
-# fl (float array) : fnu
-# Av (float)       : mag
-# nr (int array)   : index, to be used for sorting.
-# Rv: from Calzetti+00
-# lmlimu: Upperlimit. 2.2 in Calz+00
-#</p>
+<dd><dl class="simple">
+<dt>lm<span class="classifier">float array</span></dt><dd><p>wavelength, at RF.</p>
+</dd>
+<dt>fl<span class="classifier">float array</span></dt><dd><p>fnu</p>
+</dd>
+<dt>Av<span class="classifier">float</span></dt><dd><p>in mag</p>
+</dd>
+<dt>nr<span class="classifier">int array</span></dt><dd><p>index, to be used for sorting.</p>
+</dd>
+<dt>Rv<span class="classifier"></span></dt><dd><p>from Calzetti+00</p>
+</dd>
+<dt>lmlimu<span class="classifier"></span></dt><dd><p>Upper limit. 2.2 in Calz+00</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.dust_gen">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">dust_gen</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Rv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Eb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmlimu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.115</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.dust_gen" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>For general purpose (Noll+09).
+This function is much better than previous, but is hard to impliment for the current version.
+A difference from dust_gen is Eb is defined as a function of gamma.</p>
+<dl class="simple">
+<dt>lm<span class="classifier">float array</span></dt><dd><p>wavelength, at RF.</p>
+</dd>
+<dt>fl<span class="classifier">float array</span></dt><dd><p>fnu</p>
+</dd>
+<dt>Av<span class="classifier">float</span></dt><dd><p>in mag</p>
+</dd>
+<dt>nr<span class="classifier">int array</span></dt><dd><p>index, to be used for sorting.</p>
+</dd>
+<dt>Rv<span class="classifier"></span></dt><dd><p>from Calzetti+00</p>
+</dd>
+<dt>gamma :</dt><dd><p>gamma.</p>
+</dd>
+<dt>Eb:</dt><dd><p>Eb</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.dust_kc">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">dust_kc</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Rv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmlimu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.115</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.dust_kc" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# Dust model by Kriek&amp;Conroy13
-# lm (float array) : wavelength, at RF.
-# fl (float array) : fnu
-# Av (float)       : mag
-# nr (int array)   : index, to be used for sorting.
-# Rv: from Calzetti+00
-# gamma: See Eq.1
-# A difference from dust_gen is Eb is defined as a function of gamma.
-#</p>
+<dd><p>Dust model by Kriek&amp;Conroy13</p>
+<dl class="simple">
+<dt>lm<span class="classifier">float array</span></dt><dd><p>RF Wavelength.</p>
+</dd>
+<dt>fl<span class="classifier">float array</span></dt><dd><p>in fnu</p>
+</dd>
+<dt>Av<span class="classifier">float</span></dt><dd><p>in mag</p>
+</dd>
+<dt>nr<span class="classifier">int array</span></dt><dd><p>index, to be used for sorting.</p>
+</dd>
+<dt>Rv<span class="classifier">float</span></dt><dd><p>from Calzetti+00</p>
+</dd>
+<dt>gamma<span class="classifier">float</span></dt><dd><p>See Eq.1</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.dust_mw">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">dust_mw</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Rv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.dust_mw" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# lm (float array) : wavelength, at RF, in AA.
+<dd><p># lm (float array) : wavelength, at RF, in AA.
 # fl (float array) : fnu
 # Av (float)       : mag
 # nr (int array)   : index, to be used for sorting.
@@ -452,34 +575,42 @@ ypoly : Fitted continuum flux.</p>
 <dl class="py function">
 <dt id="gsf.function.fil_fwhm">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">fil_fwhm</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">band0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">DIR</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.fil_fwhm" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# FWHM
-#
-#f0 in fnu
-#</p>
+<dd><dl class="simple">
+<dt>f0 :</dt><dd><p>in fnu</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.filconv">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">filconv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">band0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">DIR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_regist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.filconv" title="Permalink to this definition">¶</a></dt>
-<dd><p>f0: Flux for spectrum, in fnu
-l0: Wavelength for spectrum, in AA (that matches filter response curve’s.)</p>
-<p>f_regist : If True, read filter response curve.</p>
+<dd><dl class="simple">
+<dt>f0<span class="classifier"></span></dt><dd><p>Flux for spectrum, in fnu</p>
+</dd>
+<dt>l0<span class="classifier"></span></dt><dd><p>Wavelength for spectrum, in AA (that matches filter response curve’s.)</p>
+</dd>
+<dt>f_regist<span class="classifier"></span></dt><dd><p>If True, read filter response curve.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.filconv_cen">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">filconv_cen</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">band0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">DIR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FILT/'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.filconv_cen" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convolution of templates with filter response curves.</p>
-<p>f0 in fnu</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.filconv_fast">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">filconv_fast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.filconv_fast" title="Permalink to this definition">¶</a></dt>
-<dd><p>filts, band : From MB.filts and MB.band, respectively.
-f0: Flux for spectrum, in fnu
-l0: Wavelength for spectrum, in AA (that matches filter response curve’s.)</p>
+<dd><dl class="simple">
+<dt>filts, band<span class="classifier"></span></dt><dd><p>From MB.filts and MB.band, respectively.</p>
+</dd>
+<dt>f0: </dt><dd><p>Flux for spectrum, in fnu</p>
+</dd>
+<dt>l0: </dt><dd><p>Wavelength for spectrum, in AA (that matches filter response curve’s.)</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -495,21 +626,25 @@ l0: Wavelength for spectrum, in AA (that matches filter response curve’s.)</p>
 <dl class="py function">
 <dt id="gsf.function.flamtonu">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">flamtonu</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.flamtonu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert from Flam to Fnu, with mag zeropoint of m0set.</p>
+<dd><p>Converts from Flam to Fnu, with mag zeropoint of m0set.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.fnutolam">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">fnutolam</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fnu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.fnutolam" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert from Fnu to Flam, with mag zeropoint of m0set.</p>
+<dd><p>Converts from Fnu to Flam, with mag zeropoint of m0set.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.fnutonu">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">fnutonu</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fnu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0set</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">48.6</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.fnutonu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert from Fnu (cgs) to Fnu (m0=m0set)</p>
-<p>fnu : flux in cgs, with magnitude zero point of m0input.
-m0set : Target mag zero point.</p>
+<dd><p>Converts from Fnu (cgs) to Fnu (m0=m0set)</p>
+<dl class="simple">
+<dt>fnu<span class="classifier"></span></dt><dd><p>flux in cgs, with magnitude zero point of m0input.</p>
+</dd>
+<dt>m0set<span class="classifier"></span></dt><dd><p>Target mag zero point.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -525,26 +660,42 @@ m0set : Target mag zero point.</p>
 <dl class="py function">
 <dt id="gsf.function.get_Fint">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">get_Fint</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lmtmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1500</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.get_Fint" title="Permalink to this definition">¶</a></dt>
-<dd><p>lmtmp: Rest frame wave (AA)
-ftmp: Fnu ()
-Return: integrated flux.</p>
+<dd><dl class="simple">
+<dt>lmtmp<span class="classifier"></span></dt><dd><p>Rest frame wave (AA)</p>
+</dd>
+<dt>ftmp :</dt><dd><p>Fnu ()</p>
+</dd>
+</dl>
+<p>integrated flux.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.get_Fuv">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">get_Fuv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lmtmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1400</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1500</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.get_Fuv" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><dl class="simple">
+<dt>lmtmp<span class="classifier"></span></dt><dd><p>Rest-frame wavelength, in AA.</p>
+</dd>
+<dt>ftmp<span class="classifier"></span></dt><dd><p>Fnu</p>
+</dd>
+</dl>
+<p>Convolved flux density. Not integrated sum.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.get_SFMS">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">get_SFMS</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">red</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">age</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IMF</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.get_SFMS" title="Permalink to this definition">¶</a></dt>
-<dd><p>To get SFMS at age ago from z=red.</p>
-<p>red : Observed redshift
-age : lookback time, in Gyr (array).
-mass : stellar mass (array) at each age, in Msun (not logM).</p>
+<dd><p>Gets SFMS at age ago from z=red.</p>
+<dl class="simple">
+<dt>red<span class="classifier">float</span></dt><dd><p>Observed redshift</p>
+</dd>
+<dt>age<span class="classifier">array</span></dt><dd><p>lookback time, in Gyr.</p>
+</dd>
+<dt>mass<span class="classifier">array</span></dt><dd><p>stellar mass (array) at each age, in Msun (not logM).</p>
+</dd>
+</dl>
 <p>SFR, in logMsun/yr.</p>
-<p># From Speagle+14 Eq28;
-# Chabrier IMF, default</p>
+<p>From Speagle+14 Eq28.
+Chabrier IMF, in default</p>
 </dd></dl>
 
 <dl class="py function">
@@ -560,20 +711,20 @@ mass : stellar mass (array) at each age, in Msun (not logM).</p>
 <dl class="py function">
 <dt id="gsf.function.get_ind">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">get_ind</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wave</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.get_ind" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get Lick index for input input</p>
+<dd><p>Gets Lick index for input input</p>
 <p>equivalent width</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.get_input">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">get_input</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.get_input" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a default dictionary for input params.</p>
+<dd><p>Gets a default dictionary for input params.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.get_leastsq">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">get_leastsq</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MB</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ZZtmp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fneld</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">age</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">residual</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wht</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ID0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chidef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Zbest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_keep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.get_leastsq" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get initial parameters at various Z;</p>
+<dd><p>Gets initial parameters at various Z</p>
 </dd></dl>
 
 <dl class="py function">
@@ -590,28 +741,31 @@ mass : stellar mass (array) at each age, in Msun (not logM).</p>
 <dl class="py function">
 <dt id="gsf.function.printProgressBar">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">printProgressBar</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iteration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'█'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">printEnd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'\r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emojis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['']</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.printProgressBar" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Call in a loop to create terminal progress bar
-&#64;params:</p>
-<blockquote>
-<div><p>iteration   - Required  : current iteration (Int)
-total       - Required  : total iterations (Int)
-prefix      - Optional  : prefix string (Str)
-suffix      - Optional  : suffix string (Str)
-decimals    - Optional  : positive number of decimals in percent complete (Int)
-length      - Optional  : character length of bar (Int)
-fill        - Optional  : bar fill character (Str)
-printEnd    - Optional  : end character (e.g. “</p>
-</div></blockquote>
-</div></blockquote>
-<p>“, ”
-“) (Str)</p>
+<dd><p>Call in a loop to create terminal progress bar.</p>
+<dl class="simple">
+<dt>iteration<span class="classifier">int </span></dt><dd><p>current iteration</p>
+</dd>
+<dt>total<span class="classifier">int </span></dt><dd><p>total iterations</p>
+</dd>
+<dt>prefix<span class="classifier">str</span></dt><dd><p>prefix string</p>
+</dd>
+<dt>suffix<span class="classifier">str</span></dt><dd><p>suffix string</p>
+</dd>
+<dt>decimals<span class="classifier">int</span></dt><dd><p>positive number of decimals in percent complete</p>
+</dd>
+<dt>length<span class="classifier">int</span></dt><dd><p>character length of bar</p>
+</dd>
+<dt>fill<span class="classifier">str</span></dt><dd><p>bar fill character</p>
+</dd>
+<dt>printEnd<span class="classifier">str </span></dt><dd><p>end character</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.function.read_input">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">read_input</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parfile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.read_input" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get info from param file.</p>
+<dd><p>Gets info from param file.</p>
 <p>Input dictionary.</p>
 </dd></dl>
 
@@ -624,8 +778,8 @@ printEnd    - Optional  : end character (e.g. “</p>
 <dl class="py function">
 <dt id="gsf.function.write_input">
 <code class="sig-prename descclassname"><span class="pre">gsf.function.</span></code><code class="sig-name descname"><span class="pre">write_input</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gsf.input'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function.write_input" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an ascii format param file.</p>
-<p>file_out.</p>
+<dd><p>Gets an ascii format param file.</p>
+<p>file_out</p>
 </dd></dl>
 
 </div>
@@ -635,6 +789,7 @@ printEnd    - Optional  : end character (e.g. “</p>
 <dt id="gsf.function_class.Func">
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">gsf.function_class.</span></code><code class="sig-name descname"><span class="pre">Func</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MB</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dust_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The list of (possible) <cite>Func</cite> attributes is given below:</p>
 <dl class="py method">
 <dt id="gsf.function_class.Func.demo">
 <code class="sig-name descname"><span class="pre">demo</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.demo" title="Permalink to this definition">¶</a></dt>
@@ -645,21 +800,33 @@ printEnd    - Optional  : end character (e.g. “</p>
 <code class="sig-name descname"><span class="pre">get_template</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lib</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zgal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_bb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.get_template" title="Permalink to this definition">¶</a></dt>
 <dd><p>Gets an element template given a set of parameters.
 Not necessarily the most efficient way, but easy to use.</p>
-<p>lib : library dictionary.
-Amp : Amplitude of template. Note that each template has Lbol = 1e10Lsun.
-T   : Age, in Gyr.
-Av  : Dust attenuation in mag.
-Z   : Metallicity in log(Z/Zsun).
-zgal: Redshift.
-f_bb: bool, to calculate bb photometry for the spectrum requested.</p>
-<p>flux, wavelength : Flux in Fnu. Wave in AA.
-lcen, lflux, if f_bb==True.</p>
+<dl class="simple">
+<dt>lib<span class="classifier">dict</span></dt><dd><p>library dictionary.</p>
+</dd>
+<dt>Amp<span class="classifier">float</span></dt><dd><p>Amplitude of the target template. Note that each template has Lbol = 1e10Lsun.</p>
+</dd>
+<dt>T<span class="classifier">float</span></dt><dd><p>Age, in Gyr.</p>
+</dd>
+<dt>Av<span class="classifier">float</span></dt><dd><p>Dust attenuation, in mag.</p>
+</dd>
+<dt>Z<span class="classifier">float</span></dt><dd><p>Metallicity, in log(Z/Zsun).</p>
+</dd>
+<dt>zgal<span class="classifier">float</span></dt><dd><p>Redshift.</p>
+</dd>
+<dt>f_bb: bool</dt><dd><p>If calculate bb photometry for the spectrum requested.</p>
+</dd>
+<dt>Returns</dt><dd><p>flux : float array. Flux in Fnu. 
+wavelength : float array. Wave in AA.
+lcen, lflux : , if f_bb==True.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func.open_spec_dust_fits">
 <code class="sig-name descname"><span class="pre">open_spec_dust_fits</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fall</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.open_spec_dust_fits" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Loads dust template in obs range.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func.open_spec_fits">
@@ -669,9 +836,8 @@ lcen, lflux, if f_bb==True.</p>
 <dl class="py method">
 <dt id="gsf.function_class.Func.open_spec_fits_dir">
 <code class="sig-name descname"><span class="pre">open_spec_fits_dir</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av00</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zgal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A00</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.open_spec_fits_dir" title="Permalink to this definition">¶</a></dt>
-<dd><p># Load template in obs range.
-# But for weird template.
-#############################</p>
+<dd><p>Load template in obs range.
+But for weird template.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -682,16 +848,19 @@ lcen, lflux, if f_bb==True.</p>
 <dl class="py method">
 <dt id="gsf.function_class.Func.tmp04">
 <code class="sig-name descname"><span class="pre">tmp04</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.tmp04" title="Permalink to this definition">¶</a></dt>
-<dd><p># Making model template with a given param set.
-# Also dust attenuation.</p>
-<p>nprec : Precision when redshift is refined.</p>
+<dd><p>Makes model template with a given param set.
+Also dust attenuation.</p>
+<dl class="simple">
+<dt>nprec<span class="classifier">int</span></dt><dd><p>Precision when redshift is refined.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func.tmp04_dust">
 <code class="sig-name descname"><span class="pre">tmp04_dust</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.tmp04_dust" title="Permalink to this definition">¶</a></dt>
-<dd><p># Making model template with a given param setself.
-# Also dust attenuation.</p>
+<dd><p>Makes model template with a given param setself.
+Also dust attenuation.</p>
 </dd></dl>
 
 </dd></dl>
@@ -708,35 +877,38 @@ lcen, lflux, if f_bb==True.</p>
 <dl class="py method">
 <dt id="gsf.function_class.Func_tau.open_spec_dust_fits">
 <code class="sig-name descname"><span class="pre">open_spec_dust_fits</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fall</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func_tau.open_spec_dust_fits" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Load dust template in obs range.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func_tau.open_spec_fits">
 <code class="sig-name descname"><span class="pre">open_spec_fits</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fall</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func_tau.open_spec_fits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load template in obs range.</p>
+<dd><p>Loads template in obs range.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func_tau.open_spec_fits_dir">
 <code class="sig-name descname"><span class="pre">open_spec_fits_dir</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Av00</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zgal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A00</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func_tau.open_spec_fits_dir" title="Permalink to this definition">¶</a></dt>
-<dd><p># Load template in obs range.
-# But for weird template.
-#############################</p>
+<dd><p>Loads template in obs range.
+But for weird template.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func_tau.tmp04">
 <code class="sig-name descname"><span class="pre">tmp04</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alog</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func_tau.tmp04" title="Permalink to this definition">¶</a></dt>
-<dd><p># Making model template with a given param set.
-# Also dust attenuation.</p>
-<p>nprec : Precision when redshift is refined.</p>
+<dd><p>Makes model template with a given param set.
+Also dust attenuation.</p>
+<dl class="simple">
+<dt>nprec<span class="classifier">int</span></dt><dd><p>Precision when redshift is refined.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt id="gsf.function_class.Func_tau.tmp04_dust">
 <code class="sig-name descname"><span class="pre">tmp04_dust</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func_tau.tmp04_dust" title="Permalink to this definition">¶</a></dt>
-<dd><p># Making model template with a given param setself.
-# Also dust attenuation.</p>
+<dd><p>Makes model template with a given param setself.
+Also dust attenuation.</p>
 </dd></dl>
 
 </dd></dl>
@@ -856,38 +1028,40 @@ Return: frand, erand</p>
 <dl class="py function">
 <dt id="gsf.maketmp_z0.make_tmp_z0">
 <code class="sig-prename descclassname"><span class="pre">gsf.maketmp_z0.</span></code><code class="sig-name descname"><span class="pre">make_tmp_z0</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MB</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lammin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lammax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">160000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau_lim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.maketmp_z0.make_tmp_z0" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# This is for the preparation of
-# default template, with FSPS, at z=0.
-#
-# Should be run before SED fitting.
-#
-#</p>
-<p>#
-# nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,…
-# Z (array)  : Stellar phase metallicity in logZsun.
-# age (array): Age, in Gyr.
-# fneb (int) : flag for adding nebular emissionself.
-# logU (float): ionizing parameter, in logU.
-# tau0 (float array): Width of age bin. If you want to fix, put &gt;0.01 (Gyr).
-#  Otherwise, it would be either minimum value (=0.01; if one age bin), or
-#  the width to the next age bin.
-#</p>
+<dd><p>This is for the preparation of default template, with FSPS, at z=0.
+Should be run before SED fitting.</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#gsf.fitting.Mainbody" title="gsf.fitting.Mainbody"><code class="xref py py-class docutils literal notranslate"><span class="pre">gsf.fitting.Mainbody</span></code></a><span class="classifier">class</span></dt><dd><p>Mainbody class, that contains attributes.</p>
+</dd>
+<dt>lammin<span class="classifier">float, optional</span></dt><dd><p>Minimum value of the rest-frame wavelength of the template, in AA.</p>
+</dd>
+<dt>lammax<span class="classifier">float, optional</span></dt><dd><p>Maximum value of the rest-frame wavelength of the template, in AA.</p>
+</dd>
+<dt>tau_lim<span class="classifier">float, optional</span></dt><dd><p>Maximum value of tau of the template, in Gyr. Tau smaller than this 
+value would be approximated by SSP.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt id="gsf.maketmp_z0.make_tmp_z0_bpass">
 <code class="sig-prename descclassname"><span class="pre">gsf.maketmp_z0.</span></code><code class="sig-name descname"><span class="pre">make_tmp_z0_bpass</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MB</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lammin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lammax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">160000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">BPASS_DIR</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/astro/udfcen3/Takahiro/BPASS/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">BPASS_ver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'v2.2.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Zsun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.maketmp_z0.make_tmp_z0_bpass" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,…
-# Z (array)  : Stellar phase metallicity in logZsun.
-# age (array): Age, in Gyr.
-# fneb (int) : flag for adding nebular emissionself.
-# logU (float): ionizing parameter, in logU.
-# tau0 (float array): Width of age bin. If you want to fix, put &gt;0.01 (Gyr).
-#  Otherwise, it would be either minimum value (=0.01; if one age bin), or
-#  the width to the next age bin.
-#</p>
+<dd><p>This is for the preparation of default template, with BPASS templates, at z=0.
+Should be run before SED fitting.</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#gsf.fitting.Mainbody" title="gsf.fitting.Mainbody"><code class="xref py py-class docutils literal notranslate"><span class="pre">gsf.fitting.Mainbody</span></code></a><span class="classifier">class</span></dt><dd><p>Mainbody class, that contains attributes.</p>
+</dd>
+<dt>lammin<span class="classifier">float, optional</span></dt><dd><p>Minimum value of the rest-frame wavelength of the template, in AA.</p>
+</dd>
+<dt>lammax<span class="classifier">float, optional</span></dt><dd><p>Maximum value of the rest-frame wavelength of the template, in AA.</p>
+</dd>
+<dt>BPASS_DIR<span class="classifier">str, optional</span></dt><dd><p>Path to the ditectory where BPASS templates are storesd.</p>
+</dd>
+<dt>BPASS_ver<span class="classifier">str, optional</span></dt><dd><p>Version of BPASS. Used to identify template files.</p>
+</dd>
+<dt>Zsun<span class="classifier">float, optional</span></dt><dd><p>Metallicity of templates, in units of absolute value (e.g. Zsun=0.02 for BPASS).</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -901,24 +1075,19 @@ Return: frand, erand</p>
 <dl class="py function">
 <dt id="gsf.maketmp_z0_tau.make_tmp_z0">
 <code class="sig-prename descclassname"><span class="pre">gsf.maketmp_z0_tau.</span></code><code class="sig-name descname"><span class="pre">make_tmp_z0</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MB</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lammin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lammax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">160000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.maketmp_z0_tau.make_tmp_z0" title="Permalink to this definition">¶</a></dt>
-<dd><p>#
-# This is for the preparation of
-# default template, with FSPS, at z=0.
-#
-# Should be run before SED fitting.
-#
-#</p>
-<p>Template:
-nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,…
-Z (array)  : Stellar phase metallicity in logZsun.
-fneb (int) : flag for adding nebular emissionself.
-logU (float): ionizing parameter, in logU.
-tau0 (float array): Width of age bin. If you want to fix, put &gt;0.01 (Gyr).</p>
-<p>SFH:
-age (array): Age, in logGyr.
-tau (array): Tau, in logGyr.</p>
-<p>#  Otherwise, it would be either minimum value (=0.01; if one age bin), or
-#  the width to the next age bin.</p>
+<dd><p>This is for the preparation of default template, with FSPS, at z=0.
+Should be run before SED fitting.</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#gsf.fitting.Mainbody" title="gsf.fitting.Mainbody"><code class="xref py py-class docutils literal notranslate"><span class="pre">gsf.fitting.Mainbody</span></code></a><span class="classifier">class</span></dt><dd><p>Mainbody class, that contains attributes.</p>
+</dd>
+<dt>lammin<span class="classifier">float, optional</span></dt><dd><p>Minimum value of the rest-frame wavelength of the template, in AA.</p>
+</dd>
+<dt>lammax<span class="classifier">float, optional</span></dt><dd><p>Maximum value of the rest-frame wavelength of the template, in AA.</p>
+</dd>
+<dt>tau_lim<span class="classifier">float, optional</span></dt><dd><p>Maximum value of tau of the template, in Gyr. Tau smaller than this 
+value would be approximated by SSP.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

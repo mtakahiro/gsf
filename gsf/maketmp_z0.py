@@ -10,35 +10,35 @@ INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 
 
 
 def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
-    '''
-    Purpose:
-    --------
-    This is for the preparation of
-    default template, with FSPS, at z=0.
+    """
+    This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
 
     Parameters
     ----------
-    nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
-    Z (array)  : Stellar phase metallicity in logZsun.
-    age (array): Age, in Gyr.
-    fneb (int) : flag for adding nebular emissionself.
-    logU (float): ionizing parameter, in logU.
-    tau0 (float array): Width of age bin. If you want to fix, put >0.01 (Gyr).
-    Otherwise, it would be either minimum value (=0.01; if one age bin), or
-    the width to the next age bin.
-    '''
-    
+    :class:`gsf.fitting.Mainbody` : class
+        Mainbody class, that contains attributes.
+
+    lammin : float, optional
+        Minimum value of the rest-frame wavelength of the template, in AA.
+
+    lammax : float, optional
+        Maximum value of the rest-frame wavelength of the template, in AA.
+
+    tau_lim : float, optional
+        Maximum value of tau of the template, in Gyr. Tau smaller than this 
+        value would be approximated by SSP.
+    """
     import asdf
     import fsps
     import gsf
 
     nimf = MB.nimf
-    age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]
-    tau0 = MB.tau0 #[0.01,0.02,0.03],
-    fneb = MB.fneb #0,
-    logU = MB.logU #-2.5,
-    DIR_TMP = MB.DIR_TMP #'./templates/'
+    age  = MB.age
+    tau0 = MB.tau0
+    fneb = MB.fneb
+    logU = MB.logU
+    DIR_TMP = MB.DIR_TMP
     Na = len(age)
 
     # Z needs special care in z0 script, to avoid Zfix.
@@ -239,18 +239,30 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
 
 def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
-    '''
-    #
-    # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
-    # Z (array)  : Stellar phase metallicity in logZsun.
-    # age (array): Age, in Gyr.
-    # fneb (int) : flag for adding nebular emissionself.
-    # logU (float): ionizing parameter, in logU.
-    # tau0 (float array): Width of age bin. If you want to fix, put >0.01 (Gyr).
-    #  Otherwise, it would be either minimum value (=0.01; if one age bin), or
-    #  the width to the next age bin.
-    #
-    '''
+    """
+    This is for the preparation of default template, with BPASS templates, at z=0.
+    Should be run before SED fitting.
+
+    Parameters
+    ----------
+    :class:`gsf.fitting.Mainbody` : class
+        Mainbody class, that contains attributes.
+
+    lammin : float, optional
+        Minimum value of the rest-frame wavelength of the template, in AA.
+
+    lammax : float, optional
+        Maximum value of the rest-frame wavelength of the template, in AA.
+
+    BPASS_DIR : str, optional
+        Path to the ditectory where BPASS templates are storesd.
+
+    BPASS_ver : str, optional
+        Version of BPASS. Used to identify template files.
+
+    Zsun : float, optional
+        Metallicity of templates, in units of absolute value (e.g. Zsun=0.02 for BPASS).
+    """
     import asdf
     import gsf
 
@@ -262,15 +274,15 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     else:
         imf_str = ''
 
-    Z    = MB.Zall #np.arange(-1.2,0.4249,0.05)
-    age  = MB.age #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]/Gyr
-    tau0 = MB.tau0 #[0.01,0.02,0.03],
-    fneb = MB.fneb #0,
+    Z    = MB.Zall
+    age  = MB.age
+    tau0 = MB.tau0
+    fneb = MB.fneb
     if fneb == 1:
         print('Currently, BPASS does not have option of nebular emission.')
         fneb = 0
-    logU = MB.logU #-2.5,
-    DIR_TMP= MB.DIR_TMP #'./templates/'
+    logU = MB.logU
+    DIR_TMP= MB.DIR_TMP
 
     # binary?
     f_bin = MB.f_bin
