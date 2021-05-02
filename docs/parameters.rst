@@ -3,7 +3,7 @@ Paramter Description
 --------------------
 
 
-**Parameters for the fitting step**
+**Parameters for the fitting step:**
 
 .. list-table::
    :widths: 10 5 20
@@ -35,7 +35,7 @@ Paramter Description
      - 
      - 
 
-**Parameters for input data**
+**Parameters for input data:**
 
 .. list-table::
    :widths: 10 5 20
@@ -83,7 +83,7 @@ Paramter Description
      - Velocity dispersion in km/s. Will be used to convolve templates if MORP=none.
 
 
-**Parameters for spectral templates**
+**Parameters for spectral templates:**
 
 .. list-table::
    :widths: 10 5 20
@@ -149,7 +149,7 @@ Paramter Description
      - If 1, BPASS templates will be used. Currently not supported.
 
 
-**Parameters for a specific target**
+**Parameters for a specific target:**
 
 .. list-table::
    :widths: 10 5 20
@@ -179,7 +179,7 @@ Paramter Description
      - 
 
 
-**Parameters for far-infrared components**
+**Parameters for far-infrared components:**
 (Support starts from version1.4)
 
 .. list-table::
@@ -211,7 +211,7 @@ Paramter Description
 
 
 
-**Parameters for functional-form SFHs**
+**Parameters for functional-form SFHs:**
 (Support starts from version1.4)
 
 .. list-table::

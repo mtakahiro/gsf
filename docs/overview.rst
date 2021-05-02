@@ -2,7 +2,7 @@
 
 Overview
 ========
-gsf is a flexible, python-based SED fitting code designed for extra-galactic science.
+Gsf is a flexible, python-based SED fitting code designed for extra-galactic science.
 gsf can fit photometric data points, simultaneously with grism spectra if provided, 
 to get posterior probability of galaxy physical properties, such as stellar mass, dust attenuation,
 metallicity, as well as star formation and metallicity enrichment histories.
