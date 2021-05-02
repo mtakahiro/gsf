@@ -35,6 +35,7 @@ Paramter Description
      - 
      - 
 
+
 **Parameters for input data:**
 
 .. list-table::
@@ -81,7 +82,7 @@ Paramter Description
    * - VDISP
      - float
      - Velocity dispersion in km/s. Will be used to convolve templates if MORP=none.
-     * - 
+   * - 
      - 
      - 
 
@@ -150,7 +151,7 @@ Paramter Description
    * - BPASS
      - int 
      - If 1, BPASS templates will be used. Currently not supported.
-     * - 
+   * - 
      - 
      - 
 
@@ -250,7 +251,7 @@ Paramter Description
    * - DIR_DUST
      - str
      - Directory for FIR templates.
-     * - 
+   * - 
      - 
      - 
 
