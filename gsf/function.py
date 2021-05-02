@@ -253,6 +253,7 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
 def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
     '''
     A Function to check rejuvenation.
+
     Parameters
     ----------
     delMS : float
@@ -338,22 +339,43 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
     chi2 = np.sum(((fobs-s*ftmp)/eobs)**2) + np.sum(((fbb-s*ftmp_bb)/ebb)**2)
     return chi2, s
 
-# SFH
-def SFH_del(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
+def SFH_del(t0, tau, A, tt=None, minsfr = 1e-10):
+    '''
+    SFH
+    '''
+    try:
+        if tt == None:
+            tt = np.arange(0.,10,0.1)
+    except:
+        pass
     sfr = np.zeros(len(tt), dtype='float')+minsfr
     sfr[:] = A * (tt[:]-t0) * np.exp(-(tt[:]-t0)/tau)
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
-def SFH_dec(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
+def SFH_dec(t0, tau, A, tt=None, minsfr = 1e-10):
+    '''
+    '''
+    try:
+        if tt == None:
+            tt = np.arange(0.,10,0.1)
+    except:
+        pass
     sfr = np.zeros(len(tt), dtype='float')+minsfr
     sfr[:] = A * (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]-t0<0)
     sfr[:][con] = minsfr
     return sfr
 
-def SFH_cons(t0, tau, A, tt=np.arange(0.,10,0.1), minsfr = 1e-10):
+def SFH_cons(t0, tau, A, tt=None, minsfr = 1e-10):
+    '''
+    '''
+    try:
+        if tt == None:
+            tt = np.arange(0.,10,0.1)
+    except:
+        pass
     sfr = np.zeros(len(tt), dtype='float')+minsfr
     sfr[:] = A #* (np.exp(-(tt[:]-t0)/tau))
     con = (tt[:]<t0) | (tt[:]>tau)
@@ -1221,7 +1243,7 @@ def check_line_man(data,xcont,wht,model,zgal,LW=LW0,lsig=1.5):
     '''
     Parameters
     ----------
-    lsig : float)
+    lsig : float
         which sigma to detect lines.
     '''
     fLW = np.zeros(len(LW), dtype='int') # flag.
