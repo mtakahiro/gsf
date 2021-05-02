@@ -20,7 +20,7 @@ parameters that are related in this step (i.e. IMF, age/metallicity range and ag
 it is suggested to save the previous file to avoid overwriting, or move in another directory to avoid confusion.
 
 Age pixels determine the number of templates at different lookback times. The length of star 
-formation is specified by a parameter, TAU0, in the configuration file. The length, if specified 
+formation is specified by a parameter, ``TAU0``, in the configuration file. The length, if specified 
 to a value <99, is uniform in all age pixels in the current version. 
 If set to 99, then the CSP is applied so that age pixels are continuously connected each other. 
 If set to a negative value, then SSP is applied.
@@ -59,4 +59,4 @@ where :math:`d_L` is luminosity distance to the input redshift.
 
 where gsf applies the Madau model for IGM attenuation at :math:`z>6`.
 
-gsf will store the files generated here in a directory specified with DIR\_TEMP.
+gsf will store the files generated here in a directory specified with ``DIR_TEMP``.

@@ -24,7 +24,7 @@ If you need a new config file (\*.input), execute
 Executing flag
 ~~~~~~~~~~~~~~
 - 0: Generating templates at z=0 (takes a while if MILES). Start from here if parameter in config file is changed. Then go to 1.
-- 1: Redshift template to z=ZGAL, and prepare mock photometry that matches to the input filters and spectra, using pre-existing z=0 templates (from step0). Then go to 2.
+- 1: Redshift template to z=``ZGAL``, and prepare mock photometry that matches to the input filters and spectra, using pre-existing z=0 templates (from step0). Then go to 2.
 - 2: Fitting part, using pre-existing z=z_input templates (from Step1). If ZVIS==1, gsf will ask you if the initial redshift fit is reasonable. Then go to 3.
 - 3: Only plot SFH and SED using existing result files.
 - 6: Plot physical parameters and SED (optional).
@@ -42,8 +42,8 @@ You can speficy the object id of your interest from the command line. This way, 
 
     python run_gsf.py test.input  <Executing-flag> --id <id-of-target-object>
 
-Then gsf will look into the broadband catalog ("BB_CAT"; :doc:`parameters`) and identify object with the same id. 
-Redshift has to be either specified in the config file ("ZGAL"; :doc:`parameters`) or included in the same broadband catalog (column named "redshift").
+Then gsf will look into the broadband catalog (``BB_CAT``; :doc:`parameters`) and identify object with the same id. 
+Redshift has to be either specified in the config file (``ZGAL``; :doc:`parameters`) or included in the same broadband catalog (column named ``redshift``).
 
 
 Other examples
