@@ -6,4 +6,4 @@ emcee==3.0.2
 corner==2.0.1
 sphinx_automodapi
 # git+https://github.com/dfm/python-fsps
-git+git://github.com/mtakahiro/gsf@master
+git+https://github.com/spacetelescope/mirage
