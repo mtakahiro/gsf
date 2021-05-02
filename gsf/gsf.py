@@ -246,14 +246,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
         #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
 
-
+    '''
     if fplt == 8:
-        '''
-        See MZ evolution
-        '''
+        #See MZ evolution
         from .plot_MZ import plot_mz
         plot_mz(MB, MB.ID, MB.PA, MB.Zall, MB.age)
-
+    '''
 
 if __name__ == "__main__":
     '''

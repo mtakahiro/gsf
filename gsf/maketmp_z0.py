@@ -12,28 +12,23 @@ INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 
 def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     '''
     Purpose:
-    ========
-    #
-    # This is for the preparation of
-    # default template, with FSPS, at z=0.
-    #
-    # Should be run before SED fitting.
-    #
-    #
+    --------
+    This is for the preparation of
+    default template, with FSPS, at z=0.
+    Should be run before SED fitting.
 
-    Input:
-    ======
-    #
-    # nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
-    # Z (array)  : Stellar phase metallicity in logZsun.
-    # age (array): Age, in Gyr.
-    # fneb (int) : flag for adding nebular emissionself.
-    # logU (float): ionizing parameter, in logU.
-    # tau0 (float array): Width of age bin. If you want to fix, put >0.01 (Gyr).
-    #  Otherwise, it would be either minimum value (=0.01; if one age bin), or
-    #  the width to the next age bin.
-    #
+    Parameters
+    ----------
+    nimf (int) : 0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08,...
+    Z (array)  : Stellar phase metallicity in logZsun.
+    age (array): Age, in Gyr.
+    fneb (int) : flag for adding nebular emissionself.
+    logU (float): ionizing parameter, in logU.
+    tau0 (float array): Width of age bin. If you want to fix, put >0.01 (Gyr).
+    Otherwise, it would be either minimum value (=0.01; if one age bin), or
+    the width to the next age bin.
     '''
+    
     import asdf
     import fsps
     import gsf
