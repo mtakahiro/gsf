@@ -485,18 +485,22 @@ class Mainbody():
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
 
 
-        # Nested sample?
+        # Nested or ensemble slice sampler?
+        self.f_mcmc = False
+        self.f_nested = False
+        self.f_zeus = False
         try:
             nnested = int(inputs['NEST_SAMP'])
             if nnested == 1:
-                self.f_mcmc = False #True #
-                self.f_nested = True #False #
+                self.f_nested = True
+            elif nnested == 2:
+                self.f_zeus = True
             else:
                 self.f_mcmc = True
-                self.f_nested = False
         except:
+            print('Missing NEST_SAMP keyword. Setting f_mcmc True.')
             self.f_mcmc = True
-            self.f_nested = False
+            pass
 
         # Force Age to Age fix?:
         try:
@@ -1372,6 +1376,7 @@ class Mainbody():
             Check convergence at every certain number.
         '''
         import emcee
+        import zeus
         try:
             import multiprocess
         except:
@@ -1492,161 +1497,122 @@ class Mainbody():
 
             # MCMC;
             check_converge = True
-            if self.f_mcmc:
+            if self.f_mcmc or self.f_zeus:
                 #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
                 moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
-                if True:
-                    # Case for EMCEE
-                    nburn = int(self.nmc/2)
-                    if f_shuffle:
-                        pos = self.get_shuffle(out, amp=amp_shuffle)
-                    else:
-                        pos = amp_shuffle * np.random.randn(self.nwalk, self.ndim)
-                        aa = 0
-                        for aatmp,key in enumerate(out.params.valuesdict()):
-                            if out.params[key].vary:
-                                pos[:,aa] += out.params[key].value
-                                aa += 1
+                # Case for EMCEE
+                nburn = int(self.nmc/2)
+                if f_shuffle:
+                    pos = self.get_shuffle(out, amp=amp_shuffle)
+                else:
+                    pos = amp_shuffle * np.random.randn(self.nwalk, self.ndim)
+                    aa = 0
+                    for aatmp,key in enumerate(out.params.valuesdict()):
+                        if out.params[key].vary:
+                            pos[:,aa] += out.params[key].value
+                            aa += 1
 
+                if self.f_zeus:
+                    sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
+                        args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
+                        #moves=moves,\
+                        kwargs={'f_val': True, 'out': out},\
+                        )
+                else:
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
                         moves=moves,\
                         kwargs={'f_val': True, 'out': out},\
                         )
 
-                    if check_converge:
-                        # Check convergence every number;
-                        nevery = int(self.nmc/10)
-                        nconverge = 10.
-                        if nevery < 1000:
-                            nevery = 1000
-                        index = 0
-                        old_tau = np.inf
-                        autocorr = np.empty(self.nmc)
-                        for sample in sampler.sample(pos, iterations=self.nmc, progress=True):
-                            # Only check convergence every "nevery" steps
-                            if sampler.iteration % nevery:
-                                continue
-
-                            # Compute the autocorrelation time so far
-                            # Using tol=0 means that we'll always get an estimate even
-                            # if it isn't trustworthy
-                            tau = sampler.get_autocorr_time(tol=0)
-                            autocorr[index] = np.mean(tau)
-                            index += 1
-
-                            # Check convergence
-                            converged = np.all(tau * 100 < sampler.iteration)
-                            converged &= np.all(np.abs(old_tau - tau) / tau < nconverge)
-                            if converged:
-                                print('Converged at %d/%d\n'%(index*nevery,self.nmc))
-                                nburn = int(index*nevery / 50) # Burn 50%
-                                self.nmc = index*nevery
-                                break
-                            old_tau = tau
-                    else:
-                        sampler.run_mcmc(pos, self.nmc, progress=True)
-                    flat_samples = sampler.get_chain(discard=nburn, thin=10, flat=True)
-                        
-                    if True:
-                        fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
-                        samples = sampler.get_chain()
-                        labels = []
-                        for key in out.params.valuesdict():
-                            if out.params[key].vary:
-                                labels.append(key)
-                        for i in range(self.ndim):
-                            ax = axes[i]
-                            ax.plot(samples[:, :, i], "k", alpha=0.3)
-                            ax.set_xlim(0, len(samples))
-                            ax.yaxis.set_label_coords(-0.1, 0.5)
-                            ax.set_ylabel(labels[i])
-                        axes[-1].set_xlabel("step number")
-                        plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
-
-                    # Similar for nested;
-                    # Dummy just to get structures;
-                    print('\nRunning dummy sampler. Disregard message from here;\n')
-                    mini = Minimizer(class_post.lnprob, out.params, 
-                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
-                    f_disp=False, nan_policy='omit',
-                    moves=moves\
-                    )
-                    res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
-                    params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)
-                    print('\nto here.\n')
-
-                    # Update;
-                    var_names = []#res.var_names
-                    params_value = {}
-                    ii = 0
-                    for key in out.params:
-                        if out.params[key].vary:
-                            var_names.append(key)
-                            params_value[key] = np.median(flat_samples[nburn:,ii])
-                            ii += 1
-
-                    import pandas as pd
-                    flatchain = pd.DataFrame(data=flat_samples[nburn:,:], columns=var_names)
-
-                    class get_res:
-                        def __init__(self, flatchain, var_names, params_value, res):
-                            self.flatchain = flatchain
-                            self.var_names = var_names
-                            self.params_value = params_value
-                            self.params = res.params
-                            for key in var_names:
-                                self.params[key].value = params_value[key]
-
-                    # Inserting result from res0 into res structure;
-                    res = get_res(flatchain, var_names, params_value, res)
-                    res.bic = -99
-
-                if False:
-                    # lmfit;
-                    mini = Minimizer(class_post.lnprob, out.params, 
-                    fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust],
-                    f_disp=self.f_disp, nan_policy='omit',
-                    moves=moves)
-
+                if check_converge:
                     # Check convergence every number;
                     nevery = int(self.nmc/10)
+                    nconverge = 10.
                     if nevery < 1000:
                         nevery = 1000
+                    index = 0
+                    old_tau = np.inf
+                    autocorr = np.empty(self.nmc)
+                    for sample in sampler.sample(pos, iterations=self.nmc, progress=True):
+                        # Only check convergence every "nevery" steps
+                        if sampler.iteration % nevery:
+                            continue
+
+                        # Compute the autocorrelation time so far
+                        # Using tol=0 means that we'll always get an estimate even
+                        # if it isn't trustworthy
+                        tau = sampler.get_autocorr_time(tol=0)
+                        autocorr[index] = np.mean(tau)
+                        index += 1
+
+                        # Check convergence
+                        converged = np.all(tau * 100 < sampler.iteration)
+                        converged &= np.all(np.abs(old_tau - tau) / tau < nconverge)
+                        if converged:
+                            print('Converged at %d/%d\n'%(index*nevery,self.nmc))
+                            nburn = int(index*nevery / 50) # Burn 50%
+                            self.nmc = index*nevery
+                            break
+                        old_tau = tau
+                else:
+                    sampler.run_mcmc(pos, self.nmc, progress=True)
+                flat_samples = sampler.get_chain(discard=nburn, thin=10, flat=True)
                     
-                    if f_shuffle:# and self.SFH_FORM==-99: # this needs update for functional form.
-                        print('Initial shuffle in walkers is on.\n')
-                        pos = self.get_shuffle(out)
-                        # Run emcee;
-                        res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                            pos=pos,
-                            params=out.params, is_weighted=True, workers=ncpu,
-                            check_converge=check_converge, nevery=nevery, float_behavior='posterior')
-                    else:
-                        # Run emcee without pos;
-                        res = mini.emcee(burn=int(self.nmc/2), steps=self.nmc, thin=10, nwalkers=self.nwalk, \
-                            params=out.params, is_weighted=False, workers=ncpu,
-                            check_converge=check_converge, nevery=nevery, float_behavior='posterior')
-                
-                    try:
-                        print('Converged at %d/%d'%(res.steps,self.nmc))
-                        self.nmc = res.steps
-                    except:
-                        res.steps = self.nmc
+                if True:
+                    fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
+                    samples = sampler.get_chain()
+                    labels = []
+                    for key in out.params.valuesdict():
+                        if out.params[key].vary:
+                            labels.append(key)
+                    for i in range(self.ndim):
+                        ax = axes[i]
+                        ax.plot(samples[:, :, i], "k", alpha=0.3)
+                        ax.set_xlim(0, len(samples))
+                        ax.yaxis.set_label_coords(-0.1, 0.5)
+                        ax.set_ylabel(labels[i])
+                    axes[-1].set_xlabel("step number")
+                    plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
 
-                    if f_plot_accept:
-                        plt.close()
-                        plt.plot(res.acceptance_fraction)
-                        plt.xlabel('walker')
-                        plt.ylabel('acceptance fraction')
-                        plt.savefig('%s/accept_%s.png'%(self.DIR_OUT,self.ID))
+                # Similar for nested;
+                # Dummy just to get structures;
+                print('\nRunning dummy sampler. Disregard message from here;\n')
+                mini = Minimizer(class_post.lnprob, out.params, 
+                fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
+                f_disp=False, nan_policy='omit',
+                moves=moves\
+                )
+                res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
+                params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)
+                print('\nto here.\n')
 
-                    # This is already burnt in.
-                    flatchain = res.flatchain
-                    var_names = res.var_names
-                    params_value = {}
-                    for key in var_names:
-                        params_value[key] = res.params[key].value
+                # Update;
+                var_names = []#res.var_names
+                params_value = {}
+                ii = 0
+                for key in out.params:
+                    if out.params[key].vary:
+                        var_names.append(key)
+                        params_value[key] = np.median(flat_samples[nburn:,ii])
+                        ii += 1
+
+                import pandas as pd
+                flatchain = pd.DataFrame(data=flat_samples[nburn:,:], columns=var_names)
+
+                class get_res:
+                    def __init__(self, flatchain, var_names, params_value, res):
+                        self.flatchain = flatchain
+                        self.var_names = var_names
+                        self.params_value = params_value
+                        self.params = res.params
+                        for key in var_names:
+                            self.params[key].value = params_value[key]
+
+                # Inserting result from res0 into res structure;
+                res = get_res(flatchain, var_names, params_value, res)
+                res.bic = -99
+
 
             elif self.f_nested:
                 import dynesty
@@ -1711,7 +1677,7 @@ class Mainbody():
                 res.bic = -99
 
             else:
-                print('Failed. Exiting.')
+                print('Sampling is not specified. Failed. Exiting.')
                 return -1
 
             stop_mc  = timeit.default_timer()
