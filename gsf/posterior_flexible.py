@@ -138,19 +138,23 @@ class Post:
         return pars
 
     def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0):
+    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0, out=None):
         '''
-        Input:
-        ======
-        f_chind (bool) : If true, includes non-detection in likelihood calculation.
-        lnpreject : A replaced value when lnprob gets -inf value.
-        flat_prior : Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
-        gauss_prior : Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
-
-        dammy : This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
+        Parameters
+        ----------
+        f_chind : bool
+            If true, includes non-detection in likelihood calculation.
+        lnpreject : 
+            A replaced value when lnprob gets -inf value.
+        flat_prior : 
+            Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
+        gauss_prior : 
+            Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
+        dammy : 
+            This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
 
         Returns:
-        ========
+        --------
         If f_like, log Likelihood. Else, log Posterior prob.
         '''
         if f_val:
@@ -265,17 +269,21 @@ class Post:
     def lnprob_emcee(self, dammy, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
     lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0, out=None):
         '''
-        Input:
-        ======
-        f_chind (bool) : If true, includes non-detection in likelihood calculation.
-        lnpreject : A replaced value when lnprob gets -inf value.
-        flat_prior : Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
-        gauss_prior : Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
-
-        dammy : This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
+        Parameters
+        ----------
+        f_chind : bool
+            If true, includes non-detection in likelihood calculation.
+        lnpreject : 
+            A replaced value when lnprob gets -inf value.
+        flat_prior : 
+            Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
+        gauss_prior : 
+            Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
+        dammy : 
+            This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
 
         Returns:
-        ========
+        --------
         If f_like, log Likelihood. Else, log Posterior prob.
         '''
         if f_val:
@@ -306,7 +314,6 @@ class Post:
                     vals[key].value = dammy[ii]
                     ii += 1
 
-        #resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
         resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True)
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
         sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
@@ -384,43 +391,6 @@ class Post:
         if not np.isfinite(lnposterior):
             print('Posterior unacceptable.')
             return lnpreject
+
         return lnposterior
 
-
-    """
-    def get_mass(self,pars):
-        '''
-        Purpose:
-        ========
-        Quickly calculate stellar mass for a given param set.
-
-        Return:
-        =======
-        Stellar mass in logMsun.
-        '''
-        sedpar = self.af['ML'] # For M/L
-
-        Mtot = 0
-        for aa in range(len(self.mb.age)):
-            # Checking AA limit too;
-            if pars['A%d'%aa] < self.mb.Amin or pars['A%d'%aa] > self.mb.Amax:
-                return np.inf
-
-            if self.mb.Zevol == 1:
-                # Checking Z limit too;
-                if pars['Z%d'%aa] < self.mb.Zmin or pars['Z%d'%aa] > self.mb.Zmax:
-                    return np.inf
-                ZZtmp = pars['Z%d'%aa]
-                nZtmp = self.mb.bfnc.Z2NZ(ZZtmp)
-            else:
-                # Checking Z limit too;
-                if pars['Z%d'%0] < self.mb.Zmin or pars['Z%d'%0] > self.mb.Zmax:
-                    return np.inf
-                #ZZtmp = pars['Z%d'%0]
-                nZtmp = aa #self.mb.bfnc.Z2NZ(ZZtmp)
-
-            mslist = sedpar['ML_'+str(nZtmp)][aa]
-            Mtot += 10**(pars['A%d'%aa] + np.log10(mslist))
-        
-        return np.log10(Mtot)
-    """

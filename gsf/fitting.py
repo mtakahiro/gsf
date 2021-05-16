@@ -91,6 +91,7 @@ class Mainbody():
         self.inputs = inputs
         self.c = c
         self.Mpc_cm = Mpc_cm
+        self.d = 10**(73.6/2.5) * 1e-18 # Conversion factor from [ergs/s/cm2/A] to [ergs/s/cm2/Hz].
         self.m0set = m0set
         self.pixelscale = pixelscale
         self.Lsun = Lsun
@@ -490,10 +491,10 @@ class Mainbody():
         self.f_nested = False
         self.f_zeus = False
         try:
-            nnested = int(inputs['NEST_SAMP'])
-            if nnested == 1:
+            nnested = inputs['NEST_SAMP']
+            if nnested == 'NEST' or nnested == '1':
                 self.f_nested = True
-            elif nnested == 2:
+            elif nnested == 'SLICE' or nnested == '2':
                 self.f_zeus = True
             else:
                 self.f_mcmc = True
@@ -1496,7 +1497,6 @@ class Mainbody():
             start_mc = timeit.default_timer()
 
             # MCMC;
-            check_converge = True
             if self.f_mcmc or self.f_zeus:
                 #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
                 moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
@@ -1513,10 +1513,11 @@ class Mainbody():
                             aa += 1
 
                 if self.f_zeus:
+                    moves = zeus.moves.GlobalMove()
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
-                        #moves=moves,\
-                        kwargs={'f_val': True, 'out': out},\
+                        moves=moves, maxiter=1e5,\
+                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                         )
                 else:
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
@@ -1525,6 +1526,7 @@ class Mainbody():
                         kwargs={'f_val': True, 'out': out},\
                         )
 
+                check_converge = False
                 if check_converge:
                     # Check convergence every number;
                     nevery = int(self.nmc/10)

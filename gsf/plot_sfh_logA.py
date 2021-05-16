@@ -66,7 +66,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = MB.d
 
     #############
     # Plot.
@@ -425,9 +425,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             
             if f_log_sfh:
                 ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
-                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=[col[aa]], marker='', zorder=1, lw=1.)
+                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=1)
+                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
             else:
                 ax1.errorbar(age[aa], 10**SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
                     yerr=[[10**SFp[aa,1]-10**SFp[aa,0]], [10**SFp[aa,2]-10**SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
@@ -799,7 +799,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = MB.d #10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     #############
     # Plot.
