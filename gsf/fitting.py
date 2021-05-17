@@ -210,7 +210,7 @@ class Mainbody():
         except:
             pass
 
-        self.band = {} #np.zeros((len(self.filts),),'float')
+        self.band = {}
         for ii in range(len(self.filts)):
             fd = np.loadtxt(self.DIR_FILT + self.filts[ii] + '.fil', comments='#')
             self.band['%s_lam'%(self.filts[ii])] = fd[:,1]

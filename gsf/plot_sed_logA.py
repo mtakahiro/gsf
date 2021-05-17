@@ -21,16 +21,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300):
     '''
-    Input:
-    ======
-    MB.SNlim : SN limit to show flux or up lim in SED.
-    f_chind : If include non-detection in chi2 calculation, using Sawicki12.
-    mmax : Number of mcmc realization for plot. Not for calculation.
-    f_fancy: plot each SED component.
-    f_fill: if True, and so is f_fancy, fill each SED component.
+    Parameters
+    ----------
+    MB.SNlim : float
+        SN limit to show flux or up lim in SED.
+    f_chind : bool
+        If include non-detection in chi2 calculation, using Sawicki12.
+    mmax : int
+        Number of mcmc realization for plot. Not for calculation.
+    f_fancy : bool
+        plot each SED component.
+    f_fill: bool
+        if True, and so is f_fancy, fill each SED component.
 
-    Returns:
-    ========
+    Returns
+    -------
     plots
 
     '''
@@ -56,14 +61,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     
     lcb = '#4682b4' # line color, blue
 
-    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
-    bfnc = MB.bfnc #Basic(Z)
+    fnc  = MB.fnc 
+    bfnc = MB.bfnc
     ID   = MB.ID
     Z    = MB.Zall
-    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    age  = MB.age
     nage = MB.nage 
-    tau0 = MB.tau0 #[0.1,0.2,0.3]
-
+    tau0 = MB.tau0
+    
     #col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow')
@@ -82,7 +87,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     chimax = 1.
     m0set  = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = 10**(73.6/2.5) * scale # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = MB.d 
 
     ##################
     # Fitting Results
@@ -99,8 +104,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Open result file
     ###########################
     file = MB.DIR_OUT + 'summary_' + ID + '.fits'
-    hdul = fits.open(file) # open a FITS file
-
+    hdul = fits.open(file)
+    
     ndim_eff = hdul[0].header['NDIM']
 
     # Redshift MC
@@ -178,42 +183,38 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Data taken from
     ###############################
     if MB.f_dust:
-        #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
         MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
     else:
-        #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
         MB.dict = MB.read_data(Cz0, Cz1, zbes)
 
-    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
-    NR   = MB.dict['NR'] #dat[:, 0]
-    x    = MB.dict['x'] #dat[:, 1]
-    fy   = MB.dict['fy'] #dat[:, 2]
-    ey   = MB.dict['ey'] #dat[:, 3]
-
-    con0 = (NR<1000) #& (fy/ey>SNlim)
+    NR   = MB.dict['NR']
+    x    = MB.dict['x']
+    fy   = MB.dict['fy']
+    ey   = MB.dict['ey']
+    
+    con0 = (NR<1000)
     xg0  = x[con0]
-    fg0  = fy[con0] #* Cz0
-    eg0  = ey[con0] #* Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    fg0  = fy[con0]
+    eg0  = ey[con0]
+    con1 = (NR>=1000) & (NR<10000)
     xg1  = x[con1]
-    fg1  = fy[con1] #* Cz1
-    eg1  = ey[con1] #* Cz1
+    fg1  = fy[con1]
+    eg1  = ey[con1]
     if len(xg0)>0 or len(xg1)>0:
         f_grsm = True
     else:
         f_grsm = False
 
-    # Weight is set to zero for those no data (ey<0).
     wht = fy * 0
     con_wht = (ey>0)
     wht[con_wht] = 1./np.square(ey[con_wht])
 
     # BB data points;
-    NRbb = MB.dict['NRbb'] #dat[:, 0]
-    xbb  = MB.dict['xbb'] #dat[:, 1]
-    fybb = MB.dict['fybb'] #dat[:, 2]
-    eybb = MB.dict['eybb'] #dat[:, 3]
-    exbb = MB.dict['exbb'] #dat[:, 4]
+    NRbb = MB.dict['NRbb']
+    xbb  = MB.dict['xbb']
+    fybb = MB.dict['fybb']
+    eybb = MB.dict['eybb']
+    exbb = MB.dict['exbb']
     snbb = fybb/eybb
 
     ######################
@@ -228,7 +229,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Mass-to-Light ratio.
     ######################
     ms = np.zeros(len(age), dtype='float')
-    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af
     sedpar = af['ML']
 
     for aa in range(len(age)):
@@ -251,13 +252,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         xsize = 0.29
         ysize = 0.25
         if f_grsm:
-            #ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if f_dust:
-            #ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
-            #ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
-            #ax3t.set_xlabel('Obs. wavelength ($\mu$m)')
     else:
         fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
@@ -266,8 +263,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #######################################
     # D.Kelson like Box for BB photometry
     #######################################
-    #col_dat = 'darkgreen'
-    #col_dat = 'tomato'
     col_dat = 'r'
     if f_bbbox:
         for ii in range(len(xbb)):
@@ -344,7 +339,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
 
-    #II0 = nage #[0,1,2,3] # Number for templates
     iimax = len(nage)-1
 
     # FIR dust plot;
@@ -425,9 +419,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
             ysump[:nopt] += y0p
-            #if f_fill:
-            #    ax1.fill_between(x0[::nstep_plot], ((ysum - y0_r) * c/ np.square(x0) / d)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0., color=col[ii], alpha=alp, zorder=-3, label='')
-            # Keep each component;
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d
 
         # The following needs revised.
@@ -472,10 +463,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     x1max = 22000
     if x1max < np.max(xbb[conbb_ymax]):
         x1max = np.max(xbb[conbb_ymax]) * 1.5
-    ax1.set_xlim(2200, 11000)
+    ax1.set_xlim(2000, 11000)
     ax1.set_xscale('log')
-    ax1.set_ylim(-ymax*0.1,ymax)
-    ax1.text(2300,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+    scl_yaxis = 0.2
+    ax1.set_ylim(-ymax*scl_yaxis,ymax)
+    ax1.text(2100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, 110000]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
@@ -705,7 +697,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
-    print('')
 
     #
     # Plot Median SED;
@@ -1100,14 +1091,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         if f_dust:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
-            #%(ID, zbes, fd['Mstel_50'], MD50, fd['Z_MW_50'], fd['T_MW_50'], fd['AV_50'], fin_chi2)
             ylabel = ymax*0.45
         else:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
-            ylabel = ymax*0.32
+            ylabel = ymax*0.25
 
-        ax1.text(2400, ylabel, label,\
+        ax1.text(2200, ylabel, label,\
         fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
         
     #######################################
@@ -1212,6 +1202,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         except:
             pass
 
+    # Filters
+    ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
+
     ####################
     ## Save
     ####################
@@ -1226,18 +1219,22 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300):
     '''
-    Input:
-    ======
-    MB.SNlim : SN limit to show flux or up lim in SED.
-    f_chind : If include non-detection in chi2 calculation, using Sawicki12.
-    mmax : Number of mcmc realization for plot. Not for calculation.
-    f_fancy: plot each SED component.
-    f_fill: if True, and so is f_fancy, fill each SED component.
+    Parameters
+    ----------
+    MB.SNlim : float
+        SN limit to show flux or up lim in SED.
+    f_chind : bool
+        If include non-detection in chi2 calculation, using Sawicki12.
+    mmax : int
+        Number of mcmc realization for plot. Not for calculation.
+    f_fancy : bool
+        plot each SED component.
+    f_fill : bool
+        if True, and so is f_fancy, fill each SED component.
 
-    Returns:
-    ========
+    Returns
+    -------
     plots
-
     '''
 
     from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
@@ -1261,15 +1258,14 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     
     lcb = '#4682b4' # line color, blue
 
-    fnc  = MB.fnc #Func(ID, PA, Z, nage, dust_model=dust_model, DIR_TMP=DIR_TMP) # Set up the number of Age/ZZ
-    bfnc = MB.bfnc #Basic(Z)
+    fnc  = MB.fnc
+    bfnc = MB.bfnc
     ID   = MB.ID
     Z    = MB.Zall
-    age  = MB.age  #[0.01, 0.1, 0.3, 0.7, 1.0, 3.0],
+    age  = MB.age
     nage = MB.nage 
-    tau0 = MB.tau0 #[0.1,0.2,0.3]
-
-    #col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+    tau0 = MB.tau0
+    
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow')
     col = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
@@ -1287,8 +1283,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     chimax = 1.
     m0set  = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = 10**(73.6/2.5) * scale # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
-
+    d = MB.d 
+    
     ##################
     # Fitting Results
     ##################
@@ -1304,8 +1300,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Open result file
     ###########################
     file = MB.DIR_OUT + 'summary_' + ID + '.fits'
-    hdul = fits.open(file) # open a FITS file
-
+    hdul = fits.open(file) 
+    
     ndim_eff = hdul[0].header['NDIM']
     vals = {}
 
@@ -1406,19 +1402,16 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Data taken from
     ###############################
     if MB.f_dust:
-        #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
         MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
     else:
-        #MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
         MB.dict = MB.read_data(Cz0, Cz1, zbes)
 
-    #dat  = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
-    NR   = MB.dict['NR'] #dat[:, 0]
-    x    = MB.dict['x'] #dat[:, 1]
-    fy   = MB.dict['fy'] #dat[:, 2]
-    ey   = MB.dict['ey'] #dat[:, 3]
-
-    con0 = (NR<1000) #& (fy/ey>SNlim)
+    NR   = MB.dict['NR']
+    x    = MB.dict['x']
+    fy   = MB.dict['fy']
+    ey   = MB.dict['ey']
+    
+    con0 = (NR<1000)
     xg0  = x[con0]
     fg0  = fy[con0] #* Cz0
     eg0  = ey[con0] #* Cz0
@@ -1455,13 +1448,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ######################
     # Mass-to-Light ratio.
     ######################
-    #ms = np.zeros(len(age), dtype='float')
-    #af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     af = MB.af
     sedpar = af['ML']
-
-    #for aa in range(len(age)):
-    #    ms[aa] = sedpar['ML_' +  str(int(NZbest[aa]))][aa]
     try:
         isochrone = af['isochrone']
         LIBRARY = af['library']
@@ -1480,13 +1468,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         xsize = 0.29
         ysize = 0.25
         if f_grsm:
-            #ax2t = inset_axes(ax1, width="30%", height="25%", loc=1)
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if f_dust:
-            #ax3t = inset_axes(ax1, width="30%", height="20%", loc=4)
-            #ax3t = inset_axes(ax1, width="30%", height="25%", loc=7)
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
-            #ax3t.set_xlabel('Obs. wavelength ($\mu$m)')
     else:
         fig = plt.figure(figsize=(5.5,2.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
@@ -1671,10 +1655,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     x1max = 22000
     if x1max < np.max(xbb[conbb_ymax]):
         x1max = np.max(xbb[conbb_ymax]) * 1.5
-    ax1.set_xlim(2200, 11000)
+    ax1.set_xlim(2000, 11000)
     ax1.set_xscale('log')
-    ax1.set_ylim(-ymax*0.1,ymax)
-    ax1.text(2300,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+    scl_yaxis = 0.2
+    ax1.set_ylim(-ymax*scl_yaxis,ymax)
+    ax1.text(2100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, 110000]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
@@ -1705,7 +1690,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Plot
     #############
     ms = np.zeros(len(age), dtype='float')
-    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af
     sedpar = af['ML']
 
     eAAl = np.zeros(len(age),dtype='float')
@@ -1738,17 +1723,13 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Lines
     ################
     LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
-    #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 6563, 6717, 6731]
     FLW = np.zeros(len(LN),dtype='int')
 
     ####################
     # For cosmology
     ####################
-    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm #, **cosmo) # Luminositydistance in cm
+    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
-    #dA     = MB.cosmo.angular_diameter_distance(zbes).value
-    #dkpc   = dA * (2*3.14/360/3600)*10**3 # kpc/arcsec
-    #twokpc = 5.0/dkpc/0.06 # in pixel
 
     if f_grsm:
         print('This function (write_lines) needs to be revised.')
@@ -1780,15 +1761,12 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     file = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
     data = loadcpkl(file)
-    #try:
-    ndim = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+    ndim = data['ndim'] 
     burnin = data['burnin']
     nmc = data['niter']
     nwalk = data['nwalkers']
-    Nburn = burnin #*20
+    Nburn = burnin
     res = data['chain'][:]
-    #except:
-    #    if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
     samples = res
 
@@ -2286,7 +2264,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.32
 
-        ax1.text(2400, ylabel, label,\
+        ax1.text(2200, ylabel, label,\
         fontsize=7, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
         
     #######################################
@@ -2312,7 +2290,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     if f_dust:
         try:
-            contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
+            contmp = (x1_tot>10*1e4)
             y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*2.0
             ax3t.set_ylim(y3min, y3max)
         except:
@@ -2335,7 +2313,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             for ii in range(len(LW)):
                 ll = np.argmin(np.abs(LW[ii]-LW0[:]))
 
-                if ll == 2 and FLW[ii] == 1: # FLW is the flag for line fitting.
+                if ll == 2 and FLW[ii] == 1: 
                     yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
                     xxl = yyl * 0 + LW0[ll]
                     ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
@@ -2372,6 +2350,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         except:
             pass
 
+    # Filters
+    ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
+
     ####################
     ## Save
     ####################
@@ -2382,14 +2363,43 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
+def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4):
+    '''
+    Add filter response curve to ax1.
+
+    '''
+    NUM_COLORS = len(MB.filts)
+    cm = plt.get_cmap(cmap)
+    cols = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
+
+    wavecen = []
+    for ii,filt in enumerate(MB.filts):
+        wave = MB.band['%s_lam'%filt]
+        flux = MB.band['%s_res'%filt]
+        #wavecen.append(np.median(wave * flux)/np.median(flux))
+        con = (flux/flux.max()>0.1)
+        wavecen.append(np.min(wave[con]))
+    wavecen = np.asarray(wavecen)
+    wavecen_sort = np.sort(wavecen)
+
+    for ii,filt in enumerate(MB.filts):
+        iix = np.argmin(np.abs(wavecen_sort[:]-wavecen[ii]))
+        col = cols[iix]
+        wave = MB.band['%s_lam'%filt]
+        flux = MB.band['%s_res'%filt]
+        ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+        ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+
+    return ax
+
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     For summary. In the same format as plot_corner_physparam_frame.
 
-    Note:
-    =====
+    Notes
+    -----
     Tau model not supported.
     '''
 
@@ -3043,14 +3053,14 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
 
 def plot_corner_physparam_cum_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
     '''
-    # Creat "cumulative" png for gif image.
-    #
-    #
-    # If you like to
-    # Creat temporal png for gif image.
-    #
-    # snlimbb: SN limit to show flux or up lim in SED.
-    #
+    Creat "cumulative" png for gif image.
+    
+    If you like to creat temporal png for gif image.
+
+    Parameters
+    ----------
+    snlimbb : float
+        SN limit to show flux or up lim in SED.
     '''
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     nage = np.arange(0,len(age),1)

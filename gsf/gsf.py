@@ -79,7 +79,6 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
     MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-    #MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
     '''
     #

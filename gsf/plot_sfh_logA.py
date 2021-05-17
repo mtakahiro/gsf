@@ -22,16 +22,20 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
         f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Star formation history plot.
 
-    Input:
-    ======
-    flim : Lower limit for plotting an age bin.
-    lsfrl : Lower limit for SFR, in logMsun/yr
-    f_SFMS : If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
-    tset_SFR_SED : in Gyr. Time scale over which SFR estimate is averaged.
+    Parametes
+    ---------
+    flim : float
+        Lower limit for plotting an age bin.
+    lsfrl : float
+        Lower limit for SFR, in logMsun/yr
+    f_SFMS : bool
+        If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
+    tset_SFR_SED : float
+        in Gyr. Time scale over which SFR estimate is averaged.
     '''
     if f_silence:
         import matplotlib
@@ -427,12 +431,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
                 ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
                     yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
+                    ax1.scatter(age[aa], SFp[aa,1], marker='.', color=col[aa], edgecolor='k', s=msize[aa], zorder=1)
             else:
                 ax1.errorbar(age[aa], 10**SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
                     yerr=[[10**SFp[aa,1]-10**SFp[aa,0]], [10**SFp[aa,2]-10**SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
+                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', color=col[aa], edgecolor='k', s=msize[aa], zorder=1)
 
     #############
     # Get SFMS in log10;

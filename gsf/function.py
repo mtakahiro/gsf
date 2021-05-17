@@ -697,9 +697,9 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
         in mag
     nr : int array
         index, to be used for sorting.
-    Rv : 
+    Rv : float
         from Calzetti+00
-    lmlimu : 
+    lmlimu : float
         Upper limit. 2.2 in Calz+00
     '''
     Kl = np.zeros(len(lm), dtype='float')
@@ -719,7 +719,6 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     Kl[con2] = Kl2
     Kl[con3] = Kl3
 
-    #nr0 = nr[con0]
     nr1 = nr[con1]
     nr2 = nr[con2]
     nr3 = nr[con3]
@@ -727,7 +726,6 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     nrd[con2] = nr[con2]
     nrd[con3] = nr[con3]
 
-    #lmm0 = lmm[con0]
     lmm1 = lmm[con1]
     lmm2 = lmm[con2]
     lmm3 = lmm[con3]
@@ -735,18 +733,12 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     lmmc[con2] = lmm[con2]
     lmmc[con3] = lmm[con3]
 
-    #fl0 = fl[con0]
     fl1 = fl[con1]
     fl2 = fl[con2]
     fl3 = fl[con3]
     flc[con1] = fl[con1]
     flc[con2] = fl[con2]
     flc[con3] = fl[con3]
-
-    #Kl = np.concatenate([Kl1,Kl2,Kl3])
-    #nrd = np.concatenate([nr1,nr2,nr3])
-    #lmmc = np.concatenate([lmm1,lmm2,lmm3])
-    #flc = np.concatenate([fl1,fl2,fl3])
 
     Alam = Kl * Av / Rv
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
@@ -761,12 +753,16 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     '''
     Parameters
     ----------
-    # lm (float array) : wavelength, at RF, in AA.
-    # fl (float array) : fnu
-    # Av (float)       : mag
-    # nr (int array)   : index, to be used for sorting.
-    # Rv: =3.1 for MW.
-    #
+    lm : float array
+        wavelength, at RF, in AA.
+    fl : float array
+        fnu
+    Av : float
+        mag
+    nr : int array
+        index, to be used for sorting.
+    Rv : float
+        3.1 for MW.
     '''
     Kl = np.zeros(len(lm), dtype='float')
 
