@@ -19,7 +19,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300):
+        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
     '''
     Parameters
     ----------
@@ -465,7 +465,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         x1max = np.max(xbb[conbb_ymax]) * 1.5
     ax1.set_xlim(2000, 11000)
     ax1.set_xscale('log')
-    scl_yaxis = 0.2
+    if f_plot_filter:
+        scl_yaxis = 0.2
+    else:
+        scl_yaxis = 0.1
     ax1.set_ylim(-ymax*scl_yaxis,ymax)
     ax1.text(2100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
@@ -1203,7 +1206,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             pass
 
     # Filters
-    ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
+    if f_plot_filter:
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
 
     ####################
     ## Save
@@ -1217,7 +1221,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300):
+        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
     '''
     Parameters
     ----------
@@ -1657,7 +1661,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         x1max = np.max(xbb[conbb_ymax]) * 1.5
     ax1.set_xlim(2000, 11000)
     ax1.set_xscale('log')
-    scl_yaxis = 0.2
+    if f_plot_filter:
+        scl_yaxis = 0.2
+    else:
+        scl_yaxis = 0.1
     ax1.set_ylim(-ymax*scl_yaxis,ymax)
     ax1.text(2100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
@@ -2351,7 +2358,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             pass
 
     # Filters
-    ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
+    if f_plot_filter:
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
 
     ####################
     ## Save
