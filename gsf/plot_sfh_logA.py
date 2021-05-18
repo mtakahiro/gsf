@@ -20,7 +20,7 @@ lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1):
     '''
     Purpose
     -------
@@ -450,7 +450,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
-        print('Rejuvenation judge failed. (plot_sfh.py)')
+        print('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
@@ -714,20 +714,30 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2t.set_xlim(Txmin, Txmax)
 
     # Save
-    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+    fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
 def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
     '''
-    # sfh: 1:exponential, 4:delayed exp, 5:, 6:lognormal
-    ML : Total Mass.
-    tt: Lookback time, in Gyr
-    tau0: in Gyr
-    t0: age, in Gyr
+    Parameters
+    ----------
+    sfh : int
+        1:exponential, 4:delayed exp, 5:, 6:lognormal
+    ML : float
+        Total Mass.
+    tt : float
+        Lookback time, in Gyr
+    tau0: float
+        in Gyr
+    t0 : float
+        age, in Gyr
 
-    Returns:
-    SFR, in Msun/yr
-    MFR, in Msun
+    Returns
+    -------
+    SFR : 
+        in Msun/yr
+    MFR :
+        in Msun
 
     '''
     yy = np.zeros(len(tt), dtype='float') 
@@ -758,18 +768,22 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
 
 def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Star formation history plot.
 
-    Input:
-    ======
-    flim : Lower limit for plotting an age bin.
-    lsfrl : Lower limit for SFR, in logMsun/yr
-    f_SFMS : If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
-    tset_SFR_SED : in Gyr. Time scale over which SFR estimate is averaged.
+    Parameters
+    ----------
+    flim : float
+        Lower limit for plotting an age bin.
+    lsfrl : float
+        Lower limit for SFR, in logMsun/yr
+    f_SFMS : bool
+        If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
+    tset_SFR_SED : float
+        in Gyr. Time scale over which SFR estimate is averaged.
     '''
     if f_silence:
         import matplotlib
@@ -1125,7 +1139,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
-        print('Rejuvenation judge failed. (plot_sfh.py)')
+        print('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
@@ -1365,25 +1379,25 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax2t.set_xlim(Txmin, Txmax)
 
     # Save
-    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
-
+    fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
 def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh=0.01):
 
     '''
-    Purpose:
-    =========
+    Purpose
+    -------
     Reprocess output files to get spectra, UV color, and SFH at higher resolution.
 
-    Input:
-    ======
-    #
-    # delt_sfh (float): delta t of input SFH in Gyr.
-    #
-    # Returns: SED as function of age, based on SF and Z histories;
-    #
+    Parameters
+    ----------
+    delt_sfh : float
+        delta t of input SFH in Gyr.
+    
+    Returns
+    -------
+    SED as function of age, based on SF and Z histories;
     '''
 
     print('This function may take a while as it runs fsps.')
@@ -1718,13 +1732,14 @@ def plot_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
     
     '''
-    Input:
-    ======
-    delt_sfh (float): delta t of input SFH in Gyr.
+    Parameters
+    ----------
+    delt_sfh : float
+        delta t of input SFH in Gyr.
 
-    Returns:
-    ========
-    SED as function of age, based on SF and Z histories;
+    Returns
+    -------
+    SED as function of age, based on SF and Z histories.
     '''
 
     import os.path

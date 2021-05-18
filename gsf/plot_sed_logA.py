@@ -1214,9 +1214,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ####################
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
@@ -2366,9 +2366,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ####################
     ax1.legend(loc=1, fontsize=11)
     if figpdf:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
-        plt.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
 def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4):
