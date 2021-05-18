@@ -8,3 +8,5 @@ docs/_build/.DS_Store
 docs/.DS_Store
 .DS_Store
 .ipynb_checkpoints/Plot SFH and SED-checkpoint.ipynb
+example/templates_del/spec_all.asdf
+example/templates_del/spec_all_32707.asdf
