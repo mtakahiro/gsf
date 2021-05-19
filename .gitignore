@@ -10,3 +10,23 @@ docs/.DS_Store
 .ipynb_checkpoints/Plot SFH and SED-checkpoint.ipynb
 example/templates_del/spec_all.asdf
 example/templates_del/spec_all_32707.asdf
+example/templates/nonebular_pdv/spec_obs_43114.cat
+example/templates/nonebular_pdv/spec_dust_obs_43114.cat
+example/templates/nonebular_pdv/spec_all_43114.asdf
+example/templates/nonebular_pdv/spec_all.asdf
+example/templates/nonebular_pdv/bb_obs_43114_removed.cat
+example/templates/nonebular_pdv/bb_obs_43114.cat
+example/templates/nonebular_pdv/bb_dust_obs_43114.cat
+example/output/zprob_43114.png
+example/output/summary_43114.fits
+example/output/SPEC_43114_spec.png
+example/output/SPEC_43114_corner.png
+example/output/SFH_43114_pcl.png
+example/output/SFH_43114.fits
+example/output/param_43114_corner.png
+example/output/gsf_spec_43114.fits
+example/output/gsf_spec_43114.asdf
+example/output/chain_43114_corner.cpkl
+example/output/chain_43114.png
+example/output/43114_lines_fit.txt
+example/default.profraw
