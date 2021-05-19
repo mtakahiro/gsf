@@ -18,8 +18,8 @@ start = timeit.default_timer()
 
 def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     This is only for 0 and 1, to get templates.
     Not for fitting, nor plotting.
 
@@ -110,8 +110,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, \
     skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=True, amp_shuffle=1e-2, Zini=None):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     gsf pipeline, which runs all steps.
     '''
 
@@ -179,8 +179,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         #
         # 2. Mian fitting part.
         #
-        MB.zprev = MB.zgal #zrecom # redshift from previous run
-        MB.ndim_keep = MB.ndim # This is needed for iteration.
+        MB.zprev = MB.zgal 
+        MB.ndim_keep = MB.ndim
         flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
         while (flag_suc and flag_suc!=-1):
 
@@ -242,15 +242,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     if fplt == 6:
         from .plot_sed_logA import plot_corner_physparam_frame,plot_corner_physparam_summary
         plot_corner_physparam_summary(MB)
-        #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
-        #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
 
-    '''
-    if fplt == 8:
-        #See MZ evolution
-        from .plot_MZ import plot_mz
-        plot_mz(MB, MB.ID, MB.PA, MB.Zall, MB.age)
-    '''
 
 if __name__ == "__main__":
     '''

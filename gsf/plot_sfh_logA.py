@@ -1384,7 +1384,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
 def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh=0.01):
-
     '''
     Purpose
     -------
@@ -1730,7 +1729,6 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
 def plot_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
-    
     '''
     Parameters
     ----------

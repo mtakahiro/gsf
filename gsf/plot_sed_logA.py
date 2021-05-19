@@ -2400,7 +2400,8 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4):
 
     return ax
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01):
+
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True):
     '''
     Purpose
     -------
@@ -2422,6 +2423,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ID   = MB.ID
     Z    = MB.Zall
     age  = MB.age
+    d = MB.d
+    c = MB.c
 
     tau0 = MB.tau0 
     dust_model = MB.dust_model
@@ -2548,15 +2551,22 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     fy01 = np.append(fg0,fg1)
     ey01 = np.append(eg0,eg1)
 
-    fy   = np.append(fy01,fg2)
-    ey   = np.append(ey01,eg2)
-    wht=1./np.square(ey)
+    fy = np.append(fy01,fg2)
+    ey = np.append(ey01,eg2)
+    wht = 1./np.square(ey)
 
-    conspec = (NR<10000) #& (fy/ey>1)
-    conbb   = (fybb/eybb>1)
+    # BB photometry
+    conspec = (NR<10000)
+    sigma = 1.
+    conbb = (fybb/eybb > sigma)
     ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)
 
+    conebb_ls = (fybb/eybb <= sigma)
+    leng = np.max(fybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d) * 0.05
+    ax0.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, yerr=leng,\
+        uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, linestyle='',color='r', marker='', ms=4, label='', zorder=4, capsize=3)
+    
     ####################
     # MCMC corner plot.
     ####################
@@ -2574,9 +2584,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
 
-    #f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
-    #sedpar = f0[1]
-    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af
     sedpar = af['ML']
 
     getcmap = matplotlib.cm.get_cmap('jet')
@@ -2649,9 +2657,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     for ii in range(len(age)):
 
         if aa == 0 or MB.ZEVOL:
-            ZZ_tmp = Z50[ii] #samples['Z'+str(ii)][100]
-            ZZ_tmp16 = Z16[ii] #samples['Z'+str(ii)][100]
-            ZZ_tmp84 = Z84[ii] #samples['Z'+str(ii)][100]
+            ZZ_tmp = Z50[ii]
+            ZZ_tmp16 = Z16[ii]
+            ZZ_tmp84 = Z84[ii]
         else:
             ZZ_tmp = Z50[0]
             ZZ_tmp16 = Z16[0]
@@ -2768,7 +2776,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
             AM[ii] = AA_tmp * mslist
             SF[ii] = AA_tmp * mslist / delT[ii]
-            ZM[ii] = ZZ_tmp # AAtmp[aa] * mslist[aa]
+            ZM[ii] = ZZ_tmp
             ZMM[ii]= (10 ** ZZ_tmp) * AA_tmp * mslist
 
             # SED
@@ -2807,6 +2815,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             ax2.plot(age[:], ZC[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
 
         # Get ymax
+        if f_plot_filter:
+            scl_yaxis = 0.2
+        else:
+            scl_yaxis = 0
+
         ymax_bb = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
         ymax_temp = np.max(ysum * c/ np.square(x0) / d) * 1.10
         ymax = np.max([ymax_bb, ymax_temp])
@@ -2826,9 +2839,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
         if kk == mmax-1:
-            #
             # Histogram
-            #
             for i, x in enumerate(Par):
                 ax = axes[i, i]
                 x1min, x1max = NPARmin[i], NPARmax[i]
@@ -2878,7 +2889,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                     ax.set_xlim(x1min, x1max)
                     ax.set_ylim(y1min, y1max)
 
-
                     if j==0:
                         ax.set_ylabel('%s'%(Par[i]), fontsize=12)
                     if j>0:
@@ -2911,15 +2921,13 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             plt.savefig(fname, dpi=200)
             files.append(fname)
 
-        #plt.savefig(DIR_OUT + '%d.pdf'%(kk))
-
     # For the last one
     ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
     ax0.set_xlim(2200, 88000)
     ax0.set_xscale('log')
-    ax0.set_ylim(0., ymax)
+    ax0.set_ylim(-ymax * scl_yaxis, ymax)
     ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
     ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
     ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
@@ -2930,7 +2938,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax2.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
     ax2.set_xlim(np.min(age)*0.8, Txmax)
-    #ax2.set_ylim(NPARmin[3], NPARmax[3])
     if round(np.min(Z),2) == round(np.max(Z),2):
         ax2.set_ylim(-0.8, 0.5)
     else:
@@ -2956,9 +2963,16 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2t.xaxis.set_ticks_position('none')
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
 
-    plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
-    #plt.close()
+    # Filters
+    if f_plot_filter:
+        ax0 = plot_filter(MB, ax0, ymax, scl=scl_yaxis)
+        xx = np.arange(2200,100000,100)
+        ax0.plot(xx, xx * 0, linestyle='--', lw=0.5, color='k')
 
+    plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
+
+
+"""
 def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
     '''
     '''
@@ -3057,9 +3071,9 @@ def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3
 
     plt.savefig('TZ_' + ID + '_corner.pdf')
     plt.close()
+"""
 
-
-def plot_corner_physparam_cum_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
+def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
     '''
     Creat "cumulative" png for gif image.
     
@@ -3499,13 +3513,10 @@ def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
     flw.close()
 
 
-
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
     '''
-    #
-    # If you like to
-    # Creat temporal png for gif image.
-    #
+    If you like to
+    Creat temporal png for gif image.
     '''
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
