@@ -20,13 +20,15 @@ class Post:
 
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False):
         '''
-        Input:
-        ======
-        out   : model as second output. For lnprob func.
-        f_fir : Bool. If dust component is on or off.
+        Parameters
+        ----------
+        out   : 
+            model as second output. For lnprob func.
+        f_fir : bool
+            If dust component is on or off.
 
-        Returns:
-        ========
+        Returns
+        -------
         residual of model and data.
         '''
         if f_val:
@@ -79,33 +81,6 @@ class Post:
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
 
-
-    def prior_transform(self, pars):
-        """
-        A function defining the tranform between the parameterisation in the unit hypercube
-        to the true parameters.
-
-        Args:
-            theta (tuple): a tuple containing the parameters.
-            
-        Returns:
-            tuple: a new tuple or array with the transformed parameters.
-        """
-        if False:
-            ii = 0
-            for key in self.params:
-                if self.params[key].vary:
-                    cmin = self.params[key].min
-                    cmax = self.params[key].max
-                    cprim = pars[ii]
-                    pars[ii] = cprim*(cmax-cmin) + cmin
-                    ii += 1
-        '''
-        mmu = 0.     # mean of Gaussian prior on m
-        msigma = 10. # standard deviation of Gaussian prior on m
-        m = mmu + msigma*ndtri(mprime) # convert back to m
-        '''
-        return pars
 
     def swap_pars(self, pars):
         '''
@@ -315,8 +290,8 @@ class Post:
                     ii += 1
 
         resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True)
-        con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
-        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
+        con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0)
+        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2)
         chi_nd = 0.0
 
         con_up = (ey>0) & (fy/ey<=SNlim)

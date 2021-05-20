@@ -491,7 +491,7 @@ class Mainbody():
         self.f_nested = False
         self.f_zeus = False
         try:
-            nnested = inputs['NEST_SAMP']
+            nnested = inputs['MC_SAMP']
             if nnested == 'NEST' or nnested == '1':
                 self.f_nested = True
             elif nnested == 'SLICE' or nnested == '2':
@@ -499,7 +499,7 @@ class Mainbody():
             else:
                 self.f_mcmc = True
         except:
-            print('Missing NEST_SAMP keyword. Setting f_mcmc True.')
+            print('Missing MC_SAMP keyword. Setting f_mcmc True.')
             self.f_mcmc = True
             pass
 
@@ -1015,8 +1015,7 @@ class Mainbody():
             If true, this module returns figure ax.
         '''
 
-        try: # if spectrum;
-        #if True:
+        try:
             fig = plt.figure(figsize=(6.5,2.5))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
@@ -1052,7 +1051,6 @@ class Mainbody():
                 plt.savefig(file_out, dpi=300)
                 plt.close()
                 return True
-        #else:
         except:
             print('z-distribution figure is not generated.')
             pass
@@ -1187,11 +1185,6 @@ class Mainbody():
                 else:
                     #fit_params.add('TAU%d'%aa, value=-0.8, min=-0.8, max=-0.79)
                     fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
-                    
-                # Metal;
-                #if self.ZEVOL or aa == 0:
-                #    fit_params.add('Z'+str(aa), value=self.Zmin, min=self.Zmin, max=self.Zmax)
-
 
         #####################
         # Dust attenuation
@@ -1313,13 +1306,13 @@ class Mainbody():
         '''
         Shuffles initial parameters of each walker, to give it extra randomeness.
         '''
-        pos = amp * np.random.randn(self.nwalk, self.ndim)
+        #pos = amp * np.random.randn(self.nwalk, self.ndim)
+        pos = np.zeros((self.nwalk, self.ndim), 'float')
         for ii in range(pos.shape[0]):
             aa = 0
             for aatmp,key in enumerate(out.params.valuesdict()):
                 if out.params[key].vary == True:
                     pos[ii,aa] += out.params[key].value
-                    #pos[ii,aa] = out.params[key].value
                     if np.random.uniform(0,1) > (1. - 1./self.ndim):
                         if key[:2] == 'Av':
                             pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
@@ -1355,7 +1348,7 @@ class Mainbody():
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=False, amp_shuffle=1e-2, check_converge=True, Zini=None):
+    f_shuffle=False, amp_shuffle=1e-2, check_converge=True, Zini=None, f_plot_chain=True):
         '''
         Main module of this script.
 
@@ -1375,6 +1368,8 @@ class Mainbody():
             Randomly shuffle some of initial parameters in walkers.
         check_converge : bool
             Check convergence at every certain number.
+        f_plot_chain : book
+            Plot MC sample chain.
         '''
         import emcee
         import zeus
@@ -1432,7 +1427,6 @@ class Mainbody():
             rcsq = out.redchi
             fitc = [csq, rcsq]
 
-        #hoge
         ########################
         # Check redshift
         ########################
@@ -1516,7 +1510,7 @@ class Mainbody():
                     moves = zeus.moves.GlobalMove()
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
-                        moves=moves, maxiter=1e5,\
+                        moves=moves, maxiter=1e4,\
                         kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                         )
                 else:
@@ -1560,8 +1554,9 @@ class Mainbody():
                 else:
                     sampler.run_mcmc(pos, self.nmc, progress=True)
                 flat_samples = sampler.get_chain(discard=nburn, thin=10, flat=True)
-                    
-                if True:
+
+                # Plot for chain.
+                if f_plot_chain:
                     fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
                     samples = sampler.get_chain()
                     labels = []
@@ -1569,12 +1564,18 @@ class Mainbody():
                         if out.params[key].vary:
                             labels.append(key)
                     for i in range(self.ndim):
-                        ax = axes[i]
-                        ax.plot(samples[:, :, i], "k", alpha=0.3)
+                        if self.ndim>1:
+                            ax = axes[i]
+                        else:
+                            ax = axes
+                        ax.plot(sampler.get_chain()[:,:,i], alpha=0.3, color='k')
                         ax.set_xlim(0, len(samples))
                         ax.yaxis.set_label_coords(-0.1, 0.5)
                         ax.set_ylabel(labels[i])
-                    axes[-1].set_xlabel("step number")
+                    if self.ndim>1:
+                        axes[-1].set_xlabel("step number")
+                    else:
+                        axes.set_xlabel("step number")
                     plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
 
                 # Similar for nested;
