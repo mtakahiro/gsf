@@ -86,8 +86,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 # 1.Continuous age bin;
                 if int(tau0[pp]) == 99:
                     if ss==0:
-                        #tautmp = age[ss]
-                        #agetmp = age[ss]/2.
                         delTl = age[ss]
                         delTu = (age[ss+1]-age[ss])/2.
                         delT = delTu + delTl
@@ -100,8 +98,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                         tautmp = delT
                         agetmp = age[ss]+delTu
                     else:
-                        #tautmp = age[ss] - age[ss-1]
-                        #agetmp = (age[ss]+age[ss-1])/2.
                         delTl = (age[ss]-age[ss-1])/2.
                         delTu = (age[ss+1]-age[ss])/2.
                         delT = delTu + delTl
@@ -184,7 +180,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                     # ASDF
                     tree_spec.update({'wavelength': wave})
 
-                col4  = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
+                col4 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
                 col02.append(col4)
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})

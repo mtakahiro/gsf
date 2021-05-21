@@ -461,6 +461,12 @@ class Mainbody():
             self.DT0 = DT0
             self.DT1 = DT1
             self.dDT = dDT
+            try:
+                self.dust_numax = int(inputs['DUST_NUMAX'])
+                self.dust_nmodel = int(inputs['DUST_NMODEL'])
+            except:
+                self.dust_numax = 3
+                self.dust_nmodel = 9
             print('FIR fit is on.')
         except:
             self.Temp = []
@@ -1093,7 +1099,6 @@ class Mainbody():
             else:
                 fit_params.add('TDUST', value=0, vary=False)
 
-            #fit_params.add('MDUST', value=9, min=9, max=9.1)
             fit_params.add('MDUST', value=9, min=5, max=15)
             self.ndim += 1
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)

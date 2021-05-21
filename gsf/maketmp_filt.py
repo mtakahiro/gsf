@@ -17,22 +17,23 @@ from .function_igm import *
 col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
 
-def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, DIR_DUST='/Users/tmorishita/Downloads/DL07spec/', phi=0.055):
+def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
+    DIR_DUST='./DL07spec/', phi=0.055):
     '''
-    Purpose:
-    ========
 
-    Input:
-    ======
-    lambda_d : Wavelength array, in AA.
-    phi (default: 0.055): Eq.34 of Draine & Li 2007.
+    Parameters
+    ----------
+    lambda_d : array
+        Wavelength array, in AA.
+    phi : float
+        Eq.34 of Draine & Li 2007. (default: 0.055)
 
-    Return:
-    =======
+    Returns
+    -------
     Interpolated dust emission in Fnu of m0=25.0. In units of Fnu/Msun
 
-    Ref:
-    ====
+    Notes
+    -----
     umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
             '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '10.0', '12.0', '15.0',\
             '20.0', '25.0']
@@ -120,14 +121,18 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, DIR_DUST='/U
 
 def sim_spec(lmin, fin, sn):
     '''
-    Purpose:
-    ========
     SIMULATION of SPECTRA.
     
-    Input:
-    ======
-    wave_obs, wave_temp, flux_temp, sn_obs
-    Return: frand, erand
+    Parameters
+    ----------
+    wave_obs :
+    wave_temp : 
+    flux_temp : 
+    sn_obs
+
+    Returns
+    -------
+    frand, erand
     '''
 
     frand = fin * 0
@@ -293,17 +298,20 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
 
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001):
     '''
-    Purpose:
-    ========
     Make SPECTRA at given z and filter set.
     
-    Input:
-    ======
-    inputs      : Configuration file.
-    zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
-    Z (array)   : Stellar phase metallicity in logZsun.
-    age (array) : Age, in Gyr.
-    fneb (int)  : flag for adding nebular emissionself.
+    Parameters
+    ----------
+    inputs : str
+        Configuration file.
+    zbest : float
+        Best redshift at this iteration. Templates are generated based on this reshift.
+    Z : array
+        Stellar phase metallicity in logZsun.
+    age : array
+        Age, in Gyr.
+    fneb : int
+        flag for adding nebular emissionself.
     '''    
 
     inputs = MB.inputs
@@ -403,8 +411,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     #
     # Get ascii data.
     #
-    #ninp1 = 0
-    #ninp2 = 0
     f_spec = False
     try:
         spec_files = inputs['SPEC_FILE'] #.replace('$ID','%s'%(ID))
@@ -677,8 +683,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             Temp = np.arange(DT0,DT1,dDT)
 
         dellam_d = 1e3
-        lambda_d = np.arange(1e3, 1e7, dellam_d) # RF wavelength, in AA. #* (1.+zbest) # 1um to 1000um; This has to be wide enough, to cut dust contribution at <1um.
-
+        lambda_d = np.arange(1e3, 1e7, dellam_d)
+        
         '''
         # c in AA/s.
         kb = 1.380649e-23 # Boltzmann constant, in J/K
@@ -715,7 +721,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             '''
 
             #numin, numax, nmodel = 8, 3, 9
-            numin, numax, nmodel = tt, 3, 9
+            numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
             fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
 
             if False:
@@ -836,19 +842,24 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
 def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1):
     '''
-    Purpose:
-    ========
     Make SPECTRA at given z and filter set.
     
-    Input:
-    ======
-    inputs      : Configuration file.
-    zbest(float): Best redshift at this iteration. Templates are generated based on this reshift.
-    Z (array)   : Stellar phase metallicity in logZsun.
-    age (array) : Age, in Gyr.
-    fneb (int)  : flag for adding nebular emissionself.
-    f_IGM (bool): IGM attenuation. Madau.
-    nthin (int) : Thinning templates.
+    Parameters
+    ----------
+    inputs : str
+        Configuration file.
+    zbest :float
+        Best redshift at this iteration. Templates are generated based on this reshift.
+    Z : array
+        Stellar phase metallicity in logZsun.
+    age : array
+        Age, in Gyr.
+    fneb : int
+        flag for adding nebular emissionself.
+    f_IGM : bool
+        IGM attenuation. Madau.
+    nthin : int
+        Thinning templates.
     '''    
 
     inputs = MB.inputs
