@@ -19,7 +19,7 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 def get_ind(wave,flux):
     '''
-    Gets Lick index for input input
+    Gets Lick index for input
 
     Returns
     -------
@@ -100,9 +100,9 @@ def get_input():
 
     '''
     inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0, \
-    'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
+    'DIR_OUT':'./output/', 'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
     'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,\
-    'ZEVOL':0, 'ZVIS':1, 'FNELD':0}
+    'ZEVOL':0, 'ZVIS':1, 'FNELD':'differential_evolution', 'MC_SAMP':'SLICE'}
 
     return inputs
 
@@ -158,7 +158,7 @@ def loadcpkl(cpklfile):
     """
     import pickle
     if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
-    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
+    f = open(cpklfile, 'rb') #, encoding='ISO-8859-1')
 
     if sys.version_info.major == 2:
         data = pickle.load(f)

@@ -6,8 +6,8 @@ from .function import filconv, calc_Dn4
 
 def get_param(self, res, fitc, tcalc=1., burnin=-1):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Write a parameter file.
 
     '''
@@ -17,9 +17,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     lib_all = self.lib_all
 
     # Those are from redshiftfit;
-    #zrecom = self.zrecom
-    #Czrec0 = self.Czrec0
-    #Czrec1 = self.Czrec1
     zrecom = self.zgal
     Czrec0 = self.Cz0
     Czrec1 = self.Cz1
@@ -68,7 +65,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Tdustmc = np.zeros(3, dtype='float')
 
     # ASDF;
-    af = self.af #asdf.open(DIR_TMP + 'spec_all_' + ID0 + '.asdf')
+    af = self.af
     sedpar = af['ML']
     
     ms = np.zeros(len(age), dtype='float')
@@ -135,23 +132,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     ZZ_tmp = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
 
-    '''
-    #
-    # Get mcmc model templates, plus some indicies.
-    #
-    # This is just for here;
-    from lmfit import Parameters
-    fit_params = Parameters()
-    for aa in range(len(age)):
-        fit_params.add('A'+str(aa), value=1., min=0, max=10000)
-    fit_params.add('Av', value=0., min=0, max=10)
-    for aa in range(len(age)):
-        try:
-            fit_params.add('Z'+str(aa), value=0.0, min=-10, max=10)
-        except:
-            pass
-    '''
-
     ############
     # Get SN.
     ############
@@ -182,7 +162,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['SN']     = SN
     prihdr['nSN']    = NSN
     prihdr['NDIM']   = ndim
-    prihdr['tcalc']  = tcalc
+    prihdr['tcalc']  = (tcalc, 'in second')
     prihdr['chi2']   = fitc[0]
     prihdr['chi2nu'] = fitc[1]
     prihdr['bic'] = res.bic
@@ -216,7 +196,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     if self.f_dust:
         Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
         if self.DT0 == self.DT1 or self.DT0 + self.dDT <= self.DT1:
-            nTdustmc[:] = [0,0,0] #np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
+            nTdustmc[:] = [0,0,0]
             Tdustmc[:] = [self.DT0,self.DT0,self.DT0]
         else:
             nTdustmc[:] = np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
@@ -262,8 +242,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
 def get_index(mmax=300):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Retrieve spectral indices from each realization.
     '''
 

@@ -42,7 +42,6 @@ LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 
 LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW), dtype='int')
 
-
 class Mainbody():
     '''
     The list of (possible) `Mainbody` attributes is given below:
@@ -1191,9 +1190,9 @@ class Mainbody():
                     #fit_params.add('TAU%d'%aa, value=-0.8, min=-0.8, max=-0.79)
                     fit_params.add('TAU%d'%aa, value=tauini, min=self.taumin, max=self.taumax)
 
-        #####################
-        # Dust attenuation
-        #####################
+        #
+        # Dust attenuation;
+        #
         try:
             Avfix = float(self.inputs['AVFIX'])
             fit_params.add('Av', value=Avfix, vary=False)
@@ -1218,9 +1217,9 @@ class Mainbody():
                 print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
                 fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
 
-        #####################
-        # Metallicity
-        #####################
+        #
+        # Metallicity;
+        #
         if int(self.inputs['ZEVOL']) == 1:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99 or self.age[aa]>agemax:
@@ -1297,9 +1296,9 @@ class Mainbody():
             self.ferr = 0
             pass
 
-        #################
-        # Observed Data
-        #################
+        #
+        # Observed Data;
+        #
         self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=add_fir)
 
         # Set parameters;
@@ -1327,8 +1326,16 @@ class Mainbody():
                                 pos[ii,aa] = self.Avmax
                         elif key[:3] == 'AGE':
                             pos[ii,aa] += np.random.uniform(-self.delage*nshuf, self.delage*nshuf)
+                            if pos[ii,aa] < self.agemin:
+                                pos[ii,aa] = self.agemin
+                            if pos[ii,aa] > self.agemax:
+                                pos[ii,aa] = self.agemax
                         elif key[:3] == 'TAU':
                             pos[ii,aa] += np.random.uniform(-self.deltau*nshuf, self.deltau*nshuf)
+                            if pos[ii,aa] < self.taumin:
+                                pos[ii,aa] = self.taumin
+                            if pos[ii,aa] > self.taumax:
+                                pos[ii,aa] = self.taumax
                         elif key[0] == 'A':
                             pos[ii,aa] += np.random.uniform(-0.2, 0.2)
                             if pos[ii,aa] < self.Amin:
@@ -1497,9 +1504,6 @@ class Mainbody():
 
             # MCMC;
             if self.f_mcmc or self.f_zeus:
-                #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
-                moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
-                # Case for EMCEE
                 nburn = int(self.nmc/2)
                 if f_shuffle:
                     pos = self.get_shuffle(out, amp=amp_shuffle)
@@ -1512,20 +1516,46 @@ class Mainbody():
                             aa += 1
 
                 if self.f_zeus:
+                    check_converge = False
+                    f_burnin = True
+                    if f_burnin:
+                        # Burn phase;
+                        moves = zeus.moves.DifferentialMove() #GlobalMove()
+                        sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
+                            args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
+                            moves=moves, maxiter=1e5,\
+                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
+                            )
+                        # Run MCMC
+                        nburn = int(self.nmc / 10)
+
+                        print('Running burn-in')
+                        sampler.run_mcmc(pos, nburn)
+                        print('Done burn-in')
+
+                        # Get the burnin samples
+                        burnin = sampler.get_chain()
+
+                        # Set the new starting positions of walkers based on their last positions
+                        pos = burnin[-1]
+
+                    # Switch sampler;
                     moves = zeus.moves.GlobalMove()
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                         moves=moves, maxiter=1e4,\
                         kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                         )
+
                 else:
+                    #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
+                    moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
                         moves=moves,\
                         kwargs={'f_val': True, 'out': out},\
                         )
 
-                check_converge = False
                 if check_converge:
                     # Check convergence every number;
                     nevery = int(self.nmc/10)
@@ -1558,6 +1588,7 @@ class Mainbody():
                         old_tau = tau
                 else:
                     sampler.run_mcmc(pos, self.nmc, progress=True)
+                
                 flat_samples = sampler.get_chain(discard=nburn, thin=10, flat=True)
 
                 # Plot for chain.

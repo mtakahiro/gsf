@@ -8,9 +8,7 @@ from .function import *
 
 class Post:
     '''
-    #####################
-    # Function for MCMC
-    #####################
+    Class function for MCMC
     '''
     def __init__(self, mainbody):
         self.mb = mainbody
@@ -22,7 +20,7 @@ class Post:
         '''
         Parameters
         ----------
-        out   : 
+        out : 
             model as second output. For lnprob func.
         f_fir : bool
             If dust component is on or off.
