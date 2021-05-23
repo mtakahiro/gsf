@@ -1,4 +1,3 @@
-# For fitting.
 from scipy import asarray as ar,exp
 import numpy as np
 import sys
@@ -15,6 +14,46 @@ d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
+
+
+def func_tmp(xint,eobs,fmodel):
+    int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
+    return int_tmp
+
+def get_chi2(fy, ey, wht3, ysump, ndim_eff, SNlim=1.0, f_chind=True, f_exclude=False, xbb=None, x_ex=None):
+    '''
+    '''
+    from scipy import special
+    if f_chind:
+        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
+    else:
+        conw = (wht3>0) & (ey>0)
+
+    resid = fy-ysump
+    chi2 = sum((np.square(resid) * np.sqrt(wht3))[conw])
+
+    chi_nd = 0.0
+    if f_chind:
+        f_ex = np.zeros(len(fy), 'int')
+        for ii in range(len(fy)):
+            if f_exclude:
+                if xbb[ii] in x_ex:
+                    f_ex[ii] = 1
+
+        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
+        x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
+        f_erf = special.erf(x_erf)
+        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
+
+    # Number of degree;
+    con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+    nod = int(len(wht3[con_nod])-ndim_eff)
+    if nod>0:
+        fin_chi2 = (chi2 - 2 * chi_nd) / nod
+    else:
+        fin_chi2 = -99
+
+    return chi2,fin_chi2
 
 
 def get_ind(wave,flux):
@@ -171,7 +210,7 @@ def loadcpkl(cpklfile):
 
 def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, chidef=None, Zbest=0, f_keep=False):
     '''
-    Gets initial parameters at various Z
+    Get initial parameters at various Z
     '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 
@@ -206,17 +245,8 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
                 fit_params['Z'+str(aa)].value = ZZ
 
         out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
-        keys = fit_report(out_tmp).split('\n')
-        csq  = 99999
-        rcsq = 99999
-        for key in keys:
-            if key[4:7] == 'chi':
-                skey = key.split(' ')
-                csq  = float(skey[14])
-            if key[4:7] == 'red':
-                skey = key.split(' ')
-                rcsq = float(skey[7])
-
+        csq = out_tmp.chisqr
+        rcsq = out_tmp.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
 
         fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))

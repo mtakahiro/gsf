@@ -16,7 +16,8 @@ class Post:
         self.gauss_Mdyn = None
         self.Na = len(self.mb.age)
 
-    def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False):
+
+    def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False, f_penlize=True):
         '''
         Parameters
         ----------
@@ -48,12 +49,71 @@ class Post:
 
         if self.mb.ferr:
             try:
+                logf = vals['logf'] #.
+            except:
+                logf = -np.inf
+        else:
+            logf = -np.inf # temporary... (if f is param, then take from vals dictionary.)
+
+        sig = wht[:] * 0
+        con_res = (wht>0)
+        con_res_r = (wht==0)
+        sig[con_res] = ey[con_res]**2 + model[con_res]**2 * np.exp(logf)**2
+        sig[con_res_r] = wht[con_res_r] * 0 + np.inf
+
+        if fy is None:
+            print('Data is none')
+            resid = model #[con_res]
+        else:
+            resid = (model - fy) / np.sqrt(sig)
+
+        if self.mb.ferr and f_penlize:
+            # Penalize redisual;
+            tmp = (model - fy)**2 / sig + np.log(2*3.14*sig**2)
+            con_res = (tmp>0) & (~np.isinf(tmp))
+            resid[con_res] = np.sqrt(tmp[con_res])
+
+        if not out:
+            return resid # i.e. residual/sigma. Because is_weighted = True.
+        else:
+            return resid, model # i.e. residual/sigma. Because is_weighted = True.
+
+    """
+    def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False, SNlim=1.0, f_chind=True):
+        '''
+        '''
+        if f_val:
+            vals = pars
+        else:
+            vals = pars.valuesdict()
+
+        model, x1 = self.mb.fnc.tmp04(vals)
+
+        from scipy import special
+        if f_chind:
+            conw = (wht>0) & (ey>0) & (fy/ey>SNlim)
+        else:
+            conw = (wht>0) & (ey>0)
+
+        if self.mb.ferr:
+            try:
                 f = vals['f']
             except:
                 f = 0
         else:
             f = 0 # temporary... (if f is param, then take from vals dictionary.)
 
+        if self.mb.f_dust:
+            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
+            n_optir = len(model)
+
+            # Add dust flux to opt/IR grid.
+            model[:] += model_dust[:n_optir]
+            # then append only FIR flux grid.
+            model = np.append(model,model_dust[n_optir:])
+            x1 = np.append(x1,x1_dust[n_optir:])
+
+        # Add sigma?
         sig = wht[:] * 0
         con_res = (wht>0)
         con_res_r = (wht==0)
@@ -71,6 +131,8 @@ class Post:
         else:
             return resid, model # i.e. residual/sigma. Because is_weighted = True.
 
+        return resid
+    """
 
     def func_tmp(self, xint, eobs, fmodel):
         '''
@@ -110,134 +172,6 @@ class Post:
             pars['A%d'%aamax] = Amax2
         return pars
 
-    def lnprob(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0, out=None):
-        '''
-        Parameters
-        ----------
-        f_chind : bool
-            If true, includes non-detection in likelihood calculation.
-        lnpreject : 
-            A replaced value when lnprob gets -inf value.
-        flat_prior : 
-            Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
-        gauss_prior : 
-            Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
-        dammy : 
-            This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
-
-        Returns:
-        --------
-        If f_like, log Likelihood. Else, log Posterior prob.
-        '''
-        if f_val:
-            vals = pars
-        else:
-            vals = pars.valuesdict()
-        if self.mb.ferr == 1:
-            f = vals['f']
-        else:
-            f = 0
-
-        if False:
-            # Checking multiple peak model
-            if self.mb.SFH_FORM != -99 and self.mb.npeak>1:
-                for aa in range(0,self.mb.npeak-1,1):
-                    if vals['A'+str(aa)] > vals['A'+str(aa+1)]:
-                        return lnpreject
-
-        # Check range:
-        if False:
-            ii = 0
-            for key in out.params:
-                if out.params[key].vary:
-                    cmin = out.params[key].min
-                    cmax = out.params[key].max
-                    print(cmin,cmax,out.params[key],dammy[ii])
-                    if dammy[ii]<cmin or dammy[ii]>cmax:
-                        return lnpreject
-                    vals[key].value = dammy[ii]
-                    ii += 1
-
-        resid, model = self.residual(pars, fy, ey, wht, f_fir, out=True, f_val=f_val)
-        con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0) # Instead of model>0; model>=0 is for Lyman limit where flux=0. This already exclude upper limit.
-        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2) # To avoid error message.
-        chi_nd = 0.0
-
-        con_up = (ey>0) & (fy/ey<=SNlim)
-        if f_chind and len(fy[con_up])>0:
-            x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
-            f_erf = special.erf(x_erf)
-            if np.min(f_erf) <= -1:
-                return lnpreject
-            else:
-                chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
-            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
-        else:
-            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
-
-        # Scale likeligood; Do not make this happen yet.
-        if f_scale:
-            if self.scale == 1:
-                self.scale = np.abs(lnlike) * 0.001
-                print('scale is set to',self.scale)
-            lnlike += self.scale
-
-        if np.isinf(np.abs(lnlike)):
-            print('Error in lnlike')
-            return lnpreject
-
-        # If no prior, return log likeligood.
-        if f_like:
-            return lnlike
-                
-        # Prior
-        respr = 0
-
-        if self.mb.f_Mdyn:
-            # Prior from dynamical mass:
-            if gauss_prior and self.gauss_Mdyn == None:
-                self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
-            #logMtmp = self.get_mass(vals)
-            logMtmp = self.mb.logMtmp
-            #print(logMtmp)
-            if flat_prior:
-                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
-                    #pars = self.swap_pars(pars)
-                    #print(logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
-                    return lnpreject
-                else:
-                    respr += 0
-            elif gauss_prior:
-                if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
-                    #pars = self.swap_pars(pars)
-                    #return lnpreject
-                    pass
-                #elif logMtmp < self.mb.logMdyn - self.mb.elogMdyn * nsigma:
-                #    pars = self.swap_pars_inv(pars)
-                #    return lnpreject
-                p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
-                respr += np.log(p_gauss)
-
-        # Prior for redshift:
-        if self.mb.fzmc == 1:
-            zprior = self.mb.z_prior
-            prior = self.mb.p_prior
-
-            nzz = np.argmin(np.abs(zprior-vals['zmc']))
-            # For something unacceptable;
-            if nzz<0 or prior[nzz]<=0:
-                print('z Posterior unacceptable.')
-                return lnpreject
-            else:
-                respr += np.log(prior[nzz])
-
-        lnposterior = lnlike + respr
-        if not np.isfinite(lnposterior):
-            print('Posterior unacceptable.')
-            return lnpreject
-        return lnposterior
-
 
     def lnprob_emcee(self, dammy, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
     lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0, out=None):
@@ -264,9 +198,9 @@ class Post:
         else:
             vals = pars.valuesdict()
         if self.mb.ferr == 1:
-            f = vals['f']
+            logf = vals['logf']
         else:
-            f = 0
+            logf = -np.inf
         
         #for key in out.params:
         #    if out.params[key].vary:
@@ -292,9 +226,10 @@ class Post:
                     vals[key].value = dammy[ii]
                     ii += 1
 
-        resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True)
+        resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True, f_penlize=False)
+
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0)
-        sig_con = np.sqrt(1./wht[con_res]+f**2*model[con_res]**2)
+        sig_con = np.sqrt(ey[con_res]**2 + model[con_res]**2 * np.exp(2 * logf))
         chi_nd = 0.0
 
         con_up = (ey>0) & (fy/ey<=SNlim)
@@ -302,13 +237,16 @@ class Post:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = special.erf(x_erf)
             if np.min(f_erf) <= -1:
-                #lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
                 return lnpreject
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
+
+        #chi2,fin_chi2 = get_chi2(fy, ey, wht, model, self.mb.ndim, SNlim=SNlim, f_chind=f_chind, f_exclude=False, xbb=None, x_ex=None)
+        #lnlike = -0.5 * (fin_chi2)
+        #print(lnlike2,'hoge2')
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale:

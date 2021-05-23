@@ -87,8 +87,9 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
                 Zb[aa] = res.params['Z'+str(aa)].value
                 Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
             except:
-                Zb[aa] = self.ZFIX
-                Zmc[aa,:] = [self.ZFIX,self.ZFIX,self.ZFIX]
+                ZFIX = self.ZFIX
+                Zb[aa] = ZFIX
+                Zmc[aa,:] = [ZFIX, ZFIX, ZFIX]
         else:
             Zb[aa] = Zb[0]
             Zmc[aa,:] = Zmc[0,:]
@@ -127,6 +128,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         zmc = np.percentile(res.flatchain['zmc'][burnin:], [16,50,84])
     else:
         zmc = z_cz
+
+    if self.ferr:
+        logf = np.percentile(res.flatchain['logf'][burnin:], [16,50,84])
+    else:
+        logf = [-99,-99,-99]
 
     AA_tmp = np.zeros(len(age), dtype='float')
     ZZ_tmp = np.zeros(len(age), dtype='float')
@@ -189,9 +195,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     for aa in range(len(AGEmc)):
         col50 = fits.Column(name='AGE'+str(aa), format='E', unit='logGyr', array=AGEmc[aa][:])
         col01.append(col50)
+        
     for aa in range(len(TAUmc)):
         col50 = fits.Column(name='TAU'+str(aa), format='E', unit='logGyr', array=TAUmc[aa][:])
         col01.append(col50)
+        
 
     if self.f_dust:
         Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
@@ -231,6 +239,9 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     # C1 scale
     col50 = fits.Column(name='Cscale1', format='E', unit='', array=scl_cz1[:])
+    col01.append(col50)
+
+    col50 = fits.Column(name='logf', format='E', unit='', array=logf)
     col01.append(col50)
 
     colms = fits.ColDefs(col01)

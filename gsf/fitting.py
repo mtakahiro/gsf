@@ -333,7 +333,10 @@ class Mainbody():
                 if self.Zmax == self.Zmin or self.delZ == 0:
                     self.delZ = 0.0
                     self.ZFIX = self.Zmin
-                    self.Zall = np.asarray([self.ZFIX]) #np.arange(self.Zmin, self.Zmax+self.delZ, self.delZ)
+                    self.Zall = np.asarray([self.ZFIX])
+                elif np.abs(self.Zmax - self.Zmin) < self.delZ:
+                    self.ZFIX = self.Zmin
+                    self.Zall = np.asarray([self.ZFIX])
                 else:
                     self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
         else:
@@ -492,6 +495,12 @@ class Mainbody():
             self.nimf = 0
             print('Cannot find NIMF. Set to %d.'%(self.nimf))
 
+        # Error parameter
+        try:
+            self.ferr = int(self.inputs['F_ERR'])
+        except:
+            self.ferr = 0
+            pass
 
         # Nested or ensemble slice sampler?
         self.f_mcmc = False
@@ -863,9 +872,15 @@ class Mainbody():
         if self.fzvis==1:
             import matplotlib as mpl
             mpl.use('TkAgg')
-            plt.plot(x_cz, fm_s, 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
-            plt.plot(x_cz, fy_cz,'b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
-            plt.errorbar(x_cz, fy_cz, yerr=ey_cz, color='b', capsize=0, linewidth=0.5) # Observation
+            data_model = np.zeros((len(x_cz),4),'float')
+            data_model[:,0] = x_cz
+            data_model[:,1] = fm_s
+            data_model[:,2] = fy_cz
+            data_model[:,3] = ey_cz
+            data_model_sort = np.sort(data_model, axis=0)
+            plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
+            plt.plot(data_model_sort[:,0], data_model_sort[:,2],'.b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
+            plt.errorbar(data_model_sort[:,0], data_model_sort[:,2], yerr=data_model_sort[:,3], color='b', capsize=0, linewidth=0.5) # Observation
 
         if self.fzvis==1:
         #try:
@@ -905,7 +920,7 @@ class Mainbody():
                 ezu = ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
 
-            z_cz    = [self.zprev-ezl, self.zprev, self.zprev+ezu]
+            z_cz = [self.zprev-ezl, self.zprev, self.zprev+ezu]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
@@ -936,7 +951,12 @@ class Mainbody():
             #
             # Ask interactively;
             #
-            plt.plot(x_cz, fm_s, 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
+            data_model_new = np.zeros((len(x_cz),4),'float')
+            data_model_new[:,0] = x_cz
+            data_model_new[:,1] = fm_s
+            data_model_new_sort = np.sort(data_model_new, axis=0)
+
+            plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
 
             # Plot lines for reference
@@ -944,9 +964,9 @@ class Mainbody():
                 try:
                     conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
                     yline = np.max(ypoly[conpoly])
-                    yy    = np.arange(yline/1.02, yline*1.1)
+                    yy = np.arange(yline/1.02, yline*1.1)
                     xxpre = yy * 0 + LW[ll] * (1.+self.zgal)
-                    xx    = yy * 0 + LW[ll] * (1.+zrecom)
+                    xx = yy * 0 + LW[ll] * (1.+zrecom)
                     plt.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
                     plt.text(LW[ll] * (1.+self.zgal), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
                     plt.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
@@ -954,8 +974,14 @@ class Mainbody():
                 except:
                     pass
 
-            plt.plot(self.dict['xbb'], self.dict['fybb'], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
-            plt.scatter(xm_tmp, fm_tmp, color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+
+            data_obsbb = np.zeros((len(self.dict['xbb']),3), 'float')
+            data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
+            data_obsbb[:,2] = fm_tmp
+            data_obsbb_sort = np.sort(data_obsbb, axis=0)
+            plt.plot(data_obsbb_sort[:,0], data_obsbb_sort[:,1], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
+            #plt.scatter(xm_tmp, fm_tmp, color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+            plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:
                 xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
@@ -1073,17 +1099,18 @@ class Mainbody():
             print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(zmin, zmax))
             f_add = True
 
+        '''
         # Error parameter
         try:
             ferr = self.ferr
             if ferr == 1:
-                fit_params.add('f', value=1e-2, min=0, max=1e2)
+                fit_params.add('logf', value=-2, min=-10, max=3) # in linear
                 self.ndim += 1
                 f_add = True
         except:
             ferr = 0
             pass
-
+        '''
         # Dust;
         if self.f_dust:
             Tdust = self.Temp
@@ -1232,8 +1259,19 @@ class Mainbody():
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
 
+       # Error parameter
+        try:
+            ferr = self.ferr
+            if ferr == 1:
+                fit_params.add('logf', value=0, min=-10, max=3) # in linear
+                self.ndim += 1
+                f_add = True
+        except:
+            ferr = 0
+            pass
+
         self.fit_params = fit_params
-        return True
+        return fit_params
 
     def prepare_class(self, add_fir=None):
         '''
@@ -1407,6 +1445,7 @@ class Mainbody():
         ####################################
         # Get initial parameters
         if not skip_fitz or out == None:
+
             out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
             self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
@@ -1499,6 +1538,7 @@ class Mainbody():
             if self.f_mcmc or self.f_zeus:
                 nburn = int(self.nmc/2)
                 if f_shuffle:
+                    # ZEUS may fail to run with f_shuffle.
                     pos = self.get_shuffle(out, amp=amp_shuffle)
                 else:
                     pos = amp_shuffle * np.random.randn(self.nwalk, self.ndim)
@@ -1507,7 +1547,7 @@ class Mainbody():
                         if out.params[key].vary:
                             pos[:,aa] += out.params[key].value
                             aa += 1
-                
+                            
                 if self.f_zeus:
                     check_converge = False
                     f_burnin = True
@@ -1610,8 +1650,8 @@ class Mainbody():
                 # Similar for nested;
                 # Dummy just to get structures;
                 print('\nRunning dummy sampler. Disregard message from here;\n')
-                mini = Minimizer(class_post.lnprob, out.params, 
-                fcn_args=[self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
+                mini = Minimizer(class_post.lnprob_emcee, out.params, 
+                fcn_args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
                 f_disp=False, nan_policy='omit',
                 moves=moves\
                 )

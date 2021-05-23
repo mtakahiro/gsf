@@ -1014,10 +1014,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
 
-    #AAtmp = np.zeros(len(age), dtype='float')
-    #ZZtmp = np.zeros(len(age), dtype='float')
-    #mslist= np.zeros(len(age), dtype='float')
-
     ttmin = 0.001
     tt = np.arange(ttmin,Tuni+0.5,ttmin/10)
     xSF = np.zeros((len(tt), mmax), dtype='float') # SFR
@@ -1331,15 +1327,15 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    y3min, y3max = np.min(Z), np.max(Z)
 
     if not skip_zhist:
+        y3min, y3max = np.min([np.min(Z),-0.8]), np.max([np.max(Z),0.4])
         ax4.set_xlim(Txmin, Txmax)
         ax4.set_ylim(y3min-0.05, y3max)
         ax4.set_xscale('log')
-
         ax4.set_yticks([-0.8, -0.4, 0., 0.4])
         ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        
         #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         #ax3.yaxis.labelpad = -2
         ax4.yaxis.labelpad = -2

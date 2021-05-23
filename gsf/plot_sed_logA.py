@@ -611,7 +611,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             zmc = zbes
 
         if f_err == 1:
-            ferr_tmp = samples['f'][nr]
+            ferr_tmp = samples['logf'][nr]
         else:
             ferr_tmp = 1.0
 
@@ -638,7 +638,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 fm_tmp += mod0_tmp
 
             # Each;
-            ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
+            ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
 
         #
         # Dust component;
@@ -671,11 +671,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
 
-            ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
+            ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
-            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c / np.square(xm_tmp[:]) / d
+            ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) / d
 
         #
         # Grism plot + Fuv flux + LIR.
@@ -1811,7 +1811,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         vals['zmc'] = zmc
 
         if f_err == 1:
-            ferr_tmp = samples['f'][nr]
+            ferr_tmp = samples['logf'][nr]
         else:
             ferr_tmp = 1.0
 
@@ -1834,7 +1834,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         if False:
             # Each;
-            ytmp_each[kk,:,ss] = ferr_tmp * mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
+            ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
             #if kk == 100:
             #    ax1.plot(xm_tmp[:], ytmp_each[kk,:,ss], color=col[ss], linestyle='--')
 
@@ -1868,11 +1868,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
             model_tot = np.interp(x1_tot,xm_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
 
-            ytmp[kk,:] = ferr_tmp * model_tot[:] * c/np.square(x1_tot[:])/d
+            ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
-            ytmp[kk,:] = ferr_tmp * fm_tmp[:] * c / np.square(xm_tmp[:]) / d
+            ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) / d
 
         # plot random sed;
         plot_mc = True
@@ -1932,6 +1932,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Calculate non-det chi2
     # based on Sawick12
     #########################
+    #chi2,fin_chi2 = get_chi2(fy, ey, wht3, ysump, ndim_eff, SNlim=1.0, f_chind=f_chind, f_exclude=f_exclude, xbb=xbb, x_ex=x_ex)
     def func_tmp(xint,eobs,fmodel):
         int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
@@ -1939,11 +1940,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     if f_chind:
         conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
     else:
-        conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+        conw = (wht3>0) & (ey>0)
 
     chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
 
-    #
     chi_nd = 0.0
     if f_chind:
         f_ex = np.zeros(len(fy), 'int')
@@ -1953,24 +1953,26 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
                     f_ex[ii] = 1
 
         con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
-        if False:
-            # Chi2 for non detection;
-            for nn in range(len(ey[con_up])):
-                print(ey[con_up][nn])
-                #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
-                result = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
-                chi_nd += np.log(result[0])
-        else: # Or ERF:
-            from scipy import special
-            x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
-            f_erf = special.erf(x_erf)
-            chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
-
+        from scipy import special
+        x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
+        f_erf = special.erf(x_erf)
+        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
 
     # Number of degree;
     con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
     nod = int(len(wht3[con_nod])-ndim_eff)
+    if nod>0:
+        fin_chi2 = (chi2 - 2 * chi_nd) / nod
+    else:
+        fin_chi2 = -99
 
+    if f_chind:
+        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
+        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
+    else:
+        conw = (wht3>0) & (ey>0)
+
+    # Print results;
     print('\n')
     print('No-of-detection    : %d'%(len(wht3[conw])))
     print('chi2               : %.2f'%(chi2))
@@ -1979,11 +1981,25 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
     print('No-of-params       : %d'%(ndim_eff))
     print('Degrees-of-freedom : %d'%(nod))
-    if nod>0:
-        fin_chi2 = (chi2 - 2 * chi_nd) / nod
-    else:
-        fin_chi2 = -99
     print('Final chi2/nu      : %.2f'%(fin_chi2))
+
+
+    if False:
+        from lmfit import Model, Parameters, minimize, fit_report, Minimizer
+        from .posterior_flexible import Post
+        class_post = Post(MB)
+        residual = class_post.residual
+        MB.set_param()
+        fit_params = MB.fit_params #Parameters()
+        for key in vals.keys():
+            try:
+                fit_params[key].value=vals[key]
+            except:
+                pass
+        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht3, False), method='differential_evolution') # nelder is the most efficient.
+        csq = out_tmp.chisqr
+        rcsq = out_tmp.redchi
+        print(csq, rcsq)
 
     #
     # plot BB model from best template (blue squares)
