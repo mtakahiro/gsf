@@ -1960,7 +1960,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     # Number of degree;
     con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+    if MB.ferr:
+        ndim_eff -= 1
+        
     nod = int(len(wht3[con_nod])-ndim_eff)
+
     if nod>0:
         fin_chi2 = (chi2 - 2 * chi_nd) / nod
     else:
