@@ -119,23 +119,36 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 #
                 # Then, make sps.
                 #
+                f_add_dust = False # Not yet. Or never...
                 if tautmp != tau0_old:
                     if int(tau0[pp]) == 99:
                         print('CSP is applied.')
                         print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
-                        if fneb == 1:
+                        if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
+                        if f_add_dust:
+                            dsptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz],
+                            dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
+                            duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                     elif tau0[pp] > 0.0:
                         print('At t=%.3f, fixed tau, %.3f, is applied.'%(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
-                        if fneb == 1:
+                        if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
+                        if f_add_dust:
+                            dsptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], 
+                            dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
+                            duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                     else: # =Negative tau;
                         print('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
-                        if fneb == 1:
+                        if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1)
+                        if f_add_dust:
+                            dsptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=1.0,
+                            tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
+                            duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                 else:
                     print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
                     print('Skip fsps, by using previous library.')
@@ -149,7 +162,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 wave, flux = wave0[con], flux0[con]
                 mlost[ss] =  sp.stellar_mass / sp.formed_mass
 
-                if fneb == 1:
+                if fneb:
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
                     esptmp.params['gas_logu'] = logU # ionization parameter
                     esp = esptmp
@@ -157,6 +170,16 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                     ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
+                
+                if f_add_dust:
+                    wave0_d, flux0_d = dsptmp.get_spectrum(tage=age[ss], peraa=True)
+                    con = (wave0_d>lammin) & (wave0_d<lammax)
+                    wave_d, flux_d = wave0[con], flux0[con]
+                    plt.plot(wave0, flux0, linestyle='--')
+                    plt.plot(wave0_d, flux0_d, linestyle='--')
+                    plt.xlim(4000,100000)
+                    plt.xscale('log')
+                    plt.show()
 
                 # Mass-Luminosity
                 ms[ss] = sp.stellar_mass # Survived mass
@@ -172,7 +195,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
-                    if fneb == 1:
+                    if fneb:
                         tree.update({'logU': logU})
 
                     col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
@@ -185,7 +208,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
-                if fneb == 1:
+                if fneb:
                     col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=eflux)
                     col02.append(col4e)
                     # ASDF
@@ -274,9 +297,9 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     age  = MB.age
     tau0 = MB.tau0
     fneb = MB.fneb
-    if fneb == 1:
+    if fneb:
         print('Currently, BPASS does not have option of nebular emission.')
-        fneb = 0
+        fneb = False
     logU = MB.logU
     DIR_TMP= MB.DIR_TMP
 
@@ -438,7 +461,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
-                    if fneb == 1:
+                    if fneb:
                         tree.update({'logU': logU})
 
                     col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
@@ -453,7 +476,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
-                if fneb == 1:
+                if fneb:
                     col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=eflux)
                     col02.append(col4e)
                     # ASDF

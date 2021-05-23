@@ -108,11 +108,14 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
 
 def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label=True, f_symbol=True, \
     f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, \
-    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=True, amp_shuffle=1e-2, Zini=None):
+    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None):
     '''
     Purpose
     -------
     gsf pipeline, which runs all steps.
+
+    Parameters
+    ----------
     '''
 
     ######################

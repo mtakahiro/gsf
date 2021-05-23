@@ -153,7 +153,7 @@ class Post:
                 if out.params[key].vary:
                     cmin = out.params[key].min
                     cmax = out.params[key].max
-                    #print(cmin,cmax,out.params[key],dammy[ii])
+                    print(cmin,cmax,out.params[key],dammy[ii])
                     if dammy[ii]<cmin or dammy[ii]>cmax:
                         return lnpreject
                     vals[key].value = dammy[ii]
@@ -267,7 +267,11 @@ class Post:
             f = vals['f']
         else:
             f = 0
-
+        
+        #for key in out.params:
+        #    if out.params[key].vary:
+        #        print(key, out.params[key].value > out.params[key].min, out.params[key].value < out.params[key].max)
+        
         if False:
             # Checking multiple peak model
             if self.mb.SFH_FORM != -99 and self.mb.npeak>1:
@@ -283,6 +287,7 @@ class Post:
                     cmin = out.params[key].min
                     cmax = out.params[key].max
                     if dammy[ii]<cmin or dammy[ii]>cmax:
+                        #print(cmin,cmax,out.params[key],dammy[ii])
                         return lnpreject
                     vals[key].value = dammy[ii]
                     ii += 1
@@ -297,6 +302,7 @@ class Post:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = special.erf(x_erf)
             if np.min(f_erf) <= -1:
+                #lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
                 return lnpreject
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
@@ -365,5 +371,8 @@ class Post:
             print('Posterior unacceptable.')
             return lnpreject
 
+        #if lnposterior < -1000:
+        #    return lnpreject
+        #print(lnposterior)
         return lnposterior
 

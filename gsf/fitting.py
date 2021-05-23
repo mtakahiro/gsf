@@ -183,15 +183,17 @@ class Mainbody():
             self.f_bpass = 0
 
         # Nebular emission;
+        self.fneb = False
+        self.logU = 0
         try:
-            self.fneb = int(inputs['ADD_NEBULAE'])
+            if int(inputs['ADD_NEBULAE']) == 1:
+                self.fneb = True
             try:
                 self.logU = float(inputs['logU'])
             except:
                 self.logU = -2.5
         except:
-            self.fneb = 0
-            self.logU = 0
+            pass
 
         # Outpu directory;
         try:
@@ -376,15 +378,15 @@ class Mainbody():
                 self.Avmax = 4.0
 
         # Z evolution;
-        print('\n##########################')
+        print('\n#############################')
         if self.SFH_FORM == -99:
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.ndim = int(self.npeak * 2 + self.nAV) # age, Z, and Av.
-                print('Metallicity evolution is on.')
+                print('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
-                print('Metallicity evolution is off.')
+                print('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -398,10 +400,10 @@ class Mainbody():
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.nZ = self.npeak
-                print('Metallicity evolution is on.')
+                print('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
-                print('Metallicity evolution is off.')
+                print('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -412,7 +414,7 @@ class Mainbody():
                         self.nZ = 1
                     
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
-        print('##########################\n')
+        print('#############################\n')
 
         # Redshift
         self.ndim += self.fzmc
@@ -892,19 +894,12 @@ class Mainbody():
             print('\n\n')
             fit_label = 'Proposed model'
 
-        #except:
         else:
-            #print('### z fit failed. No spectral data set?')
-            print('### fzvis is set to False. z fit not happening.')
+            print('fzvis is set to False. z fit not happening.')
             try:
                 ezl = float(self.inputs['EZL'])
                 ezu = float(self.inputs['EZU'])
                 print('Redshift error is taken from input file.')
-                '''if ezl<ezmin:
-                    ezl = ezmin #0.03
-                if ezu<ezmin:
-                    ezu = ezmin #0.03
-                '''
             except:
                 ezl = ezmin
                 ezu = ezmin
@@ -1349,8 +1344,6 @@ class Mainbody():
                                     pos[ii,aa] = self.Zmin
                                 if pos[ii,aa] > self.Zmax:
                                     pos[ii,aa] = self.Zmax
-                            else:
-                                pos[ii,aa] += 0
                         else:
                             pos[ii,aa] += 0
 
@@ -1514,7 +1507,7 @@ class Mainbody():
                         if out.params[key].vary:
                             pos[:,aa] += out.params[key].value
                             aa += 1
-
+                
                 if self.f_zeus:
                     check_converge = False
                     f_burnin = True
@@ -1523,7 +1516,7 @@ class Mainbody():
                         moves = zeus.moves.DifferentialMove() #GlobalMove()
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
-                            moves=moves, maxiter=1e5,\
+                            moves=moves, maxiter=1e6,\
                             kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                             )
                         # Run MCMC
