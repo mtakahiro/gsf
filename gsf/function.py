@@ -244,7 +244,8 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
             if MB.ZEVOL == 1 or aa == 0:
                 fit_params['Z'+str(aa)].value = ZZ
 
-        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
+        f_fir = False
+        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), method=fit_name) # nelder is the most efficient.
         csq = out_tmp.chisqr
         rcsq = out_tmp.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2

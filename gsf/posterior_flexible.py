@@ -17,7 +17,7 @@ class Post:
         self.Na = len(self.mb.age)
 
 
-    def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False, f_penlize=True):
+    def residual(self, pars, fy, ey, wht, f_fir, out=False, f_val=False, f_penlize=True):
         '''
         Parameters
         ----------
@@ -173,8 +173,8 @@ class Post:
         return pars
 
 
-    def lnprob_emcee(self, dammy, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=False, nsigma=1.0, out=None):
+    def lnprob_emcee(self, pos, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
+    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=True, nsigma=1.0, out=None):
         '''
         Parameters
         ----------
@@ -186,8 +186,11 @@ class Post:
             Assumes flat prior for Mdyn. Used only when MB.f_Mdyn==True.
         gauss_prior : 
             Assumes gaussian prior for Mdyn. Used only when MB.f_Mdyn==True.
-        dammy : 
-            This is a dammy parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
+        pos : 
+            This is a critical parameter, to make use of EMCEE, while keeping pars a dictionary obtained by lmfit.
+            This is pos of sampler.run_mcmc(pos, self.nmc, progress=True).
+        out : 
+            Just for keywords.
 
         Returns:
         --------
@@ -201,11 +204,7 @@ class Post:
             logf = vals['logf']
         else:
             logf = -np.inf
-        
-        #for key in out.params:
-        #    if out.params[key].vary:
-        #        print(key, out.params[key].value > out.params[key].min, out.params[key].value < out.params[key].max)
-        
+                
         if False:
             # Checking multiple peak model
             if self.mb.SFH_FORM != -99 and self.mb.npeak>1:
@@ -220,13 +219,12 @@ class Post:
                 if out.params[key].vary:
                     cmin = out.params[key].min
                     cmax = out.params[key].max
-                    if dammy[ii]<cmin or dammy[ii]>cmax:
-                        #print(cmin,cmax,out.params[key],dammy[ii])
+                    if pos[ii]<cmin or pos[ii]>cmax or np.isnan(pos[ii]):
                         return lnpreject
-                    vals[key].value = dammy[ii]
+                    vals[key].value = pos[ii]
                     ii += 1
 
-        resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=True, f_penlize=False)
+        resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=f_val, f_penlize=False)
 
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0)
         sig_con = np.sqrt(ey[con_res]**2 + model[con_res]**2 * np.exp(2 * logf))
@@ -246,7 +244,7 @@ class Post:
 
         #chi2,fin_chi2 = get_chi2(fy, ey, wht, model, self.mb.ndim, SNlim=SNlim, f_chind=f_chind, f_exclude=False, xbb=None, x_ex=None)
         #lnlike = -0.5 * (fin_chi2)
-        #print(lnlike2,'hoge2')
+        #print(lnlike,'hoge2')
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale:
@@ -309,8 +307,5 @@ class Post:
             print('Posterior unacceptable.')
             return lnpreject
 
-        #if lnposterior < -1000:
-        #    return lnpreject
-        #print(lnposterior)
         return lnposterior
 

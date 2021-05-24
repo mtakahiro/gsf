@@ -1343,15 +1343,31 @@ class Mainbody():
         '''
         Shuffles initial parameters of each walker, to give it extra randomeness.
         '''
-        #pos = amp * np.random.randn(self.nwalk, self.ndim)
         pos = np.zeros((self.nwalk, self.ndim), 'float')
         for ii in range(pos.shape[0]):
             aa = 0
             for aatmp,key in enumerate(out.params.valuesdict()):
                 if out.params[key].vary == True:
                     pos[ii,aa] += out.params[key].value
-                    if np.random.uniform(0,1) > (1. - 1./self.ndim):
-                        if key[:2] == 'Av':
+                    # This is critical to avoid parameters fall on the boundary.
+                    delpar = (out.params[key].max-out.params[key].min)/1000
+                    if np.random.uniform(0,1) > (1. - 1./self.ndim):        
+                        pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
+                        '''
+                        if key[0] == 'A':
+                            pos[ii,aa] += np.random.uniform(-0.2, 0.2)
+                            if pos[ii,aa] < self.Amin:
+                                pos[ii,aa] = self.Amin
+                            if pos[ii,aa] > self.Amax:
+                                pos[ii,aa] = self.Amax
+                        elif key[0] == 'Z':
+                            if self.delZ>0.01:
+                                pos[ii,aa] += np.random.uniform(-self.delZ*3, self.delZ*3)
+                                if pos[ii,aa] < self.Zmin:
+                                    pos[ii,aa] = self.Zmin
+                                if pos[ii,aa] > self.Zmax:
+                                    pos[ii,aa] = self.Zmax
+                        elif key[:2] == 'Av':
                             pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
                             if pos[ii,aa] < self.Avmin:
                                 pos[ii,aa] = self.Avmin
@@ -1369,21 +1385,12 @@ class Mainbody():
                                 pos[ii,aa] = self.taumin
                             if pos[ii,aa] > self.taumax:
                                 pos[ii,aa] = self.taumax
-                        elif key[0] == 'A':
-                            pos[ii,aa] += np.random.uniform(-0.2, 0.2)
-                            if pos[ii,aa] < self.Amin:
-                                pos[ii,aa] = self.Amin
-                            if pos[ii,aa] > self.Amax:
-                                pos[ii,aa] = self.Amax
-                        elif key[0] == 'Z':
-                            if self.delZ>0.01:
-                                pos[ii,aa] += np.random.uniform(-self.delZ*3, self.delZ*3)
-                                if pos[ii,aa] < self.Zmin:
-                                    pos[ii,aa] = self.Zmin
-                                if pos[ii,aa] > self.Zmax:
-                                    pos[ii,aa] = self.Zmax
                         else:
                             pos[ii,aa] += 0
+                        '''
+                    else:
+                        if pos[ii,aa]<out.params[key].min+delpar or pos[ii,aa]>out.params[key].max-delpar:
+                            pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
 
                     aa += 1
         return pos
@@ -1391,7 +1398,7 @@ class Mainbody():
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
     f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=False, amp_shuffle=1e-2, check_converge=True, Zini=None, f_plot_chain=True):
+    f_shuffle=True, amp_shuffle=1e-2, check_converge=True, Zini=None, f_plot_chain=True):
         '''
         Main module of this script.
 
@@ -1547,7 +1554,7 @@ class Mainbody():
                         if out.params[key].vary:
                             pos[:,aa] += out.params[key].value
                             aa += 1
-                            
+
                 if self.f_zeus:
                     check_converge = False
                     f_burnin = True
@@ -1556,7 +1563,7 @@ class Mainbody():
                         moves = zeus.moves.DifferentialMove() #GlobalMove()
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
-                            moves=moves, maxiter=1e6,\
+                            moves=moves, maxiter=1e4,\
                             kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                             )
                         # Run MCMC
@@ -1581,12 +1588,11 @@ class Mainbody():
                         )
 
                 else:
-                    #moves = [(emcee.moves.KDEMove(), 0.2), (emcee.moves.DESnookerMove(), 0.8),]
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
-                        moves=moves,\
-                        kwargs={'f_val': True, 'out': out},\
+                        #moves=moves,\
+                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf},\
                         )
 
                 if check_converge:
@@ -1653,7 +1659,8 @@ class Mainbody():
                 mini = Minimizer(class_post.lnprob_emcee, out.params, 
                 fcn_args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
                 f_disp=False, nan_policy='omit',
-                moves=moves\
+                moves=moves,\
+                kwargs={'f_val': True},\
                 )
                 res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
                 params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)
