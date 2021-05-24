@@ -1351,6 +1351,8 @@ class Mainbody():
                     pos[ii,aa] += out.params[key].value
                     # This is critical to avoid parameters fall on the boundary.
                     delpar = (out.params[key].max-out.params[key].min)/1000
+                    # or not,
+                    delpar = 0
                     if np.random.uniform(0,1) > (1. - 1./self.ndim):        
                         pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
                         '''
@@ -1563,7 +1565,7 @@ class Mainbody():
                         moves = zeus.moves.DifferentialMove() #GlobalMove()
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
-                            moves=moves, maxiter=1e4,\
+                            moves=moves, maxiter=1e6,\
                             kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                             )
                         # Run MCMC

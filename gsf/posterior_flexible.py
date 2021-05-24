@@ -235,16 +235,14 @@ class Post:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = special.erf(x_erf)
             if np.min(f_erf) <= -1:
-                return lnpreject
+                #return lnpreject
+                lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
             else:
                 chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
 
-        #chi2,fin_chi2 = get_chi2(fy, ey, wht, model, self.mb.ndim, SNlim=SNlim, f_chind=f_chind, f_exclude=False, xbb=None, x_ex=None)
-        #lnlike = -0.5 * (fin_chi2)
-        #print(lnlike,'hoge2')
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale:
