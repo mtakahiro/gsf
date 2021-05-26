@@ -460,23 +460,29 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=12)
     ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
 
-    x1max = 22000
+    x1min = 2000
+    x1max = 110000
+    xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
+    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
+    if f_dust:
+        x1max = 400000
+        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
+        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
+
     if x1max < np.max(xbb[conbb_ymax]):
         x1max = np.max(xbb[conbb_ymax]) * 1.5
-    ax1.set_xlim(2000, 11000)
+    if x1min > np.min(xbb[conbb_ymax]):
+        x1min = np.min(xbb[conbb_ymax]) / 1.5
+
+    ax1.set_xlim(x1min, x1max)
     ax1.set_xscale('log')
     if f_plot_filter:
         scl_yaxis = 0.2
     else:
         scl_yaxis = 0.1
     ax1.set_ylim(-ymax*scl_yaxis,ymax)
-    ax1.text(2100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+    ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
 
-    xticks = [2500, 5000, 10000, 20000, 40000, 80000, 110000]
-    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-    if f_dust:
-        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
-        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
@@ -493,7 +499,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     ax1.yaxis.labelpad = 1.5
 
-    xx = np.arange(1200,400000)
+    xx = np.arange(100,400000)
     yy = xx * 0
     ax1.plot(xx, yy, ls='--', lw=0.5, color='k')
 
@@ -1100,7 +1106,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.25
 
-        ax1.text(2200, ylabel, label,\
+        ax1.text(x1max*0.35, ylabel, label,\
         fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
         
     #######################################

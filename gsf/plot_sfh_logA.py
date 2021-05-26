@@ -20,7 +20,7 @@ lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=False):
     '''
     Purpose
     -------
@@ -255,13 +255,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     eZ_mean = 0
     try:
         meanfile = './sim_SFH_mean.cat'
-        dfile    = np.loadtxt(meanfile, comments='#')
+        dfile = np.loadtxt(meanfile, comments='#')
         eA = dfile[:,2]
         eZ = dfile[:,4]
         eAv= np.mean(dfile[:,6])
         if f_zev == 0:
             eZ_mean = np.mean(eZ[:])
-            eZ[:]   = age * 0 #+ eZ_mean
+            eZ[:] = age * 0 #+ eZ_mean
         else:
             try:
                 f_zev = int(prihdr['ZEVOL'])
@@ -540,7 +540,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         lsfru = np.max(SFp[:,2])+0.1
 
     if f_log_sfh:
-        ax1.set_ylim(lsfrl, lsfru)
+        if f_axis_force:
+            ax1.set_ylim(lsfrl, lsfru)
         ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
         #ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     else:
@@ -553,7 +554,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     ax2.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
     ax2.set_xlim(Txmin, Txmax)
-    ax2.set_ylim(y2min, y2max)
+    if f_axis_force:
+        ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
     ax2.text(np.min(age*1.05), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
         %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
@@ -673,8 +675,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         ax4.set_ylim(y3min-0.05, y3max)
         ax4.set_xscale('log')
 
-        ax4.set_yticks([-0.8, -0.4, 0., 0.4])
-        ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        if f_axis_force:
+            ax4.set_yticks([-0.8, -0.4, 0., 0.4])
+            ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        
         #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         #ax3.yaxis.labelpad = -2
         ax4.yaxis.labelpad = -2

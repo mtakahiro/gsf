@@ -22,7 +22,6 @@ import corner
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
 from .zfit import check_redshift
-#from .plot_sed import *
 from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
