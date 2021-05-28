@@ -407,12 +407,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if f_dust:
                 ysump[:] += y0d_cut[:nopt]
                 ysump = np.append(ysump,y0d_cut[nopt:])
-
                 # Keep each component;
                 f_50_comp_dust = y0d * c / np.square(x0d) / d
-
-            #if f_fill:
-            #    ax1.fill_between(x0[::nstep_plot], (ysum * 0)[::nstep_plot], (ysum * c/ np.square(x0) / d)[::nstep_plot], linestyle='None', lw=0., color=col[ii], alpha=alp, zorder=-3, label='')
 
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
@@ -616,11 +612,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         except:
             zmc = zbes
 
-        if f_err == 1:
-            ferr_tmp = samples['logf'][nr]
-        else:
-            ferr_tmp = 1.0
-
         for ss in MB.aamin:
             try:
                 AA_tmp = 10**samples['A'+str(ss)][nr]
@@ -774,9 +765,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     else:
         conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
 
-    chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
+    #chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
+    try:
+        logf = hdul[1].data['logf'][1]
+        ey_revised = np.sqrt(ey**2+ ysump**2 * np.exp(logf)**2)
+    except:
+        ey_revised = ey
 
-    #
+    chi2 = sum((np.square(fy-ysump) / ey_revised)[conw])
+
     chi_nd = 0.0
     if f_chind:
         f_ex = np.zeros(len(fy), 'int')
@@ -786,19 +783,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                     f_ex[ii] = 1
 
         con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
-        if False:
-            # Chi2 for non detection;
-            for nn in range(len(ey[con_up])):
-                print(ey[con_up][nn])
-                #result  = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn]/SNlim, ysump[con_up][nn]), -ey[con_up][nn]/SNlim, ey[con_up][nn]/SNlim, limit=100)
-                result = integrate.quad(lambda xint: func_tmp(xint, ey[con_up][nn], ysump[con_up][nn]), -ey[con_up][nn]*100, ey[con_up][nn], limit=100)
-                chi_nd += np.log(result[0])
-        else: # Or ERF:
-            from scipy import special
-            x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
-            f_erf = special.erf(x_erf)
-            chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
-
+        from scipy import special
+        #x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
+        #f_erf = special.erf(x_erf)
+        #chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
+        x_erf = (ey_revised[con_up] - ysump[con_up]) / (np.sqrt(2) * ey_revised[con_up])
+        f_erf = special.erf(x_erf)
+        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey_revised[con_up] * (1 + f_erf)) )
 
     # Number of degree;
     con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
@@ -1106,8 +1097,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.25
 
-        ax1.text(x1max*0.35, ylabel, label,\
-        fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
+        ax1.text(0.77, 0.65, label,\
+        fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+        ha='left', va='center', transform=ax1.transAxes)
         
     #######################################
     ax1.xaxis.labelpad = -3
@@ -1815,11 +1807,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         except:
             zmc = zbes
         vals['zmc'] = zmc
-
-        if f_err == 1:
-            ferr_tmp = samples['logf'][nr]
-        else:
-            ferr_tmp = 1.0
 
         for ss in MB.aamin:
             try:
