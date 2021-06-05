@@ -17,6 +17,8 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
 def func_tmp(xint,eobs,fmodel):
+    '''
+    '''
     int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
     return int_tmp
 
