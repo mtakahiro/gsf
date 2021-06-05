@@ -80,15 +80,14 @@ def get_nH(z):
 	-------
 	HI density in IGM.
 	'''
-    try:
-    	nH = np.zeros(len(z),dtype='float')
-    except:
-    	nH = 0
+	try:
+		nH = np.zeros(len(z),dtype='float')
+	except:
+		nH = 0
 
-    # From Cen & Haiman 2000
-    nH = 8.5e-5 * ((1.+z)/8)**3 # in cm^-3
-
-    return nH
+	# From Cen & Haiman 2000
+	nH = 8.5e-5 * ((1.+z)/8)**3 # in cm^-3
+	return nH
 
 
 def get_column(zin, cosmo, Mpc_cm=3.08568025e+24, z_r=6.0, delz=0.1):
