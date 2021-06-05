@@ -41,10 +41,10 @@ def madau_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216.):
 
 def get_H(x,a):
 	'''
-    Voigt function
+	Voigt function
 	'''
-    I = integrate.quad(lambda y: np.exp(-y**2)/(a**2 + (x - y)**2),-np.inf, np.inf)[0]
-    return (a/np.pi)*I
+	I = integrate.quad(lambda y: np.exp(-y**2)/(a**2 + (x - y)**2),-np.inf, np.inf)[0]
+	return (a/np.pi)*I
 
 
 def get_sig_lya(lam_o, z_s, T=1e4, c=3e18):
@@ -76,7 +76,7 @@ def get_sig_lya(lam_o, z_s, T=1e4, c=3e18):
 
 def get_nH(z):
 	'''
-    Returns
+	Returns
 	-------
 	HI density in IGM.
 	'''
@@ -93,11 +93,9 @@ def get_nH(z):
 
 def get_column(zin, cosmo, Mpc_cm=3.08568025e+24, z_r=6.0, delz=0.1):
 	'''
-
 	Returns
 	-------
 	HI column density of IGM at zin, in cm^-3.
-
 	'''
 	z = np.arange(z_r, zin, delz)
 	try:
