@@ -352,12 +352,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     tree_ML = {}
 
     try:
-        DIR_EXTR = inputs['DIR_EXTR']
+        DIR_EXTR = MB.DIR_EXTR #inputs['DIR_EXTR']
         if len(DIR_EXTR)==0:
             DIR_EXTR = False
     except:
         DIR_EXTR = False
-    DIR_FILT = inputs['DIR_FILT']
+    DIR_FILT = MB.DIR_FILT #inputs['DIR_FILT']
     try:
         CAT_BB_IND = inputs['CAT_BB_IND']
     except:
@@ -368,17 +368,15 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         CAT_BB = False
 
     try:
-        SFILT = inputs['FILTER'] # filter band string.
-        SFILT = [x.strip() for x in SFILT.split(',')]
+        SFILT = MB.filts #inputs['FILTER'] # filter band string.
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
     except:
-        SFILT = []
-        FWFILT = []
-    if len(FWFILT)==0:
         print('########################')
         print('Filter is not detected!!')
         print('Make sure your \nfilter directory is correct.')
         print('########################')
+        sys.exit()
+
     try:
         SKIPFILT = inputs['SKIPFILT']
         SKIPFILT = [x.strip() for x in SKIPFILT.split(',')]
@@ -418,8 +416,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         ninp0 = np.zeros(len(spec_files), dtype='int')
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
+                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp = fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
@@ -433,7 +431,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
                 lm0tmp= fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
@@ -895,33 +893,30 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     tree_ML = {}
 
     try:
-        DIR_EXTR = inputs['DIR_EXTR']
+        DIR_EXTR = MB.DIR_EXTR #inputs['DIR_EXTR']
         if len(DIR_EXTR)==0:
             DIR_EXTR = False
     except:
         DIR_EXTR = False
-    DIR_FILT = inputs['DIR_FILT']
+    DIR_FILT = MB.DIR_FILT #inputs['DIR_FILT']
     try:
         CAT_BB_IND = inputs['CAT_BB_IND']
     except:
         CAT_BB_IND = False
     try:
-        CAT_BB = inputs['CAT_BB']
+        CAT_BB = MB.CAT_BB #inputs['CAT_BB']
     except:
         CAT_BB = False
 
     try:
-        SFILT  = inputs['FILTER'] # filter band string.
-        SFILT  = [x.strip() for x in SFILT.split(',')]
+        SFILT = MB.filts #inputs['FILTER'] # filter band string.
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
     except:
-        SFILT = []
-        FWFILT= []
-    if len(FWFILT)==0:
         print('########################')
         print('Filter is not detected!!')
         print('Make sure your \nfilter directory is correct.')
         print('########################')
+        sys.exit()
     try:
         SKIPFILT = inputs['SKIPFILT']
         SKIPFILT = [x.strip() for x in SKIPFILT.split(',')]
@@ -951,11 +946,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ####################################################
     # Get extracted spectra.
     ####################################################
-    #
-    # Get ascii data.
-    #
-    #ninp1 = 0
-    #ninp2 = 0
     f_spec = False
     try:
         spec_files = inputs['SPEC_FILE'] #.replace('$ID','%s'%(ID))
@@ -1040,13 +1030,13 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         if unit == 'lambda':
             print('#########################')
             print('Changed BB from Flam to Fnu')
-            snbb0= fbb0/ebb0
-            fbb  = flamtonu(lmbb0, fbb0)
-            ebb  = fbb/snbb0
+            snbb0 = fbb0/ebb0
+            fbb = flamtonu(lmbb0, fbb0)
+            ebb = fbb/snbb0
         else:
-            snbb0= fbb0/ebb0
-            fbb  = fbb0
-            ebb  = ebb0
+            snbb0 = fbb0/ebb0
+            fbb = fbb0
+            ebb = ebb0
 
     else:
         fbb = np.zeros(len(SFILT), dtype='float')

@@ -8,9 +8,8 @@ from .function import get_ind
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
-
 def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
-    """
+    '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
 
@@ -28,7 +27,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     tau_lim : float, optional
         Maximum value of tau of the template, in Gyr. Tau smaller than this 
         value would be approximated by SSP.
-    """
+    '''
     import asdf
     import fsps
     import gsf
@@ -155,18 +154,19 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
 
                 tau0_old = tautmp
                 sp = sptmp
-                print(zz, sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8") , pp)
+                print('Z:%d/%d, t:%d/%d, %s, %s'%(zz, len(Z), pp, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
 
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True)
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
-                mlost[ss] =  sp.stellar_mass / sp.formed_mass
+                mlost[ss] = sp.stellar_mass / sp.formed_mass
 
                 if fneb:
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
                     esptmp.params['gas_logu'] = logU # ionization parameter
                     esp = esptmp
-                    print('Nebular lines are also added, with logU=%.2f.'%(logU))
+                    if ss == 0:
+                        print('Nebular lines are also added, with logU=%.2f.'%(logU))
                     ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
@@ -258,7 +258,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
 
 def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
-    """
+    '''
     This is for the preparation of default template, with BPASS templates, at z=0.
     Should be run before SED fitting.
 
@@ -281,7 +281,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
     Zsun : float, optional
         Metallicity of templates, in units of absolute value (e.g. Zsun=0.02 for BPASS).
-    """
+    '''
     import asdf
     import gsf
 
@@ -293,8 +293,8 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     else:
         imf_str = ''
 
-    Z    = MB.Zall
-    age  = MB.age
+    Z = MB.Zall
+    age = MB.age
     tau0 = MB.tau0
     fneb = MB.fneb
     if fneb:

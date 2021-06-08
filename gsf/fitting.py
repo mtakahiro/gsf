@@ -66,7 +66,6 @@ class Mainbody():
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         self.update_input(inputs, idman=idman)
 
-
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, sigz=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
@@ -107,13 +106,15 @@ class Mainbody():
             self.ID = inputs['ID']
         print('\nFitting : %s\n'%self.ID)
 
+        # Read catalog;
+        self.CAT_BB = inputs['CAT_BB']
+        self.fd_cat = ascii.read(self.CAT_BB)
+
         try:
             self.zgal = float(inputs['ZGAL'])
             self.zmin = None
             self.zmax = None
         except:
-            CAT_BB = inputs['CAT_BB']
-            self.fd_cat = ascii.read(CAT_BB)
             iix = np.where(self.fd_cat['id'] == int(self.ID))
             self.zgal = float(self.fd_cat['redshift'][iix])
             try:
@@ -124,7 +125,7 @@ class Mainbody():
                 self.zmax = None
 
         # Data directory;
-        self.DIR_TMP  = inputs['DIR_TEMP']
+        self.DIR_TMP = inputs['DIR_TEMP']
         if not os.path.exists(self.DIR_TMP):
             os.mkdir(self.DIR_TMP)
 
@@ -142,8 +143,6 @@ class Mainbody():
             self.f_Mdyn = False
 
         if self.f_Mdyn:
-            CAT_BB = inputs['CAT_BB']
-            self.fd_cat = ascii.read(CAT_BB)
             iix = np.where(self.fd_cat['id'] == int(self.ID))
             try:
                 self.logMdyn = float(self.fd_cat['logMdyn'][iix])
@@ -163,8 +162,8 @@ class Mainbody():
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
 
         # Scaling for grism; 
-        self.Cz0  = float(inputs['CZ0'])
-        self.Cz1  = float(inputs['CZ1'])
+        self.Cz0 = float(inputs['CZ0'])
+        self.Cz1 = float(inputs['CZ1'])
 
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
@@ -208,6 +207,10 @@ class Mainbody():
             self.filts = inputs['FILTER']
             self.filts = [x.strip() for x in self.filts.split(',')]
         except:
+            self.filts = []
+            for column in self.fd_cat.columns:
+                if column[0] == 'F':
+                    self.filts.append(column[1:])
             pass
 
         self.band = {}
@@ -221,7 +224,7 @@ class Mainbody():
             self.band['%s_fwhm'%(self.filts[ii])] = np.max(fd[:,1][con]) - np.min(fd[:,1][con])       
 
         # Filter response curve directory, for RF colors.
-        self.filts_rf  = ['u','b','v','j','sz']
+        self.filts_rf = ['u','b','v','j','sz']
         self.band_rf = {} #np.zeros((len(self.filts),),'float')
         for ii in range(len(self.filts_rf)):
             fd = np.loadtxt(self.DIR_FILT + self.filts_rf[ii] + '.fil', comments='#')
@@ -558,20 +561,20 @@ class Mainbody():
         ##############
         # Spectrum
         ##############
-        dat   = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
-        NR    = dat['col1']#dat[:,0]
-        x     = dat['col2']#dat[:,1]
-        fy00  = dat['col3']#dat[:,2]
-        ey00  = dat['col4']#dat[:,3]
+        dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
+        NR = dat['col1']#dat[:,0]
+        x = dat['col2']#dat[:,1]
+        fy00 = dat['col3']#dat[:,2]
+        ey00 = dat['col4']#dat[:,3]
 
         con0 = (NR<1000)
-        xx0  = x[con0]
-        fy0  = fy00[con0] * Cz0
-        ey0  = ey00[con0] * Cz0
+        xx0 = x[con0]
+        fy0 = fy00[con0] * Cz0
+        ey0 = ey00[con0] * Cz0
         con1 = (NR>=1000) & (NR<10000)
-        xx1  = x[con1]
-        fy1  = fy00[con1] * Cz1
-        ey1  = ey00[con1] * Cz1
+        xx1 = x[con1]
+        fy1 = fy00[con1] * Cz1
+        ey1 = ey00[con1] * Cz1
 
         ##############
         # Broadband
