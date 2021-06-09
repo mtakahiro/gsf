@@ -1064,10 +1064,21 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             ySF[:,mm] += ySF_each[aa,:,mm]
             yMS[:,mm] += yMS_each[aa,:,mm]
 
+            # SFR from SED. This will be converted in log later;
+            con_sfr = (xSF[:,mm] <= tset_SFR_SED)
+            SFR_SED[mm] += np.mean(10**ySF_each[aa,:,mm])
+
+
         Av[mm] = Av_tmp
         if plot_each:
             ax1.plot(xSF[:,mm], np.log10(ySF[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
             ax2.plot(xSF[:,mm], np.log10(yMS[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
+
+        if SFR_SED[mm] > 0:
+            SFR_SED[mm] = np.log10(SFR_SED[mm])
+        else:
+            SFR_SED[mm] = -99
+
 
         mm += 1
 
@@ -1101,8 +1112,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ACp[:] = np.log10(yMSp[:,:])
     SFp[:] = np.log10(ySFp[:,:])
 
-
-    #SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
+    SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
 
     ###################
     msize = np.zeros(len(age), dtype='float')
@@ -1254,8 +1264,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
     for ii in range(len(percs)):
         prihdr['HIERARCH Mstel_%d'%percs[ii]] = ('%.3f'%ACP[ii], 'Stellar mass, logMsun')
-    #for ii in range(len(percs)):
-    #    prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
     for ii in range(len(percs)):
         prihdr['HIERARCH Z_MW_%d'%percs[ii]] = ('%.3f'%ZCP[ii], 'Mass-weighted metallicity, logZsun')
     for ii in range(len(percs)):
