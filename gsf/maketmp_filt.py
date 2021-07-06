@@ -351,6 +351,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     tree_spec = {}
     tree_spec_full = {}
     tree_ML = {}
+    tree_SFR = {}
 
     try:
         DIR_EXTR = MB.DIR_EXTR #inputs['DIR_EXTR']
@@ -666,7 +667,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 # SFR
                 colms = fits.Column(name='SFR_'+str(zz), format='E', unit='Msun/yr', array=sfr)
                 col02.append(colms)
-                tree_ML.update({'SFR_'+str(zz): sfr})
+                tree_SFR.update({'SFR_'+str(zz): sfr})
 
 
     #########################
@@ -675,6 +676,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     tree.update({'spec' : tree_spec})
     tree.update({'spec_full' : tree_spec_full})
     tree.update({'ML' : tree_ML})
+    tree.update({'SFR' : tree_SFR})
 
     ######################
     # Add dust component;

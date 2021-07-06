@@ -148,6 +148,12 @@ Paramter Description
    * - F_MDYN
      - int 
      - If 1, gsf uses dynamical mass (M_dyn column in CAT_BB) as a prior. Currently not supported.
+   * - ADD_NEBULAE
+     - int
+     - If 1, gsf adds nebular emission lines calculated within fsps.
+   * - logU
+     - float
+     - Ionization parameter, in log, for emission lines if ADD_NEBULAE is True.
    * - BPASS
      - int 
      - If 1, BPASS templates will be used. Currently not supported.

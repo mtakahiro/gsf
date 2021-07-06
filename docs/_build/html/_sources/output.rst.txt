@@ -30,7 +30,7 @@ stores MCMC-chains.
 3.SFH file
 ----------
 stores star formation rates (logSFR), stellar masses (logMstel), and metallicity (logZ) 
-as a function of lookback time (time).
+as a function of lookback time (time). Star formation rate is the average SFR in the last `TSET_SFR` (default: 0.1Gyr) of the posetrior SFH.
 
 
 4.Spectral file
