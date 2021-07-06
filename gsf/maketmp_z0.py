@@ -229,10 +229,13 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 tree_ML.update({'Ls_'+str(zz): Ls})
                 col3 = fits.Column(name='fm_'+str(zz), format='E', unit='', array=mlost)
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
+                col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
+                tree_ML.update({'realtau_'+str(zz): ms})
 
                 col01.append(col1)
                 col01.append(col2)
                 col01.append(col3)
+                col01.append(col4)
 
     # Write;
     for aa in range(len(age)):

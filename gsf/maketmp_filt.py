@@ -20,7 +20,6 @@ col  = ['b', 'skyblue', 'g', 'orange', 'r']
 def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     DIR_DUST='./DL07spec/', phi=0.055):
     '''
-
     Parameters
     ----------
     lambda_d : array
@@ -296,7 +295,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     return LSF, lm
 
 
-def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, tmp_norm=1e10):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -312,6 +311,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         Age, in Gyr.
     fneb : int
         flag for adding nebular emissionself.
+    tmp_norm : float
+        Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
     '''    
 
     inputs = MB.inputs
@@ -568,6 +569,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
             ms = np.zeros(Na, dtype='float')
             Ls = np.zeros(Na, dtype='float')
+            tau = np.zeros(Na, dtype='float')
+            sfr = np.zeros(Na, dtype='float')
             ms[:] = mshdu['ms_'+str(zz)][:] # [:] is necessary.
             Ls[:] = mshdu['Ls_'+str(zz)][:]
             Fuv = np.zeros(Na, dtype='float')
@@ -595,11 +598,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 wavetmp = wave*(1.+zbest)
 
                 Lsun = 3.839 * 1e33 #erg s-1
-                stmp_common = 1e10 # so 1 template is in 1e10Lsun
 
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                spec_mul_nu[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
-                ms[ss] *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
+                spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in Msolar.
+                tautmp = af['realtau%d(Gyr)'%int(zz)]
+                sfr[ss] = ms[ss] / (tautmp*1e9) # SFR per unit template, in units of Msolar/yr.
 
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu[ss,:])
@@ -622,22 +626,22 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 ##########################################
                 if ss == 0 and pp == 0 and zz == 0:
                     # First file
-                    nd1    = np.arange(0,len(lm),1)
-                    nd3    = np.arange(10000,10000+len(ltmpbb[ss,:]),1)
-                    nd_ap  = np.append(nd1,nd3)
-                    lm_ap  = np.append(lm, ltmpbb[ss,:])
+                    nd1 = np.arange(0,len(lm),1)
+                    nd3 = np.arange(10000,10000+len(ltmpbb[ss,:]),1)
+                    nd_ap = np.append(nd1,nd3)
+                    lm_ap = np.append(lm, ltmpbb[ss,:])
 
-                    col1   = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
-                    col2   = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
-                    col00  = [col1, col2]
+                    col1 = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
+                    col2 = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
+                    col00 = [col1, col2]
                     # ASDF
                     tree_spec.update({'wavelength':lm_ap})
                     tree_spec.update({'colnum':nd_ap})
 
                     # Second file
-                    col3   = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
-                    nd     = np.arange(0,len(wavetmp),1)
-                    col4   = fits.Column(name='colnum', format='K', unit='', array=nd)
+                    col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
+                    nd = np.arange(0,len(wavetmp),1)
+                    col4 = fits.Column(name='colnum', format='K', unit='', array=nd)
                     col01 = [col3, col4]
                     # ASDF
                     tree_spec_full.update({'wavelength':wavetmp})
@@ -655,10 +659,14 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             # Summarize the ML
             #########################
             if pp == 0:
-                colms = fits.Column(name='ML_'+str(zz), format='E', unit='Msun/%.1eLsun'%(stmp_common), array=ms)
+                # ML
+                colms = fits.Column(name='ML_'+str(zz), format='E', unit='Msun/%.1eLsun'%(tmp_norm), array=ms)
                 col02.append(colms)
-                # ASDF
                 tree_ML.update({'ML_'+str(zz): ms})
+                # SFR
+                colms = fits.Column(name='SFR_'+str(zz), format='E', unit='Msun/yr', array=sfr)
+                col02.append(colms)
+                tree_ML.update({'SFR_'+str(zz): sfr})
 
 
     #########################
@@ -838,7 +846,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     print('Done making templates at z=%.2f.\n'%zbest)
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1, tmp_norm=1e10):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -1201,7 +1209,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                     wavetmp = wave*(1.+zbest)
                     Lsun = 3.839 * 1e33 #erg s-1
-                    stmp_common = 1e10 # so 1 template is in 1e10Lsun
 
                 if fneb == 1:
                     spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
@@ -1228,8 +1235,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
                 spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*stmp_common # in unit of erg/s/Hz/cm2/ms[ss].
-                ms[ss] *= (1./Ls[ss])*stmp_common # M/L; 1 unit template has this mass in [Msolar].
+                spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
 
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
@@ -1341,9 +1348,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
             if tt == 0:
                 # For conv;
-                col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
-                nd_db  = np.arange(0,len(ltmpbb_d),1)
-                col4   = fits.Column(name='colnum', format='K', unit='', array=nd_db)
+                col3 = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
+                nd_db = np.arange(0,len(ltmpbb_d),1)
+                col4 = fits.Column(name='colnum', format='K', unit='', array=nd_db)
                 col04 = [col3, col4]
                 # ASDF
                 tree_spec_dust.update({'wavelength': ltmpbb_d})
