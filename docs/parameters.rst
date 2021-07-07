@@ -109,12 +109,6 @@ Paramter Description
    * - NIMF
      - int 
      - Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat.
-   * - ADD_LINES
-     - int
-     - If 1, emission lines will be added to spectral templates. 0=no, 1=yes. Only supported for fsps.
-   * - LOGU
-     - float
-     - Ionizing parameter U, in log, only effective when ADD_LINES==1.
    * - ZMAX
      - float
      - Maximum value for metalicity, in logZ.
