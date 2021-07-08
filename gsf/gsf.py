@@ -207,7 +207,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
             flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
 
-        print(flag_suc)
         # Total calculation time
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
