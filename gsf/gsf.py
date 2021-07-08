@@ -142,6 +142,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     #
     # Make templates based on input redsfift.
     #
+    flag_suc = True
     if fplt == 0 or fplt == 1:
         #
         # 0. Make basic templates
@@ -166,9 +167,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         # 1. Start making redshifted templates.
         #
         if MB.SFH_FORM == -99:
-            maketemp(MB, tau_lim=tau_lim)
+            flag_suc = maketemp(MB, tau_lim=tau_lim)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim)
+            flag_suc = maketemp_tau(MB, tau_lim=tau_lim)
+
+    if not flag_suc:
+        sys.exit()
 
     # Read temp from asdf;
     # Template must be registered before fplt>=2.
@@ -177,15 +181,15 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     except:
         MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
-    flag_suc = 0
     if fplt <= 2:
         #
-        # 2. Mian fitting part.
+        # 2. Main fitting part.
         #
         MB.zprev = MB.zgal 
         MB.ndim_keep = MB.ndim
         flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
-        while (flag_suc and flag_suc!=-1):
+        while flag_suc: 
+            # flag_suc = 1 means that fit is success.
 
             MB.ndim = MB.ndim_keep
             print('\n\n')
@@ -194,23 +198,24 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
             # Make temp at the new z
             if MB.SFH_FORM == -99:
-                maketemp(MB, tau_lim=tau_lim)
+                flag_suc = maketemp(MB, tau_lim=tau_lim)
             else:
-                maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
 
             print('\n\n')
             print('Going into another trial with updated templates and redshift.')
             print('\n\n')
 
             flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
-            # If still in the loop, read again.
-            #MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
         # Total calculation time
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
 
-    if fplt <= 3 and flag_suc != -1:# and False:
+    if not flag_suc:
+        sys.exit()
+
+    if fplt <= 3 and flag_suc:
         if f_Alog:
             if MB.SFH_FORM == -99:
                 from .plot_sfh_logA import plot_sfh

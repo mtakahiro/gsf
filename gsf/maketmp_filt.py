@@ -203,6 +203,7 @@ def check_library(MB, af):
 
     return flag
 
+
 def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     '''
     Gets Morphology params, and returns LSF
@@ -267,8 +268,8 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
             print('Template convolution with Gaussian.')
             print('params is sigma;',sigma)
         else:
-            print('Something is wrong.')
-            return -1
+            print('Something is wrong with the convolution file. Exiting.')
+            return False
 
     else: # For slit spectroscopy. To be updated...
         print('Templates convolution (intrinsic velocity).')
@@ -463,15 +464,19 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         try:
             id = fd0['id'][ii0]
         except:
-            print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
-            return -1
+            print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+            return False
 
         fbb = np.zeros(len(SFILT), dtype='float')
         ebb = np.zeros(len(SFILT), dtype='float')
 
         for ii in range(len(SFILT)):
-            fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
-            ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
+            try:
+                fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
+                ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
+            except:
+                print('Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii]))
+                return False
 
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
@@ -516,10 +521,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             try:
                 id = fd0['id'][ii0]
             except:
-                print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
-                return -1
+                print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+                return False
         except:
-            return -1
+            return False
         id = fdd['id']
 
         fbb_d = np.zeros(len(DFILT), dtype='float')
@@ -813,7 +818,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     if f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
-            if  ebb_d[ii]>ebblim:
+            if ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast]))
             else:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
@@ -847,6 +852,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
     print('Done making templates at z=%.2f.\n'%zbest)
 
+    return True
 
 def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1, tmp_norm=1e10):
     '''
@@ -1011,8 +1017,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         try:
             id = fd0['id'][ii0]
         except:
-            print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
-            return -1
+            print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+            return False
 
         fbb = np.zeros(len(SFILT), dtype='float')
         ebb = np.zeros(len(SFILT), dtype='float')
@@ -1063,8 +1069,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         try:
             id = fd0['id'][ii0]
         except:
-            print('Cannot find the column for [ID: %s] in the input BB catalog!'%(ID))
-            return -1
+            print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+            return False
 
         fbb_d = np.zeros(len(DFILT), dtype='float')
         ebb_d = np.zeros(len(DFILT), dtype='float')
@@ -1137,8 +1143,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 print('Template convolution with Gaussian.')
                 print('params is sigma;',sigma)
             else:
-                print('Something is wrong.')
-                return -1
+                print('Something is wrong with the convolution file. Exiting.')
+                return False
 
         else: # For slit spectroscopy. To be updated...
             print('Templates convolution (intrinsic velocity).')
@@ -1436,3 +1442,5 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     fw.close()
 
     print('Done making templates at z=%.2f.\n'%zbest)
+
+    return True
