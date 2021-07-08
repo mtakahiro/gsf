@@ -329,13 +329,13 @@ class Func:
 
         b = nrd_yyd
         nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, lib_all=False):
+    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, lib_all=False, f_nrd=False):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -448,8 +448,10 @@ class Func:
         nrd_yyd[:,1] = yyd[:]
         nrd_yyd[:,2] = xxd[:]
         nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-        return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
-
+        if not f_nrd:
+            return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+        else:
+            return nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
     def tmp04_dust(self, par, nprec=1):
         '''

@@ -66,6 +66,7 @@ class Mainbody():
     def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
         self.update_input(inputs, idman=idman)
 
+
     def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, sigz=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
@@ -884,8 +885,6 @@ class Mainbody():
             plt.plot(data_model_sort[:,0], data_model_sort[:,2],'.b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(data_model_sort[:,0], data_model_sort[:,2], yerr=data_model_sort[:,3], color='b', capsize=0, linewidth=0.5) # Observation
 
-        if self.fzvis==1:
-        #try:
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
@@ -926,9 +925,9 @@ class Mainbody():
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
-            Czrec0  = scl_cz0[1]
-            Czrec1  = scl_cz1[1]
-            res_cz  = None
+            Czrec0 = scl_cz0[1]
+            Czrec1 = scl_cz1[1]
+            res_cz = None
 
             # If this label is being used, it means that the fit is failed.
             fit_label = 'Current model'
@@ -976,14 +975,20 @@ class Mainbody():
                 except:
                     pass
 
-
+            # Plot data
             data_obsbb = np.zeros((len(self.dict['xbb']),3), 'float')
             data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
-            data_obsbb[:,2] = fm_tmp
+            if len(fm_tmp) == len(self.dict['xbb']): # BB only;
+                data_obsbb[:,2] = fm_tmp
             data_obsbb_sort = np.sort(data_obsbb, axis=0)
             plt.plot(data_obsbb_sort[:,0], data_obsbb_sort[:,1], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
-            #plt.scatter(xm_tmp, fm_tmp, color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
-            plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+            if len(fm_tmp) == len(self.dict['xbb']): # BB only;
+                plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+            else:
+                model_spec = np.zeros((len(fm_tmp),2), 'float')
+                model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
+                model_spec_sort = np.sort(model_spec, axis=0)
+                plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:
                 xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
@@ -1275,6 +1280,7 @@ class Mainbody():
         self.fit_params = fit_params
         return fit_params
 
+
     def prepare_class(self, add_fir=None):
         '''
         '''
@@ -1340,6 +1346,7 @@ class Mainbody():
         self.set_param()
     
         return True
+
 
     def get_shuffle(self, out, nshuf=3.0, amp=1e-4):
         '''
@@ -1476,7 +1483,7 @@ class Mainbody():
             Av_tmp = out.params['Av'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
+            nrd_tmp, fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True, f_nrd=True)
         else:
             csq = out.chisqr
             rcsq = out.redchi
@@ -1488,6 +1495,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
+            #con_bb = (nrd_tmp>=1e4)
             flag_z = self.fit_redshift(xm_tmp, fm_tmp)
 
         #################################################
@@ -1696,7 +1704,6 @@ class Mainbody():
                 res = get_res(flatchain, var_names, params_value, res)
                 res.bic = -99
 
-
             elif self.f_nested:
                 import dynesty
                 from dynesty import NestedSampler
@@ -1761,7 +1768,7 @@ class Mainbody():
 
             else:
                 print('Sampling is not specified. Failed. Exiting.')
-                return -1
+                return False
 
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
@@ -1772,14 +1779,14 @@ class Mainbody():
             #----------- Save pckl file
             #-------- store chain into a cpkl file
             start_mc = timeit.default_timer()
-            burnin   = int(self.nmc/2)
+            burnin = int(self.nmc/2)
             #burnin   = 0 # Since already burnt in.
             savepath = self.DIR_OUT
             cpklname = 'chain_' + self.ID + '_corner.cpkl'
             savecpkl({'chain':flatchain,
                           'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
                          savepath+cpklname) # Already burn in
-            stop_mc  = timeit.default_timer()
+            stop_mc = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
             if verbose:
                 print('#################################')
@@ -1816,7 +1823,7 @@ class Mainbody():
             stop_mc = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
 
-            return False
+            return 2 # Cannot set to 1, to distinguish from retuen True
 
 
         elif flag_z == 'm':
@@ -1843,16 +1850,12 @@ class Mainbody():
             self.Cz0 = Czrec0
             self.Cz1 = Czrec1
             print('\n\n')
-            print('Generate model templates with input redshift and Scale.')
+            print('Generating model templates with input redshift and Scale.')
             print('\n\n')
             return True
 
         else:
             print('\n\n')
-            print('Terminated because of redshift estimate.')
-            print('Generate model templates with recommended redshift.')
-            print('\n\n')
-
             flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, and Cz1 , %.5f %.5f %.5f? ([y]/n) '%(self.zrecom, self.Czrec0, self.Czrec1))
             if flag_gen == 'y' or flag_gen == '':
                 self.zprev = self.zgal   # Input redshift for previous run
@@ -1860,13 +1863,12 @@ class Mainbody():
                 self.Cz0 = self.Czrec0
                 self.Cz1 = self.Czrec1
                 return True
-
             else:
                 print('\n\n')
                 print('There is nothing to do.')
                 print('Terminating process.')
                 print('\n\n')
-                return -1
+                return False
 
 
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False, Zini=None):

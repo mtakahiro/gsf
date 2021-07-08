@@ -188,8 +188,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         MB.zprev = MB.zgal 
         MB.ndim_keep = MB.ndim
         flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
-        while flag_suc: 
-            # flag_suc = 1 means that fit is success.
+        while (flag_suc and flag_suc!=2):
 
             MB.ndim = MB.ndim_keep
             print('\n\n')
@@ -203,11 +202,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
                 flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
 
             print('\n\n')
-            print('Going into another trial with updated templates and redshift.')
+            print('Going into another round with updated templates and redshift.')
             print('\n\n')
 
             flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
 
+        print(flag_suc)
         # Total calculation time
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
