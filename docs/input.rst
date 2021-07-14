@@ -59,8 +59,8 @@ or Gaussian,
     
     f(r;\gamma) =  A \exp{\Big({-r^2\over{2\gamma^2}}\Big)}
 
-The parameters should be stored in the ascii file speficied by ``MORP_FILE``, with the following format;
+The parameters should be stored in the path speficied by ``MORP_FILE``, in the following format (ascii);
 
 # A gamma alpha
 
-for both cases (i.e. put an arbitrary number for alpha if Gaussian), where A is a normalization constant.
+for both cases (i.e. put an arbitrary number for alpha if Gaussian). A is a normalization constant.

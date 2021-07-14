@@ -1,17 +1,20 @@
 import numpy as np
 
-def get_configfile():
+def get_configfile(name=None):
     '''
-    Purpose:
-    ========
-    To generate a configuration file.
+    Purpose
+    -------
+    Generate a configuration file.
     '''
 
     # Version;
     import gsf.__init__ as vers
     ver = vers.__version__
 
-    fw = open('default.input','w')
+    if name == None:
+        name = 'default.input'
+        
+    fw = open(name,'w')
     fw.write('\
 #\n\
 # Input file for ver.%s\n\
@@ -36,7 +39,7 @@ EZU         0.3 # redshift upper error.\n\
 NIMF        1 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.\n\
 ADD_NEBULAE 0 # Add nebular lines; 1=yes, 2=no. This cannot be done when BPASS is on.\n\
 logU        -2.0 # Ionizing parameter, in logU.\n\
-BPASS       0 # BPASS library; 1=yes, 0=no (fsps). This may take longer to compute, as it has a higher res than fsps.\n\
+BPASS       0 # BPASS library; 1=yes, 0=no (fsps). This may take longer to calculate, as it has a higher res than fsps.\n\
 #\n\
 # params for MCMC\n\
 #\n\
@@ -44,7 +47,7 @@ NMC         1000\n\
 NWALK       50\n\
 NMCZ        20\n\
 NWALKZ      10\n\
-FNELD       0 # Nelder for initial params if 0. Powell if 1.\n\
+FNELD       nelder # powell\n\
 NCPU        0 # Number of multiprocessing.\n\
 F_ERR       0\n\
 ZVIS        1 # Visual inspection of spectral fit.\n\
@@ -72,10 +75,24 @@ LINE        0. # Emission line, iin AA.\n\
 #\n\
 MORP        moffat\n\
 MORP_FILE   ./output/l3_nis_f200w_G150C_s00010_moffat.txt\n\
+#\n\
+# DUST\n\
+#\n\
+#FIR_FILTER	325,326,329,330,1014\n\
+#CAT_BB_DUST	fir_flux.txt\n\
+#TDUST_LOW	0\n\
+#TDUST_HIG	22\n\
+#TDUST_DEL	1\n\
+#DIR_DUST    /PATH/To/DL07spec/\n\
     '%ver)
 
 
 if __name__ == "__main__":
     '''
     '''
-    get_configfile()
+    import sys
+    try:
+        name = sys.argv[1]
+    except:
+        name = None
+    get_configfile(name=name)

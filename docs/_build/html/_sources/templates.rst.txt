@@ -3,8 +3,8 @@
 Generating templates
 ====================
 
-Rest-frame templates
---------------------
+Rest-frame templates (Execution flag = 0)
+-----------------------------------------
 In this step (specifically, `make_tmp_z0`), gsf generates synthetic spectral templates 
 via `python-fsps <https://github.com/dfm/python-fsps>`__, based on the parameters 
 in the configuration file. The parameters are limited from the original fsps (`Conroy et al. 2009 <http://adsabs.harvard.edu/abs/2009ApJ...699..486C>`__), 
@@ -28,8 +28,8 @@ If set to a negative value, then SSP is applied.
 .. image:: ./plot/pixel.png
 
 
-Shifting templates to the input redshift
-----------------------------------------
+Shifting templates to the input redshift (Execution flag = 1)
+-------------------------------------------------------------
 In this step (specifically, `maketemp` module), gsf shifts the rest-frame templates generated above (i.e. those in "spec\_all.asdf") 
 to the input redshift and calculates fluxes of the input filters for one-to-one comparison. 
 Basically, there are three steps;
