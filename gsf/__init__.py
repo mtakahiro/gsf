@@ -1,6 +1,6 @@
 __author__ = 'Takahiro Morishita'
 __email__ = 'tmorishita@stsci.edu'
-__version__ = '1.4'
+__version__ = '1.5'
 __affilication__ = 'STScI'
 
 

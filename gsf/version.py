@@ -12,7 +12,7 @@ __all__ = [
     '__build_status__'
 ]
 
-__version__ = '1.4'
-__version_short__ = '1.4'
+__version__ = '1.5'
+__version_short__ = '1.5'
 #__version_date__ = '2019-11-05 15:02:56 -0500'
 __version_dirty__ = True

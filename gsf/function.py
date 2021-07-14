@@ -1,4 +1,3 @@
-# For fitting.
 from scipy import asarray as ar,exp
 import numpy as np
 import sys
@@ -17,9 +16,51 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
+def func_tmp(xint,eobs,fmodel):
+    '''
+    '''
+    int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
+    return int_tmp
+
+def get_chi2(fy, ey, wht3, ysump, ndim_eff, SNlim=1.0, f_chind=True, f_exclude=False, xbb=None, x_ex=None):
+    '''
+    '''
+    from scipy import special
+    if f_chind:
+        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
+    else:
+        conw = (wht3>0) & (ey>0)
+
+    resid = fy-ysump
+    chi2 = sum((np.square(resid) * np.sqrt(wht3))[conw])
+
+    chi_nd = 0.0
+    if f_chind:
+        f_ex = np.zeros(len(fy), 'int')
+        for ii in range(len(fy)):
+            if f_exclude:
+                if xbb[ii] in x_ex:
+                    f_ex[ii] = 1
+
+        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
+        x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
+        f_erf = special.erf(x_erf)
+        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
+
+    # Number of degree;
+    con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+    nod = int(len(wht3[con_nod])-ndim_eff)
+    if nod>0:
+        fin_chi2 = (chi2 - 2 * chi_nd) / nod
+    else:
+        fin_chi2 = -99
+
+    return chi2,fin_chi2
+
+
 def get_ind(wave,flux):
     '''
-    Gets Lick index for input input
+    Gets Lick index for input
 
     Returns
     -------
@@ -100,9 +141,9 @@ def get_input():
 
     '''
     inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0, \
-    'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
+    'DIR_OUT':'./output/', 'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
     'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,\
-    'ZEVOL':0, 'ZVIS':1, 'FNELD':0}
+    'ZEVOL':0, 'ZVIS':1, 'FNELD':'differential_evolution', 'MC_SAMP':'SLICE'}
 
     return inputs
 
@@ -158,7 +199,7 @@ def loadcpkl(cpklfile):
     """
     import pickle
     if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
-    f    = open(cpklfile, 'rb')#, encoding='ISO-8859-1')
+    f = open(cpklfile, 'rb') #, encoding='ISO-8859-1')
 
     if sys.version_info.major == 2:
         data = pickle.load(f)
@@ -171,7 +212,7 @@ def loadcpkl(cpklfile):
 
 def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, chidef=None, Zbest=0, f_keep=False):
     '''
-    Gets initial parameters at various Z
+    Get initial parameters at various Z
     '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 
@@ -205,18 +246,10 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
             if MB.ZEVOL == 1 or aa == 0:
                 fit_params['Z'+str(aa)].value = ZZ
 
-        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, False), method=fit_name) # nelder is the most efficient.
-        keys = fit_report(out_tmp).split('\n')
-        csq  = 99999
-        rcsq = 99999
-        for key in keys:
-            if key[4:7] == 'chi':
-                skey = key.split(' ')
-                csq  = float(skey[14])
-            if key[4:7] == 'red':
-                skey = key.split(' ')
-                rcsq = float(skey[7])
-
+        f_fir = False
+        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), method=fit_name) # nelder is the most efficient.
+        csq = out_tmp.chisqr
+        rcsq = out_tmp.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
 
         fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
@@ -697,9 +730,9 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
         in mag
     nr : int array
         index, to be used for sorting.
-    Rv : 
+    Rv : float
         from Calzetti+00
-    lmlimu : 
+    lmlimu : float
         Upper limit. 2.2 in Calz+00
     '''
     Kl = np.zeros(len(lm), dtype='float')
@@ -719,7 +752,6 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     Kl[con2] = Kl2
     Kl[con3] = Kl3
 
-    #nr0 = nr[con0]
     nr1 = nr[con1]
     nr2 = nr[con2]
     nr3 = nr[con3]
@@ -727,7 +759,6 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     nrd[con2] = nr[con2]
     nrd[con3] = nr[con3]
 
-    #lmm0 = lmm[con0]
     lmm1 = lmm[con1]
     lmm2 = lmm[con2]
     lmm3 = lmm[con3]
@@ -735,18 +766,12 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     lmmc[con2] = lmm[con2]
     lmmc[con3] = lmm[con3]
 
-    #fl0 = fl[con0]
     fl1 = fl[con1]
     fl2 = fl[con2]
     fl3 = fl[con3]
     flc[con1] = fl[con1]
     flc[con2] = fl[con2]
     flc[con3] = fl[con3]
-
-    #Kl = np.concatenate([Kl1,Kl2,Kl3])
-    #nrd = np.concatenate([nr1,nr2,nr3])
-    #lmmc = np.concatenate([lmm1,lmm2,lmm3])
-    #flc = np.concatenate([fl1,fl2,fl3])
 
     Alam = Kl * Av / Rv
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
@@ -761,12 +786,16 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     '''
     Parameters
     ----------
-    # lm (float array) : wavelength, at RF, in AA.
-    # fl (float array) : fnu
-    # Av (float)       : mag
-    # nr (int array)   : index, to be used for sorting.
-    # Rv: =3.1 for MW.
-    #
+    lm : float array
+        wavelength, at RF, in AA.
+    fl : float array
+        fnu
+    Av : float
+        mag
+    nr : int array
+        index, to be used for sorting.
+    Rv : float
+        3.1 for MW.
     '''
     Kl = np.zeros(len(lm), dtype='float')
 

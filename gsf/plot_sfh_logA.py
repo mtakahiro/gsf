@@ -20,18 +20,22 @@ lcb   = '#4682b4' # line color, blue
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=False):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Star formation history plot.
 
-    Input:
-    ======
-    flim : Lower limit for plotting an age bin.
-    lsfrl : Lower limit for SFR, in logMsun/yr
-    f_SFMS : If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
-    tset_SFR_SED : in Gyr. Time scale over which SFR estimate is averaged.
+    Parametes
+    ---------
+    flim : float
+        Lower limit for plotting an age bin.
+    lsfrl : float
+        Lower limit for SFR, in logMsun/yr
+    f_SFMS : bool
+        If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
+    tset_SFR_SED : float
+        in Gyr. Time scale over which SFR estimate is averaged.
     '''
     if f_silence:
         import matplotlib
@@ -66,7 +70,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = MB.d
 
     #############
     # Plot.
@@ -251,13 +255,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     eZ_mean = 0
     try:
         meanfile = './sim_SFH_mean.cat'
-        dfile    = np.loadtxt(meanfile, comments='#')
+        dfile = np.loadtxt(meanfile, comments='#')
         eA = dfile[:,2]
         eZ = dfile[:,4]
         eAv= np.mean(dfile[:,6])
         if f_zev == 0:
             eZ_mean = np.mean(eZ[:])
-            eZ[:]   = age * 0 #+ eZ_mean
+            eZ[:] = age * 0 #+ eZ_mean
         else:
             try:
                 f_zev = int(prihdr['ZEVOL'])
@@ -425,14 +429,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
             
             if f_log_sfh:
                 ax1.errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
-                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=[col[aa]], marker='', zorder=1, lw=1.)
+                    yerr=[[SFp[aa,1]-SFp[aa,0]], [SFp[aa,2]-SFp[aa,1]]], linestyle='', color=col[aa], marker='', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], SFp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=1)
+                    ax1.scatter(age[aa], SFp[aa,1], marker='.', color=col[aa], edgecolor='k', s=msize[aa], zorder=1)
             else:
                 ax1.errorbar(age[aa], 10**SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
                     yerr=[[10**SFp[aa,1]-10**SFp[aa,0]], [10**SFp[aa,2]-10**SFp[aa,1]]], linestyle='', color=col[aa], marker='.', zorder=1, lw=1.)
                 if msize[aa]>0:
-                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', c=col[aa], edgecolor='k', s=msize[aa], zorder=1)
+                    ax1.scatter(age[aa], 10**SFp[aa,1], marker='.', color=col[aa], edgecolor='k', s=msize[aa], zorder=1)
 
     #############
     # Get SFMS in log10;
@@ -446,7 +450,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
-        print('Rejuvenation judge failed. (plot_sfh.py)')
+        print('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
@@ -536,7 +540,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         lsfru = np.max(SFp[:,2])+0.1
 
     if f_log_sfh:
-        ax1.set_ylim(lsfrl, lsfru)
+        if f_axis_force:
+            ax1.set_ylim(lsfrl, lsfru)
         ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
         #ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     else:
@@ -549,7 +554,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
 
     ax2.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
     ax2.set_xlim(Txmin, Txmax)
-    ax2.set_ylim(y2min, y2max)
+    if f_axis_force:
+        ax2.set_ylim(y2min, y2max)
     ax2.set_xscale('log')
     ax2.text(np.min(age*1.05), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
         %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
@@ -669,8 +675,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         ax4.set_ylim(y3min-0.05, y3max)
         ax4.set_xscale('log')
 
-        ax4.set_yticks([-0.8, -0.4, 0., 0.4])
-        ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        if f_axis_force:
+            ax4.set_yticks([-0.8, -0.4, 0., 0.4])
+            ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        
         #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         #ax3.yaxis.labelpad = -2
         ax4.yaxis.labelpad = -2
@@ -710,20 +718,30 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2t.set_xlim(Txmin, Txmax)
 
     # Save
-    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+    fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
 def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
     '''
-    # sfh: 1:exponential, 4:delayed exp, 5:, 6:lognormal
-    ML : Total Mass.
-    tt: Lookback time, in Gyr
-    tau0: in Gyr
-    t0: age, in Gyr
+    Parameters
+    ----------
+    sfh : int
+        1:exponential, 4:delayed exp, 5:, 6:lognormal
+    ML : float
+        Total Mass.
+    tt : float
+        Lookback time, in Gyr
+    tau0: float
+        in Gyr
+    t0 : float
+        age, in Gyr
 
-    Returns:
-    SFR, in Msun/yr
-    MFR, in Msun
+    Returns
+    -------
+    SFR : 
+        in Msun/yr
+    MFR :
+        in Msun
 
     '''
     yy = np.zeros(len(tt), dtype='float') 
@@ -754,18 +772,22 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
 
 def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-        f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Star formation history plot.
 
-    Input:
-    ======
-    flim : Lower limit for plotting an age bin.
-    lsfrl : Lower limit for SFR, in logMsun/yr
-    f_SFMS : If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
-    tset_SFR_SED : in Gyr. Time scale over which SFR estimate is averaged.
+    Parameters
+    ----------
+    flim : float
+        Lower limit for plotting an age bin.
+    lsfrl : float
+        Lower limit for SFR, in logMsun/yr
+    f_SFMS : bool
+        If true, plot SFR of the main sequence of a ginen stellar mass at each lookback time.
+    tset_SFR_SED : float
+        in Gyr. Time scale over which SFR estimate is averaged.
     '''
     if f_silence:
         import matplotlib
@@ -799,7 +821,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = 10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = MB.d #10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
     #############
     # Plot.
@@ -996,10 +1018,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
 
-    #AAtmp = np.zeros(len(age), dtype='float')
-    #ZZtmp = np.zeros(len(age), dtype='float')
-    #mslist= np.zeros(len(age), dtype='float')
-
     ttmin = 0.001
     tt = np.arange(ttmin,Tuni+0.5,ttmin/10)
     xSF = np.zeros((len(tt), mmax), dtype='float') # SFR
@@ -1046,10 +1064,21 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             ySF[:,mm] += ySF_each[aa,:,mm]
             yMS[:,mm] += yMS_each[aa,:,mm]
 
+            # SFR from SED. This will be converted in log later;
+            con_sfr = (xSF[:,mm] <= tset_SFR_SED)
+            SFR_SED[mm] += np.mean(10**ySF_each[aa,:,mm])
+
+
         Av[mm] = Av_tmp
         if plot_each:
             ax1.plot(xSF[:,mm], np.log10(ySF[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
             ax2.plot(xSF[:,mm], np.log10(yMS[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
+
+        if SFR_SED[mm] > 0:
+            SFR_SED[mm] = np.log10(SFR_SED[mm])
+        else:
+            SFR_SED[mm] = -99
+
 
         mm += 1
 
@@ -1083,8 +1112,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ACp[:] = np.log10(yMSp[:,:])
     SFp[:] = np.log10(ySFp[:,:])
 
-
-    #SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
+    SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
 
     ###################
     msize = np.zeros(len(age), dtype='float')
@@ -1121,7 +1149,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
-        print('Rejuvenation judge failed. (plot_sfh.py)')
+        print('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
@@ -1236,8 +1264,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
     for ii in range(len(percs)):
         prihdr['HIERARCH Mstel_%d'%percs[ii]] = ('%.3f'%ACP[ii], 'Stellar mass, logMsun')
-    #for ii in range(len(percs)):
-    #    prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    for ii in range(len(percs)):
+        prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
     for ii in range(len(percs)):
         prihdr['HIERARCH Z_MW_%d'%percs[ii]] = ('%.3f'%ZCP[ii], 'Mass-weighted metallicity, logZsun')
     for ii in range(len(percs)):
@@ -1313,15 +1341,15 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    y3min, y3max = np.min(Z), np.max(Z)
 
     if not skip_zhist:
+        y3min, y3max = np.min([np.min(Z),-0.8]), np.max([np.max(Z),0.4])
         ax4.set_xlim(Txmin, Txmax)
         ax4.set_ylim(y3min-0.05, y3max)
         ax4.set_xscale('log')
-
         ax4.set_yticks([-0.8, -0.4, 0., 0.4])
         ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
+        
         #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         #ax3.yaxis.labelpad = -2
         ax4.yaxis.labelpad = -2
@@ -1361,25 +1389,24 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax2t.set_xlim(Txmin, Txmax)
 
     # Save
-    plt.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
-
+    fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
 def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh=0.01):
-
     '''
-    Purpose:
-    =========
+    Purpose
+    -------
     Reprocess output files to get spectra, UV color, and SFH at higher resolution.
 
-    Input:
-    ======
-    #
-    # delt_sfh (float): delta t of input SFH in Gyr.
-    #
-    # Returns: SED as function of age, based on SF and Z histories;
-    #
+    Parameters
+    ----------
+    delt_sfh : float
+        delta t of input SFH in Gyr.
+    
+    Returns
+    -------
+    SED as function of age, based on SF and Z histories;
     '''
 
     print('This function may take a while as it runs fsps.')
@@ -1712,15 +1739,15 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
 def plot_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', delt_sfh = 0.01, nmc=300):
-    
     '''
-    Input:
-    ======
-    delt_sfh (float): delta t of input SFH in Gyr.
+    Parameters
+    ----------
+    delt_sfh : float
+        delta t of input SFH in Gyr.
 
-    Returns:
-    ========
-    SED as function of age, based on SF and Z histories;
+    Returns
+    -------
+    SED as function of age, based on SF and Z histories.
     '''
 
     import os.path

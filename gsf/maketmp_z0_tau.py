@@ -20,7 +20,7 @@ def get_lognorm(t, ltau0, T0=-10):
 
 
 def make_tmp_z0(MB, lammin=100, lammax=160000): 
-    """
+    '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
 
@@ -38,7 +38,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     tau_lim : float, optional
         Maximum value of tau of the template, in Gyr. Tau smaller than this 
         value would be approximated by SSP.
-    """
+    '''
     import asdf
     import fsps
     import gsf
@@ -97,7 +97,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0, add_neb_emission=1)
                 print('Log normal is used. !!')
 
-            print(zz, sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8") , ss)
+            print('Z:%d/%d, t:%d/%d, %s, %s'%(zz, len(Z), ss, len(tau), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
             ms = np.zeros(Na)
             Ls = np.zeros(Na)
             LICK = np.zeros((Na,len(INDICES)), dtype='float')
@@ -129,7 +129,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
                     esptmp.params['gas_logu'] = logU # ionization parameter
                     esp = esptmp
-                    if ss == 0:
+                    if tt == 0:
                         print('Nebular is also added, with logU=%.2f.'%(logU))
                     ewave0, eflux0 = esp.get_spectrum(tage=10**age[tt], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)

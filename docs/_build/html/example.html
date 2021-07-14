@@ -92,11 +92,11 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installing gsf</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#on-the-fly-run">On-the-fly run</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#executing-flag">Executing flag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#execution-flag">Execution flag</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#appendicies">Appendicies</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#a-specify-object-id">A. Specify object id</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#a-specify-target-id">A. Specify target id</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#other-examples">Other examples</a></li>
@@ -181,15 +181,15 @@
 <div class="section" id="on-the-fly-run">
 <h2>On-the-fly run<a class="headerlink" href="#on-the-fly-run" title="Permalink to this headline">¶</a></h2>
 <p>Example data are stored in ./gsf/examples/</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input &lt;Executing-flag&gt;
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input &lt;Execution-flag&gt;
 </pre></div>
 </div>
 <p>If you need a new config file (*.input), execute</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python get_configfile.py
 </pre></div>
 </div>
-<div class="section" id="executing-flag">
-<h3>Executing flag<a class="headerlink" href="#executing-flag" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="execution-flag">
+<h3>Execution flag<a class="headerlink" href="#execution-flag" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>0: Generating templates at z=0 (takes a while if MILES). Start from here if parameter in config file is changed. Then go to 1.</p></li>
 <li><p>1: Redshift template to z=ZGAL, and prepare mock photometry that matches to the input filters and spectra, using pre-existing z=0 templates (from step0). Then go to 2.</p></li>
@@ -201,10 +201,10 @@
 </div>
 <div class="section" id="appendicies">
 <h2>Appendicies<a class="headerlink" href="#appendicies" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="a-specify-object-id">
-<h3>A. Specify object id<a class="headerlink" href="#a-specify-object-id" title="Permalink to this headline">¶</a></h3>
-<p>You can speficy the object id of your interest from the command line. This way, you would not need to make a bunch of config files for each of them.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input  &lt;Executing-flag&gt; --id &lt;id-of-target-object&gt;
+<div class="section" id="a-specify-target-id">
+<h3>A. Specify target id<a class="headerlink" href="#a-specify-target-id" title="Permalink to this headline">¶</a></h3>
+<p>You can speficy the target id from the command line. This way, you would not need to make a bunch of config files for each target.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python run_gsf.py test.input  &lt;Execution-flag&gt; --id &lt;id-of-target&gt;
 </pre></div>
 </div>
 <p>Then gsf will look into the broadband catalog (<code class="docutils literal notranslate"><span class="pre">BB_CAT</span></code>; <a class="reference internal" href="parameters.html"><span class="doc">Paramter Description</span></a>) and identify object with the same id.

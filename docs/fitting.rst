@@ -3,6 +3,9 @@
 Fitting process
 ===============
 
+Fitting process (Execution flag = 2)
+------------------------------------
+
 gsf fits synthetic data points (generated from model templates) to input observed data points 
 based on minimization of the following equation (as in posterior_flexible.py);
 
@@ -16,7 +19,7 @@ Then, log likelihood is calculated as;
 .. math::
     lnlike =  -0.5 \left[ \sum_{i}^{n} \left( resid_i^2 + ln (2 \pi \sigma_i^2) \right) - 2 \chi_\mathrm{ln\ nd} \right]
 
-where :math:`\chi_\mathrm{ln\ nd}` is contributiong from non-detection data points (:math:`f/\sigma<SN_\mathrm{limit}`);
+where :math:`\chi_\mathrm{ln\ nd}` add the contribution from non-detection data points (:math:`f/\sigma<SN_\mathrm{limit}`);
 
 .. math::
     \chi_\mathrm{ln\ nd} = \sum_{i}^{n} ln \left( \sqrt{ \frac{\pi}{2}} \sigma_\mathrm{obs,i} 

@@ -16,8 +16,8 @@ gsf's documentation
    parameters.rst
    input.rst
    templates.rst
-   output.rst
    fitting.rst
+   output.rst
    prior.rst
 
    auto/modules

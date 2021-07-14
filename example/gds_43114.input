@@ -18,11 +18,11 @@ TAU_COMP	1 # comparison between different tau for each ssp when plot.
 #
 # Params for data
 #
-DIR_TEMP	./templates/nonebular_miles/ # Directory of extracted spectra.
+DIR_TEMP	./templates/nonebular_pdv/ # Directory of extracted spectra.
 DIR_OUT		./output/
-DIR_EXTR	./ # Directory of extracted spectra.
+DIR_EXTR	./data/ # Directory of extracted spectra.
 DIR_FILT	./filter/ 
-CAT_BB		./GDS_bb_ksirac_uvis.cat # Directory of extracted spectra.
+CAT_BB		./data/GDS_bb_ksirac_uvis.cat # Directory of extracted spectra.
 #FILTER		f125w,f140w,f160w,f225w,f275w,f336w,f435w,f606w,f775w,f814w,f850w,f230w,f360w,f450w,f580w,f800w # Should be match *.fil in FILT_DIT
 FILTER    	203,204,205,207,208,209,1,4,5,6,7,226,18,19,20,21
 MORP		moffat

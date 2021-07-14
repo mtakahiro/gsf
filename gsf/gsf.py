@@ -18,8 +18,8 @@ start = timeit.default_timer()
 
 def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     This is only for 0 and 1, to get templates.
     Not for fitting, nor plotting.
 
@@ -79,7 +79,6 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
     MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-    #MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
     '''
     #
@@ -109,11 +108,14 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
 
 def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label=True, f_symbol=True, \
     f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, \
-    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=True, amp_shuffle=1e-2, Zini=None):
+    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     gsf pipeline, which runs all steps.
+
+    Parameters
+    ----------
     '''
 
     ######################
@@ -140,6 +142,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     #
     # Make templates based on input redsfift.
     #
+    flag_suc = True
     if fplt == 0 or fplt == 1:
         #
         # 0. Make basic templates
@@ -164,9 +167,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         # 1. Start making redshifted templates.
         #
         if MB.SFH_FORM == -99:
-            maketemp(MB, tau_lim=tau_lim)
+            flag_suc = maketemp(MB, tau_lim=tau_lim)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim)
+            flag_suc = maketemp_tau(MB, tau_lim=tau_lim)
+
+    if not flag_suc:
+        sys.exit()
 
     # Read temp from asdf;
     # Template must be registered before fplt>=2.
@@ -175,15 +181,14 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     except:
         MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
-    flag_suc = 0
     if fplt <= 2:
         #
-        # 2. Mian fitting part.
+        # 2. Main fitting part.
         #
-        MB.zprev = MB.zgal #zrecom # redshift from previous run
-        MB.ndim_keep = MB.ndim # This is needed for iteration.
+        MB.zprev = MB.zgal 
+        MB.ndim_keep = MB.ndim
         flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
-        while (flag_suc and flag_suc!=-1):
+        while (flag_suc and flag_suc!=2):
 
             MB.ndim = MB.ndim_keep
             print('\n\n')
@@ -192,23 +197,24 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
             # Make temp at the new z
             if MB.SFH_FORM == -99:
-                maketemp(MB, tau_lim=tau_lim)
+                flag_suc = maketemp(MB, tau_lim=tau_lim)
             else:
-                maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
 
             print('\n\n')
-            print('Going into another trial with updated templates and redshift.')
+            print('Going into another round with updated templates and redshift.')
             print('\n\n')
 
             flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
-            # If still in the loop, read again.
-            #MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
         # Total calculation time
         stop = timeit.default_timer()
         print('The whole process took;',stop - start)
 
-    if fplt <= 3 and flag_suc != -1:# and False:
+    if not flag_suc:
+        sys.exit()
+
+    if fplt <= 3 and flag_suc:
         if f_Alog:
             if MB.SFH_FORM == -99:
                 from .plot_sfh_logA import plot_sfh
@@ -243,15 +249,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     if fplt == 6:
         from .plot_sed_logA import plot_corner_physparam_frame,plot_corner_physparam_summary
         plot_corner_physparam_summary(MB)
-        #plot_corner, plot_corner_TZ, plot_corner_param2, plot_corner_tmp
-        #plot_corner_physparam_frame(ID0, PA0, Zall, age, tau0, dust_model=dust_model)
 
-    '''
-    if fplt == 8:
-        #See MZ evolution
-        from .plot_MZ import plot_mz
-        plot_mz(MB, MB.ID, MB.PA, MB.Zall, MB.age)
-    '''
 
 if __name__ == "__main__":
     '''

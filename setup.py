@@ -50,7 +50,7 @@ PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
     name = "gsf",
-    version = "1.4",
+    version = "1.5",
     author = "Takahiro Morishita",
     author_email = "tmorishita@stsci.edu",
     description = "SED Fitting Code for HST Grism",
