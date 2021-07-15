@@ -47,7 +47,7 @@ Or if users create a new conda environment, by executing;
 
 .. code-block:: bash
 
-    conda create --name environment.yml
+    conda env create -f environment.yml -n gsf
 
 
 
@@ -64,13 +64,13 @@ If one needs a new config file
 
 .. code-block:: bash
 
-    python get_configfile.py
+    python example/get_configfile.py
 
 Or take a look at `notebooks <https://github.com/mtakahiro/gsf/tree/master/example/>`__.
 
 
-flag
-~~~~
+Execution flag
+~~~~~~~~~~~~~~
 - 0: Generating z=0 templates (takes a while if MILES). Start from here if parameter in config file is changed. Then go to 1.
 - 1: Redshift template to z=z_input, using pre-existing z=0 templates (from step0). Then go to 2.
 - 2: Fitting part, using pre-existing z=z_input templates (from step1). Then go to 3.

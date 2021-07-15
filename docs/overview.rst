@@ -14,17 +14,17 @@ other SED fitting codes based on chi-square minimization.
 
 Basic Workflow
 --------------
-1.gsf generates a bunch of templates at z=0 based on either fsps or B-PASS. 
+1. gsf generates a bunch of templates at z=0 based on either fsps or B-PASS (:ref:`template_z0`).
 It is here where you can specify critical parameters related to the templates 
 (IMF, Metallicity, tau).
 
-2.gsf shifts the templates generated above to the input redshift, both in wavelength 
+2. gsf shifts the templates generated above to the input redshift, both in wavelength 
 and flux, to match up with observations, including convolution with input filters and 
-morphology if grism data. 
+morphology if grism data (:ref:`template_z`).
 
-3.gsf runs the MCMC step based on the minimization between data and provided templates.
+3. gsf runs the MCMC step based on the minimization between data and provided templates (:doc:`fitting`).
 
-4.gsf generates graphics (SED plot and history plot).
+4. gsf generates graphics (SED plot and history plot).
 
 .. image:: ./plot/flowchart.png
 

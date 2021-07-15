@@ -3,6 +3,8 @@
 Generating templates
 ====================
 
+.. _template_z0:
+
 Rest-frame templates (Execution flag = 0)
 -----------------------------------------
 In this step (specifically, `make_tmp_z0`), gsf generates synthetic spectral templates 
@@ -27,6 +29,8 @@ If set to a negative value, then SSP is applied.
 
 .. image:: ./plot/pixel.png
 
+
+.. _template_z:
 
 Shifting templates to the input redshift (Execution flag = 1)
 -------------------------------------------------------------
