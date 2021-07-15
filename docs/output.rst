@@ -11,7 +11,7 @@ It also generates the following files, so you can make your own plots of these q
 - SFH_<ID>.fits
 - gsf_spec_<ID>.asdf
 
-See `this notebook <https://github.com/mtakahiro/gsf/blob/version1.4/example/Plot%20SFH%20and%20SED.ipynb>`__ 
+See `this notebook <https://github.com/mtakahiro/gsf/blob/master/example/Plot%20SFH%20and%20SED.ipynb>`__ 
 for how to use these files.
 
 

@@ -22,7 +22,7 @@ It is here where you can specify critical parameters related to the templates
 and flux, to match up with observations, including convolution with input filters and 
 morphology if grism data (:ref:`template_z`).
 
-3. gsf runs the MCMC step based on the minimization between data and provided templates (:doc:`fitting`).
+3. gsf runs the MCMC step based on the minimization between data and provided templates (:ref:`fitting`).
 
 4. gsf generates graphics (SED plot and history plot).
 

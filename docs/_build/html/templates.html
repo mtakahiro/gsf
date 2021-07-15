@@ -41,7 +41,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Output files" href="output.html" />
+    <link rel="next" title="Fitting process" href="fitting.html" />
     <link rel="prev" title="Input files" href="input.html" /> 
 </head>
 
@@ -99,8 +99,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#shifting-templates-to-the-input-redshift-execution-flag-1">Shifting templates to the input redshift (Execution flag = 1)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
 <li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
 </ul>
@@ -173,7 +173,7 @@
   <div class="section" id="generating-templates">
 <span id="templates"></span><h1>Generating templates<a class="headerlink" href="#generating-templates" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="rest-frame-templates-execution-flag-0">
-<h2>Rest-frame templates (Execution flag = 0)<a class="headerlink" href="#rest-frame-templates-execution-flag-0" title="Permalink to this headline">¶</a></h2>
+<span id="template-z0"></span><h2>Rest-frame templates (Execution flag = 0)<a class="headerlink" href="#rest-frame-templates-execution-flag-0" title="Permalink to this headline">¶</a></h2>
 <p>In this step (specifically, <cite>make_tmp_z0</cite>), gsf generates synthetic spectral templates
 via <a class="reference external" href="https://github.com/dfm/python-fsps">python-fsps</a>, based on the parameters
 in the configuration file. The parameters are limited from the original fsps (<a class="reference external" href="http://adsabs.harvard.edu/abs/2009ApJ...699..486C">Conroy et al. 2009</a>),
@@ -194,7 +194,7 @@ If set to a negative value, then SSP is applied.</p>
 <img alt="_images/pixel.png" src="_images/pixel.png" />
 </div>
 <div class="section" id="shifting-templates-to-the-input-redshift-execution-flag-1">
-<h2>Shifting templates to the input redshift (Execution flag = 1)<a class="headerlink" href="#shifting-templates-to-the-input-redshift-execution-flag-1" title="Permalink to this headline">¶</a></h2>
+<span id="template-z"></span><h2>Shifting templates to the input redshift (Execution flag = 1)<a class="headerlink" href="#shifting-templates-to-the-input-redshift-execution-flag-1" title="Permalink to this headline">¶</a></h2>
 <p>In this step (specifically, <cite>maketemp</cite> module), gsf shifts the rest-frame templates generated above (i.e. those in “spec_all.asdf”)
 to the input redshift and calculates fluxes of the input filters for one-to-one comparison.
 Basically, there are three steps;</p>
@@ -225,7 +225,7 @@ Basically, there are three steps;</p>
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="output.html" class="btn btn-neutral float-right" title="Output files" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="fitting.html" class="btn btn-neutral float-right" title="Fitting process" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="input.html" class="btn btn-neutral float-left" title="Input files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 

@@ -31,3 +31,7 @@ example/output/chain_43114.png
 example/output/43114_lines_fit.txt
 example/default.profraw
 *.pickle
+docs/_build/doctrees/environment.pickle
+docs/_build/doctrees/environment.pickle
+docs/_build/doctrees/environment.pickle
+*.pickle

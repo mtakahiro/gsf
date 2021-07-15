@@ -98,8 +98,8 @@
 <li class="toctree-l1"><a class="reference internal" href="parameters.html">Paramter Description</a></li>
 <li class="toctree-l1"><a class="reference internal" href="input.html">Input files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="templates.html">Generating templates</a></li>
-<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
 <li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
 </ul>
@@ -180,14 +180,16 @@ metallicity, as well as star formation and metallicity enrichment histories.</p>
 other SED fitting codes based on chi-square minimization.</p>
 <div class="section" id="basic-workflow">
 <h2>Basic Workflow<a class="headerlink" href="#basic-workflow" title="Permalink to this headline">¶</a></h2>
-<p>1.gsf generates a bunch of templates at z=0 based on either fsps or B-PASS.
+<p>1. gsf generates a bunch of templates at z=0 based on either fsps or B-PASS (<a class="reference internal" href="templates.html#template-z0"><span class="std std-ref">Rest-frame templates (Execution flag = 0)</span></a>).
 It is here where you can specify critical parameters related to the templates
 (IMF, Metallicity, tau).</p>
-<p>2.gsf shifts the templates generated above to the input redshift, both in wavelength
+<p>2. gsf shifts the templates generated above to the input redshift, both in wavelength
 and flux, to match up with observations, including convolution with input filters and
-morphology if grism data.</p>
-<p>3.gsf runs the MCMC step based on the minimization between data and provided templates.</p>
-<p>4.gsf generates graphics (SED plot and history plot).</p>
+morphology if grism data (<a class="reference internal" href="templates.html#template-z"><span class="std std-ref">Shifting templates to the input redshift (Execution flag = 1)</span></a>).</p>
+<ol class="arabic simple" start="3">
+<li><p>gsf runs the MCMC step based on the minimization between data and provided templates (<a class="reference internal" href="fitting.html#fitting"><span class="std std-ref">Fitting process</span></a>).</p></li>
+<li><p>gsf generates graphics (SED plot and history plot).</p></li>
+</ol>
 <img alt="_images/flowchart.png" src="_images/flowchart.png" />
 </div>
 <div class="section" id="limitations">
