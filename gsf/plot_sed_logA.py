@@ -83,11 +83,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ################
     # RF colors.
     home = os.path.expanduser('~')
-    c      = MB.c
+    c = MB.c
     chimax = 1.
-    m0set  = MB.m0set
+    m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d 
+    d = MB.d * scale 
 
     ##################
     # Fitting Results
@@ -1281,11 +1281,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ################
     # RF colors.
     home = os.path.expanduser('~')
-    c      = MB.c
+    c = MB.c
     chimax = 1.
-    m0set  = MB.m0set
+    m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d 
+    d = MB.d * scale
     
     ##################
     # Fitting Results
@@ -2412,7 +2412,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4):
     return ax
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, scale=1e-19):
     '''
     Purpose
     -------
@@ -2434,7 +2434,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ID   = MB.ID
     Z    = MB.Zall
     age  = MB.age
-    d = MB.d
+    d = MB.d * scale
     c = MB.c
 
     tau0 = MB.tau0 
@@ -2940,7 +2940,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax0.set_xscale('log')
     ax0.set_ylim(-ymax * scl_yaxis, ymax)
     ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
-    ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
+    ax0.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
     ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
     ax1.set_ylabel('$\dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     ax1.set_xlim(np.min(age)*0.8, Txmax)
@@ -2982,107 +2982,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
 
-
-"""
-def plot_corner_TZ(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0]):
-    '''
-    '''
-    import matplotlib
-    import matplotlib.cm as cm
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Zall)
-
-    fig = plt.figure(figsize=(3,3))
-    fig.subplots_adjust(top=0.96, bottom=0.14, left=0.2, right=0.96, hspace=0.15, wspace=0.25)
-    ax1 = fig.add_subplot(111)
-
-    DIR_TMP = './templates/'
-    ####################
-    # MCMC corner plot.
-    ####################
-    file = 'chain_' + ID + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(os.path.join('./'+file))
-
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        samples = data['chain'][:]
-    except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-
-
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
-    sedpar = f0[1]
-
-    getcmap   = matplotlib.cm.get_cmap('jet')
-    nc        = np.arange(0, nmc, 1)
-    col = getcmap((nc-0)/(nmc-0))
-
-    #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nmc, dtype='float')
-    Avtmp= np.zeros(nmc, dtype='float')
-    Ztmp = np.zeros(nmc, dtype='float')
-    Ttmp = np.zeros(nmc, dtype='float')
-    ACtmp= np.zeros(nmc, dtype='float')
-
-
-    for kk in range(0,5000,1):
-        #nr = kk # np.random.randint(len(samples))
-        nr = np.random.randint(len(samples))
-
-        Avtmp[kk] = samples['Av'][nr]
-        for ss in range(len(age)):
-            AA_tmp = samples['A'+str(ss)][nr]
-            ZZ_tmp = samples['Z'+str(ss)][nr]
-
-            nZtmp  = bfnc.Z2NZ(ZZ_tmp)
-            mslist = sedpar.data['ML_'+str(nZtmp)][ss]
-
-            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
-            Ttmp[kk]  += age[ss] * AA_tmp * mslist
-            ACtmp[kk] += AA_tmp * mslist
-
-        Ztmp[kk] /= ACtmp[kk]
-        Ttmp[kk] /= ACtmp[kk]
-        Ntmp[kk]  = kk
-
-
-    x1min, x1max = np.log10(0.1), np.log10(4) #np.max(A50/Asum)+0.1
-    y1min, y1max = -0.8,.6 #np.max(A50/Asum)+0.1
-
-    xbins = np.arange(x1min, x1max, 0.01)
-    ybins = np.arange(y1min, y1max, 0.01)
-
-    xycounts,_,_ = np.histogram2d(np.log10(Ttmp), np.log10(Ztmp), bins=[xbins,ybins])
-    ax1.contour(xbins[:-1], ybins[:-1], xycounts.T, 4, linewidths=np.arange(.5, 4, 0.1), colors='k')
-
-    ax1.scatter(np.log10(Ttmp), np.log10(Ztmp), c='r', s=1, marker='.', alpha=0.1)
-    #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-    #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-
-    ax1.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-    ax1.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
-
-    #ax2.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-    #ax2.set_ylabel('$A_V$/mag', fontsize=12)
-
-    #ax3.set_xlabel('$\log Z_*/Z_\odot$', fontsize=12)
-    #ax3.set_ylabel('$A_V$/mag', fontsize=12)
-
-    ax1.set_xlim(x1min, x1max)
-    ax1.set_ylim(y1min, y1max)
-
-    ax1.yaxis.labelpad = -1
-
-    plt.savefig('TZ_' + ID + '_corner.pdf')
-    plt.close()
-"""
 
 def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
     '''
