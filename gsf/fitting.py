@@ -89,7 +89,7 @@ class Mainbody():
         self.inputs = inputs
         self.c = c
         self.Mpc_cm = Mpc_cm
-        self.d = 10**(73.6/2.5) #* 1e-18 # Conversion factor from [ergs/s/cm2/A] to [ergs/s/cm2/Hz].
+        self.d = 10**((48.6+m0set)/2.5) #* 1e-18 # Conversion factor from [ergs/s/cm2/A] to [ergs/s/cm2/Hz].
         self.m0set = m0set
         self.pixelscale = pixelscale
         self.Lsun = Lsun
