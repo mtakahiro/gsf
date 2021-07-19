@@ -1018,6 +1018,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
             id = fd0['id'][ii0]
         except:
             print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+            return False        
+        if len(ii0) == 0:
+            print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
             return False
 
         fbb = np.zeros(len(SFILT), dtype='float')

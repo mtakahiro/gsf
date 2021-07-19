@@ -2,27 +2,42 @@
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
     nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Fit observed flux with a template to get redshift probability.
 
-    Input:
-    ======
-    zbest : Initial value for redshift.
-    zprior : Redshift grid for prior.
-    prior : Prior for redshift determination. E.g., Eazy z-probability.
-    zliml : Lowest redshift for fitting range.
-    zlimu : Highest redshift for fitting range.
-    f_vary: Bool. If want to fix redshift.
+    Parameters
+    ----------
+    zbest : 
+        Initial value for redshift.
+    zprior : 
+        Redshift grid for prior.
+    prior : 
+        Prior for redshift determination. E.g., Eazy z-probability.
+    zliml : 
+        Lowest redshift for fitting range.
+    zlimu : 
+        Highest redshift for fitting range.
+    f_vary : bool
+        If want to fix redshift.
+    fm_tmp :
+        Template spectrum at RF.
+    xm_tmp :
+        Template spectrum at RF.
+    fobs : 
+        Observed spectrum. (Already scaled with Cz0prev.)
+    eobs : 
+        Observed spectrum. (Already scaled with Cz0prev.)
+    xobs : 
+        Observed spectrum. (Already scaled with Cz0prev.)
 
-    fm_tmp, xm_tmp : Template spectrum at RF.
-    fobs, eobs, xobs: Observed spectrum. (Already scaled with Cz0prev.)
 
+    Returns
+    -------
+    res_cz :
 
-    Return:
-    =======
-    res_cz  :
     fitc_cz :
+
     '''
 
     from .function import check_line_cz_man
@@ -116,7 +131,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     #Czrec1  = out_cz.params['Cz1'].value
 
     mini_cz = Minimizer(lnprob_cz, out_cz.params)
-    #print(nthin, nwalk_cz, out_cz.params,int(nmc_cz/2))
+    print(nthin, nwalk_cz, out_cz.params,int(nmc_cz/2))
     res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz
