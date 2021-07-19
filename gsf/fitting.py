@@ -773,7 +773,7 @@ class Mainbody():
         return zspace, chi2s
 
 
-    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=6., snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
+    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
@@ -808,7 +808,9 @@ class Mainbody():
         self.nmc_cz = int(self.inputs['NMCZ'])
 
         # For z prior.
-        zliml  = self.zgal - 0.5
+        zliml = self.zgal - 0.5
+        if zlimu == None:
+            zlimu = self.zgal + 0.5
 
         # Observed data;
         sn = self.dict['fy'] / self.dict['ey']
@@ -981,7 +983,9 @@ class Mainbody():
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 data_obsbb[:,2] = fm_tmp
             data_obsbb_sort = np.sort(data_obsbb, axis=0)
-            plt.plot(data_obsbb_sort[:,0], data_obsbb_sort[:,1], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
+            # y-Scale seems to be wrong?
+            #plt.plot(data_obsbb_sort[:,0], data_obsbb_sort[:,1], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
+
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
             else:
@@ -1005,11 +1009,11 @@ class Mainbody():
             plt.ylabel('$F_\\nu$ (arb.)')
             plt.legend(loc=0)
 
-            zzsigma  = ((z_cz[2] - z_cz[0])/2.)/self.zgal
-            zsigma   = np.abs(self.zgal-zrecom) / (self.zgal)
-            C0sigma  = np.abs(Czrec0-self.Cz0)/self.Cz0
+            zzsigma = ((z_cz[2] - z_cz[0])/2.)/self.zgal
+            zsigma = np.abs(self.zgal-zrecom) / (self.zgal)
+            C0sigma = np.abs(Czrec0-self.Cz0)/self.Cz0
             eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
-            C1sigma  = np.abs(Czrec1-self.Cz1)/self.Cz1
+            C1sigma = np.abs(Czrec1-self.Cz1)/self.Cz1
             eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
 
             print('\n##############################################################')
@@ -1099,25 +1103,13 @@ class Mainbody():
         # Redshift
         if self.fzmc == 1:
             if zmin == None:
-                zmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
+                self.zmcmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
             if zmax == None:
-                zmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
-            fit_params.add('zmc', value=self.zgal, min=zmin, max=zmax)
-            print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(zmin, zmax))
+                self.zmcmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
+            fit_params.add('zmc', value=self.zgal, min=self.zmcmin, max=self.zmcmax)
+            print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(self.zmcmin, self.zmcmax))
             f_add = True
 
-        '''
-        # Error parameter
-        try:
-            ferr = self.ferr
-            if ferr == 1:
-                fit_params.add('logf', value=-2, min=-10, max=3) # in linear
-                self.ndim += 1
-                f_add = True
-        except:
-            ferr = 0
-            pass
-        '''
         # Dust;
         if self.f_dust:
             Tdust = self.Temp
