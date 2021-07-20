@@ -74,7 +74,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         fy01 = np.append(fy0,fy1)
         fcon = np.append(fy01,fy2)
         ey01 = np.append(ey0,ey1)
-        eycon= np.append(ey01,ey2)
+        eycon = np.append(ey01,ey2)
         wht = 1./np.square(eycon)
 
         if f_line_check:
@@ -119,19 +119,14 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     for key in keys:
         if key[4:7] == 'chi':
             skey = key.split(' ')
-            csq  = float(skey[14])
+            csq = float(skey[14])
         if key[4:7] == 'red':
             skey = key.split(' ')
             rcsq = float(skey[7])
 
     fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
 
-    #zrecom  = out_cz.params['z'].value
-    #Czrec0  = out_cz.params['Cz0'].value
-    #Czrec1  = out_cz.params['Cz1'].value
-
     mini_cz = Minimizer(lnprob_cz, out_cz.params)
-    print(nthin, nwalk_cz, out_cz.params,int(nmc_cz/2))
     res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz
