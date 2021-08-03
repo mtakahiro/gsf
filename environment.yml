@@ -20,5 +20,4 @@ dependencies:
   - pip:
     - git+https://github.com/dfm/python-fsps.git
     - git+https://github.com/mtakahiro/gsf.git
-prefix: /Users/tmorishita/anaconda3/envs/gsf
 
