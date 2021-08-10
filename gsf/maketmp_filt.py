@@ -462,6 +462,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         id0 = fd0['id'].astype('str')
         ii0 = np.where(id0[:]==ID)
         try:
+            if len(ii0[0]) == 0:
+                print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+                return False
             id = fd0['id'][ii0]
         except:
             print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
