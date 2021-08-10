@@ -116,7 +116,8 @@ class Mainbody():
             self.zmin = None
             self.zmax = None
         except:
-            iix = np.where(self.fd_cat['id'] == int(self.ID))
+            #iix = np.where(self.fd_cat['id'] == int(self.ID))
+            iix = np.where(self.fd_cat['id'] == self.ID)
             self.zgal = float(self.fd_cat['redshift'][iix])
             try:
                 self.zmin = self.zgal - float(self.fd_cat['ez_l'][iix])
