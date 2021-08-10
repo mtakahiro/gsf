@@ -18,9 +18,9 @@ from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=False):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=True):
     '''
     Purpose
     -------
@@ -538,6 +538,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
     lsfru = 2.8
     if np.max(SFp[:,2])>2.8:
         lsfru = np.max(SFp[:,2])+0.1
+    if np.min(SFp[:,2])>lsfrl:
+        lsfrl = np.min(SFp[:,2])+0.1
 
     if f_log_sfh:
         if f_axis_force:
@@ -549,6 +551,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, 
         ax1.set_ylabel('$\dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
         #ax1.plot(Tzz, Tzz*0+10**lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
+    if Txmax < np.max(age):
+        Txmax = np.max(age)
     ax1.set_xlim(Txmin, Txmax)
     ax1.set_xscale('log')
 
