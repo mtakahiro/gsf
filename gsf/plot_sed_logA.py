@@ -457,7 +457,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
 
     x1min = 2000
-    x1max = 110000
+    x1max = 100000
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
     if f_dust:
@@ -465,8 +465,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
         xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
 
-    if x1max < np.max(xbb[conbb_ymax]):
-        x1max = np.max(xbb[conbb_ymax]) * 1.5
+    #if x1max < np.max(xbb[conbb_ymax]):
+    #    x1max = np.max(xbb[conbb_ymax]) * 1.5
+    if x1max < np.max(xbb):
+        x1max = np.max(xbb) * 1.5
     if x1min > np.min(xbb[conbb_ymax]):
         x1min = np.min(xbb[conbb_ymax]) / 1.5
 
@@ -478,7 +480,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         scl_yaxis = 0.1
     ax1.set_ylim(-ymax*scl_yaxis,ymax)
     ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
-
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
