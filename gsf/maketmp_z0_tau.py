@@ -97,7 +97,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                     sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0, add_neb_emission=1)
                 print('Log normal is used. !!')
 
-            print('Z:%d/%d, t:%d/%d, %s, %s'%(zz, len(Z), ss, len(tau), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
+            print('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), ss+1, len(tau), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
             ms = np.zeros(Na)
             Ls = np.zeros(Na)
             LICK = np.zeros((Na,len(INDICES)), dtype='float')
