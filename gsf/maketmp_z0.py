@@ -154,7 +154,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
 
                 tau0_old = tautmp
                 sp = sptmp
-                print('Z:%d/%d, t:%d/%d, %s, %s'%(zz, len(Z), pp, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
+                print('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), pp+1, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
 
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True)
                 con = (wave0>lammin) & (wave0<lammax)
@@ -526,31 +526,3 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
 
-    '''
-    #
-    # Create header;
-    #
-    hdr = fits.Header()
-    hdr['COMMENT'] = 'Library:BPASS%s'%(BPASS_ver)
-    if fneb == 1:
-        hdr['logU'] = logU
-    for aa in range(len(age)):
-        hdr['hierarch realtau%d(Gyr)'%(aa)] = tau_age[aa]
-    for aa in range(len(age)):
-        hdr['hierarch realage%d(Gyr)'%(aa)] = age_age[aa]
-
-    colspec = fits.ColDefs(col02)
-    hdu2    = fits.BinTableHDU.from_columns(colspec, header=hdr)
-    hdu2.writeto(DIR_TMP + 'spec_all.fits', overwrite=True)
-
-    colind = fits.ColDefs(col05)
-    hdu5   = fits.BinTableHDU.from_columns(colind, header=hdr)
-    hdu5.writeto(DIR_TMP + 'index.fits', overwrite=True)
-
-    col6 = fits.Column(name='tA', format='E', unit='Gyr', array=age[:])
-    col01.append(col6)
-
-    colms = fits.ColDefs(col01)
-    hdu1  = fits.BinTableHDU.from_columns(colms, header=hdr)
-    hdu1.writeto(DIR_TMP + 'ms.fits', overwrite=True)
-    '''

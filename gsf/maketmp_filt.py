@@ -148,12 +148,12 @@ def sim_spec(lmin, fin, sn):
 
 def check_library(MB, af):
     '''
-    Purpose:
-    ========
+    Purpose
+    -------
     Check library if it has a consistency setup as input file.
 
-    Return:
-    =======
+    Returns
+    -------
     True is no problem. 
     '''
 
@@ -586,7 +586,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
             for ss in range(Na):
                 wave = spechdu['wavelength']
-                if fneb == 1:
+                if fneb == 1 and MB.f_bpass==0:
                     spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
                 else:
                     spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
@@ -611,8 +611,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in Msolar.
-                tautmp = af['realtau%d(Gyr)'%int(zz)]
-                sfr[ss] = ms[ss] / (tautmp*1e9) # SFR per unit template, in units of Msolar/yr.
+                tautmp = af['ML']['realtau_%d'%int(zz)]
+                sfr[ss] = ms[ss] / (tautmp[ss]*1e9) # SFR per unit template, in units of Msolar/yr.
 
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu[ss,:])
@@ -856,6 +856,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     print('Done making templates at z=%.2f.\n'%zbest)
 
     return True
+
 
 def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1, tmp_norm=1e10):
     '''
