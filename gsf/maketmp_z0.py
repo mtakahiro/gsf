@@ -500,6 +500,8 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 tree_ML.update({'Ls_'+str(zz): Ls})
                 col3 = fits.Column(name='fm_'+str(zz), format='E', unit='', array=mlost)
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
+                col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
+                tree_ML.update({'realtau_'+str(zz): ms})
 
                 col01.append(col1)
                 col01.append(col2)

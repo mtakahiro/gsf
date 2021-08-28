@@ -347,17 +347,21 @@ class Mainbody():
             self.Zsun = 0.020
             Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
             Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
-            try:
+            if True:#try:
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
                     print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
                 self.ZFIX = Zbpass[iiz]
-                self.delZ = float(inputs['DELZ'])
-                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                self.delZ = 0.0001
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
+                #self.delZ = float(inputs['DELZ'])
+                #self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
-            except:
+            else:#except:
+                print('BPASS is not available for ZMIN-ZMAX range. Use ZFIX instead.')
+                sys.exit()
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
