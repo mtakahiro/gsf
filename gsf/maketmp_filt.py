@@ -146,7 +146,7 @@ def sim_spec(lmin, fin, sn):
     return frand, erand
 
 
-def check_library(MB, af):
+def check_library(MB, af, nround=3):
     '''
     Purpose
     -------
@@ -177,22 +177,22 @@ def check_library(MB, af):
     if MB.SFH_FORM==-99:
         # Age:
         for aa in range(len(MB.age)):
-            if MB.age[aa] != af['age%d'%(aa)]:
+            if round(MB.age[aa],nround) != round(af['age%d'%(aa)],nround):
                 print('age:', MB.age[aa], af['age%d'%(aa)])
                 flag = False
         # Tau (e.g. ssp/csp):
         for aa in range(len(MB.tau0)):
-            if MB.tau0[aa] != af['tau0%d'%(aa)]:
+            if round(MB.tau0[aa]) != round(af['tau0%d'%(aa)]):
                 print('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
                 flag = False
     else:
         # Age:
         for aa in range(len(MB.ageparam)):
-            if MB.ageparam[aa] != af['age%d'%(aa)]:
+            if round(MB.ageparam[aa]) != round(af['age%d'%(aa)]):
                 print('age:', MB.ageparam[aa], af['age%d'%(aa)])
                 flag = False
         for aa in range(len(MB.tau)):
-            if MB.tau[aa] != af['tau%d'%(aa)]:
+            if round(MB.tau[aa]) != round(af['tau%d'%(aa)]):
                 print('tau:', MB.tau[aa], af['tau%d'%(aa)])
                 flag = False
 
@@ -611,8 +611,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in Msolar.
-                tautmp = af['ML']['realtau_%d'%int(zz)]
-                sfr[ss] = ms[ss] / (tautmp[ss]*1e9) # SFR per unit template, in units of Msolar/yr.
+                try:
+                    tautmp = af['ML']['realtau_%d'%int(zz)]
+                    sfr[ss] = ms[ss] / (tautmp[ss]*1e9) # SFR per unit template, in units of Msolar/yr.
+                except:
+                    if zz == 0 and ss == 0:
+                        print('realtau entry not found. SFR is set to 0. (Or rerun maketmp_z0.py)')
+                    sfr[ss] = 0
 
                 if f_spec:
                     ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu[ss,:])
