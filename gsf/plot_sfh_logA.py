@@ -17,6 +17,7 @@ from .basic_func import Basic
 from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
+sfrllim = 1e-20
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
@@ -769,8 +770,8 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
     yyms *= C
     yy *= C / deltt / 1e9 # in Msun/yr
 
-    yy[~con] = 1e-20
-    yyms[~con] = 1e-20
+    yy[~con] = sfrllim #1e-20
+    yyms[~con] = sfrllim #1e-20
     return tt, yy, yyms
 
 
@@ -1070,7 +1071,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
             # SFR from SED. This will be converted in log later;
             con_sfr = (xSF[:,mm] <= tset_SFR_SED)
-            SFR_SED[mm] += np.mean(10**ySF_each[aa,:,mm])
+            SFR_SED[mm] += np.mean(ySF_each[aa,:,mm][con_sfr])
 
 
         Av[mm] = Av_tmp
