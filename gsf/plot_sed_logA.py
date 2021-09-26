@@ -1205,8 +1205,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             pass
 
     # Filters
+    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
     if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
     ####################
     ## Save
@@ -2370,8 +2371,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             pass
 
     # Filters
+    ind_remove = np.where((wht3<=0) | (ey<=0))
     if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis)
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
     ####################
     ## Save
@@ -2383,7 +2385,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
-def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4):
+def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=[]):
     '''
     Add filter response curve to ax1.
 
@@ -2407,6 +2409,8 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4):
         col = cols[iix]
         wave = MB.band['%s_lam'%filt]
         flux = MB.band['%s_res'%filt]
+        if ii in ind_remove:
+            continue
         ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
         ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
 
@@ -2976,8 +2980,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
 
     # Filters
+    ind_remove = np.where((wht<=0) | (ey<=0))[0]
     if f_plot_filter:
-        ax0 = plot_filter(MB, ax0, ymax, scl=scl_yaxis)
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
         xx = np.arange(2200,100000,100)
         ax0.plot(xx, xx * 0, linestyle='--', lw=0.5, color='k')
 
