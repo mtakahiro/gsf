@@ -8,6 +8,7 @@ from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
 from matplotlib.ticker import FormatStrFormatter
+import matplotlib.ticker as ticker
 
 from .function import *
 from .function_class import Func
@@ -19,7 +20,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
     '''
     Parameters
     ----------
@@ -1221,7 +1222,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
     '''
     Parameters
     ----------
@@ -2371,7 +2372,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             pass
 
     # Filters
-    ind_remove = np.where((wht3<=0) | (ey<=0))
+    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
     if f_plot_filter:
         ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
@@ -2491,7 +2492,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        NZbest[aa]= bfnc.Z2NZ(Z50[aa])
+        #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
     ZZ50  = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
     chi   = hdul[1].data['chi'][0]
@@ -2690,8 +2691,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             AA_tmp84 = 0
             AA_tmp16 = 0
 
-        nZtmp  = bfnc.Z2NZ(ZZ_tmp)
+        nZtmp = bfnc.Z2NZ(ZZ_tmp)
         mslist = sedpar['ML_'+str(nZtmp)][ii]
+
         AMtmp16 += mslist*AA_tmp16
         AMtmp84 += mslist*AA_tmp84
 
@@ -2965,16 +2967,23 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2t = ax2.twiny()
     ax1t.set_xlim(0.008, Txmax)
     ax1t.set_xscale('log')
-    ax1t.set_xticklabels(zredl[:])
-    ax1t.set_xticks(Tzz[:])
+
+    ax1t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax1t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
+    #ax1t.set_xticklabels(zredl[:])
+    #ax1t.set_xticks(Tzz[:])
+
     ax1t.tick_params(axis='x', labelcolor='k')
     ax1t.xaxis.set_ticks_position('none')
     ax1.plot(Tzz, Tzz*0+SFmax, marker='|', color='k', ms=3, linestyle='None')
 
     ax2t.set_xlim(0.008, Txmax)
     ax2t.set_xscale('log')
-    ax2t.set_xticklabels(zredl[:])
-    ax2t.set_xticks(Tzz[:])
+    #ax2t.set_xticklabels(zredl[:])
+    #ax2t.set_xticks(Tzz[:])
+    ax2t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax2t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
+
     ax2t.tick_params(axis='x', labelcolor='k')
     ax2t.xaxis.set_ticks_position('none')
     ax2.plot(Tzz, Tzz*0+0.5, marker='|', color='k', ms=3, linestyle='None')
@@ -2989,7 +2998,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
 
 
-def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
+def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
+    tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
     '''
     Creat "cumulative" png for gif image.
     
@@ -3325,8 +3335,8 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
 def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
     '''
     '''
-    dlw   = R_grs * dw # Can affect the SFR.
-    ldw   = 7
+    dlw = R_grs * dw # Can affect the SFR.
+    ldw = 7
 
     ###################################
     # To add lines in the plot,
@@ -3429,7 +3439,8 @@ def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
     flw.close()
 
 
-def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
+def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
+    tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
     '''
     If you like to
     Creat temporal png for gif image.
