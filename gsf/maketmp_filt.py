@@ -168,6 +168,8 @@ def check_library(MB, af, nround=3):
         Zall = MB.Zall
     
     flag = True
+    print('Checking the template library...')
+    print('Speficied - Template')
     # Matallicity:
     for aa in range(len(Zall)):
         if Zall[aa] != af['Z%d'%(aa)]:

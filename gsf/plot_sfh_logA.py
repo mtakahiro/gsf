@@ -7,6 +7,7 @@ from scipy.integrate import simps
 import os
 import time
 from matplotlib.ticker import FormatStrFormatter
+import matplotlib.ticker as ticker
 
 from astropy.io import fits
 
@@ -684,15 +685,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             ax4.set_yticks([-0.8, -0.4, 0., 0.4])
             ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
         
-        #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        #ax3.yaxis.labelpad = -2
         ax4.yaxis.labelpad = -2
         ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
         ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
         ax4t.set_xscale('log')
 
-        ax4t.set_xticklabels(zredl[:])
-        ax4t.set_xticks(Tzz[:])
+        ax4t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+        ax4t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
+        
         ax4t.tick_params(axis='x', labelcolor='k')
         ax4t.xaxis.set_ticks_position('none')
         ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
@@ -705,18 +705,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     ax1t.set_xscale('log')
     ax2t.set_xscale('log')
 
-    ax1t.set_xticklabels(zredl[:])
-    ax1t.set_xticks(Tzz[:])
+    ax1t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax1t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
     ax1t.tick_params(axis='x', labelcolor='k')
     ax1t.xaxis.set_ticks_position('none')
     ax1t.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ax2t.set_xticklabels(zredl[:])
-    ax2t.set_xticks(Tzz[:])
+    ax2t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax2t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
     ax2t.tick_params(axis='x', labelcolor='k')
     ax2t.xaxis.set_ticks_position('none')
     ax2t.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
-
 
     # This has to come after set_xticks;
     ax1t.set_xlim(Txmin, Txmax)
