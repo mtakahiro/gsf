@@ -319,49 +319,63 @@ class Mainbody():
             print('Cannot find ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
-        if self.f_bpass == 0:
+        try:
+            self.ZFIX = float(inputs['ZFIX'])
             try:
-                self.ZFIX = float(inputs['ZFIX'])
-                try:
-                    self.delZ = float(inputs['DELZ'])
-                    self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-                except:
-                    self.delZ = 0.0001
-                    self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
-                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
-                print('\n##########################')
-                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
-            except:
-                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 self.delZ = float(inputs['DELZ'])
-                if self.Zmax == self.Zmin or self.delZ == 0:
-                    self.delZ = 0.0
-                    self.ZFIX = self.Zmin
-                    self.Zall = np.asarray([self.ZFIX])
-                elif np.abs(self.Zmax - self.Zmin) < self.delZ:
-                    self.ZFIX = self.Zmin
-                    self.Zall = np.asarray([self.ZFIX])
-                else:
-                    self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
-        else:
+                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+            except:
+                self.delZ = 0.0001
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
+            self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
+            print('\n##########################')
+            print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+        except:
+            self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+            self.delZ = float(inputs['DELZ'])
+            if self.Zmax == self.Zmin or self.delZ == 0:
+                self.delZ = 0.0
+                self.ZFIX = self.Zmin
+                self.Zall = np.asarray([self.ZFIX])
+            elif np.abs(self.Zmax - self.Zmin) < self.delZ:
+                self.ZFIX = self.Zmin
+                self.Zall = np.asarray([self.ZFIX])
+            else:
+                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
+        # If BPASS;
+        if self.f_bpass == 1:
+            try:
+                self.BPASS_DIR = inputs['BPASS_DIR']
+            except:
+                print('BPASS_DIR is not found. Using default.')
+                self.BPASS_DIR = '/astro/udfcen3/Takahiro/BPASS/'
+
+            self.BPASS_ver = 'v2.2.1'
             self.Zsun = 0.020
             Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
             Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
-            try:
+            try: # If ZFIX is found;
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
                     print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
                 self.ZFIX = Zbpass[iiz]
-                self.delZ = float(inputs['DELZ'])
-                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                self.delZ = 0.0001
+                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
             except:
+                print('ZFIX is not found.')
+                print('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
                 self.delZ = 0.0001
+                self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
+                print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
+            
+
+
 
         # N of param:
         try:

@@ -260,7 +260,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
 
 
 def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
-    BPASS_DIR='/astro/udfcen3/Takahiro/BPASS/', BPASS_ver='v2.2.1', Zsun=0.02):
+    Zsun=0.02):
     '''
     This is for the preparation of default template, with BPASS templates, at z=0.
     Should be run before SED fitting.
@@ -314,7 +314,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     else:
         bin_str = 'str'
 
-    DIR_LIB = BPASS_DIR + 'BPASS%s/BPASS%s_%s-imf%s/'%(BPASS_ver,BPASS_ver,bin_str,imf_str)
+    DIR_LIB = MB.BPASS_DIR + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
 
     NZ = len(Z)
     Na = len(age)
@@ -500,6 +500,8 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 tree_ML.update({'Ls_'+str(zz): Ls})
                 col3 = fits.Column(name='fm_'+str(zz), format='E', unit='', array=mlost)
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
+                col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
+                tree_ML.update({'realtau_'+str(zz): ms})
 
                 col01.append(col1)
                 col01.append(col2)

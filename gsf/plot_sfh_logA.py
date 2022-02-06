@@ -7,6 +7,7 @@ from scipy.integrate import simps
 import os
 import time
 from matplotlib.ticker import FormatStrFormatter
+import matplotlib.ticker as ticker
 
 from astropy.io import fits
 
@@ -17,6 +18,7 @@ from .basic_func import Basic
 from .function_igm import *
 
 lcb   = '#4682b4' # line color, blue
+sfrllim = 1e-20
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/', \
     inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
@@ -683,15 +685,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             ax4.set_yticks([-0.8, -0.4, 0., 0.4])
             ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
         
-        #ax4.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        #ax3.yaxis.labelpad = -2
         ax4.yaxis.labelpad = -2
         ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
         ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
         ax4t.set_xscale('log')
 
-        ax4t.set_xticklabels(zredl[:])
-        ax4t.set_xticks(Tzz[:])
+        ax4t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+        ax4t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
+        
         ax4t.tick_params(axis='x', labelcolor='k')
         ax4t.xaxis.set_ticks_position('none')
         ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
@@ -704,18 +705,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     ax1t.set_xscale('log')
     ax2t.set_xscale('log')
 
-    ax1t.set_xticklabels(zredl[:])
-    ax1t.set_xticks(Tzz[:])
+    ax1t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax1t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
     ax1t.tick_params(axis='x', labelcolor='k')
     ax1t.xaxis.set_ticks_position('none')
     ax1t.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ax2t.set_xticklabels(zredl[:])
-    ax2t.set_xticks(Tzz[:])
+    ax2t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax2t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
     ax2t.tick_params(axis='x', labelcolor='k')
     ax2t.xaxis.set_ticks_position('none')
     ax2t.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
-
 
     # This has to come after set_xticks;
     ax1t.set_xlim(Txmin, Txmax)
@@ -769,8 +769,8 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
     yyms *= C
     yy *= C / deltt / 1e9 # in Msun/yr
 
-    yy[~con] = 1e-20
-    yyms[~con] = 1e-20
+    yy[~con] = sfrllim #1e-20
+    yyms[~con] = sfrllim #1e-20
     return tt, yy, yyms
 
 
@@ -926,7 +926,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
             if age[aa] < tau_lim:
-                # This is because fsps has the minimum tau = tau_lim
                 delT[aa] = tau_lim
             else:
                 delT[aa] = delTu[aa] + delTl[aa]
@@ -936,24 +935,20 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
                 delTl[aa] = age[aa]
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 delT[aa]  = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
             elif Tuni < age[aa]:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = Tuni-age[aa] #delTl[aa] #10.
                 delT[aa]  = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
             elif aa == len(age)-1:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = Tuni - age[aa]
                 delT[aa]  = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
             else:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 if age[aa]+delTu[aa]>Tuni:
                     delTu[aa] = Tuni-age[aa]
                 delT[aa] = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
 
     con_delt = (delT<=0)
     delT[con_delt] = 1e10
@@ -1070,7 +1065,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
             # SFR from SED. This will be converted in log later;
             con_sfr = (xSF[:,mm] <= tset_SFR_SED)
-            SFR_SED[mm] += np.mean(10**ySF_each[aa,:,mm])
+            SFR_SED[mm] += np.mean(ySF_each[aa,:,mm][con_sfr])
 
 
         Av[mm] = Av_tmp
@@ -1312,7 +1307,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     col50 = fits.Column(name='Z84', format='E', unit='logZsun', array=ZCp[:,2])
     col02.append(col50)
     
-    colms  = fits.ColDefs(col02)
+    colms = fits.ColDefs(col02)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
     file_sfh = MB.DIR_OUT + 'SFH_' + ID + '.fits'
@@ -1361,8 +1356,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
         ax4t.set_xscale('log')
 
-        ax4t.set_xticklabels(zredl[:])
-        ax4t.set_xticks(Tzz[:])
+        ax4t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+        ax4t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
         ax4t.tick_params(axis='x', labelcolor='k')
         ax4t.xaxis.set_ticks_position('none')
         ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
@@ -1375,18 +1370,17 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax1t.set_xscale('log')
     ax2t.set_xscale('log')
 
-    ax1t.set_xticklabels(zredl[:])
-    ax1t.set_xticks(Tzz[:])
+    ax1t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax1t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
     ax1t.tick_params(axis='x', labelcolor='k')
     ax1t.xaxis.set_ticks_position('none')
     ax1t.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
-    ax2t.set_xticklabels(zredl[:])
-    ax2t.set_xticks(Tzz[:])
+    ax2t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
+    ax2t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
     ax2t.tick_params(axis='x', labelcolor='k')
     ax2t.xaxis.set_ticks_position('none')
     ax2t.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
-
 
     # This has to come after set_xticks;
     ax1t.set_xlim(Txmin, Txmax)

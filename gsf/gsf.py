@@ -247,8 +247,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     '''
 
     if fplt == 6:
-        from .plot_sed_logA import plot_corner_physparam_frame,plot_corner_physparam_summary
-        plot_corner_physparam_summary(MB)
+        if MB.SFH_FORM == -99:
+            from .plot_sed_logA import plot_corner_physparam_frame,plot_corner_physparam_summary
+            plot_corner_physparam_summary(MB)
+        else:
+            #from .plot_sed_logA import plot_corner_physparam_summary_tau as plot_corner_physparam_summary
+            print('One for Tau model is TBD...')
 
 
 if __name__ == "__main__":
