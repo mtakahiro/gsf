@@ -20,7 +20,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
     '''
     Parameters
     ----------
@@ -257,9 +257,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         if f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
     else:
-        fig = plt.figure(figsize=(5.5,2.2))
-        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-        ax1 = fig.add_subplot(111)
+        if f_plot_resid:
+            fig_mosaic = """
+            AAAA
+            AAAA
+            BBBB
+            """
+            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.2))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = axes['A']
+        else:
+            fig = plt.figure(figsize=(5.5,2.2))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = fig.add_subplot(111)
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -287,7 +297,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
         ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d, \
         marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
-
         try:
             # For any data removed fron fit (i.e. IRAC excess):
             data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
@@ -312,8 +321,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     f_exclude = False
     try:
         col_ex = 'lawngreen'
-        #col_ex = 'limegreen'
-        #col_ex = 'r'
         # Currently, this file is made after FILTER_SKIP;
         data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
         x_ex = data_ex['col2']
@@ -563,15 +570,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
         print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
 
-        #ax1.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-        #ax1.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
     #
     # From MCMC chain
     #
-    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
+    file = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
     niter = 0
-    data  = loadcpkl(file)
+    data = loadcpkl(file)
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
@@ -683,9 +688,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             #ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Get FUV flux;
-        Fuv[kk]   = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
+        Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
-        Lir[kk]   = 0
+        Lir[kk] = 0
 
         # Get UVJ Color;
         lmconv,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)))
@@ -846,6 +851,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
         con_sed = (eybb>0)
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
+
+        if f_plot_resid:
+            conbb_hs = (fybb/eybb>SNlim)
+            axes['B'].scatter(lbb[iix][con_sed], ((fybb*c/np.square(xbb)/d - fbb)/(eybb*c/np.square(xbb)/d))[iix][con_sed], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
+            axes['B'].set_xscale(ax1.get_xscale())
+            axes['B'].set_xlim(ax1.get_xlim())
+            axes['B'].set_xticks(ax1.get_xticks())
+            axes['B'].set_xticklabels(ax1.get_xticklabels())
+            axes['B'].set_xlabel(ax1.get_xlabel())
+            xx = np.arange(axes['B'].get_xlim()[0],axes['B'].get_xlim()[1],100)
+            axes['B'].plot(xx,xx*0,linestyle='--',lw=0.5,color='k')
+            axes['B'].set_ylabel('Residual / $\sigma$')
+            axes['A'].set_xlabel('')
+            axes['A'].set_xticks(ax1.get_xticks())
+            axes['A'].set_xticklabels('')
 
         # Calculate EW, if there is excess band;
         try:
@@ -1099,7 +1119,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.25
 
-        ax1.text(0.77, 0.65, label,\
+        #print(ax1.get_ylim())
+        ax1.text(0.77, 0.7, label,\
         fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
         ha='left', va='center', transform=ax1.transAxes)
         
@@ -1222,7 +1243,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
     '''
     Parameters
     ----------
@@ -1477,9 +1498,19 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         if f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
     else:
-        fig = plt.figure(figsize=(5.5,2.2))
-        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-        ax1 = fig.add_subplot(111)
+        if f_plot_resid:
+            fig_mosaic = """
+            AAAA
+            AAAA
+            BBBB
+            """
+            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.2))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = axes['A']
+        else:
+            fig = plt.figure(figsize=(5.5,2.2))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = fig.add_subplot(111)
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -1617,7 +1648,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     y0, x0 = MB.fnc.tmp04(vals, f_val=False, check_bound=False, lib_all=True)
 
     ysum = y0
-    #f_50_comp = np.zeros((len(age),len(y0)),'float')
     f_50_comp = y0[:] * c / np.square(x0) / d
 
     ysump = y0p
@@ -1677,6 +1707,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
+
 
     dely1 = 0.5
     while (ymax-0)/dely1<1:
@@ -2037,6 +2068,21 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         con_sed = (eybb>0)
         ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
 
+        if f_plot_resid:
+            conbb_hs = (fybb/eybb>SNlim)
+            axes['B'].scatter(lbb[iix][con_sed], ((fybb*c/np.square(xbb)/d - fbb)/(eybb*c/np.square(xbb)/d))[iix][con_sed], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
+            axes['B'].set_xscale(ax1.get_xscale())
+            axes['B'].set_xlim(ax1.get_xlim())
+            axes['B'].set_xticks(ax1.get_xticks())
+            axes['B'].set_xticklabels(ax1.get_xticklabels())
+            axes['B'].set_xlabel(ax1.get_xlabel())
+            xx = np.arange(axes['B'].get_xlim()[0],axes['B'].get_xlim()[1],100)
+            axes['B'].plot(xx,xx*0,linestyle='--',lw=0.5,color='k')
+            axes['B'].set_ylabel('Residual / $\sigma$')
+            axes['A'].set_xlabel('')
+            axes['A'].set_xticks(ax1.get_xticks())
+            axes['A'].set_xticklabels('')
+
         # Calculate EW, if there is excess band;
         try:
             iix2 = []
@@ -2283,7 +2329,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         else:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
-            ylabel = ymax*0.32
+            ylabel = ymax*0.4
 
         ax1.text(2200, ylabel, label,\
         fontsize=7, bbox=dict(facecolor='w', alpha=0.7), zorder=10)

@@ -1,7 +1,7 @@
 __author__ = 'Takahiro Morishita'
-__email__ = 'tmorishita@stsci.edu'
-__version__ = '1.5'
-__affilication__ = 'STScI'
+__email__ = 'takahiro@ipac.caltech.edu'
+__version__ = '1.6'
+__affilication__ = 'IPAC'
 
 
 '''

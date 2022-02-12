@@ -106,7 +106,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label=True, f_symbol=True, \
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, \
     f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, \
     skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None):
     '''
@@ -124,7 +124,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
     from .function import read_input
     inputs = read_input(parfile)
 
-    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman)
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman, zman=zman)
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
@@ -215,16 +215,12 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
         sys.exit()
 
     if fplt <= 3 and flag_suc:
-        if f_Alog:
-            if MB.SFH_FORM == -99:
-                from .plot_sfh_logA import plot_sfh
-                from .plot_sed_logA import plot_sed            
-            else:
-                from .plot_sfh_logA import plot_sfh_tau as plot_sfh
-                from .plot_sed_logA import plot_sed_tau as plot_sed            
-        else:
+        if MB.SFH_FORM == -99:
             from .plot_sfh import plot_sfh
-            from .plot_sed import plot_sed
+            from .plot_sed import plot_sed            
+        else:
+            from .plot_sfh import plot_sfh_tau as plot_sfh
+            from .plot_sed import plot_sed_tau as plot_sed            
 
         if not skip_sfh:
             plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=mmax,
@@ -233,7 +229,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=figpdf, save_sed=save_sed, inputs=MB.inputs, mmax=mmax,
-        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, f_fancyplot=f_fancyplot)
+        dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
+        f_fancyplot=f_fancyplot, f_plot_resid=True)
 
     '''
     if fplt == 4:
@@ -248,7 +245,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, f_label
 
     if fplt == 6:
         if MB.SFH_FORM == -99:
-            from .plot_sed_logA import plot_corner_physparam_frame,plot_corner_physparam_summary
+            from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
             plot_corner_physparam_summary(MB)
         else:
             #from .plot_sed_logA import plot_corner_physparam_summary_tau as plot_corner_physparam_summary

@@ -357,12 +357,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     tree_SFR = {}
 
     try:
-        DIR_EXTR = MB.DIR_EXTR #inputs['DIR_EXTR']
+        DIR_EXTR = MB.DIR_EXTR
         if len(DIR_EXTR)==0:
             DIR_EXTR = False
     except:
         DIR_EXTR = False
-    DIR_FILT = MB.DIR_FILT #inputs['DIR_FILT']
+    DIR_FILT = MB.DIR_FILT
     try:
         CAT_BB_IND = inputs['CAT_BB_IND']
     except:
@@ -373,8 +373,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         CAT_BB = False
 
     try:
-        SFILT = MB.filts #inputs['FILTER'] # filter band string.
+        SFILT = MB.filts
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
+        print('')
+        print('Filters in the input catalog are;')
+        print(','.join(MB.filts))
+        print('')
     except:
         print('########################')
         print('Filter is not detected!!')

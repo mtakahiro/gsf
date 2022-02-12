@@ -63,11 +63,12 @@ class Mainbody():
         or the width to the next age bin.
     '''
 
-    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
-        self.update_input(inputs, idman=idman)
+    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, zman=None):
+        self.update_input(inputs, idman=idman, zman=zman)
 
 
-    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, sigz=5.0):
+    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, \
+                    idman=None, zman=None, sigz=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
         by visiting the configuration file.
@@ -111,20 +112,25 @@ class Mainbody():
         self.CAT_BB = inputs['CAT_BB']
         self.fd_cat = ascii.read(self.CAT_BB)
 
-        try:
-            self.zgal = float(inputs['ZGAL'])
+        if zman != None:
+            self.zgal = zman
             self.zmin = None
             self.zmax = None
-        except:
-            #iix = np.where(self.fd_cat['id'] == int(self.ID))
-            iix = np.where(self.fd_cat['id'] == self.ID)
-            self.zgal = float(self.fd_cat['redshift'][iix])
+        else:
             try:
-                self.zmin = self.zgal - float(self.fd_cat['ez_l'][iix])
-                self.zmax = self.zgal + float(self.fd_cat['ez_u'][iix])
-            except:
+                self.zgal = float(inputs['ZGAL'])
                 self.zmin = None
                 self.zmax = None
+            except:
+                #iix = np.where(self.fd_cat['id'] == int(self.ID))
+                iix = np.where(self.fd_cat['id'] == self.ID)
+                self.zgal = float(self.fd_cat['redshift'][iix])
+                try:
+                    self.zmin = self.zgal - float(self.fd_cat['ez_l'][iix])
+                    self.zmax = self.zgal + float(self.fd_cat['ez_u'][iix])
+                except:
+                    self.zmin = None
+                    self.zmax = None
 
         # Data directory;
         self.DIR_TMP = inputs['DIR_TEMP']
