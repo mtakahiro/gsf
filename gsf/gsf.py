@@ -109,7 +109,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1):
 def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, 
     f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, 
     skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None, 
-    nthin=1, delwave=0):
+    nthin=1, delwave=1):
     '''
     Purpose
     -------
@@ -117,6 +117,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
 
     Parameters
     ----------
+    delwave : float
+        If >0, the input templates get smoothing to delwave. 
+        For fsps, this seems to be critical, so it has the same delwave over the template wavelength range.
     '''
 
     ######################

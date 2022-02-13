@@ -4,6 +4,7 @@ import sys
 from scipy.integrate import simps
 import pickle as cPickle
 import os
+import scipy.interpolate as interpolate
 
 c = 3.e18 # A/s
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
@@ -939,16 +940,18 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
 
         lmin  = np.min(lfil)
         lmax = np.max(lfil)
-        imin  = 0
+        imin = 0
         imax = 0
 
         lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
 
         lamS,spec = l0, f0 #Two columns with wavelength and flux density
         lamF,filt = lfil, ffil #Two columns with wavelength and response in the range [0,1]
-        filt_int   = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
+        #filt_int = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
+        fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
+        filt_int = fint(lamS)
         filtSpec = filt_int * spec #Calculate throughput
-        wht        = 1. #/(er1[con_rf])**2
+        wht = 1. #/(er1[con_rf])**2
 
         if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
             I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
@@ -995,21 +998,23 @@ def filconv_fast(filts, band, l0, f0, fw=False):
         imax  = 0
 
         con = (l0>lmin) & (l0<lmax) #& (f0>0)
-        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
+        lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
-            wht       = 1.
+            #filt_int = np.interp(lamS,lamF,filt)  # Interpolate Filter to the same wavelength axis of l0, or lamS
+            fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
+            filt_int = fint(lamS)
+
+            wht = 1.
+
 
             # This does not work sometimes;
-            #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-            #I2  = simps(filt_int/lamS,lamS)                  #Numerator
             delS = lamS[1]-lamS[0]
-            I1  = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
-            I2  = np.sum(filt_int/lamS*delS)                  #Numerator
+            I1 = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
+            I2 = np.sum(filt_int/lamS*delS)                  #Numerator
             if I2>0:
-                fnu[ii] = I1/I2/c         #Average flux density
+                fnu[ii] = I1/I2/c #Average flux density
             else:
                 fnu[ii] = 0
         else:
@@ -1079,8 +1084,10 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
         if len(l0[con])>1:
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
-            wht       = 1.
+            #filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+            fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
+            filt_int = fint(lamS)
+            wht = 1.
 
             # This does not work sometimes;
             #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
