@@ -322,15 +322,12 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     # Current age in Gyr;
     age_univ = MB.cosmo.age(0).value
 
-    #import matplotlib.pyplot as plt
-
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
     print('#######################################')
     col01 = [] # For M/L ratio.
     col02 = [] # For templates
     col05 = [] # For spectral indices.
-    #col06 = [] # For weird templates for UVJ calculation;
 
     tree_spec = {}
     tree_ML = {}
@@ -365,7 +362,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
         ncols = 52
         nage_temp = np.arange(2,ncols+1,1)
         lage_temp = (6+0.1*(nage_temp-2))
-        age_temp  = 10**(6+0.1*(nage_temp-2)) # in yr
+        age_temp = 10**(6+0.1*(nage_temp-2)) # in yr
 
         # 'tau is the width of each age bin.'
         for pp in range(len(tau0)):

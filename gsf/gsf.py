@@ -16,7 +16,7 @@ import timeit
 start = timeit.default_timer()
 
 
-def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
+def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1):
     '''
     Purpose
     -------
@@ -72,9 +72,9 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
         # 1. Start making redshifted templates.
         #
         if MB.SFH_FORM == -99:
-            maketemp(MB, tau_lim=tau_lim)
+            maketemp(MB, tau_lim=tau_lim, nthin=nthin)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim)
+            maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin)
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
@@ -106,9 +106,10 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None):
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, \
-    f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, \
-    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None):
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, 
+    f_SFMS=True, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, 
+    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None, 
+    nthin=1, delwave=0):
     '''
     Purpose
     -------
@@ -167,9 +168,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         # 1. Start making redshifted templates.
         #
         if MB.SFH_FORM == -99:
-            flag_suc = maketemp(MB, tau_lim=tau_lim)
+            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
         else:
-            flag_suc = maketemp_tau(MB, tau_lim=tau_lim)
+            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin)
 
     if not flag_suc:
         sys.exit()
@@ -197,9 +198,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
 
             # Make temp at the new z
             if MB.SFH_FORM == -99:
-                flag_suc = maketemp(MB, tau_lim=tau_lim)
+                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
             else:
-                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=1)
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin)
 
             print('\n\n')
             print('Going into another round with updated templates and redshift.')

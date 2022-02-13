@@ -5,6 +5,7 @@ import scipy
 import sys
 import os
 from scipy.integrate import simps
+import scipy.interpolate as interpolate
 import asdf
 
 from astropy.io import fits,ascii
@@ -298,7 +299,8 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     return LSF, lm
 
 
-def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, tmp_norm=1e10):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
+    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -434,7 +436,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
-        lm   = np.zeros(np.sum(ninp0[:]),dtype='float')
+        lm = np.zeros(np.sum(ninp0[:]),dtype='float')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         eobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
@@ -565,7 +567,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             age_univ= MB.cosmo.age(zbest).value #, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
-                lm0 = spechdu['wavelength']
+                if delwave>0:
+                    lm0_orig = spechdu['wavelength'][::nthin]
+                    lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
+                else:
+                    lm0 = spechdu['wavelength'][::nthin]
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
@@ -591,11 +597,19 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             Fuv = np.zeros(Na, dtype='float')
 
             for ss in range(Na):
-                wave = spechdu['wavelength']
+                wave = lm0 #spechdu['wavelength'][::nthin]
                 if fneb == 1 and MB.f_bpass==0:
-                    spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
                 else:
-                    spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
 
                 ###################
                 # IGM attenuation.
@@ -869,7 +883,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     return True
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1, tmp_norm=1e10):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001,
+    f_IGM=True, nthin=1, tmp_norm=1e10, delwave=0):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -1203,7 +1218,11 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
         for tt in range(len(tau)): # tau
             if zz == 0 and tt == 0:
-                lm0 = spechdu['wavelength'][::nthin]
+                if delwave>0:
+                    lm0_orig = spechdu['wavelength'][::nthin]
+                    lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
+                else:
+                    lm0 = spechdu['wavelength'][::nthin]
                 wave = lm0
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
@@ -1237,9 +1256,17 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     Lsun = 3.839 * 1e33 #erg s-1
 
                 if fneb == 1:
-                    spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
                 else:
-                    spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
 
                 ##################
                 # IGM attenuation.
