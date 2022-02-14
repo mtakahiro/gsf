@@ -552,13 +552,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     else:
         lm = []
 
-
     ####################################
     # Start generating templates
     ####################################
-    col00 = []
-    col01 = []
-    col02 = []
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
             Zbest = Z[zz]
@@ -597,7 +593,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             Fuv = np.zeros(Na, dtype='float')
 
             for ss in range(Na):
-                wave = lm0 #spechdu['wavelength'][::nthin]
+                wave = lm0
                 if fneb == 1 and MB.f_bpass==0:
                     if delwave>0:
                         fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
@@ -665,19 +661,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     nd_ap = np.append(nd1,nd3)
                     lm_ap = np.append(lm, ltmpbb[ss,:])
 
-                    col1 = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
-                    col2 = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
-                    col00 = [col1, col2]
                     # ASDF
                     tree_spec.update({'wavelength':lm_ap})
                     tree_spec.update({'colnum':nd_ap})
 
                     # Second file
-                    col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
-                    nd = np.arange(0,len(wavetmp),1)
-                    col4 = fits.Column(name='colnum', format='K', unit='', array=nd)
-                    col01 = [col3, col4]
                     # ASDF
+                    nd = np.arange(0,len(wavetmp),1)
                     tree_spec_full.update({'wavelength':wavetmp})
                     tree_spec_full.update({'colnum':nd})
 
@@ -689,17 +679,57 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu[ss,:]})
                 tree_spec_full.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
 
+                # For nebular library;
+                # For every Z, but not for ss and pp.
+                if fneb == 1 and MB.f_bpass==0 and ss==0 and pp==0:
+                    if zz==0:
+                        spec_mul_neb = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        spec_mul_neb_nu = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        spec_mul_neb_nu_conv = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        ftmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                        ltmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                        ftmp_neb_nu_int = np.zeros((len(Z), len(MB.logUs), len(lm)), dtype=float)
+
+                    for uu in range(len(MB.logUs)):
+                        if delwave>0:
+                            fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                            spec_mul_neb[zz,uu,:] = fint(lm0)
+                        else:
+                            spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin]
+                        
+                        con_neb = (spec_mul_neb[zz,uu,:]<0)
+                        spec_mul_neb[zz,uu,:][con_neb] = 0
+                        
+                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu])
+                        spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                        spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                        ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+
+                        if f_spec:
+                            ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
+
+                        if len(lm)>0:
+                            try:
+                                spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
+                            except:
+                                spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                        else:
+                            spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+
+                        tree_spec_full.update({'fspec_orig_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu[zz,uu,:]})
+                        tree_spec_full.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu_conv[zz,uu,:]})
+
+                        spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ltmpbb_neb[zz,uu,:])
+                        tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
+
+
             #########################
             # Summarize the ML
             #########################
             if pp == 0:
                 # ML
-                colms = fits.Column(name='ML_'+str(zz), format='E', unit='Msun/%.1eLsun'%(tmp_norm), array=ms)
-                col02.append(colms)
                 tree_ML.update({'ML_'+str(zz): ms})
                 # SFR
-                colms = fits.Column(name='SFR_'+str(zz), format='E', unit='Msun/yr', array=sfr)
-                col02.append(colms)
                 tree_SFR.update({'SFR_'+str(zz): sfr})
 
 
@@ -793,10 +823,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
             if tt == 0:
                 # For conv;
-                col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
-                nd_db  = np.arange(0,len(ltmpbb_d),1)
-                col4   = fits.Column(name='colnum', format='K', unit='', array=nd_db)
-                col04 = [col3, col4]
                 # ASDF
                 tree_spec_dust.update({'wavelength': ltmpbb_d})
                 tree_spec_dust.update({'colnum': nd_db})
@@ -1207,9 +1233,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ####################################
     # Start generating templates
     ####################################
-    col00 = []
-    col01 = []
-    col02 = []
     for zz in range(len(Z)):
         Zbest = Z[zz]
         Na = len(age)
@@ -1257,16 +1280,16 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
                 if fneb == 1:
                     if delwave>0:
-                        fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin], kind='nearest', fill_value="extrapolate")
                         spec_mul[ss] = fint(lm0)
                     else:
-                        spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
+                        spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
                 else:
                     if delwave>0:
-                        fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin], kind='nearest', fill_value="extrapolate")
                         spec_mul[ss] = fint(lm0)
                     else:
-                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
 
                 ##################
                 # IGM attenuation.
@@ -1309,19 +1332,13 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     nd_ap  = np.append(nd1,nd3)
                     lm_ap  = np.append(lm, ltmpbb[ss,:])
 
-                    col1   = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
-                    col2   = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
-                    col00  = [col1, col2]
                     # ASDF
                     tree_spec.update({'wavelength':lm_ap})
                     tree_spec.update({'colnum':nd_ap})
 
                     # Second file
-                    col3   = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
-                    nd     = np.arange(0,len(wavetmp),1)
-                    col4   = fits.Column(name='colnum', format='K', unit='', array=nd)
-                    col01 = [col3, col4]
                     # ASDF
+                    nd = np.arange(0,len(wavetmp),1)
                     tree_spec_full.update({'wavelength':wavetmp})
                     tree_spec_full.update({'colnum':nd})
 
@@ -1401,10 +1418,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
             if tt == 0:
                 # For conv;
-                col3 = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
-                nd_db = np.arange(0,len(ltmpbb_d),1)
-                col4 = fits.Column(name='colnum', format='K', unit='', array=nd_db)
-                col04 = [col3, col4]
                 # ASDF
                 tree_spec_dust.update({'wavelength': ltmpbb_d})
                 tree_spec_dust.update({'colnum': nd_db})

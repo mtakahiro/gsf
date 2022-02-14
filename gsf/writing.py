@@ -217,6 +217,16 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         col50 = fits.Column(name='TDUST', format='E', unit='K', array=Tdustmc[:])
         col01.append(col50)
 
+    if self.fneb:
+        Anebmc = np.zeros(3, dtype=float)
+        logUmc = np.zeros(3, dtype=float)
+        Anebmc[:] = np.percentile(res.flatchain['Aneb'][burnin:], [16,50,84])
+        logUmc[:] = np.percentile(res.flatchain['logU'][burnin:], [16,50,84])
+        col50 = fits.Column(name='Aneb', format='E', unit='', array=Anebmc[:])
+        col01.append(col50)
+        col50 = fits.Column(name='logU', format='E', unit='', array=logUmc[:])
+        col01.append(col50)
+
     # zmc
     col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
     col01.append(col50)

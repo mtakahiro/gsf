@@ -47,9 +47,13 @@ class Post:
             model = np.append(model,model_dust[n_optir:])
             x1 = np.append(x1,x1_dust[n_optir:])
 
+        if self.mb.fneb:
+            model_neb, x1_neb = self.mb.fnc.tmp04_neb(vals)
+            model += model_neb
+
         if self.mb.ferr:
             try:
-                logf = vals['logf'] #.
+                logf = vals['logf']
             except:
                 logf = -np.inf
         else:

@@ -194,11 +194,22 @@ class Mainbody():
         try:
             if int(inputs['ADD_NEBULAE']) == 1:
                 self.fneb = True
-            try:
-                self.logU = float(inputs['logU'])
-            except:
-                self.logU = -2.5
+                try:
+                    self.logU = float(inputs['logU'])
+                except:
+                    self.logU = -2.5
+                try:
+                    self.logUMIN = float(inputs['logUMIN'])
+                    self.logUMAX = float(inputs['logUMAX'])
+                    self.DELlogU = float(inputs['DELlogU'])
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                except:
+                    self.logUMIN = -2.5
+                    self.logUMAX = -2.0
+                    self.DELlogU = 0.5
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
         except:
+            print('No nebular added.')
             pass
 
         # Outpu directory;
@@ -343,7 +354,7 @@ class Mainbody():
                 self.delZ = 0.0
                 self.ZFIX = self.Zmin
                 self.Zall = np.asarray([self.ZFIX])
-            elif np.abs(self.Zmax - self.Zmin) < self.delZ:
+            elif np.abs(self.Zmax - self.Zmin) <= self.delZ:
                 self.ZFIX = self.Zmin
                 self.Zall = np.asarray([self.ZFIX])
             else:
@@ -380,8 +391,6 @@ class Mainbody():
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
                 print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
             
-
-
 
         # N of param:
         try:
@@ -1119,7 +1128,6 @@ class Mainbody():
         Add new parameters.
 
         '''
-
         f_add = False
         # Redshift
         if self.fzmc == 1:
@@ -1144,6 +1152,16 @@ class Mainbody():
             self.ndim += 1
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
             f_add = True
+
+        # Nebular; ver1.6
+        if self.fneb:
+            self.ndim += 2 # logU and Ampneb
+            fit_params.add('logU', value=np.median(self.logUs), min=self.logUMIN, max=self.logUMAX)
+            fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
+            #fit_params.add('Aneb', value=-2, min=-2., max=-1.)
+            f_add = True
+
+        self.fit_params = fit_params
 
         return f_add
 
@@ -1306,6 +1324,9 @@ class Mainbody():
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
+        if self.fneb:
+            self.lib_neb = self.fnc.open_spec_neb_fits(fall=0)
+            self.lib_neb_all = self.fnc.open_spec_neb_fits(fall=1)
 
         if add_fir == None:
             add_fir = self.f_dust
@@ -1535,6 +1556,7 @@ class Mainbody():
                 else:
                     fit_name = self.fneld
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
+                print('\nMinimizer refinement;')
                 print(fit_report(out))
 
                 # Fix params to what we had before.

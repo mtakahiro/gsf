@@ -58,10 +58,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
     print('#######################################')
-    col01 = [] # For M/L ratio.
-    col02 = [] # For templates
-    col05 = [] # For spectral indices.
-
+    
     tree_spec = {}
     tree_ML = {}
     tree_lick = {}
@@ -170,6 +167,15 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                     ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
                     con = (ewave0>lammin) & (ewave0<lammax)
                     eflux = eflux0[con]
+
+                    # Loop within logU;
+                    if pp == 0 and ss == 0:
+                        for nlogU, logUtmp in enumerate(MB.logUs):
+                            esptmp.params['gas_logu'] = logUtmp
+                            ewave0, eflux0 = esp.get_spectrum(tage=0.001, peraa=True)
+                            con = (ewave0>lammin) & (ewave0<lammax)
+                            flux_nebular = eflux0[con]-flux
+                            tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                 
                 if f_add_dust:
                     wave0_d, flux0_d = dsptmp.get_spectrum(tage=age[ss], peraa=True)
@@ -198,19 +204,13 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                     if fneb:
                         tree.update({'logU': logU})
 
-                    col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
-                    col02.append(col3)
                     # ASDF
                     tree_spec.update({'wavelength': wave})
 
-                col4 = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
-                col02.append(col4)
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
                 if fneb:
-                    col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=eflux)
-                    col02.append(col4e)
                     # ASDF
                     tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
 
@@ -218,8 +218,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
                 for ll in range(len(INDICES)):
-                    col5 = fits.Column(name=INDICES[ll]+'_'+str(zz), format='E', unit='', array=LICK[:,ll])
-                    col05.append(col5)
                     # ASDF
                     tree_lick.update({INDICES[ll]+'_'+str(zz): LICK[:,ll]})
 
@@ -231,11 +229,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
                 col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
                 tree_ML.update({'realtau_'+str(zz): ms})
-
-                col01.append(col1)
-                col01.append(col2)
-                col01.append(col3)
-                col01.append(col4)
 
     # Write;
     for aa in range(len(age)):
@@ -325,9 +318,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
     print('#######################################')
-    col01 = [] # For M/L ratio.
-    col02 = [] # For templates
-    col05 = [] # For spectral indices.
 
     tree_spec = {}
     tree_ML = {}
@@ -464,30 +454,19 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                     if fneb:
                         tree.update({'logU': logU})
 
-                    col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wave)
-                    col02.append(col3)
-
                     # ASDF
                     tree_spec.update({'wavelength': wave})
-
-                col4  = fits.Column(name='fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=flux)
-                col02.append(col4)
 
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
                 if fneb:
-                    col4e = fits.Column(name='efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp), format='E', unit='Fnu', array=eflux)
-                    col02.append(col4e)
                     # ASDF
                     tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
-
 
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
                 for ll in range(len(INDICES)):
-                    col5 = fits.Column(name=INDICES[ll]+'_'+str(zz), format='E', unit='', array=LICK[:,ll])
-                    col05.append(col5)
                     # ASDF
                     tree_lick.update({INDICES[ll]+'_'+str(zz): LICK[:,ll]})
 
@@ -499,10 +478,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
                 col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
                 tree_ML.update({'realtau_'+str(zz): ms})
-
-                col01.append(col1)
-                col01.append(col2)
-                col01.append(col3)
 
     # Write;
     for aa in range(len(age)):

@@ -53,9 +53,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     from astropy.io import ascii
     import time
 
-    if f_silence:
+    if False:#f_silence:
         import matplotlib
         matplotlib.use("Agg")
+    else:
+        matplotlib.use("MacOSX")
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
@@ -132,6 +134,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     Asum  = np.sum(A50)
 
+    if MB.fneb:
+        logU50 = hdul[1].data['logU'][1]
+        Aneb50 = 10**hdul[1].data['Aneb'][1]
+
     aa = 0
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av50 = hdul[1].data['Av'+str(aa)][1]
@@ -171,12 +177,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     except:
         f_dust = False
 
-    chi   = hdul[1].data['chi'][0]
-    chin  = hdul[1].data['chi'][1]
-    fitc  = chin
+    chi = hdul[1].data['chi'][0]
+    chin = hdul[1].data['chi'][1]
+    fitc = chin
 
-    Cz0   = hdul[0].header['Cz0']
-    Cz1   = hdul[0].header['Cz1']
+    Cz0 = hdul[0].header['Cz0']
+    Cz1 = hdul[0].header['Cz1']
     zbes  = zp50 
     zscl = (1.+zbes)
 
@@ -340,12 +346,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Open ascii file and stock to array.
     lib = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1, orig=True)
-    #lib_all_conv = fnc.open_spec_fits(fall=1)
     if f_dust:
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
+
+    if MB.fneb:
+        lib_neb = MB.fnc.open_spec_neb_fits(fall=0)
+        lib_neb_all = MB.fnc.open_spec_neb_fits(fall=1, orig=True)
 
     iimax = len(nage)-1
 
@@ -360,7 +369,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
         y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
 
-        
         # data;
         dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
         NRbbd = dat_d['col1']
@@ -418,11 +426,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 # Keep each component;
                 f_50_comp_dust = y0d * c / np.square(x0d) / d
 
+            if MB.fneb: # Only at one age pixel;
+                y0_r, x0_tmp = fnc.tmp03_neb(Aneb50, AAv[0], logU50, ii, Z50[ii], zbes, lib_neb_all)
+                y0p, x0p = fnc.tmp03_neb(Aneb50, AAv[0], logU50, ii, Z50[ii], zbes, lib_neb)
+                ysum += y0_r
+                ysump[:nopt] += y0p
+
         else:
             y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
             y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
             ysump[:nopt] += y0p
+
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d
 
         # The following needs revised.
@@ -637,6 +652,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if ss == MB.aamin[0]:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp = mod0_tmp
+                if MB.fneb:
+                    Aneb_tmp = 10**samples['Aneb'][nr]
+                    logU_tmp = samples['logU'][nr]
+                    mod0_tmp, xm_tmp = fnc.tmp03_neb(Aneb_tmp, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
+                    fm_tmp += mod0_tmp
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
