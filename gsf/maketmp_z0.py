@@ -158,24 +158,24 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                 wave, flux = wave0[con], flux0[con]
                 mlost[ss] = sp.stellar_mass / sp.formed_mass
 
-                if fneb:
+                if fneb and pp == 0 and ss == 0:
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
-                    esptmp.params['gas_logu'] = logU # ionization parameter
-                    esp = esptmp
-                    if ss == 0:
-                        print('Nebular lines are also added, with logU=%.2f.'%(logU))
-                    ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
-                    con = (ewave0>lammin) & (ewave0<lammax)
-                    eflux = eflux0[con]
+                    #esptmp.params['gas_logu'] = logU # ionization parameter
+                    #esp = esptmp
+                    #if ss == 0:
+                    #    print('Nebular lines are also added, with logU=%.2f.'%(logU))
+                    #ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
+                    #con = (ewave0>lammin) & (ewave0<lammax)
+                    #eflux = eflux0[con]
 
                     # Loop within logU;
-                    if pp == 0 and ss == 0:
-                        for nlogU, logUtmp in enumerate(MB.logUs):
-                            esptmp.params['gas_logu'] = logUtmp
-                            ewave0, eflux0 = esp.get_spectrum(tage=0.001, peraa=True)
-                            con = (ewave0>lammin) & (ewave0<lammax)
-                            flux_nebular = eflux0[con]-flux
-                            tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
+                    for nlogU, logUtmp in enumerate(MB.logUs):
+                        esptmp.params['gas_logu'] = logUtmp
+                        esp = esptmp
+                        ewave0, eflux0 = esp.get_spectrum(tage=0.001, peraa=True)
+                        con = (ewave0>lammin) & (ewave0<lammax)
+                        flux_nebular = eflux0[con]-flux
+                        tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                 
                 if f_add_dust:
                     wave0_d, flux0_d = dsptmp.get_spectrum(tage=age[ss], peraa=True)
@@ -201,18 +201,17 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
-                    if fneb:
-                        tree.update({'logU': logU})
+                    #if fneb:
+                    #    tree.update({'logU': logU})
 
                     # ASDF
                     tree_spec.update({'wavelength': wave})
 
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
-
-                if fneb:
-                    # ASDF
-                    tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
+                #if fneb:
+                #    # ASDF
+                #    tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
 
 
             if pp == 0:

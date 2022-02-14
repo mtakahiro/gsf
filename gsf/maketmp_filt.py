@@ -594,7 +594,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
             for ss in range(Na):
                 wave = lm0
-                if fneb == 1 and MB.f_bpass==0:
+                # Espec no more needed
+                if False:# fneb == 1 and MB.f_bpass==0:
                     if delwave>0:
                         fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
                         spec_mul[ss] = fint(lm0)
@@ -613,10 +614,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 f_IGM = True
                 if f_IGM:
                     spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
-                else:
-                    spec_av_tmp = spec_mul[ss,:]
+                    spec_mul[ss,:] = spec_av_tmp
 
-                spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+                # Flam to Fnu
+                spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:])
 
                 # Distance;
                 DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
@@ -700,7 +701,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         con_neb = (spec_mul_neb[zz,uu,:]<0)
                         spec_mul_neb[zz,uu,:][con_neb] = 0
                         
-                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu])
+                        if f_IGM:
+                            spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
+
+                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:])
                         spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                         spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                         ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
