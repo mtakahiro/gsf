@@ -426,7 +426,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 # Keep each component;
                 f_50_comp_dust = y0d * c / np.square(x0d) / d
 
-            if MB.fneb: # Only at one age pixel;
+            if MB.fneb: 
+                # Only at one age pixel;
                 y0_r, x0_tmp = fnc.tmp03_neb(Aneb50, AAv[0], logU50, ii, Z50[ii], zbes, lib_neb_all)
                 y0p, x0p = fnc.tmp03_neb(Aneb50, AAv[0], logU50, ii, Z50[ii], zbes, lib_neb)
                 ysum += y0_r

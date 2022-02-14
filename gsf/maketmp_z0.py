@@ -160,14 +160,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
 
                 if fneb and pp == 0 and ss == 0:
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
-                    #esptmp.params['gas_logu'] = logU # ionization parameter
-                    #esp = esptmp
-                    #if ss == 0:
-                    #    print('Nebular lines are also added, with logU=%.2f.'%(logU))
-                    #ewave0, eflux0 = esp.get_spectrum(tage=age[ss], peraa=True)
-                    #con = (ewave0>lammin) & (ewave0<lammax)
-                    #eflux = eflux0[con]
-
                     # Loop within logU;
                     for nlogU, logUtmp in enumerate(MB.logUs):
                         esptmp.params['gas_logu'] = logUtmp
@@ -201,8 +193,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
-                    #if fneb:
-                    #    tree.update({'logU': logU})
+                    if fneb:
+                        tree.update({'logUMIN': MB.logUMIN})
+                        tree.update({'logUMAX': MB.logUMAX})
+                        tree.update({'DELlogU': MB.DELlogU})
 
                     # ASDF
                     tree_spec.update({'wavelength': wave})

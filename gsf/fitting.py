@@ -1158,7 +1158,7 @@ class Mainbody():
             self.ndim += 2 # logU and Ampneb
             fit_params.add('logU', value=np.median(self.logUs), min=self.logUMIN, max=self.logUMAX)
             fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
-            #fit_params.add('Aneb', value=-2, min=-2., max=-1.)
+            #fit_params.add('Aneb', value=0, min=0, max=1)
             f_add = True
 
         self.fit_params = fit_params
