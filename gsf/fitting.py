@@ -55,8 +55,6 @@ class Mainbody():
         Age, in Gyr.
     fneb : int
         flag for adding nebular emission. 0: No, 1: Yes.
-    logU : float
-        Ionizing parameter, in logU.
     tau0 : float array
         Width of age bin. If you want to fix it to a specific value, set it to >0.01, in Gyr.
         Otherwise, it would be either minimum value (=0.01; if one age bin), 
@@ -190,14 +188,9 @@ class Mainbody():
 
         # Nebular emission;
         self.fneb = False
-        self.logU = 0
         try:
             if int(inputs['ADD_NEBULAE']) == 1:
                 self.fneb = True
-                try:
-                    self.logU = float(inputs['logU'])
-                except:
-                    self.logU = -2.5
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
                     self.logUMAX = float(inputs['logUMAX'])

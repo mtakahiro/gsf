@@ -36,7 +36,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     age  = MB.age
     tau0 = MB.tau0
     fneb = MB.fneb
-    logU = MB.logU
     DIR_TMP = MB.DIR_TMP
     Na = len(age)
 
@@ -198,15 +197,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
                         tree.update({'logUMAX': MB.logUMAX})
                         tree.update({'DELlogU': MB.DELlogU})
 
-                    # ASDF
                     tree_spec.update({'wavelength': wave})
 
-                # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
-                #if fneb:
-                #    # ASDF
-                #    tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
-
 
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
@@ -289,7 +282,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     if fneb:
         print('Currently, BPASS does not have option of nebular emission.')
         fneb = False
-    logU = MB.logU
     DIR_TMP= MB.DIR_TMP
 
     # binary?
@@ -444,8 +436,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
-                    if fneb:
-                        tree.update({'logU': logU})
 
                     # ASDF
                     tree_spec.update({'wavelength': wave})

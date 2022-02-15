@@ -46,7 +46,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     nimf = MB.nimf
     age = MB.ageparam
     fneb = MB.fneb
-    logU = MB.logU
     DIR_TMP = MB.DIR_TMP
     Na = len(age)
 
@@ -125,15 +124,16 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                 LICK[tt,:] = get_ind(wave, flux)
                 mlost[tt] = sp.stellar_mass / sp.formed_mass
 
-                if fneb == 1:
+                if fneb and tt == 0 and ss == 0:
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
-                    esptmp.params['gas_logu'] = logU # ionization parameter
-                    esp = esptmp
-                    if tt == 0:
-                        print('Nebular is also added, with logU=%.2f.'%(logU))
-                    ewave0, eflux0 = esp.get_spectrum(tage=10**age[tt], peraa=True)
-                    con = (ewave0>lammin) & (ewave0<lammax)
-                    eflux = eflux0[con]
+                    # Loop within logU;
+                    for nlogU, logUtmp in enumerate(MB.logUs):
+                        esptmp.params['gas_logu'] = logUtmp
+                        esp = esptmp
+                        ewave0, eflux0 = esp.get_spectrum(tage=0.001, peraa=True)
+                        con = (ewave0>lammin) & (ewave0<lammax)
+                        flux_nebular = eflux0[con]-flux
+                        tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
 
                 if zz == 0 and ss == 0 and tt == 0:
                     # ASDF Big tree;
@@ -145,16 +145,13 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                         'version_gsf': gsf.__version__
                     }
                     if fneb == 1:
-                        tree.update({'logU': logU})
-                    # ASDF
+                        tree.update({'logUMIN': MB.logUMIN})
+                        tree.update({'logUMAX': MB.logUMAX})
+                        tree.update({'DELlogU': MB.DELlogU})
+
                     tree_spec.update({'wavelength': wave})
 
-                # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(tt): flux})
-                if fneb == 1:
-                    # ASDF
-                    tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(tt): eflux})
-
 
             for ll in range(len(INDICES)):
                 # ASDF
@@ -172,8 +169,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
         tree.update({'age%d'%(aa): age[aa]})
     for aa in range(len(Z)):
         tree.update({'Z%d'%(aa): Z[aa]})
-    #for aa in range(len(tau0)):
-    #    tree.update({'tau0%d'%(aa): tau0[aa]})
 
     # Index, Mass-to-light;
     tree.update({'spec' : tree_spec})
