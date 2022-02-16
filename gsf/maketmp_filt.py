@@ -395,7 +395,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         SKIPFILT = []
 
     # If FIR data;
-    try:
+    if MB.f_dust:
         DFILT = inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
@@ -403,12 +403,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
-        f_dust = True
         print('FIR is implemented.\n')
-    except:
+    else:
         print('No FIR is implemented.\n')
-        f_dust = False
-        pass
 
 
     print('############################')
@@ -524,7 +521,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             ebb[ii] = -99 #1000
 
     # Dust flux;
-    if f_dust:
+    if MB.f_dust:
         fdd = ascii.read(CAT_BB_DUST)
         try:
             id0 = fdd['id'].astype('str')
@@ -749,7 +746,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     ######################
     # Add dust component;
     ######################
-    if f_dust:
+    if MB.f_dust:
         tree_spec_dust = {}
         tree_spec_dust_full = {}
 
@@ -819,6 +816,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             # Convolution;
             ALLFILT = np.append(SFILT,DFILT)
             ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            nd_db = np.arange(0, len(ftmpbb_d), 1)
 
             if f_spec:
                 ftmp_nu_int_d = data_int(lm, lambda_d*(1.+zbest), fnu_d)
@@ -874,7 +872,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
     fw.close()
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
             if ebb_d[ii]>ebblim:
@@ -901,7 +899,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
     # Dust
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
@@ -1001,7 +999,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         SKIPFILT = []
 
     # If FIR data;
-    try:
+    if MB.f_dust:
         DFILT = inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
@@ -1009,12 +1007,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
-        f_dust = True
         print('FIR is implemented.\n')
-    except:
+    else:
         print('No FIR is implemented.\n')
-        f_dust = False
-        pass
 
 
     print('############################')
@@ -1126,7 +1121,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
             ebb[ii] = -99 #1000
 
     # Dust flux;
-    if f_dust:
+    if MB.f_dust:
         fdd = ascii.read(CAT_BB_DUST)
         id0 = fdd['id'].astype('str')
         ii0 = np.where(id0[:]==ID)
@@ -1411,7 +1406,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ######################
     # Add dust component;
     ######################
-    if f_dust:
+    if MB.f_dust:
         tree_spec_dust = {}
         tree_spec_dust_full = {}
 
@@ -1511,7 +1506,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
     fw.close()
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
@@ -1538,7 +1533,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
     # Dust
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
