@@ -63,11 +63,11 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Mdustmc = np.zeros(3, dtype='float')
         nTdustmc= np.zeros(3, dtype='float')
         Tdustmc = np.zeros(3, dtype='float')
-
+    
     # ASDF;
     af = self.af
     sedpar = af['ML']
-    
+
     ms = np.zeros(len(age), dtype='float')
     try:
         msmc0 = np.zeros(len(res.flatchain['A%d'%self.aamin[0]][burnin:]), dtype='float')
@@ -200,19 +200,30 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         col50 = fits.Column(name='TAU'+str(aa), format='E', unit='logGyr', array=TAUmc[aa][:])
         col01.append(col50)
         
-
     if self.f_dust:
-        Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
-        if self.DT0 == self.DT1 or self.DT0 + self.dDT <= self.DT1:
+        Mdust_per_temp = self.af['spec_dust']['Mdust']
+        if self.DT0 == self.DT1 or self.DT0 + self.dDT >= self.DT1:
             nTdustmc[:] = [0,0,0]
             Tdustmc[:] = [self.DT0,self.DT0,self.DT0]
         else:
-            nTdustmc[:] = np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
+            if not self.TDUSTFIX == None:
+                nTdustmc[:] = [self.NTDUST,self.NTDUST,self.NTDUST]
+            else:
+                nTdustmc[:] = np.percentile(res.flatchain['TDUST'][burnin:], [16,50,84])
             Tdustmc[:] = self.DT0 + self.dDT * nTdustmc[:]
+
+        Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
+        col50 = fits.Column(name='ADUST', format='E', unit='Msun', array=Mdustmc[:])
+        col01.append(col50)
+
+        # Then M2Light ratio;
+        Mdustmc[0] += np.log10(Mdust_per_temp[int(nTdustmc[0])])
+        Mdustmc[1] += np.log10(Mdust_per_temp[int(nTdustmc[1])])
+        Mdustmc[2] += np.log10(Mdust_per_temp[int(nTdustmc[2])])
 
         col50 = fits.Column(name='MDUST', format='E', unit='Msun', array=Mdustmc[:])
         col01.append(col50)
-        col50 = fits.Column(name='nTDUST', format='E', unit='K', array=nTdustmc[:])
+        col50 = fits.Column(name='nTDUST', format='E', unit='', array=nTdustmc[:])
         col01.append(col50)
         col50 = fits.Column(name='TDUST', format='E', unit='K', array=Tdustmc[:])
         col01.append(col50)

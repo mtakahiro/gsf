@@ -483,11 +483,26 @@ class Mainbody():
             DT0 = float(inputs['TDUST_LOW'])
             DT1 = float(inputs['TDUST_HIG'])
             dDT = float(inputs['TDUST_DEL'])
+            try:
+                self.TDUSTFIX = float(inputs['TDUSTFIX'])
+                if self.TDUSTFIX < DT0 or self.TDUSTFIX > DT1:
+                    print('TDUSTFIX is set out of the range. Exiting.')
+                    sys.exit()
+            except:
+                self.TDUSTFIX = None
+
             if DT0 == DT1:
                 self.Temp = [DT0]
             else:
-                self.Temp= np.arange(DT0,DT1,dDT)
+                self.Temp = np.arange(DT0,DT1,dDT)
+
+            if not self.TDUSTFIX == None:
+                self.NTDUST = np.argmin(np.abs(self.Temp-self.TDUSTFIX))
+            else:
+                self.NTDUST = None
+
             self.f_dust = True
+
             self.DT0 = DT0
             self.DT1 = DT1
             self.dDT = dDT
@@ -1135,7 +1150,9 @@ class Mainbody():
         # Dust;
         if self.f_dust:
             Tdust = self.Temp
-            if len(Tdust)-1>0:
+            if not self.TDUSTFIX == None:
+                fit_params.add('TDUST', value=self.NTDUST, vary=False)
+            elif len(Tdust)-1>0:
                 fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust)-1)
                 self.ndim += 1
             else:

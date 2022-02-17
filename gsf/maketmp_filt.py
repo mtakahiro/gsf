@@ -729,6 +729,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         else:
             Temp = np.arange(DT0,DT1,dDT)
 
+        Mdust_temp = np.zeros(len(Temp),float)
         dellam_d = 1e1
         lambda_d = np.arange(1e3, 1e7, dellam_d)
         
@@ -748,34 +749,39 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
                 fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
                 # This should be in fnu w mzp=25.0
+                Mdust_temp[tt] = 1.0
             else:
                 if tt == 0:
+                    from astropy.modeling import models
+                    from astropy import units as u
                     print('Dust emission based on Modified Blackbody')
-                from astropy.modeling import models
-                from astropy import units as u
-                # from Eq.3 of Bianchi 13
-                kabs0 = 4.0 # in cm2/g
-                beta_d = 2.08 #
-                lam0 = 250.*1e4 # mu m to AA
-                # Whitaker;
-                kappa = 0.0484 #m2 /kg
-                kappa *= 100*100 / 1e3 # in cm2/g
-                #beta_d = 1.8
-                
-                wav = lambda_d * u.AA
-                kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
+                    # from Eq.3 of Bianchi 13
+                    kabs0 = 4.0 # in cm2/g
+                    beta_d = 2.08 #
+                    lam0 = 250.*1e4 # mu m to AA
+                    # Whitaker;
+                    #kappa = 0.0484 #m2 /kg
+                    #kappa *= 100*100 / 1e3 # in cm2/g
+                    #beta_d = 1.8
+                    wav = lambda_d * u.AA
+                    kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
 
-                bb = models.BlackBody(temperature=Temp[tt]*u.K)
-                BT_nu = bb(wav) # erg / (cm2 Hz s sr)
-                #fnu_d = (1+z)/(DL*Mpc_cm)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+                bb = models.BlackBody(temperature=Temp[tt]*u.K, scale=1.0) # erg / (cm2 Hz s sr). Scale is a scale factor.
+                F_bol = bb.bolometric_flux # in erg / (cm2 s)
+                BT_nu = bb(wav) # erg / (cm2 Hz s sr) / what??
+                BT_nu /= F_bol # Because of this, now 1 template does not have 1 Msun.
+
+                # Normalized to 1 erg / (cm2 s), in bol Flux.
 
                 # DL is already in cm;
                 fnu_d = (1+zbest)/(DL)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
-                fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
-
+                fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 template is scaled to 1Msun. 
+                
                 # Into magzp=25.;
                 fnu_d = fnutonu(fnu_d, m0set=25.0, m0input=-48.6)
                 fnu_d = fnu_d.value
+
+                Mdust_temp[tt] = 1./F_bol.value # Msun/temp, like Mass to light ratio.
 
 
             # ASDF
@@ -799,7 +805,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 tree_spec_dust.update({'colnum': nd_db})
 
             tree_spec_dust.update({'fspec_'+str(tt): ftmpbb_d})
+        # Md/temp;
+        tree_spec_dust.update({'Mdust': Mdust_temp})
 
+        #plt.xscale('log')
+        #plt.xlim(1000,15000)
+        #plt.show()
+        #hoge
         tree.update({'spec_dust' : tree_spec_dust})
         tree.update({'spec_dust_full' : tree_spec_dust_full})
         print('dust updated.')

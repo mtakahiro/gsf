@@ -158,10 +158,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ZZ50 = np.sum(Z50*A50)/np.sum(A50)
 
     # FIR Dust;
-    try:
+    if MB.f_dust:
         MD16 = hdul[1].data['MDUST'][0]
         MD50 = hdul[1].data['MDUST'][1]
         MD84 = hdul[1].data['MDUST'][2]
+        AD16 = hdul[1].data['ADUST'][0]
+        AD50 = hdul[1].data['ADUST'][1]
+        AD84 = hdul[1].data['ADUST'][2]
         TD16 = hdul[1].data['TDUST'][0]
         TD50 = hdul[1].data['TDUST'][1]
         TD84 = hdul[1].data['TDUST'][2]
@@ -173,9 +176,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             print('Total dust mass is %.2e'%(MD50))
-        f_dust = True
-    except:
-        f_dust = False
 
     chi = hdul[1].data['chi'][0]
     chin = hdul[1].data['chi'][1]
@@ -183,7 +183,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     Cz0 = hdul[0].header['Cz0']
     Cz1 = hdul[0].header['Cz1']
-    zbes  = zp50 
+    zbes = zp50 
     zscl = (1.+zbes)
 
     ###############################
@@ -252,7 +252,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Plot.
     #############
     # Set the inset.
-    if f_grsm or f_dust:
+    if f_grsm or MB.f_dust:
         fig = plt.figure(figsize=(7.,3.2))
         fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
         ax1 = fig.add_subplot(111)
@@ -260,7 +260,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ysize = 0.25
         if f_grsm:
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
-        if f_dust:
+        if MB.f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
     else:
         if f_plot_resid:
@@ -346,12 +346,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Open ascii file and stock to array.
     lib = fnc.open_spec_fits(fall=0)
     lib_all = fnc.open_spec_fits(fall=1, orig=True)
-    if f_dust:
-        DT0 = float(inputs['TDUST_LOW'])
-        DT1 = float(inputs['TDUST_HIG'])
-        dDT = float(inputs['TDUST_DEL'])
-        Temp = np.arange(DT0,DT1,dDT)
 
+    if MB.f_dust:
+        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
+        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
     if MB.fneb:
         lib_neb = MB.fnc.open_spec_neb_fits(fall=0)
         lib_neb_all = MB.fnc.open_spec_neb_fits(fall=1, orig=True)
@@ -359,10 +357,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     iimax = len(nage)-1
 
     # FIR dust plot;
-    if f_dust:
+    if MB.f_dust:
         from lmfit import Parameters
         par = Parameters()
-        par.add('MDUST',value=MD50)
+        par.add('MDUST',value=AD50)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
@@ -420,7 +418,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             # Keep each component;
             f_50_comp[ii,:] = y0[:] * c / np.square(x0) / d
 
-            if f_dust:
+            if MB.f_dust:
                 ysump[:] += y0d_cut[:nopt]
                 ysump = np.append(ysump,y0d_cut[nopt:])
                 # Keep each component;
@@ -484,7 +482,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     x1max = 100000
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-    if f_dust:
+    if MB.f_dust:
         x1max = 400000
         xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
         xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
@@ -668,7 +666,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #
         # Dust component;
         #
-        if f_dust:
+        if MB.f_dust:
             if kk == 0:
                 par = Parameters()
                 par.add('MDUST',value=samples['MDUST'][nr])
@@ -678,16 +676,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                     par.add('TDUST',value=0)
 
             par['MDUST'].value = samples['MDUST'][nr]
-
-            try:
+            if not MB.TDUSTFIX == None:
+                par['TDUST'].value = MB.NTDUST
+            else:
                 par['TDUST'].value = samples['TDUST'][nr]
-            except:
-                par['TDUST'].value = 0
+                #except:
+                #    par['TDUST'].value = 0
 
-            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+            model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
             if kk == 0:
                 deldt  = (x1_dust[1] - x1_dust[0])
-                x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
+                x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
                 # Redefine??
                 ytmp = np.zeros((mmax,len(x1_tot)), dtype='float')
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
@@ -733,7 +732,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
     ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
     
-    if f_dust:
+    if MB.f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
 
     #if not f_fill:
@@ -841,7 +840,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # plot BB model from best template (blue squares)
     #
     col_dia = 'blue'
-    if f_dust:
+    if MB.f_dust:
         ALLFILT = np.append(SFILT,DFILT)
         #for ii in range(len(x1_tot)):
         #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
@@ -956,7 +955,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         for aa in range(len(age)):
             col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
             col00.append(col1)
-        if f_dust:
+        if MB.f_dust:
             col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust)
             col00.append(col1)
             col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50)
@@ -972,7 +971,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             col00.append(col4)
 
         # BB for dust
-        if f_dust:
+        if MB.f_dust:
             xbb = np.append(xbb,xbbd)
             fybb = np.append(fybb,fybbd)
             eybb = np.append(eybb,eybbd)
@@ -1110,7 +1109,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         tree_spec.update({'wave_model_stel': x0})
         for aa in range(len(age)):
             tree_spec.update({'f_model_stel_%d'%aa: f_50_comp[aa,:]})
-        if f_dust:
+        if MB.f_dust:
             # dust
             tree_spec.update({'wave_model_dust': x1_dust})
             tree_spec.update({'f_model_dust': ytmp_dust50})            
@@ -1135,9 +1134,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
-        if f_dust:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+        if MB.f_dust:
+            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.45
         else:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
@@ -1189,7 +1188,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 ax2t.set_xticks([8000, 20000, 32000, 44000])
                 ax2t.set_xticklabels(['0.8', '2.0', '3.2', '4.4'])
 
-    if f_dust:
+    if MB.f_dust:
         try:
             contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
             y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) / d)[contmp]), np.max((model_tot * c/ np.square(x1_tot) / d)[contmp])*2.0
@@ -1202,6 +1201,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax3t.set_xscale('log')
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
+        print('hoge')
+        ax3t.set_xlim(7e6, 3e7)
+        ax3t.set_ylim(1e-4, 0.1)
+        ax3t.set_yscale('log')
 
     ###############
     # Line name
@@ -1425,6 +1428,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         MD16 = hdul[1].data['MDUST'][0]
         MD50 = hdul[1].data['MDUST'][1]
         MD84 = hdul[1].data['MDUST'][2]
+        AD16 = hdul[1].data['ADUST'][0]
+        AD50 = hdul[1].data['ADUST'][1]
+        AD84 = hdul[1].data['ADUST'][2]
         TD16 = hdul[1].data['TDUST'][0]
         TD50 = hdul[1].data['TDUST'][1]
         TD84 = hdul[1].data['TDUST'][2]
@@ -1623,7 +1629,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     if f_dust:
         from lmfit import Parameters
         par = Parameters()
-        par.add('MDUST',value=MD50)
+        par.add('MDUST',value=AD50)
         par.add('TDUST',value=nTD50)
         par.add('zmc',value=zp50)
 
@@ -1903,11 +1909,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
                     par.add('TDUST',value=0)
 
             par['MDUST'].value = samples['MDUST'][nr]
-
-            try:
+            if not MB.TDUSTFIX == None:
+                par['TDUST'].value = MB.NTDUST
+            else:
                 par['TDUST'].value = samples['TDUST'][nr]
-            except:
-                par['TDUST'].value = 0
 
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
             if kk == 0:
@@ -2352,8 +2357,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if f_dust:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
+            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.45
         else:
             label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\

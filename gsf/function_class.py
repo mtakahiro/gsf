@@ -95,12 +95,12 @@ class Func:
         Loads dust template in obs range.
         '''
         ID0 = self.MB.ID
-        tau0= self.MB.tau0 #[0.01,0.02,0.03]
+        tau0= self.MB.tau0
 
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
+        bfnc = self.MB.bfnc
 
         self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
         self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
@@ -116,14 +116,14 @@ class Func:
         nr = hdu0['colnum']
         xx = hdu0['wavelength']
         
-        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float')
+        lib = np.zeros((len(nr), 2+len(self.Temp)), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
         for aa in range(len(self.Temp)):
             coln = int(2 + aa)
             colname = 'fspec_' + str(aa)
-            colnall = int(2 + aa) # 2 takes account of wavelength and AV columns.
+            colnall = int(2 + aa)
             lib[:,colnall] = hdu0[colname]
             if fall==1 and False:
                 import matplotlib.pyplot as plt
@@ -708,7 +708,7 @@ class Func:
 
         nr = self.MB.lib_dust[:,0]
         xx = self.MB.lib_dust[:,1] # This is OBSERVED wavelength range at z=zgal
-        coln= 2+int(t_dust+0.5)
+        coln = 2+int(t_dust+0.5)
         yy = 10**m_dust * self.MB.lib_dust[:,coln]
 
         if self.MB.fzmc == 1:
