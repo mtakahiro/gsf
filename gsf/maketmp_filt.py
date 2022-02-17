@@ -27,6 +27,8 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
         Wavelength array, in AA.
     phi : float
         Eq.34 of Draine & Li 2007. (default: 0.055)
+        ~0.055 g / (ergs/s)
+    DL : in cm.
 
     Returns
     -------
@@ -43,13 +45,12 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     from .function import fnutonu
     import scipy.interpolate as interpolate
 
-    Htokg = 1.66054e-27 # kg/H
+    Htokg = 1.66054e-27 # kg/H atom
     kgtomsun = 1.989e+30 # kg/Msun
     MsunperH = Htokg / kgtomsun # Msun/H
+    HperMsun = kgtomsun / Htokg # N_Hatom per Msun 
 
     Jytoerg = 1e-23 # erg/s/cm2/Hz / Jy
-    c = 3e18
-    Mpc_cm = 3.08568025e+24
 
     umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
             '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '12.0', '15.0',\
@@ -63,14 +64,6 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     umax = umaxs[numax]
     dmodel = fd_model['name'][ndmodel]
 
-    # See README of Draine's table.
-    #dU = float(umin)/100.
-    #U = np.arange(float(umin), float(umax), dU)
-    #Umean = np.mean(U)
-
-    gamma = 0.01
-    Umean = (1-gamma) * float(umin) + (gamma * float(umin) * np.log(float(umax)/float(umin))) / (1-float(umin)/float(umax))
-
     if ndmodel == 6 or ndmodel == 1:
         data_start = 55
     else:
@@ -81,23 +74,16 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     fd = ascii.read(file_dust, data_start=data_start)
 
     wave = fd['col1'] # in mu m.
-    flux = fd['col2'] # erg/s H-1
-    flux_dens = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
-    
-    fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) / MsunperH
-    # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) / (Msun/H) = erg/s/cm2/Hz / Msun
+    flux = fd['col2'] # nu*Pnu: erg/s H-1
+    flux_dens = fd['col3'] # j_nu, emissivity: Jy cm2 sr-1 H-1
+    #survey = fd['col4'] #
 
-    freq = c / (wave*1e4) # 1/Hz
-    ftot = np.sum(flux/ MsunperH) # erg/s H-1 / (Msun/H) = erg/s/Msun
+    fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) * HperMsun
+    # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) * (H/Msun) = erg/s/cm2/Hz / Msun
+    # i.e. observed flux density from a dust of Msun at the distance of DL.
 
-    # Get Mdust to MH2 ratio;
-    #ftot2 = np.sum(flux * freq)
-    #MdtoMh = phi / Umean * ftot2 / (Htokg*1e3) # g/(erg/s)/H / 1 * erg/s/Msun / g * Msun/H = 1/Msun 
-    MdtoMh = 0.01 #1.0
-    Mdust = 1.0 * MdtoMh #* Mh * kgtomsun * mh # Msun/template
-
-    # Then;
-    fnu = fnutonu(fobs, m0set=25.0, m0input=-48.6) / Mdust # Flux density per 1Msun for dust.
+    fnu = fnutonu(fobs, m0set=25.0, m0input=-48.6)
+    # Fnu / Msun
 
     fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
     yy_s = fint(lambda_d)
@@ -743,7 +729,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         else:
             Temp = np.arange(DT0,DT1,dDT)
 
-        dellam_d = 1e3
+        dellam_d = 1e1
         lambda_d = np.arange(1e3, 1e7, dellam_d)
         
         print('Reading dust table...')
@@ -756,15 +742,15 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 tree_spec_dust_full.update({'wavelength': lambda_d*(1.+zbest)})
                 tree_spec_dust_full.update({'colnum': nd_d})
 
-            f_drain = True#False
+            f_drain = False #True #
             if f_drain:
                 #numin, numax, nmodel = 8, 3, 9
                 numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
                 fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
-                plt.close()
-                plt.plot(lambda_d,fnu_d)
+                # This should be in fnu w mzp=25.0
             else:
-                print('Dust emission based on Modified Blackbody')
+                if tt == 0:
+                    print('Dust emission based on Modified Blackbody')
                 from astropy.modeling import models
                 from astropy import units as u
                 # from Eq.3 of Bianchi 13
@@ -772,8 +758,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 beta_d = 2.08 #
                 lam0 = 250.*1e4 # mu m to AA
                 # Whitaker;
-                #kappa = 0.0484 #m2 /kg
-                #kappa *= 100*100 / 1e3 # in cm2/g
+                kappa = 0.0484 #m2 /kg
+                kappa *= 100*100 / 1e3 # in cm2/g
                 #beta_d = 1.8
                 
                 wav = lambda_d * u.AA
@@ -781,7 +767,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                 bb = models.BlackBody(temperature=Temp[tt]*u.K)
                 BT_nu = bb(wav) # erg / (cm2 Hz s sr)
-                fnu_d = (1+zbest)/(DL*MB.Mpc_cm)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+                #fnu_d = (1+z)/(DL*Mpc_cm)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+
+                # DL is already in cm;
+                fnu_d = (1+zbest)/(DL)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
                 fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
 
                 # Into magzp=25.;
