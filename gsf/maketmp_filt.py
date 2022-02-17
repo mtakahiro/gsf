@@ -67,54 +67,42 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     #dU = float(umin)/100.
     #U = np.arange(float(umin), float(umax), dU)
     #Umean = np.mean(U)
-    #print(Umean)
 
     gamma = 0.01
     Umean = (1-gamma) * float(umin) + (gamma * float(umin) * np.log(float(umax)/float(umin))) / (1-float(umin)/float(umax))
-    #print(Umean)
 
-    #try:
-    if True:
-        #if dmodel == 'MW3.1_60':
-        if ndmodel == 6 or ndmodel == 1:
-            data_start = 55
-        else:
-            data_start = 36
+    if ndmodel == 6 or ndmodel == 1:
+        data_start = 55
+    else:
+        data_start = 36
 
-        file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
-        print(file_dust)
-        fd = ascii.read(file_dust, data_start=data_start)
+    file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
+    print(file_dust)
+    fd = ascii.read(file_dust, data_start=data_start)
 
-        wave = fd['col1'] # in mu m.
-        flux = fd['col2'] # erg/s H-1
-        flux_dens = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
-        
-        fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) / MsunperH
-        # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) / (Msun/H) = erg/s/cm2/Hz / Msun
+    wave = fd['col1'] # in mu m.
+    flux = fd['col2'] # erg/s H-1
+    flux_dens = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
+    
+    fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) / MsunperH
+    # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) / (Msun/H) = erg/s/cm2/Hz / Msun
 
-        freq = c / (wave*1e4) # 1/Hz
+    freq = c / (wave*1e4) # 1/Hz
+    ftot = np.sum(flux/ MsunperH) # erg/s H-1 / (Msun/H) = erg/s/Msun
 
-        ftot = np.sum(flux/ MsunperH) # erg/s H-1 / (Msun/H) = erg/s/Msun
-        #Mh = ftot * phi # erg/s/Msun * g/(erg/s) = g/Msun
+    # Get Mdust to MH2 ratio;
+    #ftot2 = np.sum(flux * freq)
+    #MdtoMh = phi / Umean * ftot2 / (Htokg*1e3) # g/(erg/s)/H / 1 * erg/s/Msun / g * Msun/H = 1/Msun 
+    MdtoMh = 0.01 #1.0
+    Mdust = 1.0 * MdtoMh #* Mh * kgtomsun * mh # Msun/template
 
-        # Get Mdust to MH2 ratio;
-        #ftot2 = np.sum(flux * freq)
-        #MdtoMh = phi / Umean * ftot2 / (Htokg*1e3) # g/(erg/s)/H / 1 * erg/s/Msun / g * Msun/H = 1/Msun 
-        #print(MdtoMh)
-        MdtoMh = 0.01 #1.0
-        Mdust = 1.0 * MdtoMh #* Mh * kgtomsun * mh # Msun/template
- 
-        # Then;
-        fnu = fnutonu(fobs) / Mdust # Flux density per 1Msun for dust.
+    # Then;
+    fnu = fnutonu(fobs, m0set=25.0, m0input=-48.6) / Mdust # Flux density per 1Msun for dust.
 
-        fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
-        yy_s = fint(lambda_d)
-        con_yys = (lambda_d<1e4) # Interpolation cause some error??
-        yy_s[con_yys] = 0
-
-    #except:
-    #    print('Something is wrong.',file_dust)
-    #    yy_s = lambda_d * 0
+    fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
+    yy_s = fint(lambda_d)
+    con_yys = (lambda_d<1e4) # Interpolation cause some error??
+    yy_s[con_yys] = 0
 
     return yy_s
 
@@ -758,19 +746,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         dellam_d = 1e3
         lambda_d = np.arange(1e3, 1e7, dellam_d)
         
-        '''
-        # c in AA/s.
-        kb = 1.380649e-23 # Boltzmann constant, in J/K
-        hp = 6.62607015e-34 # Planck constant, in J*s
-        # from Eq.3 of Bianchi 13
-        kabs0 = 4.0 # in cm2/g
-        beta_d= 2.08 #
-        lam0  = 250.*1e4 # mu m to AA
-        
-        from astropy.modeling import models
-        from astropy import units as u
-        '''
-
         print('Reading dust table...')
         for tt in range(len(Temp)):
             if tt == 0:
@@ -781,34 +756,38 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 tree_spec_dust_full.update({'wavelength': lambda_d*(1.+zbest)})
                 tree_spec_dust_full.update({'colnum': nd_d})
 
-            '''
-            bb = models.BlackBody(temperature=Temp[tt]*u.K)
-            wav = lambda_d * u.AA
-            BT_nu = bb(wav) # erg/Hz/s/sr/cm2
-            kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
-            
-            # if optically thin;
-            #kappa = nu_d ** beta_d
-            fnu_d = (1+zbest)/DL**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
-            fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
-            '''
+            f_drain = True#False
+            if f_drain:
+                #numin, numax, nmodel = 8, 3, 9
+                numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
+                fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+                plt.close()
+                plt.plot(lambda_d,fnu_d)
+            else:
+                print('Dust emission based on Modified Blackbody')
+                from astropy.modeling import models
+                from astropy import units as u
+                # from Eq.3 of Bianchi 13
+                kabs0 = 4.0 # in cm2/g
+                beta_d = 2.08 #
+                lam0 = 250.*1e4 # mu m to AA
+                # Whitaker;
+                #kappa = 0.0484 #m2 /kg
+                #kappa *= 100*100 / 1e3 # in cm2/g
+                #beta_d = 1.8
+                
+                wav = lambda_d * u.AA
+                kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
 
-            #numin, numax, nmodel = 8, 3, 9
-            numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
-            fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+                bb = models.BlackBody(temperature=Temp[tt]*u.K)
+                BT_nu = bb(wav) # erg / (cm2 Hz s sr)
+                fnu_d = (1+zbest)/(DL*MB.Mpc_cm)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+                fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
 
-            if False:
-                for nn in range(0,11,1):
-                    try:
-                        fnu_d_tmp = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nn, DIR_DUST=MB.DIR_DUST)
-                        plt.plot(lambda_d * (1+zbest), fnu_d_tmp, label='%d'%nn)
-                        plt.xlim(2000, 5000000)
-                        plt.xscale('log')
-                        plt.yscale('log')
-                    except:
-                        print('Errir in ',nn)
-                plt.legend()
-                plt.show()
+                # Into magzp=25.;
+                fnu_d = fnutonu(fnu_d, m0set=25.0, m0input=-48.6)
+                fnu_d = fnu_d.value
+
 
             # ASDF
             tree_spec_dust_full.update({'fspec_'+str(tt): fnu_d})

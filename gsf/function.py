@@ -482,13 +482,15 @@ def fnutonu(fnu, m0set=25.0, m0input=-48.6):
     
     Parameters
     ----------
-    fnu : 
+    fnu : float array
         flux in cgs, with magnitude zero point of m0input.
-    m0set : 
+    m0set : float
         Target mag zero point.
+    m0input : float
+        Original value for magzp. If erg/s/cm2/Hz, -48.6.
     '''
-    Ctmp = 10**((48.6+m0set)/2.5)
-    fnu_new  = fnu * Ctmp
+    Ctmp = 10**((m0set-m0input)/2.5)
+    fnu_new = fnu * Ctmp
     return fnu_new
 
 
