@@ -551,7 +551,7 @@ class Mainbody():
             nnested = inputs['MC_SAMP']
             if nnested == 'NEST' or nnested == '1':
                 self.f_nested = True
-            elif nnested == 'SLICE' or nnested == '2':
+            elif nnested == 'ZEUS' or  nnested == 'SLICE' or nnested == '2':
                 self.f_zeus = True
             else:
                 self.f_mcmc = True
@@ -1593,9 +1593,9 @@ class Mainbody():
             print('\nMinimizer Defined\n')
             ncpu = 0
 
-            print('######################')
-            print('### Starting emcee ###')
-            print('######################\n')
+            print('########################')
+            print('### Starting sampling ##')
+            print('########################\n')
             start_mc = timeit.default_timer()
 
             # MCMC;
@@ -1613,6 +1613,7 @@ class Mainbody():
                             aa += 1
 
                 if self.f_zeus:
+                    print('sampling with ZEUS')
                     check_converge = False
                     f_burnin = True
                     if f_burnin:
@@ -1645,6 +1646,7 @@ class Mainbody():
                         )
 
                 else:
+                    print('sampling with EMCEE')
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\

@@ -1201,10 +1201,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax3t.set_xscale('log')
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
-        print('hoge')
-        ax3t.set_xlim(7e6, 3e7)
-        ax3t.set_ylim(1e-4, 0.1)
-        ax3t.set_yscale('log')
+        #ax3t.set_xlim(7e6, 3e7)
+        #ax3t.set_ylim(1e-4, 0.1)
+        #ax3t.set_yscale('log')
 
     ###############
     # Line name
