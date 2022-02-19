@@ -236,8 +236,9 @@ class Mainbody():
             self.band['%s_fwhm'%(self.filts[ii])] = np.max(fd[:,1][con]) - np.min(fd[:,1][con])       
 
         # Filter response curve directory, for RF colors.
-        self.filts_rf = ['u','b','v','j','sz']
-        self.band_rf = {} #np.zeros((len(self.filts),),'float')
+        #self.filts_rf = ['u','b','v','j','sz']
+        self.filts_rf = '93,141,95,220,160'.split(',')
+        self.band_rf = {}
         for ii in range(len(self.filts_rf)):
             fd = np.loadtxt(self.DIR_FILT + self.filts_rf[ii] + '.fil', comments='#')
             self.band_rf['%s_lam'%(self.filts_rf[ii])] = fd[:,1]
