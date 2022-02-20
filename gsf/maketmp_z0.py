@@ -8,7 +8,7 @@ from .function import get_ind
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
-def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
+def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False):
     '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
@@ -27,6 +27,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     tau_lim : float, optional
         Maximum value of tau of the template, in Gyr. Tau smaller than this 
         value would be approximated by SSP.
+
+    force_no_neb : bool
+        Turn this on that you are very much sure do not want to include emission line templates, 
+        maybe to save some time running z0 module.
     '''
     import asdf
     import fsps
@@ -36,6 +40,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001):
     age  = MB.age
     tau0 = MB.tau0
     fneb = MB.fneb
+    if not force_no_neb:
+        fneb = True
     DIR_TMP = MB.DIR_TMP
     Na = len(age)
 

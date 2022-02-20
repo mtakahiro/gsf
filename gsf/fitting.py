@@ -201,6 +201,10 @@ class Mainbody():
                     self.logUMAX = -2.0
                     self.DELlogU = 0.5
                     self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                try:
+                    self.logUFIX = float(inputs['logUFIX'])
+                except:
+                    self.logUFIX = None
         except:
             print('No nebular added.')
             pass
@@ -1166,10 +1170,13 @@ class Mainbody():
 
         # Nebular; ver1.6
         if self.fneb:
-            self.ndim += 2 # logU and Ampneb
-            fit_params.add('logU', value=np.median(self.logUs), min=self.logUMIN, max=self.logUMAX)
             fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
-            #fit_params.add('Aneb', value=0, min=0, max=1)
+            self.ndim += 1
+            if not self.logUFIX == None:
+                fit_params.add('logU', value=self.logUFIX, vary=False)
+            else:
+                fit_params.add('logU', value=np.median(self.logUs), min=self.logUMIN, max=self.logUMAX)
+                self.ndim += 1
             f_add = True
 
         self.fit_params = fit_params
@@ -1214,7 +1221,7 @@ class Mainbody():
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                     elif self.age[aa]>agemax and not self.force_agefix:
-                        print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
+                        print('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                     else:

@@ -16,7 +16,6 @@ from .basic_func import Basic
 import corner
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
-#col = ['darkred', 'r', 'coral','orange','g','lightgreen', 'lightblue', 'b','indigo','violet','k']
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
@@ -653,7 +652,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 fm_tmp = mod0_tmp
                 if MB.fneb:
                     Aneb_tmp = 10**samples['Aneb'][nr]
-                    logU_tmp = samples['logU'][nr]
+                    if not MB.logUFIX == None:
+                        logU_tmp = MB.logUFIX
+                    else:
+                        logU_tmp = samples['logU'][nr]
                     mod0_tmp, xm_tmp = fnc.tmp03_neb(Aneb_tmp, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
                     fm_tmp += mod0_tmp
             else:
