@@ -19,7 +19,7 @@ def get_lognorm(t, ltau0, T0=-10):
     return SFR
 
 
-def make_tmp_z0(MB, lammin=100, lammax=160000): 
+def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None): 
     '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
@@ -42,7 +42,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     import asdf
     import fsps
     import gsf
-
+    
     nimf = MB.nimf
     age = MB.ageparam
     fneb = MB.fneb
@@ -52,6 +52,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     tau = MB.tau
     sfh = MB.SFH_FORM
 
+    if not Zforce == None:
+        file_out = 'spec_all_Z%.1f.asdf'%Zforce
+    else:
+        file_out = 'spec_all.asdf'
     Z = MB.Zall
     NZ = len(Z)
     
@@ -64,7 +68,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
 
     ms = np.zeros(Na, dtype='float')
     Ls = np.zeros(Na, dtype='float')
-    
 
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
@@ -78,7 +81,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
     tree_lick = {}
 
     print('tau is the width of each age bin.')
+    flagz = True
     for zz in range(len(Z)):
+        if not Zforce == None and Z[zz] != Zforce:
+            continue
         for ss in range(len(tau)):
             if 10**tau[ss]<0.01:
                 # then do SSP
@@ -135,7 +141,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                         flux_nebular = eflux0[con]-flux
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
 
-                if zz == 0 and ss == 0 and tt == 0:
+                if flagz and ss == 0 and tt == 0:
                     # ASDF Big tree;
                     # Create header;
                     tree = {
@@ -150,6 +156,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
                         tree.update({'DELlogU': MB.DELlogU})
 
                     tree_spec.update({'wavelength': wave})
+                    flagz = False
 
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(tt): flux})
 
@@ -177,4 +184,4 @@ def make_tmp_z0(MB, lammin=100, lammax=160000):
 
     # Save
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
+    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')

@@ -8,7 +8,8 @@ from .function import get_ind
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
-def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False):
+
+def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None):
     '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
@@ -31,13 +32,16 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     force_no_neb : bool
         Turn this on that you are very much sure do not want to include emission line templates, 
         maybe to save some time running z0 module.
+
+    f_mp : bool
+        Multiprocessing.
     '''
     import asdf
     import fsps
     import gsf
 
     nimf = MB.nimf
-    age  = MB.age
+    age = MB.age
     tau0 = MB.tau0
     fneb = MB.fneb
     if not force_no_neb:
@@ -45,16 +49,11 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     DIR_TMP = MB.DIR_TMP
     Na = len(age)
 
-    # Z needs special care in z0 script, to avoid Zfix.
-    if False:
-        # If this is implemented, make sure maketemp at z is also consistent.
-        Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
-        delZ_tmp = float(MB.inputs['DELZ'])
-        if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
-            delZ_tmp = 0.0001
-        Z = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    if not Zforce == None:
+        file_out = 'spec_all_Z%.1f.asdf'%Zforce
     else:
-        Z = MB.Zall
+        file_out = 'spec_all.asdf'
+    Z = MB.Zall
     NZ = len(Z)
     
     # Current age in Gyr;
@@ -71,9 +70,12 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     print('tau is the width of each age bin.')
     tau_age = np.zeros(Na,dtype='float')
     age_age = np.zeros(Na,dtype='float')
+    flagz = True
     for zz in range(len(Z)):
+        if not Zforce == None and Z[zz] != Zforce:
+            continue
         for pp in range(len(tau0)):
-            spall = [] # For sps model
+            spall = [] # For ssp model
             ms = np.zeros(Na, dtype='float')
             Ls = np.zeros(Na, dtype='float')
             mlost = np.zeros(Na, dtype='float')
@@ -189,7 +191,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 Ls[ss] = 10**sp.log_lbol
                 LICK[ss,:] = get_ind(wave, flux)
 
-                if ss == 0 and pp == 0 and zz == 0:
+                if flagz and ss == 0 and pp == 0:
                     # ASDF Big tree;
                     # Create header;
                     tree = {
@@ -204,6 +206,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         tree.update({'DELlogU': MB.DELlogU})
 
                     tree_spec.update({'wavelength': wave})
+                    flagz = False
 
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
@@ -221,6 +224,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
                 col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
                 tree_ML.update({'realtau_'+str(zz): ms})
+
 
     # Write;
     for aa in range(len(age)):
@@ -241,10 +245,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
 
     # Save
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
+    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
 
 
-def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
+def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, \
     Zsun=0.02):
     '''
     This is for the preparation of default template, with BPASS templates, at z=0.
@@ -281,6 +285,11 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
     else:
         imf_str = ''
 
+    if not Zforce == None:
+        file_out = 'spec_all_Z%.1f.asdf'%Zforce
+    else:
+        file_out = 'spec_all.asdf'
+
     Z = MB.Zall
     age = MB.age
     tau0 = MB.tau0
@@ -316,7 +325,11 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
     tau_age = np.zeros(Na,dtype='float')
     age_age = np.zeros(Na,dtype='float')
+
+    flagz = True
     for zz in range(len(Z)):
+        if not Zforce == None and Z[zz] != Zforce:
+            continue
         #
         # open spectral file;
         #
@@ -433,7 +446,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
                 Ls[ss] = np.sum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
 
-                if ss == 0 and pp == 0 and zz == 0:
+                if flagz and ss == 0 and pp == 0:
                     # ASDF Big tree;
                     # Create header;
                     tree = {
@@ -445,6 +458,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
                     # ASDF
                     tree_spec.update({'wavelength': wave})
+                    flagz = True
 
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
@@ -487,5 +501,5 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, \
 
     # Save
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all.asdf', all_array_compression='zlib')
+    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
 

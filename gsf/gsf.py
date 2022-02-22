@@ -165,7 +165,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
                     make_tmp_z0(MB, lammax=lammax)
             else:
                 from .maketmp_z0_tau import make_tmp_z0
-                make_tmp_z0(MB, lammax=lammax)
+                make_tmp_z0(MB, lammax=lammax)            
 
         #
         # 1. Start making redshifted templates.
