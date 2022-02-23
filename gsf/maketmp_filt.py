@@ -771,10 +771,15 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 BT_nu = bb(wav) # erg / (cm2 Hz s sr) / what??
                 BT_nu /= F_bol # Because of this, now 1 template does not have 1 Msun.
 
+                # Take account for CMB contribution;
+                bb_cmb = models.BlackBody(temperature=Tcmb*u.K)
+                BT_nu_cmb = bb_cmb(wav) # erg / (cm2 Hz s sr)
+                BT_nu_cmb /= F_bol
+
                 # Normalized to 1 erg / (cm2 s), in bol Flux.
 
                 # DL is already in cm;
-                fnu_d = (1+zbest)/(DL)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+                fnu_d = (1+zbest)/(DL)**2 * kappa * (BT_nu-BT_nu_cmb) # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
                 fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 template is scaled to 1Msun. 
                 
                 # Into magzp=25.;
