@@ -53,7 +53,7 @@ setup(
     version = "1.6",
     author = "Takahiro Morishita",
     author_email = "takahiro@ipac.caltech.edu",
-    description = "SED Fitting Code for HST Grism",
+    description = "SED Fitting Code",
     license = "IPAC",
     url = "https://github.com/mtakahiro",
     download_url = "https://github.com/",
