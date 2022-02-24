@@ -274,7 +274,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
 
 
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
-    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0):
+    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -464,7 +464,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
         hd0 = fd0[1].header
         bunit_bb = float(hd0['bunit'][:5])
-        lmbb0= fd0[1].data['wavelength']
+        lmbb0 = fd0[1].data['wavelength']
         fbb0 = fd0[1].data['flux'] * bunit_bb
         ebb0 = 1/np.sqrt(fd0[1].data['inverse_variance']) * bunit_bb
 
@@ -479,13 +479,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         if unit == 'lambda':
             print('#########################')
             print('Changed BB from Flam to Fnu')
-            snbb0= fbb0/ebb0
-            fbb  = flamtonu(lmbb0, fbb0)
-            ebb  = fbb/snbb0
+            snbb0 = fbb0/ebb0
+            fbb = flamtonu(lmbb0, fbb0)
+            ebb = fbb/snbb0
         else:
-            snbb0= fbb0/ebb0
-            fbb  = fbb0
-            ebb  = ebb0
+            snbb0 = fbb0/ebb0
+            fbb = fbb0
+            ebb = ebb0
 
     else:
         fbb = np.zeros(len(SFILT), dtype='float')
@@ -539,6 +539,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
                 else:
                     lm0 = spechdu['wavelength'][::nthin]
+                if not lammax == None and not MB.f_dust:
+                    lm0 = lm0[(lm0 * (zbest+1) < lammax)]
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
@@ -771,15 +773,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 BT_nu = bb(wav) # erg / (cm2 Hz s sr) / what??
                 BT_nu /= F_bol # Because of this, now 1 template does not have 1 Msun.
 
-                # Take account for CMB contribution;
-                bb_cmb = models.BlackBody(temperature=Tcmb*u.K)
-                BT_nu_cmb = bb_cmb(wav) # erg / (cm2 Hz s sr)
-                BT_nu_cmb /= F_bol
-
                 # Normalized to 1 erg / (cm2 s), in bol Flux.
 
                 # DL is already in cm;
-                fnu_d = (1+zbest)/(DL)**2 * kappa * (BT_nu-BT_nu_cmb) # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+                fnu_d = (1+zbest)/(DL)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
                 fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 template is scaled to 1Msun. 
                 
                 # Into magzp=25.;
@@ -898,7 +895,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
 
 def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001,
-    f_IGM=True, nthin=1, tmp_norm=1e10, delwave=0):
+    f_IGM=True, nthin=1, tmp_norm=1e10, delwave=0, lammax=300000):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -918,6 +915,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         IGM attenuation. Madau.
     nthin : int
         Thinning templates.
+    lammax : float
+        Maximum wavelength in RF.
     '''    
 
     inputs = MB.inputs
@@ -1231,14 +1230,14 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
                 else:
                     lm0 = spechdu['wavelength'][::nthin]
+                if not lammax == None and not MB.f_dust:
+                    lm0 = lm0[(lm0 * (zbest+1) < lammax)]
                 wave = lm0
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
             fbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
-
-            #A = np.zeros(Na, dtype='float') + 1
 
             spec_mul = np.zeros((Na, len(lm0)), dtype='float')
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float')
