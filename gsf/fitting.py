@@ -606,10 +606,10 @@ class Mainbody():
         # Spectrum
         ##############
         dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
-        NR = dat['col1']#dat[:,0]
-        x = dat['col2']#dat[:,1]
-        fy00 = dat['col3']#dat[:,2]
-        ey00 = dat['col4']#dat[:,3]
+        NR = dat['col1']
+        x = dat['col2']
+        fy00 = dat['col3']
+        ey00 = dat['col4']
 
         con0 = (NR<1000)
         xx0 = x[con0]

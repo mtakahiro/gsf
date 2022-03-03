@@ -141,10 +141,10 @@ def get_input():
     Gets a default dictionary for input params.
 
     '''
-    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0, \
-    'DIR_OUT':'./output/', 'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
-    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,\
-    'ZEVOL':0, 'ZVIS':1, 'FNELD':'differential_evolution', 'MC_SAMP':'SLICE'}
+    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0,
+    'DIR_OUT':'./output/', 'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/',
+    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,
+    'ZEVOL':0, 'ZVIS':0, 'FNELD':'differential_evolution', 'MC_SAMP':'EMCEE'}
 
     return inputs
 
