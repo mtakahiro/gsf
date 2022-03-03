@@ -796,8 +796,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     if f_silence:
         import matplotlib
         matplotlib.use("Agg")
-    else:
-        import matplotlib
 
     fnc = MB.fnc
     bfnc = MB.bfnc
