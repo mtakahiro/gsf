@@ -112,23 +112,25 @@ class Mainbody():
 
         if zman != None:
             self.zgal = zman
-            self.zmin = None
-            self.zmax = None
+            self.zmcmin = None
+            self.zmcmax = None
         else:
             try:
-                self.zgal = float(inputs['ZGAL'])
-                self.zmin = None
-                self.zmax = None
+                self.zgal = float(inputs['ZMC'])
             except:
-                #iix = np.where(self.fd_cat['id'] == int(self.ID))
                 iix = np.where(self.fd_cat['id'] == self.ID)
                 self.zgal = float(self.fd_cat['redshift'][iix])
+
+            try:
+                self.zmcmin = float(inputs['ZMCMIN'])
+                self.zmcmax = float(inputs['ZMCMAX'])
+            except:
                 try:
-                    self.zmin = self.zgal - float(self.fd_cat['ez_l'][iix])
-                    self.zmax = self.zgal + float(self.fd_cat['ez_u'][iix])
+                    self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
+                    self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
-                    self.zmin = None
-                    self.zmax = None
+                    self.zmcmin = None
+                    self.zmcmax = None
 
         # Data directory;
         self.DIR_TMP = inputs['DIR_TEMP']
@@ -328,7 +330,7 @@ class Mainbody():
 
         # Redshift as a param;
         try:
-            self.fzmc = int(inputs['ZMC'])
+            self.fzmc = int(inputs['F_ZMC'])
         except:
             self.fzmc = 0
             print('Cannot find ZMC. Set to %d.'%(self.fzmc))
@@ -940,7 +942,6 @@ class Mainbody():
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
             zrecom = z_cz[1]
-            #if f_scale:
             Czrec0 = scl_cz0[1]
             Czrec1 = scl_cz1[1]
 
@@ -958,15 +959,15 @@ class Mainbody():
         else:
             print('fzvis is set to False. z fit not happening.')
             try:
-                ezl = float(self.inputs['EZL'])
-                ezu = float(self.inputs['EZU'])
+                zmcmin = float(self.inputs['ZMCMIN'])
+                zmcmax = float(self.inputs['ZMCMAX'])
                 print('Redshift error is taken from input file.')
             except:
-                ezl = ezmin
-                ezu = ezmin
+                zmcmin = self.zprev-ezmin
+                zmcmax = self.zprev+ezmin
                 print('Redshift error is assumed to %.1f.'%(ezl))
 
-            z_cz = [self.zprev-ezl, self.zprev, self.zprev+ezu]
+            z_cz = [zmcmin, self.zprev, zmcmax]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
@@ -1561,7 +1562,7 @@ class Mainbody():
             # Add parameters;
             #######################
             out_keep = out
-            f_add = self.add_param(self.fit_params, sigz=self.sigz, zmin=self.zmin, zmax=self.zmax)
+            f_add = self.add_param(self.fit_params, sigz=self.sigz, zmin=self.zmcmin, zmax=self.zmcmax)
 
             # Then, minimize again.
             if f_add:
