@@ -965,7 +965,7 @@ class Mainbody():
             except:
                 zmcmin = self.zprev-ezmin
                 zmcmax = self.zprev+ezmin
-                print('Redshift error is assumed to %.1f.'%(ezl))
+                print('Redshift error is assumed to %.1f.'%(ezmin))
 
             z_cz = [zmcmin, self.zprev, zmcmax]
             zrecom  = z_cz[1]
