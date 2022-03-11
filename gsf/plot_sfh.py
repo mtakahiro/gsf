@@ -608,7 +608,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     for ii in range(len(percs)):
         prihdr['HIERARCH T_MW_%d'%percs[ii]] = ('%.3f'%TMW[ii], 'Mass-weighted age, logGyr')
     for ii in range(len(percs)):
-        prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted agelogGyr')
+        prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted age, logGyr')
     for ii in range(len(percs)):
         prihdr['AV_%d'%percs[ii]] = ('%.3f'%Avtmp[ii], 'Dust attenuation, mag')
     prihdu = fits.PrimaryHDU(header=prihdr)
@@ -796,6 +796,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     if f_silence:
         import matplotlib
         matplotlib.use("Agg")
+    else:
+        import matplotlib
 
     fnc = MB.fnc
     bfnc = MB.bfnc

@@ -23,6 +23,7 @@ def func_tmp(xint,eobs,fmodel):
     int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
     return int_tmp
 
+
 def get_chi2(fy, ey, wht3, ysump, ndim_eff, SNlim=1.0, f_chind=True, f_exclude=False, xbb=None, x_ex=None):
     '''
     '''
@@ -115,7 +116,6 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
     printEnd : str 
         end character
     '''
-
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     if fill == None:
         if float(percent) < 33:
@@ -360,11 +360,15 @@ def get_SFMS(red,age,mass,IMF=1):
     y1[con] = -10
     return y1
 
-# Fitting. (Not sure)
+
 def fit_spec(lm, fobs, eobs, ftmp):
+    '''
+    Fitting. (Not sure)
+    '''
     s = np.sum(fobs*ftmp/eobs**2)/np.sum(ftmp**2/eobs**2)
     chi2 = np.sum(((fobs-s*ftmp)/eobs)**2)
     return chi2, s
+
 
 def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
     I1   = np.sum(fobs*ftmp/eobs**2) + np.sum(fbb*ftmp_bb/ebb**2)
@@ -372,6 +376,7 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
     s    = I1/I2
     chi2 = np.sum(((fobs-s*ftmp)/eobs)**2) + np.sum(((fbb-s*ftmp_bb)/ebb)**2)
     return chi2, s
+
 
 def SFH_del(t0, tau, A, tt=None, minsfr = 1e-10):
     '''
@@ -388,6 +393,7 @@ def SFH_del(t0, tau, A, tt=None, minsfr = 1e-10):
     sfr[:][con] = minsfr
     return sfr
 
+
 def SFH_dec(t0, tau, A, tt=None, minsfr = 1e-10):
     '''
     '''
@@ -402,6 +408,7 @@ def SFH_dec(t0, tau, A, tt=None, minsfr = 1e-10):
     sfr[:][con] = minsfr
     return sfr
 
+
 def SFH_cons(t0, tau, A, tt=None, minsfr = 1e-10):
     '''
     '''
@@ -415,6 +422,7 @@ def SFH_cons(t0, tau, A, tt=None, minsfr = 1e-10):
     con = (tt[:]<t0) | (tt[:]>tau)
     sfr[:][con] = minsfr
     return sfr
+
 
 def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     '''
@@ -438,6 +446,7 @@ def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
         I2  = simps(lamS*1.,lamS)        #Numerator
         fnu = I1 #/I2                     #Average flux density
     return fnu
+
 
 def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
     '''
@@ -463,6 +472,7 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
         fnu = None
     return fnu
 
+
 def data_int(lmobs, lmtmp, ftmp):
     '''
 
@@ -475,6 +485,7 @@ def data_int(lmobs, lmtmp, ftmp):
     '''
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
+
 
 def fnutonu(fnu, m0set=25.0, m0input=-48.6):
     '''
@@ -503,6 +514,7 @@ def flamtonu(lam, flam, m0set=25.0):
     fnu  = flam * Ctmp
     return fnu
 
+
 def fnutolam(lam, fnu, m0set=25.0):
     '''
     Converts from Fnu to Flam, with mag zeropoint of m0set.
@@ -512,16 +524,20 @@ def fnutolam(lam, fnu, m0set=25.0):
     flam  = fnu / Ctmp
     return flam
 
+
 def gauss(x,A,sig):
     return A * np.exp(-0.5*x**2/sig**2)
+
 
 def moffat(xx, A, x0, gamma, alp):
     yy = A * (1. + (xx-x0)**2/gamma**2)**(-alp)
     return yy
 
+
 def get_filt(LIBFILT, NFILT):
     #f = open(LIBFILT + '.info', 'r')
     f = open(LIBFILT + '', 'r')
+
 
 def get_fit(x,y,xer,yer, nsfh='Del.'):
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
@@ -577,6 +593,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
 
     return param, rcsq
 
+
 def savecpkl(data, cpklfile, verbose=True):
     """
     Save data into cpklfile.
@@ -585,6 +602,7 @@ def savecpkl(data, cpklfile, verbose=True):
     f = open(cpklfile,'wb')
     cPickle.dump(data, f, 2)
     f.close()
+
 
 def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
     '''
@@ -922,7 +940,6 @@ def check_line(data,wave,wht,model):
                 pass
 
     return wht2
-
 
 
 def filconv_cen(band0, l0, f0, DIR='FILT/'):

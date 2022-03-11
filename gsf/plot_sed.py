@@ -17,8 +17,8 @@ import corner
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
-def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
-    mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
+def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
+    mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
     '''
     Parameters
@@ -170,7 +170,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         nTD16 = hdul[1].data['nTDUST'][0]
         nTD50 = hdul[1].data['nTDUST'][1]
         nTD84 = hdul[1].data['nTDUST'][2]
-        DFILT = inputs['FIR_FILTER'] # filter band string.
+        DFILT = MB.inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
@@ -243,9 +243,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     try:
         isochrone = af['isochrone']
         LIBRARY = af['library']
+        nimf = af['NIMF']
     except:
         isochrone = ''
         LIBRARY = ''
+        nimf = ''
 
     #############
     # Plot.
@@ -990,6 +992,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         hdr['id'] = ID
         hdr['hierarch isochrone'] = isochrone
         hdr['library'] = LIBRARY
+        hdr['nimf'] = nimf
         hdr['scale'] = scale
 
         try:
@@ -1074,6 +1077,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             'redshift': '%.3f'%zbes,
             'isochrone': '%s'%(isochrone),
             'library': '%s'%(LIBRARY),
+            'nimf': '%d'%(nimf),
             'scale': scale,
             'version_gsf': gsf.__version__
         }
@@ -1270,8 +1274,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
 
-def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, inputs=False, \
-    mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, \
+def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
+    mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
     '''
     Parameters
@@ -1438,7 +1442,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         nTD16 = hdul[1].data['nTDUST'][0]
         nTD50 = hdul[1].data['nTDUST'][1]
         nTD84 = hdul[1].data['nTDUST'][2]
-        DFILT = inputs['FIR_FILTER'] # filter band string.
+        DFILT = MB.inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
@@ -1511,9 +1515,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     try:
         isochrone = af['isochrone']
         LIBRARY = af['library']
+        nimf = af['nimf']
     except:
         isochrone = ''
         LIBRARY = ''
+        nimf = ''
 
     #############
     # Plot.
@@ -1619,9 +1625,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     MB.lib = fnc.open_spec_fits(fall=0)
     MB.lib_all = fnc.open_spec_fits(fall=1)
     if f_dust:
-        DT0 = float(inputs['TDUST_LOW'])
-        DT1 = float(inputs['TDUST_HIG'])
-        dDT = float(inputs['TDUST_DEL'])
+        DT0 = float(MB.inputs['TDUST_LOW'])
+        DT1 = float(MB.inputs['TDUST_HIG'])
+        dDT = float(MB.inputs['TDUST_DEL'])
         Temp = np.arange(DT0,DT1,dDT)
         MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
         MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
@@ -2208,6 +2214,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         hdr['id'] = ID
         hdr['hierarch isochrone'] = isochrone
         hdr['library'] = LIBRARY
+        hdr['nimf'] = nimf
         hdr['scale'] = scale
 
         try:
@@ -2292,6 +2299,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             'redshift': '%.3f'%zbes,
             'isochrone': '%s'%(isochrone),
             'library': '%s'%(LIBRARY),
+            'nimf': '%d'%(nimf),
             'scale': scale,
             'version_gsf': gsf.__version__
         }
@@ -2708,7 +2716,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     if len(age) == 1:
         for aa in range(len(age)):
             try:
-                tau_ssp = float(inputs['TAU_SSP'])
+                tau_ssp = float(MB.inputs['TAU_SSP'])
             except:
                 tau_ssp = tau_lim
             delTl[aa] = tau_ssp/2
