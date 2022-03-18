@@ -160,7 +160,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 sp = sptmp
                 print('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), pp+1, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
 
-                wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True)
+                wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True) # Lsun/AA
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
                 mlost[ss] = sp.stellar_mass / sp.formed_mass

@@ -517,10 +517,10 @@ def flamtonu(lam, flam, m0set=25.0):
 
 def fnutolam(lam, fnu, m0set=25.0):
     '''
-    Converts from Fnu to Flam, with mag zeropoint of m0set.
+    Converts from Fnu to Flam, from mag zeropoint of m0set (to -48.6).
     
     '''
-    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5)
     flam  = fnu / Ctmp
     return flam
 

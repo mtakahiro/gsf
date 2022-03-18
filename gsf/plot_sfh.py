@@ -21,7 +21,7 @@ lcb   = '#4682b4' # line color, blue
 sfrllim = 1e-20
 
 def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
+    dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
     f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=True):
     '''
     Purpose
@@ -166,7 +166,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     #if tau0[0] < 0: # SSP;
         for aa in range(len(age)):
             try:
-                tau_ssp = float(inputs['TAU_SSP'])
+                tau_ssp = float(MB.inputs['TAU_SSP'])
             except:
                 tau_ssp = tau_lim
             delTl[aa] = tau_ssp/2
@@ -249,9 +249,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     # Add simulated scatter in quad
     # if files are available.
     # ##############################
-    if inputs:
-        f_zev = int(inputs['ZEVOL'])
-    else:
+    try:
+        f_zev = int(MB.inputs['ZEVOL'])
+    except:
         f_zev = 1
 
     eZ_mean = 0
@@ -443,7 +443,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     #############
     # Get SFMS in log10;
     #############
-    IMF = int(inputs['NIMF'])
+    IMF = int(MB.inputs['NIMF'])
     SFMS_16 = get_SFMS(zbes,age,10**ACp[:,0],IMF=IMF)
     SFMS_50 = get_SFMS(zbes,age,10**ACp[:,1],IMF=IMF)
     SFMS_84 = get_SFMS(zbes,age,10**ACp[:,2],IMF=IMF)
@@ -775,7 +775,7 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
 
 
 def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
-    inputs=None, dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
+    dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
     f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
     '''
     Purpose
@@ -825,7 +825,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d #10**(73.6/2.5) * 1e-18 # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+    d = MB.d
 
     #############
     # Plot.
@@ -920,7 +920,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     #if tau0[0] < 0: # SSP;
         for aa in range(len(age)):
             try:
-                tau_ssp = float(inputs['TAU_SSP'])
+                tau_ssp = float(MB.inputs['TAU_SSP'])
             except:
                 tau_ssp = tau_lim
             delTl[aa] = tau_ssp/2
@@ -988,7 +988,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ZL = np.zeros((len(age), mmax), dtype='float') -99 # Light weighted cumulative Z.
     TC = np.zeros((len(age), mmax), dtype='float') # Mass weighted T.
     TL = np.zeros((len(age), mmax), dtype='float') # Light weighted T.
-    ZMM= np.zeros((len(age), mmax), dtype='float') # Mass weighted Z.
+    ZMM = np.zeros((len(age), mmax), dtype='float') # Mass weighted Z.
     ZML= np.zeros((len(age), mmax), dtype='float') # Light weighted Z.
     SF = np.zeros((len(age), mmax), dtype='float') # SFR
     Av = np.zeros(mmax, dtype='float') # SFR
@@ -998,10 +998,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Add simulated scatter in quad
     # if files are available.
     # ##############################
-    if inputs:
-        f_zev = int(inputs['ZEVOL'])
-    else:
-        f_zev = 1
+    f_zev = int(MB.inputs['ZEVOL'])
 
     eZ_mean = 0
 
@@ -1059,7 +1056,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
 
             xSF[:,mm], ySF_each[aa,:,mm], yMS_each[aa,:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
-            #xSFtmp, ySFtmp, yMStmp = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
             ySF[:,mm] += ySF_each[aa,:,mm]
             yMS[:,mm] += yMS_each[aa,:,mm]
 
@@ -1139,7 +1135,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     #############
     # Get SFMS in log10;
     #############
-    IMF = int(inputs['NIMF'])
+    IMF = int(MB.inputs['NIMF'])
     SFMS_16 = get_SFMS(zbes,tt,10**ACp[:,0],IMF=IMF)
     SFMS_50 = get_SFMS(zbes,tt,10**ACp[:,1],IMF=IMF)
     SFMS_84 = get_SFMS(zbes,tt,10**ACp[:,2],IMF=IMF)
@@ -1556,9 +1552,9 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     # Add simulated scatter in quad
     # if files are available.
     # ##############################
-    if inputs:
-        f_zev = int(inputs['ZEVOL'])
-    else:
+    try:
+        f_zev = int(MB.inputs['ZEVOL'])
+    except:
         f_zev = 1
 
     eZ_mean = 0

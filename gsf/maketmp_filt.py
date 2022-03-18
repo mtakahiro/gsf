@@ -274,7 +274,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
 
 
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
-    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000):
+    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -303,6 +303,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     DIR_TMP = MB.DIR_TMP
     zbest = MB.zgal
     tau0 = MB.tau0
+    Lsun = 3.839 * 1e33 #erg s-1
 
     try:
         af = MB.af0
@@ -579,28 +580,29 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
                         spec_mul[ss] = fint(lm0)
                     else:
-                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin] # Lsun/A
 
                 ###################
                 # IGM attenuation.
                 ###################
-                f_IGM = True
                 if f_IGM:
                     spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                     spec_mul[ss,:] = spec_av_tmp
-
-                # Flam to Fnu
-                spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:])
 
                 # Distance;
                 DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
 
-                Lsun = 3.839 * 1e33 #erg s-1
+                # Flam to Fnu
+                spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:])
 
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                # (1.+zbest) takes acount of the change in delta lam by redshifting.
+                # Note that this is valid only when F_nu.
+                # When Flambda, /(1.+zbest) will be *(1.+zbest).
+
                 spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
-                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in Msolar.
+                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass/solar.
                 try:
                     tautmp = af['ML']['realtau_%d'%int(zz)]
                     sfr[ss] = ms[ss] / (tautmp[ss]*1e9) # SFR per unit template, in units of Msolar/yr.
@@ -679,7 +681,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
                         spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:])
+                        
                         spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                        
                         spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                         ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
 
@@ -1277,6 +1281,10 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     spec_av_tmp = spec_mul[ss,:]
 
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+                # (1.+zbest) takes acount of the change in delta lam by redshifting.
+                # Note that this is valid only when F_nu.
+                # When Flambda, /(1.+zbest) will be *(1.+zbest).
+
                 if len(lm)>0:
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
