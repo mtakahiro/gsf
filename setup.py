@@ -50,7 +50,6 @@ PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
     name = "gsf",
-    version = "1.6",
     author = "Takahiro Morishita",
     author_email = "takahiro@ipac.caltech.edu",
     description = "SED Fitting Code",
@@ -60,6 +59,8 @@ setup(
     packages=['gsf'],#,'example'
     package_dir={'gsf': 'gsf'},
     requires=['lmfit', 'fsps', 'emcee', 'corner'],
+    use_scm_version=True,
+    setup_requires=['setuptools_scm'],
     # 'python-fsps' could not be added here, somehow.
     # long_description=read('README.rst'),
     classifiers=[
