@@ -107,7 +107,7 @@ class Mainbody():
 
         # Magzp;
         try:
-            self.m0set = inputs['MAGZP']
+            self.m0set = float(inputs['MAGZP'])
         except:
             print('MAGZP is not found. Set to %.2f'%(m0set))
             self.m0set = m0set
