@@ -937,9 +937,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 
     if save_sed:
-        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=25.0)
-        fbb_nu = flamtonu(lbb, fbb*scale, m0set=25.0)
-        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=25.0)
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
+        fbb_nu = flamtonu(lbb, fbb*scale, m0set=m0set)
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=m0set)
 
         # Then save full spectrum;
         col00  = []
@@ -1077,7 +1077,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             'redshift': '%.3f'%zbes,
             'isochrone': '%s'%(isochrone),
             'library': '%s'%(LIBRARY),
-            'nimf': '%d'%(nimf),
+            'nimf': '%s'%(nimf),
             'scale': scale,
             'version_gsf': gsf.__version__
         }
@@ -2166,9 +2166,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
 
     if save_sed:
-        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=25.0)
-        fbb_nu = flamtonu(lbb, fbb*scale, m0set=25.0)
-        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=25.0)
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
+        fbb_nu = flamtonu(lbb, fbb*scale, m0set=m0set)
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=m0set)
 
         # Then save full spectrum;
         col00  = []
@@ -2299,7 +2299,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             'redshift': '%.3f'%zbes,
             'isochrone': '%s'%(isochrone),
             'library': '%s'%(LIBRARY),
-            'nimf': '%d'%(nimf),
+            'nimf': '%s'%(nimf),
             'scale': scale,
             'version_gsf': gsf.__version__
         }

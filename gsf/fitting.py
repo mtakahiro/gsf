@@ -88,10 +88,17 @@ class Mainbody():
         self.inputs = inputs
         self.c = c
         self.Mpc_cm = Mpc_cm
-        self.d = 10**((48.6+m0set)/2.5) #* 1e-18 # Conversion factor from [ergs/s/cm2/A] to [ergs/s/cm2/Hz].
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
+
+        # Magzp;
+        try:
+            self.m0set = float(inputs['MAGZP'])
+        except:
+            print('MAGZP is not found. Set to %.2f'%(m0set))
+            self.m0set = m0set
+        self.d = 10**((48.6+self.m0set)/2.5) # Conversion factor from [ergs/s/cm2/A] to Fnu.
 
         if cosmo == None:
             from astropy.cosmology import WMAP9 as cosmo
@@ -104,13 +111,6 @@ class Mainbody():
         else:
             self.ID = inputs['ID']
         print('\nFitting : %s\n'%self.ID)
-
-        # Magzp;
-        try:
-            self.m0set = float(inputs['MAGZP'])
-        except:
-            print('MAGZP is not found. Set to %.2f'%(m0set))
-            self.m0set = m0set
 
         # Read catalog;
         self.CAT_BB = inputs['CAT_BB']

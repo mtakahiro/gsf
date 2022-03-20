@@ -201,10 +201,10 @@ class Func:
         mshdu = self.MB.af0['ML']
         Ls = mshdu['Ls_%d'%nz] 
 
-        xx   = hdu0['wavelength'] # at RF;
-        nr   = np.arange(0,len(xx),1) #hdu0.data['colnum']
+        xx = hdu0['wavelength'] # at RF;
+        nr = np.arange(0,len(xx),1) #hdu0.data['colnum']
 
-        lib  = np.zeros((len(nr), 2+1), dtype='float')
+        lib = np.zeros((len(nr), 2+1), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -213,7 +213,7 @@ class Func:
         colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
 
         yy0 = hdu0[colname]/Ls[aa]
-        yy = flamtonu(xx, yy0)
+        yy = flamtonu(xx, yy0, m0set=self.MB.m0set)
         lib[:,2] = yy[:]
 
         if self.dust_model == 0: # Calzetti
@@ -929,7 +929,7 @@ class Func_tau:
         colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
 
         yy0 = hdu0[colname]/Ls[aa]
-        yy = flamtonu(xx, yy0)
+        yy = flamtonu(xx, yy0, m0set=self.MB.m0set)
         lib[:,2] = yy[:]
 
         if self.dust_model == 0: # Calzetti

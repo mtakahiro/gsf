@@ -68,7 +68,7 @@ class Post:
 
         if fy is None:
             print('Data is none')
-            resid = model #[con_res]
+            resid = model
         else:
             resid = (model - fy) / np.sqrt(sig)
 
@@ -107,6 +107,7 @@ class Post:
             pars['A%d'%aamax] = Amax2
         return pars
 
+
     def swap_pars_inv(self, pars):
         '''
         '''
@@ -124,7 +125,7 @@ class Post:
 
 
     def lnprob_emcee(self, pos, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-    lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=True, nsigma=1.0, out=None):
+        lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=True, nsigma=1.0, out=None):
         '''
         Parameters
         ----------

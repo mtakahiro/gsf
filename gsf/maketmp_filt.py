@@ -19,7 +19,7 @@ col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
 
 def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
-    DIR_DUST='./DL07spec/', phi=0.055):
+    DIR_DUST='./DL07spec/', phi=0.055, m0set=25.0):
     '''
     Parameters
     ----------
@@ -82,7 +82,7 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) * (H/Msun) = erg/s/cm2/Hz / Msun
     # i.e. observed flux density from a dust of Msun at the distance of DL.
 
-    fnu = fnutonu(fobs, m0set=25.0, m0input=-48.6)
+    fnu = fnutonu(fobs, m0set=m0set, m0input=-48.6)
     # Fnu / Msun
 
     fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
@@ -403,7 +403,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 lm0tmp = fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
-                ninp0[ff] = len(lm0tmp)#[con_tmp])
+                ninp0[ff] = len(lm0tmp)
             except Exception:
                 print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
@@ -481,7 +481,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             print('#########################')
             print('Changed BB from Flam to Fnu')
             snbb0 = fbb0/ebb0
-            fbb = flamtonu(lmbb0, fbb0)
+            fbb = flamtonu(lmbb0, fbb0, m0set=MB.m0set)
             ebb = fbb/snbb0
         else:
             snbb0 = fbb0/ebb0
@@ -594,7 +594,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 wavetmp = wave*(1.+zbest)
 
                 # Flam to Fnu
-                spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:])
+                spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:], m0set=MB.m0set)
 
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 # (1.+zbest) takes acount of the change in delta lam by redshifting.
@@ -680,7 +680,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
-                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:])
+                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
                         
                         spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                         
@@ -753,7 +753,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             if f_drain:
                 #numin, numax, nmodel = 8, 3, 9
                 numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
-                fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+                fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST, m0set=MB.m0set)
                 # This should be in fnu w mzp=25.0
                 Mdust_temp[tt] = 1.0
             else:
@@ -761,33 +761,36 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     from astropy.modeling import models
                     from astropy import units as u
                     print('Dust emission based on Modified Blackbody')
+                    '''
                     # from Eq.3 of Bianchi 13
                     kabs0 = 4.0 # in cm2/g
                     beta_d = 2.08 #
                     lam0 = 250.*1e4 # mu m to AA
-                    # Whitaker;
-                    #kappa = 0.0484 #m2 /kg
-                    #kappa *= 100*100 / 1e3 # in cm2/g
-                    #beta_d = 1.8
+                    '''
+                    kb = 1.380649e-23 # Boltzmann constant, in J/K
+                    hp = 6.62607015e-34 # Planck constant, in J*s
                     wav = lambda_d * u.AA
-                    kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
+                    nures = c / wav.value * 1e-9 # GHz
 
-                bb = models.BlackBody(temperature=Temp[tt]*u.K, scale=1.0) # erg / (cm2 Hz s sr). Scale is a scale factor.
-                F_bol = bb.bolometric_flux # in erg / (cm2 s)
-                BT_nu = bb(wav) # erg / (cm2 Hz s sr) / what??
-                BT_nu /= F_bol # Because of this, now 1 template does not have 1 Msun.
+                    Tcmb = 2.726 * (1+zbest)
+                    beta = 1.8
+                    kappa = 0.0484 * (nures/345.)**beta # m^2 / kg
+                    kappa *= (100)**2 / (1e3) # cm2/g
+                    nurest = c / wav.value # Hz
 
-                # Normalized to 1 erg / (cm2 s), in bol Flux.
+                BT_nu = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Temp[tt])) - 1.0))
+                BT_nu_cmb = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Temp[tt])) - 1.0))
+                # J s * (Hz)3 * (AA/s)^-2 = 1e+7 erg * (AA)-2 /s
+                denom = BT_nu-BT_nu_cmb
 
-                # DL is already in cm;
-                fnu_d = (1+zbest)/(DL)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
-                fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 template is scaled to 1Msun. 
-                
-                # Into magzp=25.;
-                fnu_d = fnutonu(fnu_d, m0set=25.0, m0input=-48.6)
-                fnu_d = fnu_d.value
+                fnu_d = (1+zbest) / (DL*MB.Mpc_cm)**2 * (kappa * denom)
+                # 1/cm2 * cm2/g * (1e+7 erg * (AA)-2 / s) = 1e7 erg /s / g / AA / AA
+                fnu_d *= 1e7 * 1e16 # erg /s / g / cm2
+                fnu_d *= 1.989e+33 # erg /s / Msun / cm2
 
-                Mdust_temp[tt] = 1./F_bol.value # Msun/temp, like Mass to light ratio.
+                # Into magzp;
+                fnu_d = fnutonu(fnu_d, m0set=MB.m0set, m0input=-48.6)
+                Mdust_temp[tt] = 1. # Msun/temp, like Mass to light ratio.
 
 
             # ASDF
@@ -850,7 +853,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
-            #fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, 1000))
         elif  ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
@@ -1094,7 +1096,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
             print('#########################')
             print('Changed BB from Flam to Fnu')
             snbb0 = fbb0/ebb0
-            fbb = flamtonu(lmbb0, fbb0)
+            fbb = flamtonu(lmbb0, fbb0, m0set=MB.m0set)
             ebb = fbb/snbb0
         else:
             snbb0 = fbb0/ebb0
@@ -1280,7 +1282,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 else:
                     spec_av_tmp = spec_mul[ss,:]
 
-                spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+                spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp, m0set=MB.m0set)
                 # (1.+zbest) takes acount of the change in delta lam by redshifting.
                 # Note that this is valid only when F_nu.
                 # When Flambda, /(1.+zbest) will be *(1.+zbest).
@@ -1357,7 +1359,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                             spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
-                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:])
+                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
                         spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                         spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                         ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
@@ -1422,12 +1424,12 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
             #numin, numax, nmodel = 8, 3, 9
             numin, numax, nmodel = tt, 3, 9
-            fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+            fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST, m0set=MB.m0set)
 
             if False:
                 for nn in range(0,11,1):
                     try:
-                        fnu_d_tmp = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nn, DIR_DUST=MB.DIR_DUST)
+                        fnu_d_tmp = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nn, DIR_DUST=MB.DIR_DUST, m0set=MB.m0set)
                         plt.plot(lambda_d * (1+zbest), fnu_d_tmp, label='%d'%nn)
                         plt.xlim(2000, 5000000)
                         plt.xscale('log')
