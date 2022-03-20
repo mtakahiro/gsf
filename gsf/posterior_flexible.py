@@ -36,6 +36,7 @@ class Post:
             vals = pars.valuesdict()
 
         model, x1 = self.mb.fnc.tmp04(vals)
+        n_optir = len(model)
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
@@ -47,9 +48,13 @@ class Post:
             model = np.append(model,model_dust[n_optir:])
             x1 = np.append(x1,x1_dust[n_optir:])
 
+        if self.mb.fneb:
+            model_neb, x1_neb = self.mb.fnc.tmp04_neb(vals)
+            model[:n_optir] += model_neb
+
         if self.mb.ferr:
             try:
-                logf = vals['logf'] #.
+                logf = vals['logf']
             except:
                 logf = -np.inf
         else:
@@ -78,61 +83,6 @@ class Post:
         else:
             return resid, model # i.e. residual/sigma. Because is_weighted = True.
 
-    """
-    def residual(self, pars, fy, ey, wht, f_fir=False, out=False, f_val=False, SNlim=1.0, f_chind=True):
-        '''
-        '''
-        if f_val:
-            vals = pars
-        else:
-            vals = pars.valuesdict()
-
-        model, x1 = self.mb.fnc.tmp04(vals)
-
-        from scipy import special
-        if f_chind:
-            conw = (wht>0) & (ey>0) & (fy/ey>SNlim)
-        else:
-            conw = (wht>0) & (ey>0)
-
-        if self.mb.ferr:
-            try:
-                f = vals['f']
-            except:
-                f = 0
-        else:
-            f = 0 # temporary... (if f is param, then take from vals dictionary.)
-
-        if self.mb.f_dust:
-            model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
-            n_optir = len(model)
-
-            # Add dust flux to opt/IR grid.
-            model[:] += model_dust[:n_optir]
-            # then append only FIR flux grid.
-            model = np.append(model,model_dust[n_optir:])
-            x1 = np.append(x1,x1_dust[n_optir:])
-
-        # Add sigma?
-        sig = wht[:] * 0
-        con_res = (wht>0)
-        con_res_r = (wht==0)
-        sig[con_res] = np.sqrt(1./wht[con_res] + (f**2*model[con_res]**2))
-        sig[con_res_r] = wht[con_res_r] * 0 + np.inf
-
-        if fy is None:
-            print('Data is none')
-            resid = model #[con_res]
-        else:
-            resid = (model - fy) / sig
-
-        if not out:
-            return resid # i.e. residual/sigma. Because is_weighted = True.
-        else:
-            return resid, model # i.e. residual/sigma. Because is_weighted = True.
-
-        return resid
-    """
 
     def func_tmp(self, xint, eobs, fmodel):
         '''

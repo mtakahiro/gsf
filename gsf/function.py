@@ -4,6 +4,7 @@ import sys
 from scipy.integrate import simps
 import pickle as cPickle
 import os
+import scipy.interpolate as interpolate
 
 c = 3.e18 # A/s
 d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
@@ -21,6 +22,7 @@ def func_tmp(xint,eobs,fmodel):
     '''
     int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
     return int_tmp
+
 
 def get_chi2(fy, ey, wht3, ysump, ndim_eff, SNlim=1.0, f_chind=True, f_exclude=False, xbb=None, x_ex=None):
     '''
@@ -114,7 +116,6 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
     printEnd : str 
         end character
     '''
-
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     if fill == None:
         if float(percent) < 33:
@@ -140,10 +141,10 @@ def get_input():
     Gets a default dictionary for input params.
 
     '''
-    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0, \
-    'DIR_OUT':'./output/', 'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/', 'AGE':'0.01,0.03,0.1,0.3,1.0,3.0',\
-    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,\
-    'ZEVOL':0, 'ZVIS':1, 'FNELD':'differential_evolution', 'MC_SAMP':'SLICE'}
+    inputs = {'ID':'10000', 'PA':'00', 'ZGAL':0.01, 'CZ0':1.0, 'CZ1':1.0, 'BPASS':0,
+    'DIR_OUT':'./output/', 'DIR_TEMP':'./templates/', 'DIR_FILT':'./filter/',
+    'NIMF':0, 'NMC':100, 'NWALK':50, 'NMCZ':30, 'NWALKZ':20,
+    'ZEVOL':0, 'ZVIS':0, 'FNELD':'differential_evolution', 'MC_SAMP':'EMCEE'}
 
     return inputs
 
@@ -359,11 +360,15 @@ def get_SFMS(red,age,mass,IMF=1):
     y1[con] = -10
     return y1
 
-# Fitting. (Not sure)
+
 def fit_spec(lm, fobs, eobs, ftmp):
+    '''
+    Fitting. (Not sure)
+    '''
     s = np.sum(fobs*ftmp/eobs**2)/np.sum(ftmp**2/eobs**2)
     chi2 = np.sum(((fobs-s*ftmp)/eobs)**2)
     return chi2, s
+
 
 def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
     I1   = np.sum(fobs*ftmp/eobs**2) + np.sum(fbb*ftmp_bb/ebb**2)
@@ -371,6 +376,7 @@ def fit_specphot(lm, fobs, eobs, ftmp, fbb, ebb, ltmp_bb, ftmp_bb):
     s    = I1/I2
     chi2 = np.sum(((fobs-s*ftmp)/eobs)**2) + np.sum(((fbb-s*ftmp_bb)/ebb)**2)
     return chi2, s
+
 
 def SFH_del(t0, tau, A, tt=None, minsfr = 1e-10):
     '''
@@ -387,6 +393,7 @@ def SFH_del(t0, tau, A, tt=None, minsfr = 1e-10):
     sfr[:][con] = minsfr
     return sfr
 
+
 def SFH_dec(t0, tau, A, tt=None, minsfr = 1e-10):
     '''
     '''
@@ -401,6 +408,7 @@ def SFH_dec(t0, tau, A, tt=None, minsfr = 1e-10):
     sfr[:][con] = minsfr
     return sfr
 
+
 def SFH_cons(t0, tau, A, tt=None, minsfr = 1e-10):
     '''
     '''
@@ -414,6 +422,7 @@ def SFH_cons(t0, tau, A, tt=None, minsfr = 1e-10):
     con = (tt[:]<t0) | (tt[:]>tau)
     sfr[:][con] = minsfr
     return sfr
+
 
 def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     '''
@@ -437,6 +446,7 @@ def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
         I2  = simps(lamS*1.,lamS)        #Numerator
         fnu = I1 #/I2                     #Average flux density
     return fnu
+
 
 def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
     '''
@@ -462,6 +472,7 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
         fnu = None
     return fnu
 
+
 def data_int(lmobs, lmtmp, ftmp):
     '''
 
@@ -475,19 +486,22 @@ def data_int(lmobs, lmtmp, ftmp):
     ftmp_int  = np.interp(lmobs,lmtmp,ftmp) # Interpolate model flux to observed wavelength axis.
     return ftmp_int
 
+
 def fnutonu(fnu, m0set=25.0, m0input=-48.6):
     '''
     Converts from Fnu (cgs) to Fnu (m0=m0set)
     
     Parameters
     ----------
-    fnu : 
+    fnu : float array
         flux in cgs, with magnitude zero point of m0input.
-    m0set : 
+    m0set : float
         Target mag zero point.
+    m0input : float
+        Original value for magzp. If erg/s/cm2/Hz, -48.6.
     '''
-    Ctmp = 10**((48.6+m0set)/2.5)
-    fnu_new  = fnu * Ctmp
+    Ctmp = 10**((m0set-m0input)/2.5)
+    fnu_new = fnu * Ctmp
     return fnu_new
 
 
@@ -500,25 +514,30 @@ def flamtonu(lam, flam, m0set=25.0):
     fnu  = flam * Ctmp
     return fnu
 
+
 def fnutolam(lam, fnu, m0set=25.0):
     '''
-    Converts from Fnu to Flam, with mag zeropoint of m0set.
+    Converts from Fnu to Flam, from mag zeropoint of m0set (to -48.6).
     
     '''
-    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5)
     flam  = fnu / Ctmp
     return flam
 
+
 def gauss(x,A,sig):
     return A * np.exp(-0.5*x**2/sig**2)
+
 
 def moffat(xx, A, x0, gamma, alp):
     yy = A * (1. + (xx-x0)**2/gamma**2)**(-alp)
     return yy
 
+
 def get_filt(LIBFILT, NFILT):
     #f = open(LIBFILT + '.info', 'r')
     f = open(LIBFILT + '', 'r')
+
 
 def get_fit(x,y,xer,yer, nsfh='Del.'):
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
@@ -574,6 +593,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
 
     return param, rcsq
 
+
 def savecpkl(data, cpklfile, verbose=True):
     """
     Save data into cpklfile.
@@ -582,6 +602,7 @@ def savecpkl(data, cpklfile, verbose=True):
     f = open(cpklfile,'wb')
     cPickle.dump(data, f, 2)
     f.close()
+
 
 def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
     '''
@@ -921,7 +942,6 @@ def check_line(data,wave,wht,model):
     return wht2
 
 
-
 def filconv_cen(band0, l0, f0, DIR='FILT/'):
     '''
     Convolution of templates with filter response curves.
@@ -939,16 +959,18 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
 
         lmin  = np.min(lfil)
         lmax = np.max(lfil)
-        imin  = 0
+        imin = 0
         imax = 0
 
         lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
 
         lamS,spec = l0, f0 #Two columns with wavelength and flux density
         lamF,filt = lfil, ffil #Two columns with wavelength and response in the range [0,1]
-        filt_int   = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
+        #filt_int = np.interp(lamS,lamF,filt)  #Interpolate Filter to common(spectra) wavelength axis
+        fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
+        filt_int = fint(lamS)
         filtSpec = filt_int * spec #Calculate throughput
-        wht        = 1. #/(er1[con_rf])**2
+        wht = 1. #/(er1[con_rf])**2
 
         if len(lamS)>0: #./3*len(x0[con_org]): # Can be affect results.
             I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
@@ -995,21 +1017,23 @@ def filconv_fast(filts, band, l0, f0, fw=False):
         imax  = 0
 
         con = (l0>lmin) & (l0<lmax) #& (f0>0)
-        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
+        lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
-            wht       = 1.
+            #filt_int = np.interp(lamS,lamF,filt)  # Interpolate Filter to the same wavelength axis of l0, or lamS
+            fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
+            filt_int = fint(lamS)
+
+            wht = 1.
+
 
             # This does not work sometimes;
-            #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-            #I2  = simps(filt_int/lamS,lamS)                  #Numerator
             delS = lamS[1]-lamS[0]
-            I1  = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
-            I2  = np.sum(filt_int/lamS*delS)                  #Numerator
+            I1 = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
+            I2 = np.sum(filt_int/lamS*delS)                  #Numerator
             if I2>0:
-                fnu[ii] = I1/I2/c         #Average flux density
+                fnu[ii] = I1/I2/c #Average flux density
             else:
                 fnu[ii] = 0
         else:
@@ -1079,8 +1103,10 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
         if len(l0[con])>1:
             lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
             lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-            filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
-            wht       = 1.
+            #filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+            fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
+            filt_int = fint(lamS)
+            wht = 1.
 
             # This does not work sometimes;
             #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu

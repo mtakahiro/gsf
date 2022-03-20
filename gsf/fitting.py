@@ -55,19 +55,18 @@ class Mainbody():
         Age, in Gyr.
     fneb : int
         flag for adding nebular emission. 0: No, 1: Yes.
-    logU : float
-        Ionizing parameter, in logU.
     tau0 : float array
         Width of age bin. If you want to fix it to a specific value, set it to >0.01, in Gyr.
         Otherwise, it would be either minimum value (=0.01; if one age bin), 
         or the width to the next age bin.
     '''
 
-    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None):
-        self.update_input(inputs, idman=idman)
+    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, zman=None):
+        self.update_input(inputs, idman=idman, zman=zman)
 
 
-    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, sigz=5.0):
+    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, \
+                    idman=None, zman=None, sigz=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
         by visiting the configuration file.
@@ -90,7 +89,6 @@ class Mainbody():
         self.c = c
         self.Mpc_cm = Mpc_cm
         self.d = 10**((48.6+m0set)/2.5) #* 1e-18 # Conversion factor from [ergs/s/cm2/A] to [ergs/s/cm2/Hz].
-        self.m0set = m0set
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
@@ -107,24 +105,38 @@ class Mainbody():
             self.ID = inputs['ID']
         print('\nFitting : %s\n'%self.ID)
 
+        # Magzp;
+        try:
+            self.m0set = inputs['MAGZP']
+        except:
+            print('MAGZP is not found. Set to %.2f'%(m0set))
+            self.m0set = m0set
+
         # Read catalog;
         self.CAT_BB = inputs['CAT_BB']
         self.fd_cat = ascii.read(self.CAT_BB)
 
-        try:
-            self.zgal = float(inputs['ZGAL'])
-            self.zmin = None
-            self.zmax = None
-        except:
-            #iix = np.where(self.fd_cat['id'] == int(self.ID))
-            iix = np.where(self.fd_cat['id'] == self.ID)
-            self.zgal = float(self.fd_cat['redshift'][iix])
+        if zman != None:
+            self.zgal = zman
+            self.zmcmin = None
+            self.zmcmax = None
+        else:
             try:
-                self.zmin = self.zgal - float(self.fd_cat['ez_l'][iix])
-                self.zmax = self.zgal + float(self.fd_cat['ez_u'][iix])
+                self.zgal = float(inputs['ZMC'])
             except:
-                self.zmin = None
-                self.zmax = None
+                iix = np.where(self.fd_cat['id'] == self.ID)
+                self.zgal = float(self.fd_cat['redshift'][iix])
+
+            try:
+                self.zmcmin = float(inputs['ZMCMIN'])
+                self.zmcmax = float(inputs['ZMCMAX'])
+            except:
+                try:
+                    self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
+                    self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
+                except:
+                    self.zmcmin = None
+                    self.zmcmax = None
 
         # Data directory;
         self.DIR_TMP = inputs['DIR_TEMP']
@@ -184,15 +196,25 @@ class Mainbody():
 
         # Nebular emission;
         self.fneb = False
-        self.logU = 0
         try:
             if int(inputs['ADD_NEBULAE']) == 1:
                 self.fneb = True
-            try:
-                self.logU = float(inputs['logU'])
-            except:
-                self.logU = -2.5
+                try:
+                    self.logUMIN = float(inputs['logUMIN'])
+                    self.logUMAX = float(inputs['logUMAX'])
+                    self.DELlogU = float(inputs['DELlogU'])
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                except:
+                    self.logUMIN = -2.5
+                    self.logUMAX = -2.0
+                    self.DELlogU = 0.5
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                try:
+                    self.logUFIX = float(inputs['logUFIX'])
+                except:
+                    self.logUFIX = None
         except:
+            print('No nebular added.')
             pass
 
         # Outpu directory;
@@ -226,8 +248,9 @@ class Mainbody():
             self.band['%s_fwhm'%(self.filts[ii])] = np.max(fd[:,1][con]) - np.min(fd[:,1][con])       
 
         # Filter response curve directory, for RF colors.
-        self.filts_rf = ['u','b','v','j','sz']
-        self.band_rf = {} #np.zeros((len(self.filts),),'float')
+        #self.filts_rf = ['u','b','v','j','sz']
+        self.filts_rf = '93,141,95,220,160'.split(',')
+        self.band_rf = {}
         for ii in range(len(self.filts_rf)):
             fd = np.loadtxt(self.DIR_FILT + self.filts_rf[ii] + '.fil', comments='#')
             self.band_rf['%s_lam'%(self.filts_rf[ii])] = fd[:,1]
@@ -313,7 +336,7 @@ class Mainbody():
 
         # Redshift as a param;
         try:
-            self.fzmc = int(inputs['ZMC'])
+            self.fzmc = int(inputs['F_ZMC'])
         except:
             self.fzmc = 0
             print('Cannot find ZMC. Set to %d.'%(self.fzmc))
@@ -337,7 +360,7 @@ class Mainbody():
                 self.delZ = 0.0
                 self.ZFIX = self.Zmin
                 self.Zall = np.asarray([self.ZFIX])
-            elif np.abs(self.Zmax - self.Zmin) < self.delZ:
+            elif np.abs(self.Zmax - self.Zmin) <= self.delZ:
                 self.ZFIX = self.Zmin
                 self.Zall = np.asarray([self.ZFIX])
             else:
@@ -374,8 +397,6 @@ class Mainbody():
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
                 print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
             
-
-
 
         # N of param:
         try:
@@ -475,11 +496,26 @@ class Mainbody():
             DT0 = float(inputs['TDUST_LOW'])
             DT1 = float(inputs['TDUST_HIG'])
             dDT = float(inputs['TDUST_DEL'])
+            try:
+                self.TDUSTFIX = float(inputs['TDUSTFIX'])
+                if self.TDUSTFIX < DT0 or self.TDUSTFIX > DT1:
+                    print('TDUSTFIX is set out of the range. Exiting.')
+                    sys.exit()
+            except:
+                self.TDUSTFIX = None
+
             if DT0 == DT1:
                 self.Temp = [DT0]
             else:
-                self.Temp= np.arange(DT0,DT1,dDT)
+                self.Temp = np.arange(DT0,DT1,dDT)
+
+            if not self.TDUSTFIX == None:
+                self.NTDUST = np.argmin(np.abs(self.Temp-self.TDUSTFIX))
+            else:
+                self.NTDUST = None
+
             self.f_dust = True
+
             self.DT0 = DT0
             self.DT1 = DT1
             self.dDT = dDT
@@ -528,7 +564,7 @@ class Mainbody():
             nnested = inputs['MC_SAMP']
             if nnested == 'NEST' or nnested == '1':
                 self.f_nested = True
-            elif nnested == 'SLICE' or nnested == '2':
+            elif nnested == 'ZEUS' or  nnested == 'SLICE' or nnested == '2':
                 self.f_zeus = True
             else:
                 self.f_mcmc = True
@@ -578,10 +614,10 @@ class Mainbody():
         # Spectrum
         ##############
         dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
-        NR = dat['col1']#dat[:,0]
-        x = dat['col2']#dat[:,1]
-        fy00 = dat['col3']#dat[:,2]
-        ey00 = dat['col4']#dat[:,3]
+        NR = dat['col1']
+        x = dat['col2']
+        fy00 = dat['col3']
+        ey00 = dat['col4']
 
         con0 = (NR<1000)
         xx0 = x[con0]
@@ -912,7 +948,6 @@ class Mainbody():
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
 
             zrecom = z_cz[1]
-            #if f_scale:
             Czrec0 = scl_cz0[1]
             Czrec1 = scl_cz1[1]
 
@@ -930,15 +965,15 @@ class Mainbody():
         else:
             print('fzvis is set to False. z fit not happening.')
             try:
-                ezl = float(self.inputs['EZL'])
-                ezu = float(self.inputs['EZU'])
+                zmcmin = float(self.inputs['ZMCMIN'])
+                zmcmax = float(self.inputs['ZMCMAX'])
                 print('Redshift error is taken from input file.')
             except:
-                ezl = ezmin
-                ezu = ezmin
-                print('Redshift error is assumed to %.1f.'%(ezl))
+                zmcmin = self.zprev-ezmin
+                zmcmax = self.zprev+ezmin
+                print('Redshift error is assumed to %.1f.'%(ezmin))
 
-            z_cz = [self.zprev-ezl, self.zprev, self.zprev+ezu]
+            z_cz = [zmcmin, self.zprev, zmcmax]
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
@@ -1113,7 +1148,6 @@ class Mainbody():
         Add new parameters.
 
         '''
-
         f_add = False
         # Redshift
         if self.fzmc == 1:
@@ -1128,7 +1162,9 @@ class Mainbody():
         # Dust;
         if self.f_dust:
             Tdust = self.Temp
-            if len(Tdust)-1>0:
+            if not self.TDUSTFIX == None:
+                fit_params.add('TDUST', value=self.NTDUST, vary=False)
+            elif len(Tdust)-1>0:
                 fit_params.add('TDUST', value=len(Tdust)/2., min=0, max=len(Tdust)-1)
                 self.ndim += 1
             else:
@@ -1138,6 +1174,19 @@ class Mainbody():
             self.ndim += 1
             self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
             f_add = True
+
+        # Nebular; ver1.6
+        if self.fneb:
+            fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
+            self.ndim += 1
+            if not self.logUFIX == None:
+                fit_params.add('logU', value=self.logUFIX, vary=False)
+            else:
+                fit_params.add('logU', value=np.median(self.logUs), min=self.logUMIN, max=self.logUMAX)
+                self.ndim += 1
+            f_add = True
+
+        self.fit_params = fit_params
 
         return f_add
 
@@ -1179,7 +1228,7 @@ class Mainbody():
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                     elif self.age[aa]>agemax and not self.force_agefix:
-                        print('At this redshift, A%d is beyond the age of universe and not used.'%(aa))
+                        print('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                     else:
@@ -1300,6 +1349,9 @@ class Mainbody():
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
+        if self.fneb:
+            self.lib_neb = self.fnc.open_spec_neb_fits(fall=0)
+            self.lib_neb_all = self.fnc.open_spec_neb_fits(fall=1)
 
         if add_fir == None:
             add_fir = self.f_dust
@@ -1516,7 +1568,7 @@ class Mainbody():
             # Add parameters;
             #######################
             out_keep = out
-            f_add = self.add_param(self.fit_params, sigz=self.sigz, zmin=self.zmin, zmax=self.zmax)
+            f_add = self.add_param(self.fit_params, sigz=self.sigz, zmin=self.zmcmin, zmax=self.zmcmax)
 
             # Then, minimize again.
             if f_add:
@@ -1529,6 +1581,7 @@ class Mainbody():
                 else:
                     fit_name = self.fneld
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
+                print('\nMinimizer refinement;')
                 print(fit_report(out))
 
                 # Fix params to what we had before.
@@ -1555,9 +1608,9 @@ class Mainbody():
             print('\nMinimizer Defined\n')
             ncpu = 0
 
-            print('######################')
-            print('### Starting emcee ###')
-            print('######################\n')
+            print('########################')
+            print('### Starting sampling ##')
+            print('########################\n')
             start_mc = timeit.default_timer()
 
             # MCMC;
@@ -1575,6 +1628,7 @@ class Mainbody():
                             aa += 1
 
                 if self.f_zeus:
+                    print('sampling with ZEUS')
                     check_converge = False
                     f_burnin = True
                     if f_burnin:
@@ -1607,6 +1661,7 @@ class Mainbody():
                         )
 
                 else:
+                    print('sampling with EMCEE')
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\

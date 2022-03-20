@@ -5,6 +5,7 @@ import scipy
 import sys
 import os
 from scipy.integrate import simps
+import scipy.interpolate as interpolate
 import asdf
 
 from astropy.io import fits,ascii
@@ -26,6 +27,8 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
         Wavelength array, in AA.
     phi : float
         Eq.34 of Draine & Li 2007. (default: 0.055)
+        ~0.055 g / (ergs/s)
+    DL : in cm.
 
     Returns
     -------
@@ -42,13 +45,12 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     from .function import fnutonu
     import scipy.interpolate as interpolate
 
-    Htokg = 1.66054e-27 # kg/H
+    Htokg = 1.66054e-27 # kg/H atom
     kgtomsun = 1.989e+30 # kg/Msun
     MsunperH = Htokg / kgtomsun # Msun/H
+    HperMsun = kgtomsun / Htokg # N_Hatom per Msun 
 
     Jytoerg = 1e-23 # erg/s/cm2/Hz / Jy
-    c = 3e18
-    Mpc_cm = 3.08568025e+24
 
     umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
             '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '12.0', '15.0',\
@@ -62,58 +64,31 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     umax = umaxs[numax]
     dmodel = fd_model['name'][ndmodel]
 
-    # See README of Draine's table.
-    #dU = float(umin)/100.
-    #U = np.arange(float(umin), float(umax), dU)
-    #Umean = np.mean(U)
-    #print(Umean)
+    if ndmodel == 6 or ndmodel == 1:
+        data_start = 55
+    else:
+        data_start = 36
 
-    gamma = 0.01
-    Umean = (1-gamma) * float(umin) + (gamma * float(umin) * np.log(float(umax)/float(umin))) / (1-float(umin)/float(umax))
-    #print(Umean)
+    file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
+    print(file_dust)
+    fd = ascii.read(file_dust, data_start=data_start)
 
-    #try:
-    if True:
-        #if dmodel == 'MW3.1_60':
-        if ndmodel == 6 or ndmodel == 1:
-            data_start = 55
-        else:
-            data_start = 36
+    wave = fd['col1'] # in mu m.
+    flux = fd['col2'] # nu*Pnu: erg/s H-1
+    flux_dens = fd['col3'] # j_nu, emissivity: Jy cm2 sr-1 H-1
+    #survey = fd['col4'] #
 
-        file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
-        print(file_dust)
-        fd = ascii.read(file_dust, data_start=data_start)
+    fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) * HperMsun
+    # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) * (H/Msun) = erg/s/cm2/Hz / Msun
+    # i.e. observed flux density from a dust of Msun at the distance of DL.
 
-        wave = fd['col1'] # in mu m.
-        flux = fd['col2'] # erg/s H-1
-        flux_dens = fd['col3'] # j_nu: Jy cm2 sr-1 H-1
-        
-        fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) / MsunperH
-        # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) / (Msun/H) = erg/s/cm2/Hz / Msun
+    fnu = fnutonu(fobs, m0set=25.0, m0input=-48.6)
+    # Fnu / Msun
 
-        freq = c / (wave*1e4) # 1/Hz
-
-        ftot = np.sum(flux/ MsunperH) # erg/s H-1 / (Msun/H) = erg/s/Msun
-        #Mh = ftot * phi # erg/s/Msun * g/(erg/s) = g/Msun
-
-        # Get Mdust to MH2 ratio;
-        #ftot2 = np.sum(flux * freq)
-        #MdtoMh = phi / Umean * ftot2 / (Htokg*1e3) # g/(erg/s)/H / 1 * erg/s/Msun / g * Msun/H = 1/Msun 
-        #print(MdtoMh)
-        MdtoMh = 0.01 #1.0
-        Mdust = 1.0 * MdtoMh #* Mh * kgtomsun * mh # Msun/template
- 
-        # Then;
-        fnu = fnutonu(fobs) / Mdust # Flux density per 1Msun for dust.
-
-        fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
-        yy_s = fint(lambda_d)
-        con_yys = (lambda_d<1e4) # Interpolation cause some error??
-        yy_s[con_yys] = 0
-
-    #except:
-    #    print('Something is wrong.',file_dust)
-    #    yy_s = lambda_d * 0
+    fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
+    yy_s = fint(lambda_d)
+    con_yys = (lambda_d<1e4) # Interpolation cause some error??
+    yy_s[con_yys] = 0
 
     return yy_s
 
@@ -298,7 +273,8 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     return LSF, lm
 
 
-def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, tmp_norm=1e10):
+def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
+    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -327,6 +303,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     DIR_TMP = MB.DIR_TMP
     zbest = MB.zgal
     tau0 = MB.tau0
+    Lsun = 3.839 * 1e33 #erg s-1
 
     try:
         af = MB.af0
@@ -357,12 +334,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     tree_SFR = {}
 
     try:
-        DIR_EXTR = MB.DIR_EXTR #inputs['DIR_EXTR']
+        DIR_EXTR = MB.DIR_EXTR
         if len(DIR_EXTR)==0:
             DIR_EXTR = False
     except:
         DIR_EXTR = False
-    DIR_FILT = MB.DIR_FILT #inputs['DIR_FILT']
+    DIR_FILT = MB.DIR_FILT
     try:
         CAT_BB_IND = inputs['CAT_BB_IND']
     except:
@@ -373,8 +350,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         CAT_BB = False
 
     try:
-        SFILT = MB.filts #inputs['FILTER'] # filter band string.
+        SFILT = MB.filts
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
+        print('')
+        print('Filters in the input catalog are;')
+        print(','.join(MB.filts))
+        print('')
     except:
         print('########################')
         print('Filter is not detected!!')
@@ -389,7 +370,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         SKIPFILT = []
 
     # If FIR data;
-    try:
+    if MB.f_dust:
         DFILT = inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
@@ -397,12 +378,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
-        f_dust = True
         print('FIR is implemented.\n')
-    except:
+    else:
         print('No FIR is implemented.\n')
-        f_dust = False
-        pass
 
 
     print('############################')
@@ -430,7 +408,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
-        lm   = np.zeros(np.sum(ninp0[:]),dtype='float')
+        lm = np.zeros(np.sum(ninp0[:]),dtype='float')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         eobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
@@ -487,7 +465,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         fd0 = fits.open(DIR_EXTR + CAT_BB_IND)
         hd0 = fd0[1].header
         bunit_bb = float(hd0['bunit'][:5])
-        lmbb0= fd0[1].data['wavelength']
+        lmbb0 = fd0[1].data['wavelength']
         fbb0 = fd0[1].data['flux'] * bunit_bb
         ebb0 = 1/np.sqrt(fd0[1].data['inverse_variance']) * bunit_bb
 
@@ -502,13 +480,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         if unit == 'lambda':
             print('#########################')
             print('Changed BB from Flam to Fnu')
-            snbb0= fbb0/ebb0
-            fbb  = flamtonu(lmbb0, fbb0)
-            ebb  = fbb/snbb0
+            snbb0 = fbb0/ebb0
+            fbb = flamtonu(lmbb0, fbb0)
+            ebb = fbb/snbb0
         else:
-            snbb0= fbb0/ebb0
-            fbb  = fbb0
-            ebb  = ebb0
+            snbb0 = fbb0/ebb0
+            fbb = fbb0
+            ebb = ebb0
 
     else:
         fbb = np.zeros(len(SFILT), dtype='float')
@@ -518,7 +496,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             ebb[ii] = -99 #1000
 
     # Dust flux;
-    if f_dust:
+    if MB.f_dust:
         fdd = ascii.read(CAT_BB_DUST)
         try:
             id0 = fdd['id'].astype('str')
@@ -546,13 +524,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     else:
         lm = []
 
-
     ####################################
     # Start generating templates
     ####################################
-    col00 = []
-    col01 = []
-    col02 = []
     for zz in range(len(Z)):
         for pp in range(len(tau0)):
             Zbest = Z[zz]
@@ -561,7 +535,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             age_univ= MB.cosmo.age(zbest).value #, use_flat=True, **cosmo)
 
             if zz == 0 and pp == 0:
-                lm0 = spechdu['wavelength']
+                if delwave>0:
+                    lm0_orig = spechdu['wavelength'][::nthin]
+                    lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
+                else:
+                    lm0 = spechdu['wavelength'][::nthin]
+                if not lammax == None and not MB.f_dust:
+                    lm0 = lm0[(lm0 * (zbest+1) < lammax)]
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
@@ -587,32 +567,42 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             Fuv = np.zeros(Na, dtype='float')
 
             for ss in range(Na):
-                wave = spechdu['wavelength']
-                if fneb == 1 and MB.f_bpass==0:
-                    spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                wave = lm0
+                # Espec no more needed
+                if False:# fneb == 1 and MB.f_bpass==0:
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin]
                 else:
-                    spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin] # Lsun/A
 
                 ###################
                 # IGM attenuation.
                 ###################
-                f_IGM = True
                 if f_IGM:
                     spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
-                else:
-                    spec_av_tmp = spec_mul[ss,:]
-
-                spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+                    spec_mul[ss,:] = spec_av_tmp
 
                 # Distance;
                 DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                 wavetmp = wave*(1.+zbest)
 
-                Lsun = 3.839 * 1e33 #erg s-1
+                # Flam to Fnu
+                spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:])
 
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                # (1.+zbest) takes acount of the change in delta lam by redshifting.
+                # Note that this is valid only when F_nu.
+                # When Flambda, /(1.+zbest) will be *(1.+zbest).
+
                 spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
-                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in Msolar.
+                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass/solar.
                 try:
                     tautmp = af['ML']['realtau_%d'%int(zz)]
                     sfr[ss] = ms[ss] / (tautmp[ss]*1e9) # SFR per unit template, in units of Msolar/yr.
@@ -647,19 +637,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                     nd_ap = np.append(nd1,nd3)
                     lm_ap = np.append(lm, ltmpbb[ss,:])
 
-                    col1 = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
-                    col2 = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
-                    col00 = [col1, col2]
                     # ASDF
                     tree_spec.update({'wavelength':lm_ap})
                     tree_spec.update({'colnum':nd_ap})
 
                     # Second file
-                    col3 = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
-                    nd = np.arange(0,len(wavetmp),1)
-                    col4 = fits.Column(name='colnum', format='K', unit='', array=nd)
-                    col01 = [col3, col4]
                     # ASDF
+                    nd = np.arange(0,len(wavetmp),1)
                     tree_spec_full.update({'wavelength':wavetmp})
                     tree_spec_full.update({'colnum':nd})
 
@@ -671,17 +655,63 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu[ss,:]})
                 tree_spec_full.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
 
+                # For nebular library;
+                # For every Z, but not for ss and pp.
+                if fneb == 1 and MB.f_bpass==0 and ss==0 and pp==0:
+                    if zz==0:
+                        spec_mul_neb = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        spec_mul_neb_nu = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        spec_mul_neb_nu_conv = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        ftmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                        ltmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                        ftmp_neb_nu_int = np.zeros((len(Z), len(MB.logUs), len(lm)), dtype=float)
+
+                    for uu in range(len(MB.logUs)):
+                        if delwave>0:
+                            fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                            spec_mul_neb[zz,uu,:] = fint(lm0)
+                        else:
+                            spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin]
+                        
+                        con_neb = (spec_mul_neb[zz,uu,:]<0)
+                        spec_mul_neb[zz,uu,:][con_neb] = 0
+                        
+                        if f_IGM:
+                            spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
+
+                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:])
+                        
+                        spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                        
+                        spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                        ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+
+                        if f_spec:
+                            ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
+
+                        if len(lm)>0:
+                            try:
+                                spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
+                            except:
+                                spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                        else:
+                            spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+
+                        tree_spec_full.update({'fspec_orig_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu[zz,uu,:]})
+                        tree_spec_full.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu_conv[zz,uu,:]})
+
+                        spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
+                        tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
+
+
             #########################
             # Summarize the ML
             #########################
             if pp == 0:
                 # ML
-                colms = fits.Column(name='ML_'+str(zz), format='E', unit='Msun/%.1eLsun'%(tmp_norm), array=ms)
-                col02.append(colms)
                 tree_ML.update({'ML_'+str(zz): ms})
                 # SFR
-                colms = fits.Column(name='SFR_'+str(zz), format='E', unit='Msun/yr', array=sfr)
-                col02.append(colms)
                 tree_SFR.update({'SFR_'+str(zz): sfr})
 
 
@@ -696,7 +726,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     ######################
     # Add dust component;
     ######################
-    if f_dust:
+    if MB.f_dust:
         tree_spec_dust = {}
         tree_spec_dust_full = {}
 
@@ -705,22 +735,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
         else:
             Temp = np.arange(DT0,DT1,dDT)
 
-        dellam_d = 1e3
+        Mdust_temp = np.zeros(len(Temp),float)
+        dellam_d = 1e1
         lambda_d = np.arange(1e3, 1e7, dellam_d)
         
-        '''
-        # c in AA/s.
-        kb = 1.380649e-23 # Boltzmann constant, in J/K
-        hp = 6.62607015e-34 # Planck constant, in J*s
-        # from Eq.3 of Bianchi 13
-        kabs0 = 4.0 # in cm2/g
-        beta_d= 2.08 #
-        lam0  = 250.*1e4 # mu m to AA
-        
-        from astropy.modeling import models
-        from astropy import units as u
-        '''
-
         print('Reading dust table...')
         for tt in range(len(Temp)):
             if tt == 0:
@@ -731,34 +749,46 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
                 tree_spec_dust_full.update({'wavelength': lambda_d*(1.+zbest)})
                 tree_spec_dust_full.update({'colnum': nd_d})
 
-            '''
-            bb = models.BlackBody(temperature=Temp[tt]*u.K)
-            wav = lambda_d * u.AA
-            BT_nu = bb(wav) # erg/Hz/s/sr/cm2
-            kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
-            
-            # if optically thin;
-            #kappa = nu_d ** beta_d
-            fnu_d = (1+zbest)/DL**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
-            fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 flux is in 1Msun
-            '''
+            f_drain = False #True #
+            if f_drain:
+                #numin, numax, nmodel = 8, 3, 9
+                numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
+                fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+                # This should be in fnu w mzp=25.0
+                Mdust_temp[tt] = 1.0
+            else:
+                if tt == 0:
+                    from astropy.modeling import models
+                    from astropy import units as u
+                    print('Dust emission based on Modified Blackbody')
+                    # from Eq.3 of Bianchi 13
+                    kabs0 = 4.0 # in cm2/g
+                    beta_d = 2.08 #
+                    lam0 = 250.*1e4 # mu m to AA
+                    # Whitaker;
+                    #kappa = 0.0484 #m2 /kg
+                    #kappa *= 100*100 / 1e3 # in cm2/g
+                    #beta_d = 1.8
+                    wav = lambda_d * u.AA
+                    kappa = kabs0 * (lam0/wav)**beta_d # cm2/g
 
-            #numin, numax, nmodel = 8, 3, 9
-            numin, numax, nmodel = tt, MB.dust_numax, MB.dust_nmodel #3, 9
-            fnu_d = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nmodel, DIR_DUST=MB.DIR_DUST)
+                bb = models.BlackBody(temperature=Temp[tt]*u.K, scale=1.0) # erg / (cm2 Hz s sr). Scale is a scale factor.
+                F_bol = bb.bolometric_flux # in erg / (cm2 s)
+                BT_nu = bb(wav) # erg / (cm2 Hz s sr) / what??
+                BT_nu /= F_bol # Because of this, now 1 template does not have 1 Msun.
 
-            if False:
-                for nn in range(0,11,1):
-                    try:
-                        fnu_d_tmp = get_spectrum_draine(lambda_d, DL, zbest, numin, numax, nn, DIR_DUST=MB.DIR_DUST)
-                        plt.plot(lambda_d * (1+zbest), fnu_d_tmp, label='%d'%nn)
-                        plt.xlim(2000, 5000000)
-                        plt.xscale('log')
-                        plt.yscale('log')
-                    except:
-                        print('Errir in ',nn)
-                plt.legend()
-                plt.show()
+                # Normalized to 1 erg / (cm2 s), in bol Flux.
+
+                # DL is already in cm;
+                fnu_d = (1+zbest)/(DL)**2 * kappa * BT_nu # 1/cm2 * cm2/g * erg/Hz/s/sr/cm2 = erg/s/cm^2/Hz/g/sr
+                fnu_d *= 1.989e+33 # erg/s/cm^2/Hz/Msun/sr; i.e. 1 template is scaled to 1Msun. 
+                
+                # Into magzp=25.;
+                fnu_d = fnutonu(fnu_d, m0set=25.0, m0input=-48.6)
+                fnu_d = fnu_d.value
+
+                Mdust_temp[tt] = 1./F_bol.value # Msun/temp, like Mass to light ratio.
+
 
             # ASDF
             tree_spec_dust_full.update({'fspec_'+str(tt): fnu_d})
@@ -766,6 +796,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
             # Convolution;
             ALLFILT = np.append(SFILT,DFILT)
             ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            nd_db = np.arange(0, len(ftmpbb_d), 1)
 
             if f_spec:
                 ftmp_nu_int_d = data_int(lm, lambda_d*(1.+zbest), fnu_d)
@@ -775,16 +806,18 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
             if tt == 0:
                 # For conv;
-                col3   = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
-                nd_db  = np.arange(0,len(ltmpbb_d),1)
-                col4   = fits.Column(name='colnum', format='K', unit='', array=nd_db)
-                col04 = [col3, col4]
                 # ASDF
                 tree_spec_dust.update({'wavelength': ltmpbb_d})
                 tree_spec_dust.update({'colnum': nd_db})
 
             tree_spec_dust.update({'fspec_'+str(tt): ftmpbb_d})
+        # Md/temp;
+        tree_spec_dust.update({'Mdust': Mdust_temp})
 
+        #plt.xscale('log')
+        #plt.xlim(1000,15000)
+        #plt.show()
+        #hoge
         tree.update({'spec_dust' : tree_spec_dust})
         tree.update({'spec_dust_full' : tree_spec_dust_full})
         print('dust updated.')
@@ -825,7 +858,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
     fw.close()
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
             if ebb_d[ii]>ebblim:
@@ -852,7 +885,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
 
     # Dust
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
@@ -865,7 +898,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=
     return True
 
 
-def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001, f_IGM=True, nthin=1, tmp_norm=1e10):
+def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_lim=0.001,
+    f_IGM=True, nthin=1, tmp_norm=1e10, delwave=0, lammax=300000):
     '''
     Make SPECTRA at given z and filter set.
     
@@ -885,6 +919,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         IGM attenuation. Madau.
     nthin : int
         Thinning templates.
+    lammax : float
+        Maximum wavelength in RF.
     '''    
 
     inputs = MB.inputs
@@ -951,7 +987,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         SKIPFILT = []
 
     # If FIR data;
-    try:
+    if MB.f_dust:
         DFILT = inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
@@ -959,12 +995,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
-        f_dust = True
         print('FIR is implemented.\n')
-    except:
+    else:
         print('No FIR is implemented.\n')
-        f_dust = False
-        pass
 
 
     print('############################')
@@ -1076,7 +1109,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
             ebb[ii] = -99 #1000
 
     # Dust flux;
-    if f_dust:
+    if MB.f_dust:
         fdd = ascii.read(CAT_BB_DUST)
         id0 = fdd['id'].astype('str')
         ii0 = np.where(id0[:]==ID)
@@ -1188,9 +1221,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ####################################
     # Start generating templates
     ####################################
-    col00 = []
-    col01 = []
-    col02 = []
     for zz in range(len(Z)):
         Zbest = Z[zz]
         Na = len(age)
@@ -1199,15 +1229,19 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
         for tt in range(len(tau)): # tau
             if zz == 0 and tt == 0:
-                lm0 = spechdu['wavelength'][::nthin]
+                if delwave>0:
+                    lm0_orig = spechdu['wavelength'][::nthin]
+                    lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
+                else:
+                    lm0 = spechdu['wavelength'][::nthin]
+                if not lammax == None and not MB.f_dust:
+                    lm0 = lm0[(lm0 * (zbest+1) < lammax)]
                 wave = lm0
 
             lmbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             fbest = np.zeros((Ntmp, len(lm0)), dtype='float')
             lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
             fbestbb = np.zeros((Ntmp, len(SFILT)), dtype='float')
-
-            #A = np.zeros(Na, dtype='float') + 1
 
             spec_mul = np.zeros((Na, len(lm0)), dtype='float')
             spec_mul_nu = np.zeros((Na, len(lm0)), dtype='float')
@@ -1232,8 +1266,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     wavetmp = wave*(1.+zbest)
                     Lsun = 3.839 * 1e33 #erg s-1
 
-                if fneb == 1:
-                    spec_mul[ss] = spechdu['efspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
+                if delwave>0:
+                    fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin], kind='nearest', fill_value="extrapolate")
+                    spec_mul[ss] = fint(lm0)
                 else:
                     spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
 
@@ -1246,6 +1281,10 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     spec_av_tmp = spec_mul[ss,:]
 
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp)
+                # (1.+zbest) takes acount of the change in delta lam by redshifting.
+                # Note that this is valid only when F_nu.
+                # When Flambda, /(1.+zbest) will be *(1.+zbest).
+
                 if len(lm)>0:
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
@@ -1278,19 +1317,13 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     nd_ap  = np.append(nd1,nd3)
                     lm_ap  = np.append(lm, ltmpbb[ss,:])
 
-                    col1   = fits.Column(name='wavelength', format='E', unit='AA', array=lm_ap)
-                    col2   = fits.Column(name='colnum', format='K', unit='', array=nd_ap)
-                    col00  = [col1, col2]
                     # ASDF
                     tree_spec.update({'wavelength':lm_ap})
                     tree_spec.update({'colnum':nd_ap})
 
                     # Second file
-                    col3   = fits.Column(name='wavelength', format='E', unit='AA', array=wavetmp)
-                    nd     = np.arange(0,len(wavetmp),1)
-                    col4   = fits.Column(name='colnum', format='K', unit='', array=nd)
-                    col01 = [col3, col4]
                     # ASDF
+                    nd = np.arange(0,len(wavetmp),1)
                     tree_spec_full.update({'wavelength':wavetmp})
                     tree_spec_full.update({'colnum':nd})
 
@@ -1299,11 +1332,60 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_ap})
                 tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
 
+
+                # Nebular library;
+                if fneb == 1 and MB.f_bpass==0 and ss==0 and tt==0:
+                    if zz==0:
+                        spec_mul_neb = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        spec_mul_neb_nu = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        spec_mul_neb_nu_conv = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                        ftmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                        ltmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                        ftmp_neb_nu_int = np.zeros((len(Z), len(MB.logUs), len(lm)), dtype=float)
+
+                    for uu in range(len(MB.logUs)):
+                        if delwave>0:
+                            fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                            spec_mul_neb[zz,uu,:] = fint(lm0)
+                        else:
+                            spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin]
+                        
+                        con_neb = (spec_mul_neb[zz,uu,:]<0)
+                        spec_mul_neb[zz,uu,:][con_neb] = 0
+                        
+                        if f_IGM:
+                            spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
+
+                        spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:])
+                        spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                        spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                        ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+
+                        if f_spec:
+                            ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
+
+                        if len(lm)>0:
+                            try:
+                                spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
+                            except:
+                                spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                        else:
+                            spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+
+                        tree_spec_full.update({'fspec_orig_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu[zz,uu,:]})
+                        tree_spec_full.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu_conv[zz,uu,:]})
+
+                        spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
+                        tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
+
+
             #########################
             # Summarize the ML
             #########################
             # ASDF
             tree_ML.update({'ML_'+str(zz)+'_'+str(tt): ms})
+
 
 
     #########################
@@ -1316,7 +1398,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ######################
     # Add dust component;
     ######################
-    if f_dust:
+    if MB.f_dust:
         tree_spec_dust = {}
         tree_spec_dust_full = {}
 
@@ -1370,10 +1452,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
             if tt == 0:
                 # For conv;
-                col3 = fits.Column(name='wavelength', format='E', unit='AA', array=ltmpbb_d)
-                nd_db = np.arange(0,len(ltmpbb_d),1)
-                col4 = fits.Column(name='colnum', format='K', unit='', array=nd_db)
-                col04 = [col3, col4]
                 # ASDF
                 tree_spec_dust.update({'wavelength': ltmpbb_d})
                 tree_spec_dust.update({'colnum': nd_db})
@@ -1420,7 +1498,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
     fw.close()
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
@@ -1447,7 +1525,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
     # Dust
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
-    if f_dust:
+    if MB.f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))

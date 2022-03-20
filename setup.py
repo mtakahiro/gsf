@@ -50,15 +50,14 @@ PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
     name = "gsf",
-    version = "1.5",
+    version = "1.6",
     author = "Takahiro Morishita",
-    author_email = "tmorishita@stsci.edu",
-    description = "SED Fitting Code for HST Grism",
-    license = "STScI",
+    author_email = "takahiro@ipac.caltech.edu",
+    description = "SED Fitting Code",
+    license = "IPAC",
     url = "https://github.com/mtakahiro",
     download_url = "https://github.com/",
     packages=['gsf'],#,'example'
-    #packages = find_packages(),
     package_dir={'gsf': 'gsf'},
     requires=['lmfit', 'fsps', 'emcee', 'corner'],
     # 'python-fsps' could not be added here, somehow.
@@ -68,8 +67,5 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
-    #package_data={'gsf': ['example/*'], 'gsf': ['example/filter/*'], 'gsf': ['example/templates/*']},
     zip_safe=False,
-    #install_requires=requires,
-    #ext_modules = extensions,
 )

@@ -1,7 +1,7 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.5
+version 1.6
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
 - The main purpose is to explore galaxy star formation histories with a flexible form.
@@ -78,7 +78,8 @@ Execution flag
 
 Release notes
 ~~~~~~~~~~~~~
-- From v1.2, data set without grism data, despite the code's name, can be also provided.
-- From v1.2, BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
-- From v1.3, log-space samplings for amplitude parameters are implemented.
+- From v1.6, emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
 - Far IR data set can be fitted simultaneously with a simple gray body spectrum (to be published in a future version).
+- From v1.3, log-space samplings for amplitude parameters are implemented.
+- From v1.2, BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
+- From v1.2, data set without grism data, despite the code's name, can be also provided.
