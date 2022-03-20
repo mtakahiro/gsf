@@ -89,7 +89,6 @@ class Mainbody():
         self.c = c
         self.Mpc_cm = Mpc_cm
         self.d = 10**((48.6+m0set)/2.5) #* 1e-18 # Conversion factor from [ergs/s/cm2/A] to [ergs/s/cm2/Hz].
-        self.m0set = m0set
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
@@ -105,6 +104,13 @@ class Mainbody():
         else:
             self.ID = inputs['ID']
         print('\nFitting : %s\n'%self.ID)
+
+        # Magzp;
+        try:
+            self.m0set = inputs['MAGZP']
+        except:
+            print('MAGZP is not found. Set to %.2f'%(m0set))
+            self.m0set = m0set
 
         # Read catalog;
         self.CAT_BB = inputs['CAT_BB']
