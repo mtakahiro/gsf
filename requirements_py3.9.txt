@@ -1,14 +1,14 @@
-asdf==2.8.0
-astropy==4.2
+asdf>=2.8.0
+astropy>=4.2
 pandas
 multiprocess
-lmfit==1.0.2
-emcee==3.0.2
+lmfit>=1.0.2
+emcee>=3.0.2
 corner
 numdifftools
-numpy==1.20
-tqdm==4.60.0
-zeus-mcmc==2.3.0
+numpy>=1.21
+tqdm>=4.60.0
+zeus-mcmc>=2.3.0
 # sphinx_automodapi
 # git+https://github.com/dfm/python-fsps
 # git+https://github.com/mtakahiro/gsf
