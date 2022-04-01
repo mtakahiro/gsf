@@ -953,7 +953,7 @@ def filconv_cen(band0, l0, f0, DIR='FILT/'):
     fnu  = np.zeros(len(band0), dtype='float')
     lcen = np.zeros(len(band0), dtype='float')
     for ii in range(len(band0)):
-        fd = np.loadtxt(DIR + 'f%sw.fil'%str(band0[ii]), comments='#')
+        fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
         lfil = fd[:,1]
         ffil = fd[:,2]
 
