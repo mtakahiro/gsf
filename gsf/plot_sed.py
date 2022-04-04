@@ -2107,7 +2107,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         if f_plot_resid:
             conbb_hs = (fybb/eybb>SNlim)
-            axes['B'].scatter(lbb[iix][con_sed], ((fybb*c/np.square(xbb)/d - fbb)/(eybb*c/np.square(xbb)/d))[iix][con_sed], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
+            axes['B'].scatter(lbb[iix][conbb_hs], ((fybb*c/np.square(xbb)/d - fbb)/(eybb*c/np.square(xbb)/d))[iix][conbb_hs], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
             conbb_hs = (fybb/eybb<=SNlim) & (eybb>0)
             axes['B'].errorbar(lbb[iix][conbb_hs], ((eybb*c/np.square(xbb)/d - fbb)/(eybb*c/np.square(xbb)/d))[iix][conbb_hs], yerr=leng,\
                 uplims=((fybb*c/np.square(xbb)/d - fbb)/(eybb*c/np.square(xbb)/d))[iix][conbb_hs] * sigma, linestyle='',\
