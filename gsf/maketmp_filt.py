@@ -870,18 +870,18 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     fw.close()
 
     # BB phot
-    fw     = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
+    fw = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
     fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
-            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2.))
-            fw_rem.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2., SFILT[ii]))
+            fw_rem.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
         elif ebb[ii]>ebblim:
-            fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f 0 1000 %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2., SFILT[ii]))
         elif ebb[ii]<=0:
-            fw.write('%d %.5f 0 -99 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f 0 -99 %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2., SFILT[ii]))
         else:
-            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
     fw.close()
     fw_rem.close()
 
@@ -889,10 +889,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
     if MB.f_dust:
         for ii in range(len(ebb_d[:])):
-            if  ebb_d[ii]>ebblim:
-                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
+            if ebb_d[ii]>ebblim:
+                fw.write('%d %.5f 0 1000 %.1f %s\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2., DFILT[ii]))
             else:
-                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
+                fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2., DFILT[ii]))
     fw.close()
 
     print('Done making templates at z=%.2f.\n'%zbest)
@@ -1492,7 +1492,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
-            #fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, 1000))
         elif  ebb[ii]>ebblim:
             fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
@@ -1503,25 +1502,25 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
-            if  ebb_d[ii]>ebblim:
+            if ebb_d[ii]>ebblim:
                 fw.write('%d %.5f 0 1000\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast]))
             else:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
     fw.close()
 
     # BB phot
-    fw     = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
+    fw = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
     fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
-            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2.))
-            fw_rem.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2., SFILT[ii]))
+            fw_rem.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
         elif ebb[ii]>ebblim:
-            fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f 0 1000 %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2., SFILT[ii]))
         elif ebb[ii]<=0:
-            fw.write('%d %.5f 0 -99 %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f 0 -99 %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], FWFILT[ii]/2., SFILT[ii]))
         else:
-            fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2.))
+            fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
     fw.close()
     fw_rem.close()
 
@@ -1530,9 +1529,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     if MB.f_dust:
         for ii in range(len(ebb_d[:])):
             if  ebb_d[ii]>ebblim:
-                fw.write('%d %.5f 0 1000 %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2.))
+                fw.write('%d %.5f 0 1000 %.1f %s\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], DFWFILT[ii]/2., DFILT[ii]))
             else:
-                fw.write('%d %.5f %.5e %.5e %.1f\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2.))
+                fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2., DFILT[ii]))
     fw.close()
 
     print('Done making templates at z=%.2f.\n'%zbest)
