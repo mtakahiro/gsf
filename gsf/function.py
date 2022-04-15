@@ -1073,7 +1073,7 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
                 lfil = MB.lfil_lib['%s'%str(band0[ii])]
                 ffil = MB.ffil_lib['%s'%str(band0[ii])]
                 if fw == True:
-                    fwhm = MB.filt_fwhm[ii]
+                    fwhm = MB.filt_fwhm
             except:
                 f_regist = True
                 lfil_lib = {}
