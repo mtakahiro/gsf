@@ -53,7 +53,7 @@ Or if users create a new conda environment, by executing;
 
 Examples
 ~~~~~~~~
-An example data set is stored in ./gsf/examples/
+An example data set is stored at at `gsf_examples <https://github.com/mtakahiro/gsf_examples/tree/master/example/>`__
 
 .. code-block:: bash
 
@@ -66,7 +66,7 @@ If one needs a new config file
 
     python example/get_configfile.py
 
-Or take a look at `notebooks <https://github.com/mtakahiro/gsf/tree/master/example/>`__.
+Or take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master/example/>`__.
 
 
 Execution flag
