@@ -61,12 +61,12 @@ class Mainbody():
         or the width to the next age bin.
     '''
 
-    def __init__(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, idman=None, zman=None):
+    def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None, idman=None, zman=None):
         self.update_input(inputs, idman=idman, zman=zman)
 
 
-    def update_input(self, inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, Lsun=3.839*1e33, cosmo=None, \
-                    idman=None, zman=None, sigz=5.0):
+    def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None, \
+                    idman=None, zman=None, sigz:float=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
         by visiting the configuration file.
@@ -196,6 +196,7 @@ class Mainbody():
 
         # Nebular emission;
         self.fneb = False
+        self.nlogU = 0
         try:
             if int(inputs['ADD_NEBULAE']) == 1:
                 self.fneb = True
@@ -204,13 +205,16 @@ class Mainbody():
                     self.logUMAX = float(inputs['logUMAX'])
                     self.DELlogU = float(inputs['DELlogU'])
                     self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                    self.nlogU = len(self.logUs)
                 except:
                     self.logUMIN = -2.5
                     self.logUMAX = -2.0
                     self.DELlogU = 0.5
                     self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                    self.nlogU = len(self.logUs)
                 try:
                     self.logUFIX = float(inputs['logUFIX'])
+                    self.nlogU = 1
                 except:
                     self.logUFIX = None
         except:
@@ -303,7 +307,6 @@ class Mainbody():
                     aamin.append(nn)
                 self.aamin = aamin
 
-            #self.npeak = np.arange(0,len(self.age),1)
             self.npeak = len(self.age)
             self.nage = np.arange(0,len(self.age),1)
             
@@ -342,6 +345,7 @@ class Mainbody():
             print('Cannot find ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
+        self.has_ZFIX = False
         try:
             self.ZFIX = float(inputs['ZFIX'])
             try:
@@ -353,6 +357,7 @@ class Mainbody():
             self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
             print('\n##########################')
             print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+            self.has_ZFIX = True
         except:
             self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
             self.delZ = float(inputs['DELZ'])
@@ -360,9 +365,11 @@ class Mainbody():
                 self.delZ = 0.0
                 self.ZFIX = self.Zmin
                 self.Zall = np.asarray([self.ZFIX])
+                self.has_ZFIX = True
             elif np.abs(self.Zmax - self.Zmin) <= self.delZ:
                 self.ZFIX = self.Zmin
                 self.Zall = np.asarray([self.ZFIX])
+                self.has_ZFIX = True
             else:
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
         # If BPASS;
@@ -387,6 +394,7 @@ class Mainbody():
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
                 print('\n##########################')
                 print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+                self.has_ZFIX = True
             except:
                 print('ZFIX is not found.')
                 print('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
@@ -399,12 +407,14 @@ class Mainbody():
             
 
         # N of param:
+        self.has_AVFIX = False
         try:
             Avfix = float(inputs['AVFIX'])
             self.AVFIX = Avfix
             self.nAV = 0
             print('\n##########################')
             print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
+            self.has_AVFIX = True
         except:
             try:
                 self.Avmin = float(inputs['AVMIN'])
@@ -412,6 +422,7 @@ class Mainbody():
                 if Avmin == Avmax:
                     self.nAV = 0
                     self.AVFIX = Avmin
+                    self.has_AVFIX = True
                 else:
                     self.nAV = 1
             except:
@@ -539,8 +550,10 @@ class Mainbody():
         try:
             # Length of each ssp templates.
             self.tau0 = np.asarray([float(x.strip()) for x in inputs['TAU0'].split(',')])
+            self.ntau0 = len(self.tau0)
         except:
             self.tau0 = np.asarray([-1.0])
+            self.ntau0 = 1
 
         # IMF
         try:
@@ -591,7 +604,7 @@ class Mainbody():
         return LW, fLW
 
 
-    def read_data(self, Cz0, Cz1, zgal, add_fir=False, idman=None):
+    def read_data(self, Cz0:float, Cz1:float, zgal:float, add_fir:bool=False, idman=None):
         '''
         Parameters
         ----------
@@ -715,7 +728,7 @@ class Mainbody():
         return dict
 
 
-    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
+    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml:float=0.01, zlimu:float=6.0, delzz:float=0.01, lines:bool=False, prior=None, method:str='powell'):
         '''
         This module explores the redshift space to find the best redshift and probability distribution.
 
@@ -1467,8 +1480,8 @@ class Mainbody():
 
 
     def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
-    f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-    f_shuffle=True, amp_shuffle=1e-2, check_converge=True, Zini=None, f_plot_chain=True):
+            f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
+            f_shuffle=True, amp_shuffle=1e-2, check_converge=True, Zini=None, f_plot_chain=True):
         '''
         Main module of this script.
 

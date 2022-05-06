@@ -3,6 +3,7 @@ import sys
 import scipy.integrate as integrate
 from scipy.integrate import cumtrapz
 from scipy import special,stats
+from numpy import exp as np_exp
 
 from .function import *
 
@@ -17,7 +18,7 @@ class Post:
         self.Na = len(self.mb.age)
 
 
-    def residual(self, pars, fy, ey, wht, f_fir, out=False, f_val=False, f_penlize=True):
+    def residual(self, pars, fy, ey, wht, f_fir:bool, out:bool=False, f_val:bool=False, f_penlize:bool=True):
         '''
         Parameters
         ----------
@@ -63,7 +64,7 @@ class Post:
         sig = wht[:] * 0
         con_res = (wht>0)
         con_res_r = (wht==0)
-        sig[con_res] = ey[con_res]**2 + model[con_res]**2 * np.exp(logf)**2
+        sig[con_res] = ey[con_res]**2 + model[con_res]**2 * np_exp(logf)**2
         sig[con_res_r] = wht[con_res_r] * 0 + np.inf
 
         if fy is None:
@@ -88,7 +89,7 @@ class Post:
         '''
         A function used for chi2 calculation for non-detection in lnprob.
         '''
-        int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
+        int_tmp = np_exp(-0.5 * ((xint-fmodel)/eobs)**2)
         return int_tmp
 
 
@@ -124,8 +125,8 @@ class Post:
         return pars
 
 
-    def lnprob_emcee(self, pos, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, f_scale=False, 
-        lnpreject=-np.inf, f_like=False, flat_prior=False, gauss_prior=True, f_val=True, nsigma=1.0, out=None):
+    def lnprob_emcee(self, pos, pars, fy, ey, wht, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
+        lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None):
         '''
         Parameters
         ----------
@@ -178,7 +179,7 @@ class Post:
         resid, model = self.residual(vals, fy, ey, wht, f_fir, out=True, f_val=f_val, f_penlize=False)
 
         con_res = (model>=0) & (wht>0) & (fy>0) & (ey>0)
-        sig_con = np.sqrt(ey[con_res]**2 + model[con_res]**2 * np.exp(2 * logf))
+        sig_con = np.sqrt(ey[con_res]**2 + model[con_res]**2 * np_exp(2 * logf))
         chi_nd = 0.0
 
         con_up = (ey>0) & (fy/ey<=SNlim)
@@ -193,7 +194,6 @@ class Post:
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
             lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
-
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale:
