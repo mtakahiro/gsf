@@ -2,10 +2,11 @@ import numpy as np
 import sys
 import scipy.integrate as integrate
 from scipy.integrate import cumtrapz
-from scipy import special,stats
+from scipy import stats
 from numpy import exp as np_exp
+from numpy import log as np_log
+from scipy.special import erf
 
-from .function import *
 
 class Post:
     '''
@@ -18,7 +19,7 @@ class Post:
         self.Na = len(self.mb.age)
 
 
-    def residual(self, pars, fy, ey, wht, f_fir:bool, out:bool=False, f_val:bool=False, f_penlize:bool=True):
+    def residual(self, pars, fy:float, ey:float, wht:float, f_fir:bool, out:bool=False, f_val:bool=False, f_penlize:bool=True):
         '''
         Parameters
         ----------
@@ -37,11 +38,10 @@ class Post:
             vals = pars.valuesdict()
 
         model, x1 = self.mb.fnc.tmp04(vals)
-        n_optir = len(model)
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
-            n_optir = len(model)
+            n_optir = self.mb.n_optir #len(model)
 
             # Add dust flux to opt/IR grid.
             model[:] += model_dust[:n_optir]
@@ -50,6 +50,7 @@ class Post:
             x1 = np.append(x1,x1_dust[n_optir:])
 
         if self.mb.fneb:
+            n_optir = self.mb.n_optir #len(model)
             model_neb, x1_neb = self.mb.fnc.tmp04_neb(vals)
             model[:n_optir] += model_neb
 
@@ -75,7 +76,7 @@ class Post:
 
         if self.mb.ferr and f_penlize:
             # Penalize redisual;
-            tmp = (model - fy)**2 / sig + np.log(2*3.14*sig**2)
+            tmp = (model - fy)**2 / sig + np_log(2*3.14*sig**2)
             con_res = (tmp>0) & (~np.isinf(tmp))
             resid[con_res] = np.sqrt(tmp[con_res])
 
@@ -125,7 +126,7 @@ class Post:
         return pars
 
 
-    def lnprob_emcee(self, pos, pars, fy, ey, wht, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
+    def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
         lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None):
         '''
         Parameters
@@ -185,15 +186,15 @@ class Post:
         con_up = (ey>0) & (fy/ey<=SNlim)
         if f_chind and len(fy[con_up])>0:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
-            f_erf = special.erf(x_erf)
+            f_erf = erf(x_erf)
             if np.min(f_erf) <= -1:
                 #return lnpreject
-                lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
+                lnlike = -0.5 * (np.sum(resid[con_res]**2 + np_log(2 * 3.14 * sig_con**2)))
             else:
-                chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
-            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
+                chi_nd = np.sum( np_log(np.sqrt(np.pi / 2) * ey[con_up]/SNlim * (1 + f_erf)) )
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np_log(2 * 3.14 * sig_con**2)) - 2 * chi_nd)
         else:
-            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np.log(2 * 3.14 * sig_con**2)))
+            lnlike = -0.5 * (np.sum(resid[con_res]**2 + np_log(2 * 3.14 * sig_con**2)))
 
         # Scale likeligood; Do not make this happen yet.
         if f_scale:
@@ -236,7 +237,7 @@ class Post:
                 #    pars = self.swap_pars_inv(pars)
                 #    return lnpreject
                 p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
-                respr += np.log(p_gauss)
+                respr += np_log(p_gauss)
 
         # Prior for redshift:
         if self.mb.fzmc == 1:
@@ -249,7 +250,7 @@ class Post:
                 print('z Posterior unacceptable.')
                 return lnpreject
             else:
-                respr += np.log(prior[nzz])
+                respr += np_log(prior[nzz])
 
         lnposterior = lnlike + respr
         if not np.isfinite(lnposterior):

@@ -93,10 +93,9 @@ class Func:
         '''
         Loads dust template in obs range.
         '''
+        from astropy.io import fits
         ID0 = self.MB.ID
         tau0= self.MB.tau0
-
-        from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -136,9 +135,8 @@ class Func:
         '''
         Loads template in obs range.
         '''
-        ID0 = self.MB.ID
-
         from astropy.io import fits
+        ID0 = self.MB.ID
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -271,7 +269,6 @@ class Func:
             lcen, lflux : , if f_bb==True.
 
         '''
-
         bfnc = self.MB.bfnc
         DIR_TMP = self.MB.DIR_TMP 
         NZ  = bfnc.Z2NZ(Z)
@@ -430,7 +427,7 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False):
+    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -443,7 +440,7 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
-        Mtot = 0
+        Mtot:float = 0
 
         if f_val:
             par = par.params
@@ -455,8 +452,6 @@ class Func:
                 zmc = self.MB.zgal
         else:
             zmc = self.MB.zgal
-
-        pp = 0
 
         # AV limit;
         if par['Av'] < self.MB.Avmin:
@@ -512,8 +507,8 @@ class Func:
         self.MB.logMtmp = np.log10(Mtot)
 
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             yy_s = fint(xx_s)
         else:
             xx_s = xx
@@ -537,20 +532,18 @@ class Func:
         xxd *= (1.+zmc)
 
         if self.dust_model != 0:
+            # This may be needed when not calzetti model
             nrd_yyd = np.zeros((len(nrd),3), dtype=float)
             nrd_yyd[:,0] = nrd[:]
             nrd_yyd[:,1] = yyd[:]
             nrd_yyd[:,2] = xxd[:]
             nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-        else:
-            # This is good at least for calzetti model
-            nrd_yyd_sort = np.zeros((len(nrd),3), dtype=float)
-            nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2] = nrd[:],yyd[:],xxd[:]
+            nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
         if not f_nrd:
-            return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+            return yyd[:],xxd[:] 
         else:
-            return nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+            return nrd[:],yyd[:],xxd[:]
 
 
     def tmp04_neb(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, f_apply_dust:bool=True, EBVratio:float=2.27):
@@ -632,18 +625,18 @@ class Func:
 
         if lib_all:
             if aa == 0:
-                nr = self.MB.lib_neb_all[:, 0]
-                xx = self.MB.lib_neb_all[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib_neb_all[:, coln]
+                nr = self.MB.lib_neb_all[:,0]
+                xx = self.MB.lib_neb_all[:,1] # This is OBSERVED wavelength range at z=zgal
+                yy = A00 * self.MB.lib_neb_all[:,coln]
             else:
-                yy += A00 * self.MB.lib_neb_all[:, coln]
+                yy += A00 * self.MB.lib_neb_all[:,coln]
         else:
             if aa == 0:
                 nr = self.MB.lib_neb[:, 0]
                 xx = self.MB.lib_neb[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib_neb[:, coln]
+                yy = A00 * self.MB.lib_neb[:,coln]
             else:
-                yy += A00 * self.MB.lib_neb[:, coln]
+                yy += A00 * self.MB.lib_neb[:,coln]
         
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
@@ -677,21 +670,18 @@ class Func:
                 nrd_yyd[:,1] = yyd[:]
                 nrd_yyd[:,2] = xxd[:]
                 nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-            else:
-                # This is good at least for calzetti model
-                nrd_yyd_sort = np.zeros((len(nrd),3), dtype=float)
-                nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2] = nrd[:],yyd[:],xxd[:]
+                nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
             if not f_nrd:
-                return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+                return yyd[:],xxd[:]
             else:
-                return nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+                return nrd[:],yyd[:],xxd[:]
 
         else:
             if not f_nrd:
                 return yy,xx
             else:
-                return nr, yy,xx
+                return nr,yy,xx
 
 
     def tmp04_dust(self, par, nprec=1):

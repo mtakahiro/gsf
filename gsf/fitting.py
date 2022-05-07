@@ -659,9 +659,7 @@ class Mainbody():
             eybb = np.asarray([])
             exbb = np.asarray([])
 
-        #con_bb = (eybb>0)
         con_bb = ()
-
         xx2 = xbb[con_bb]
         ex2 = exbb[con_bb]
         fy2 = fybb[con_bb]
@@ -670,11 +668,11 @@ class Mainbody():
         xx01 = np.append(xx0,xx1)
         fy01 = np.append(fy0,fy1)
         ey01 = np.append(ey0,ey1)
-        xx   = np.append(xx01,xx2)
-        fy   = np.append(fy01,fy2)
-        ey   = np.append(ey01,ey2)
+        xx = np.append(xx01,xx2)
+        fy = np.append(fy01,fy2)
+        ey = np.append(ey01,ey2)
 
-        wht  = 1./np.square(ey)
+        wht = 1./np.square(ey)
         con_wht = (ey<0)
         wht[con_wht] = 0
 
@@ -715,13 +713,15 @@ class Mainbody():
             b = nrd_yyd
             nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
             NR = nrd_yyd_sort[:,0]
-            x  = nrd_yyd_sort[:,1]
+            x = nrd_yyd_sort[:,1]
             fy = nrd_yyd_sort[:,2]
             ey = nrd_yyd_sort[:,3]
             wht = nrd_yyd_sort[:,4]
             wht2= nrd_yyd_sort[:,5]
 
         sn = fy/ey
+        self.n_optir = len(sn)
+
         dict = {}
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
@@ -788,9 +788,6 @@ class Mainbody():
         xobs = np.append(x01,x2)
 
         wht = 1./np.square(eycon)
-        #if lines:
-        #    wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
-        #else:
         wht2 = wht
 
         # Set parameters;
@@ -799,8 +796,9 @@ class Mainbody():
             fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
 
         def residual_z(pars,z):
-            vals  = pars.valuesdict()
-
+            '''
+            '''
+            vals = pars.valuesdict()
             xm_s = xm_tmp * (1+z)
             fm_s = np.zeros(len(xm_tmp),'float')
 
@@ -823,7 +821,7 @@ class Mainbody():
             out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
             keys = fit_report(out_cz).split('\n')
 
-            csq  = out_cz.chisqr
+            csq = out_cz.chisqr
             rcsq = out_cz.redchi
             fitc_cz = [csq, rcsq]
 
@@ -1479,9 +1477,9 @@ class Mainbody():
         return pos
 
 
-    def main(self, cornerplot=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
-            f_move=False, verbose=False, skip_fitz=False, out=None, f_plot_accept=True,
-            f_shuffle=True, amp_shuffle=1e-2, check_converge=True, Zini=None, f_plot_chain=True):
+    def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
+            f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
+            f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True):
         '''
         Main module of this script.
 
@@ -1593,6 +1591,7 @@ class Mainbody():
                     fit_name = 'leastsq'
                 else:
                     fit_name = self.fneld
+
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 print('\nMinimizer refinement;')
                 print(fit_report(out))
@@ -1653,7 +1652,7 @@ class Mainbody():
                             kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
                             )
                         # Run MCMC
-                        nburn = int(self.nmc / 10)
+                        nburn = int(self.nmc/10)
 
                         print('Running burn-in')
                         sampler.run_mcmc(pos, nburn)
