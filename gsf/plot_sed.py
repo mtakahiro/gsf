@@ -52,11 +52,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     from astropy.io import ascii
     import time
 
-    if False:#f_silence:
-        import matplotlib
-        matplotlib.use("Agg")
-    else:
-        matplotlib.use("MacOSX")
+    #if False:#f_silence:
+    #    import matplotlib
+    #    matplotlib.use("Agg")
+    #else:
+    #    matplotlib.use("MacOSX")
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
