@@ -7,7 +7,7 @@ import os
 import scipy.interpolate as interpolate
 
 c = 3.e18 # A/s
-d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
+#d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
 
 ################
 # Line library
@@ -236,14 +236,12 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
 
     fwz.write('# minimizer: %s\n' % fit_name)
 
-    try:
+    if MB.has_ZFIX:
         ZZtmp = [MB.ZFIX]
-    except:
-        pass
 
-    for zz in range(len(ZZtmp)):
+    for zz in range(MB.nZ):
         ZZ = ZZtmp[zz]
-        for aa in range(len(age)):
+        for aa in range(MB.npeak):
             if MB.ZEVOL == 1 or aa == 0:
                 fit_params['Z'+str(aa)].value = ZZ
 
@@ -255,15 +253,15 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
 
         fwz.write('%s %.2f %.5f'%(ID0, ZZ, fitc[1]))
 
-        AA_tmp = np.zeros(len(age), dtype='float')
-        ZZ_tmp = np.zeros(len(age), dtype='float')
-        for aa in range(len(age)):
+        AA_tmp = np.zeros(MB.npeak, dtype='float')
+        ZZ_tmp = np.zeros(MB.npeak, dtype='float')
+        for aa in range(MB.npeak):
             AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
             fwz.write(' %.5f'%(AA_tmp[aa]))
 
         Av_tmp = out_tmp.params['Av'].value
         fwz.write(' %.5f'%(Av_tmp))
-        for aa in range(len(age)):
+        for aa in range(MB.npeak):
             if MB.ZEVOL == 1 or aa == 0:
                 ZZ_tmp[aa] = out_tmp.params['Z'+str(aa)].value
                 fwz.write(' %.5f'%(ZZ_tmp[aa]))
@@ -539,7 +537,9 @@ def get_filt(LIBFILT, NFILT):
     f = open(LIBFILT + '', 'r')
 
 
-def get_fit(x,y,xer,yer, nsfh='Del.'):
+def get_fit(x, y, xer, yer, nsfh:str = 'Del.'):
+    '''
+    '''
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
 
     fit_params = Parameters()
@@ -549,7 +549,7 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
     fit_params.add('A', value=1, min=0, max=5000)
 
     def residual_tmp(pars):
-        vals  = pars.valuesdict()
+        vals = pars.valuesdict()
         t0_tmp, tau_tmp, A_tmp = vals['t0'],vals['tau'],vals['A']
 
         if nsfh == 'Del.':
@@ -559,27 +559,16 @@ def get_fit(x,y,xer,yer, nsfh='Del.'):
         elif nsfh == 'Cons.':
             model = SFH_cons(t0_tmp, tau_tmp, A_tmp, tt=x)
 
-        #con = (model>minsfr)
         con = (model>0)
-        #print(model[con])
-        #resid = np.abs(model - y)[con] / np.sqrt(yer[con])
-        #resid = np.square(model - y)[con] / np.square(yer[con])
-        #resid = np.square(np.log10(model[con]) - y[con]) / np.square(yer[con])
-        #resid = (np.log10(model[con]) - y[con]) / np.sqrt(yer[con])
         resid = (np.log10(model[con]) - y[con]) / yer[con]
-        #print(yer[con])
-        #resid = (model - y)[con] / (yer[con])
-        # i.e. residual/sigma
         return resid
 
-
     out = minimize(residual_tmp, fit_params, method='powell')
-    #out = minimize(residual, fit_params, method='nelder')
     print(fit_report(out))
 
-    t0    = out.params['t0'].value
-    tau   = out.params['tau'].value
-    A     = out.params['A'].value
+    t0 = out.params['t0'].value
+    tau = out.params['tau'].value
+    A = out.params['A'].value
     param = [t0, tau, A]
 
     keys = fit_report(out).split('\n')
@@ -739,7 +728,7 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
         return fl_cor, lmmc*10000., nrd
 
 
-def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
+def dust_calz(lm, fl, Av:float, nr, Rv:float = 4.05, lmlimu:float = 3.115, f_Alam:bool = False):
     '''
     Parameters
     ----------
@@ -756,40 +745,28 @@ def dust_calz(lm, fl, Av, nr, Rv=4.05, lmlimu=3.115, f_Alam=False):
     lmlimu : float
         Upper limit. 2.2 in Calz+00
     '''
-    Kl = np.zeros(len(lm), dtype='float')
-    nrd = np.zeros(len(lm), dtype='float')
-    lmmc = np.zeros(len(lm), dtype='float')
-    flc = np.zeros(len(lm), dtype='float')
+    Kl = lm[:]*0 #np.zeros(len(lm), dtype='float')
+    nrd = lm[:]*0 #np.zeros(len(lm), dtype='float')
+    lmmc = lm[:]*0 #np.zeros(len(lm), dtype='float')
+    flc = lm[:]*0 #np.zeros(len(lm), dtype='float')
 
-    lmm  = lm/10000. # in micron
+    lmm = lm/10000. # in micron
     con1 = (lmm<=0.63)
     con2 = (lmm>0.63)  & (lmm<=lmlimu)
     con3 = (lmm>lmlimu)
 
-    Kl1 = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
-    Kl2 = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
-    Kl3 = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
-    Kl[con1] = Kl1
-    Kl[con2] = Kl2
-    Kl[con3] = Kl3
+    Kl[con1] = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
+    Kl[con2] = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
+    Kl[con3] = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
 
-    nr1 = nr[con1]
-    nr2 = nr[con2]
-    nr3 = nr[con3]
     nrd[con1] = nr[con1]
     nrd[con2] = nr[con2]
     nrd[con3] = nr[con3]
 
-    lmm1 = lmm[con1]
-    lmm2 = lmm[con2]
-    lmm3 = lmm[con3]
     lmmc[con1] = lmm[con1]
     lmmc[con2] = lmm[con2]
     lmmc[con3] = lmm[con3]
 
-    fl1 = fl[con1]
-    fl2 = fl[con2]
-    fl3 = fl[con3]
     flc[con1] = fl[con1]
     flc[con2] = fl[con2]
     flc[con3] = fl[con3]
