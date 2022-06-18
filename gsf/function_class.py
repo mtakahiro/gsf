@@ -67,7 +67,7 @@ class Func:
 
         DIR_TMP = self.DIR_TMP
         for pp in range(self.MB.ntau0):
-            for zz in range(self.MB.nZ):
+            for zz in range(len(ZZ)):
                 Z = ZZ[zz]
                 NZ = bfnc.Z2NZ(Z)
                 if zz == 0 and pp == 0:

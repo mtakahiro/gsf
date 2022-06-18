@@ -239,7 +239,7 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
     if MB.has_ZFIX:
         ZZtmp = [MB.ZFIX]
 
-    for zz in range(MB.nZ):
+    for zz in range(len(ZZtmp)):
         ZZ = ZZtmp[zz]
         for aa in range(MB.npeak):
             if MB.ZEVOL == 1 or aa == 0:
