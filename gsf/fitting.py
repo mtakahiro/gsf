@@ -1932,14 +1932,13 @@ class Mainbody():
             print('\n\n')
             flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, and Cz1 , %.5f %.5f %.5f? ([y]/n) '%(self.zrecom, self.Czrec0, self.Czrec1))
             if flag_gen == 'y' or flag_gen == '':
-                self.zprev = self.zgal   # Input redshift for previous run
+                self.zprev = self.zgal # Input redshift for previous run
                 self.zgal = self.zrecom # Recommended redshift from previous run
                 self.Cz0 = self.Czrec0
                 self.Cz1 = self.Czrec1
                 return True
             else:
                 print('\n\n')
-                print('There is nothing to do.')
                 print('Terminating process.')
                 print('\n\n')
                 return False

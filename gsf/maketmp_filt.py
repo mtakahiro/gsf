@@ -408,7 +408,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         lm = np.zeros(np.sum(ninp0[:]),dtype='float')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         eobs = np.zeros(np.sum(ninp0[:]),dtype='float')
-        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
             try:
                 fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
@@ -835,17 +835,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     ##########################################
     fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
+
     for ii in range(len(lm)):
-        if fgrs[ii]==0: # G102
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii, lm[ii]))
-        elif fgrs[ii]==1: # G141
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii+1000, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
+        g_offset = 1000 * fgrs[ii]
+        if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
+        else:
+            fw.write('%d %.5f 0 1000\n'%(ii+g_offset, lm[ii]))
 
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
@@ -1012,8 +1008,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         ninp0 = np.zeros(len(spec_files), dtype='int')
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
+                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp = fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
@@ -1021,14 +1017,14 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
-        lm   = np.zeros(np.sum(ninp0[:]),dtype='float')
+        lm = np.zeros(np.sum(ninp0[:]),dtype='float')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         eobs = np.zeros(np.sum(ninp0[:]),dtype='float')
-        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
+                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp = fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
                 for ii1 in range(ninp0[ff]):
@@ -1037,7 +1033,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     else:
                         ii = ii1 + np.sum(ninp0[:ff])
                     fgrs[ii] = ff
-                    lm[ii]   = lm0tmp[ii1]
+                    lm[ii] = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
                 f_spec = True
@@ -1474,17 +1470,20 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ##########################################
     fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
+
     for ii in range(len(lm)):
-        if fgrs[ii]==0: # G102
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii, lm[ii]))
-        elif fgrs[ii]==1: # G141
+        g_offset = 1000 * fgrs[ii]
+        if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
+        else:
+            fw.write('%d %.5f 0 1000\n'%(ii+g_offset, lm[ii]))
+        '''
+        elif fgrs[ii]==1: # grism 2
             if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+1000, lm[ii], fobs[ii], eobs[ii]))
             else:
                 fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
+        '''
 
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
