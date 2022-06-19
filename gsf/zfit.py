@@ -93,6 +93,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
 
     ###############################
     def lnprob_cz(pars):
+        '''
+        '''
         resid = residual_z(pars) # i.e. (data - model) * wht
         z = pars['z']
         s_z = 1 #pars['f_cz']

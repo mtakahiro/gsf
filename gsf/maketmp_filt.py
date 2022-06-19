@@ -187,27 +187,24 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     '''
     Amp = 0
     f_morp = False
-    try:
-        if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
-            f_morp = True
-            try:
-                mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                fm = ascii.read(DIR_EXTR + mor_file)
-                Amp = fm['A']
-                gamma = fm['gamma']
-                if inputs['MORP'] == 'moffat':
-                    alp = fm['alp']
-                else:
-                    alp = 0
-            except Exception:
-                print('Error in reading morphology params.')
-                print('No morphology convolution.')
-                pass
-        else:
-            print('MORP Keywords does not match.')
+    if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
+        f_morp = True
+        try:
+            mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
+            fm = ascii.read(DIR_EXTR + mor_file)
+            Amp = fm['A']
+            gamma = fm['gamma']
+            if inputs['MORP'] == 'moffat':
+                alp = fm['alp']
+            else:
+                alp = 0
+        except Exception:
+            print('Error in reading morphology params.')
             print('No morphology convolution.')
-    except:
-        pass
+            pass
+    else:
+        print('MORP Keywords does not match.')
+        print('No morphology convolution.')
 
     ############################
     # Template convolution;

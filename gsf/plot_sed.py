@@ -52,11 +52,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     from astropy.io import ascii
     import time
 
-    #if False:#f_silence:
-    #    import matplotlib
-    #    matplotlib.use("Agg")
-    #else:
-    #    matplotlib.use("MacOSX")
+    if False:#f_silence:
+        import matplotlib
+        matplotlib.use("Agg")
+    else:
+        matplotlib.use("MacOSX")
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
@@ -263,6 +263,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if MB.f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
+
+        f_plot_resid = False
+        print('Grism data. f_plot_resid is turned off.')
+
     else:
         if f_plot_resid:
             fig_mosaic = """
