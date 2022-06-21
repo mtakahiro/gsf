@@ -41,6 +41,8 @@ LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 
 LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW), dtype='int')
 
+NRbb_lim = 10000 # BB data is associated with ids greater than this number.
+
 class Mainbody():
     '''
     The list of (possible) `Mainbody` attributes is given below:
@@ -178,6 +180,7 @@ class Mainbody():
         # Scaling for grism; 
         self.Cz0 = float(inputs['CZ0'])
         self.Cz1 = float(inputs['CZ1'])
+        self.Cz2 = float(inputs['CZ2'])
 
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
@@ -604,7 +607,7 @@ class Mainbody():
         return LW, fLW
 
 
-    def read_data(self, Cz0:float, Cz1:float, zgal:float, add_fir:bool=False, idman=None):
+    def read_data(self, Cz0:float, Cz1:float, Cz2:float, zgal:float, add_fir:bool=False, idman=None):
         '''
         Parameters
         ----------
@@ -621,7 +624,7 @@ class Mainbody():
         -----
         This modeule can be used for any SFHs.
         '''
-        print('READ data with Cz0=%.2f, Cz0=%.2f, zgal=%.2f'%(Cz0, Cz1, zgal))
+        print('READ data with Cz0=%.2f, Cz1=%.2f, Cz2=%.2f, zgal=%.2f'%(Cz0, Cz1, Cz2, zgal))
 
         ##############
         # Spectrum
@@ -636,10 +639,14 @@ class Mainbody():
         xx0 = x[con0]
         fy0 = fy00[con0] * Cz0
         ey0 = ey00[con0] * Cz0
-        con1 = (NR>=1000) & (NR<10000)
+        con1 = (NR>=1000) & (NR<2000)
         xx1 = x[con1]
         fy1 = fy00[con1] * Cz1
         ey1 = ey00[con1] * Cz1
+        con2 = (NR>=2000) & (NR<NRbb_lim)
+        xx2 = x[con2]
+        fy2 = fy00[con2] * Cz2
+        ey2 = ey00[con2] * Cz2
 
         ##############
         # Broadband
@@ -660,17 +667,22 @@ class Mainbody():
             exbb = np.asarray([])
 
         con_bb = ()
-        xx2 = xbb[con_bb]
-        ex2 = exbb[con_bb]
-        fy2 = fybb[con_bb]
-        ey2 = eybb[con_bb]
+        xx_bb = xbb[con_bb]
+        ex_bb = exbb[con_bb]
+        fy_bb = fybb[con_bb]
+        ey_bb = eybb[con_bb]
 
         xx01 = np.append(xx0,xx1)
         fy01 = np.append(fy0,fy1)
         ey01 = np.append(ey0,ey1)
-        xx = np.append(xx01,xx2)
-        fy = np.append(fy01,fy2)
-        ey = np.append(ey01,ey2)
+
+        xx02 = np.append(xx01,xx2)
+        fy02 = np.append(fy01,fy2)
+        ey02 = np.append(ey01,ey2)
+
+        xx = np.append(xx02,xx_bb)
+        fy = np.append(fy02,fy_bb)
+        ey = np.append(ey02,ey_bb)
 
         wht = 1./np.square(ey)
         con_wht = (ey<0)
@@ -697,10 +709,9 @@ class Mainbody():
             #wht2= check_line_man(fy, x, wht, fy, zgal, self.LW0)
             wht2 = wht[:]
 
-        # Into dict
-
-        # Sort data along wave?
+        # Sort data along wave;
         f_sort = False
+
         if f_sort:
             nrd_yyd = np.zeros((len(NR),6), dtype='float')
             nrd_yyd[:,0] = NR
@@ -723,7 +734,7 @@ class Mainbody():
         self.n_optir = len(sn)
 
         dict = {}
-        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx2, 'exbb':ex2, 'fybb':fy2, 'eybb':ey2, 'wht':wht, 'wht2': wht2, 'sn':sn}
+        dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx_bb, 'exbb':ex_bb, 'fybb':fy_bb, 'eybb':ey_bb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
 
@@ -835,7 +846,8 @@ class Mainbody():
         return zspace, chi2s
 
 
-    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
+    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
+        zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
@@ -878,7 +890,7 @@ class Mainbody():
         sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        con_cz = (self.dict['NR']<10000) & (sn>snlim)
+        con_cz = (self.dict['NR']<NRbb_lim) & (sn>snlim)
         if len(self.dict['fy'][con_cz])==0:
             if f_bb_zfit:
                 con_cz = (sn>snlim)
@@ -957,10 +969,12 @@ class Mainbody():
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
+            scl_cz2 = np.percentile(res_cz.flatchain['Cz2'], [16,50,84])
 
             zrecom = z_cz[1]
             Czrec0 = scl_cz0[1]
             Czrec1 = scl_cz1[1]
+            Czrec2 = scl_cz2[1]
 
             # Switch to peak redshift:
             # find minimum and maximum of xticks, so we know
@@ -969,7 +983,7 @@ class Mainbody():
             xmin, xmax = self.zgal-0.2, self.zgal+0.2
             lnspc = np.linspace(xmin, xmax, len(ser))
             print('\n\n')
-            print('Recommended redshift, Cz0 and Cz1, %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, fitc_cz[1]))
+            print('Recommended redshift, Cz0, Cz1, and Cz2, %.5f %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, Czrec2, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
 
@@ -988,8 +1002,10 @@ class Mainbody():
             zrecom  = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
+            scl_cz2 = [1.,1.,1.]
             Czrec0 = scl_cz0[1]
             Czrec1 = scl_cz1[1]
+            Czrec2 = scl_cz2[1]
             res_cz = None
 
             # If this label is being used, it means that the fit is failed.
@@ -1044,8 +1060,6 @@ class Mainbody():
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 data_obsbb[:,2] = fm_tmp
             data_obsbb_sort = np.sort(data_obsbb, axis=0)
-            # y-Scale seems to be wrong?
-            #plt.plot(data_obsbb_sort[:,0], data_obsbb_sort[:,1], marker='.', color='r', ms=10, linestyle='', linewidth=0, zorder=4, label='Obs.(BB)')
 
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
@@ -1076,6 +1090,8 @@ class Mainbody():
             eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
             C1sigma = np.abs(Czrec1-self.Cz1)/self.Cz1
             eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
+            C2sigma = np.abs(Czrec2-self.Cz2)/self.Cz2
+            eC2sigma = ((scl_cz2[2]-scl_cz2[0])/2.)/self.Cz2
 
             print('\n##############################################################')
             print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
@@ -1084,10 +1100,13 @@ class Mainbody():
             print('Error is %.3f per cent.'%(eC0sigma*100))
             print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
             print('Error is %.3f per cent.'%(eC1sigma*100))
+            print('Input Cz2 is %.3f per cent agreement.'%((1.-C2sigma)*100))
+            print('Error is %.3f per cent.'%(eC2sigma*100))
             print('##############################################################\n')
             plt.show()
 
-            flag_z = raw_input('Do you want to continue with the input redshift, Cz0 and Cz1, %.5f %.5f %.5f? ([y]/n/m) '%(self.zgal, self.Cz0, self.Cz1))
+            flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1 and Cz2, %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
+                (self.zgal, self.Cz0, self.Cz1, self.Cz2))
         else:
             flag_z = 'y'
 
@@ -1095,9 +1114,11 @@ class Mainbody():
         self.zrecom = zrecom
         self.Czrec0 = Czrec0 * self.Cz0
         self.Czrec1 = Czrec1 * self.Cz1
+        self.Czrec2 = Czrec2 * self.Cz2
         self.z_cz = z_cz
         self.scl_cz0 = scl_cz0
         self.scl_cz1 = scl_cz1
+        self.scl_cz2 = scl_cz2
         self.res_cz = res_cz
 
         return flag_z
@@ -1122,7 +1143,9 @@ class Mainbody():
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
             ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',\
-                label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$'%(self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1))
+                label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$\n$C_z2=%.3f$'%\
+                (self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1, self.Cz2))
+
             xx = yy * 0 + self.z_cz[0]
             ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
             xx = yy * 0 + self.z_cz[2]
@@ -1183,7 +1206,7 @@ class Mainbody():
 
             fit_params.add('MDUST', value=9, min=0, max=15)
             self.ndim += 1
-            self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=self.f_dust)
+            self.dict = self.read_data(self.Cz0, self.Cz1, self.Cz2, self.zgal, add_fir=self.f_dust)
             f_add = True
 
         # Nebular; ver1.6
@@ -1410,7 +1433,7 @@ class Mainbody():
         #
         # Observed Data;
         #
-        self.dict = self.read_data(self.Cz0, self.Cz1, self.zgal, add_fir=add_fir)
+        self.dict = self.read_data(self.Cz0, self.Cz1, self.Cz2, self.zgal, add_fir=add_fir)
 
         # Set parameters;
         self.set_param()
@@ -1919,10 +1942,17 @@ class Mainbody():
             else:
                 Czrec1 = self.Cz1
 
+            Czrec2 = raw_input('What is your manual input for Cz2? [%.3f] '%(self.Cz2))
+            if Czrec2 != '':
+                Czrec2 = float(Czrec2)
+            else:
+                Czrec2 = self.Cz2
+
             self.zprev = self.zgal   # Input redshift for previous run
             self.zgal = zrecom # Recommended redshift from previous run
             self.Cz0 = Czrec0
             self.Cz1 = Czrec1
+            self.Cz2 = Czrec2
             print('\n\n')
             print('Generating model templates with input redshift and Scale.')
             print('\n\n')
@@ -1930,12 +1960,14 @@ class Mainbody():
 
         else:
             print('\n\n')
-            flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, and Cz1 , %.5f %.5f %.5f? ([y]/n) '%(self.zrecom, self.Czrec0, self.Czrec1))
+            flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, Cz1, and Cz2 , %.5f %.5f %.5f %.5f? ([y]/n) '%\
+                (self.zrecom, self.Czrec0, self.Czrec1, self.Czrec2))
             if flag_gen == 'y' or flag_gen == '':
                 self.zprev = self.zgal # Input redshift for previous run
                 self.zgal = self.zrecom # Recommended redshift from previous run
                 self.Cz0 = self.Czrec0
                 self.Cz1 = self.Czrec1
+                self.Cz2 = self.Czrec2
                 return True
             else:
                 print('\n\n')

@@ -19,7 +19,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
     '''
     Parameters
     ----------
@@ -182,6 +182,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     Cz0 = hdul[0].header['Cz0']
     Cz1 = hdul[0].header['Cz1']
+    Cz2 = hdul[0].header['Cz2']
     zbes = zp50 
     zscl = (1.+zbes)
 
@@ -189,9 +190,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Data taken from
     ###############################
     if MB.f_dust:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes, add_fir=True)
     else:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
     NR   = MB.dict['NR']
     x    = MB.dict['x']
@@ -202,11 +203,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     xg0  = x[con0]
     fg0  = fy[con0]
     eg0  = ey[con0]
-    con1 = (NR>=1000) & (NR<10000)
+    con1 = (NR>=1000) & (NR<2000)
     xg1  = x[con1]
     fg1  = fy[con1]
     eg1  = ey[con1]
-    if len(xg0)>0 or len(xg1)>0:
+    con2 = (NR>=1000) & (NR<NRbb_lim)
+    xg2  = x[con2]
+    fg2  = fy[con2]
+    eg2  = ey[con2]
+
+    if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
     else:
         f_grsm = False
@@ -576,14 +582,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
-        #ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-        #ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
-        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg2, fg2 * c/np.square(xg2)/d, yerr=eg2 * c/np.square(xg2)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
         ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
-        xgrism = np.concatenate([xg0,xg1])
-        fgrism = np.concatenate([fg0,fg1])
-        egrism = np.concatenate([eg0,eg1])
+        xgrism = np.concatenate([xg0,xg1,xg2])
+        fgrism = np.concatenate([fg0,fg1,fg2])
+        egrism = np.concatenate([eg0,eg1,eg2])
         con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
         con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
@@ -1135,6 +1140,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
             tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
             tree_spec.update({'wg1_obs': xg1})
+            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d})
+            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d})
+            tree_spec.update({'wg2_obs': xg2})
 
         af = asdf.AsdfFile(tree_spec)
         af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
@@ -1280,7 +1288,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
     '''
     Parameters
     ----------
@@ -1481,11 +1489,15 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     xg0  = x[con0]
     fg0  = fy[con0] #* Cz0
     eg0  = ey[con0] #* Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
     fg1  = fy[con1] #* Cz1
     eg1  = ey[con1] #* Cz1
-    if len(xg0)>0 or len(xg1)>0:
+    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
+    xg2  = x[con2]
+    fg2  = fy[con2] #* Cz1
+    eg2  = ey[con2] #* Cz1
+    if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
     else:
         f_grsm = False
@@ -1822,14 +1834,13 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
-        #ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-        #ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
-        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg2, fg2 * c/np.square(xg2)/d, yerr=eg2 * c/np.square(xg2)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
         ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
-        xgrism = np.concatenate([xg0,xg1])
-        fgrism = np.concatenate([fg0,fg1])
-        egrism = np.concatenate([eg0,eg1])
+        xgrism = np.concatenate([xg0,xg1,xg2])
+        fgrism = np.concatenate([fg0,fg1,fg2])
+        egrism = np.concatenate([eg0,eg1,eg1])
         con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
         con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
@@ -2361,6 +2372,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
             tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
             tree_spec.update({'wg1_obs': xg1})
+            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d})
+            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d})
+            tree_spec.update({'wg2_obs': xg2})
 
         af = asdf.AsdfFile(tree_spec)
         af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
@@ -2512,7 +2526,8 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
     return ax
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, scale=1e-19):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
+    scale=1e-19, NRbb_lim=10000):
     '''
     Purpose
     -------
@@ -2588,14 +2603,15 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
         #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
-    ZZ50  = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
-    chi   = hdul[1].data['chi'][0]
-    chin  = hdul[1].data['chi'][1]
-    fitc  = chin
-    Cz0   = hdul[0].header['Cz0']
-    Cz1   = hdul[0].header['Cz1']
-    zbes  = hdul[0].header['z']
-    zscl  = (1.+zbes)
+    ZZ50 = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
+    chi = hdul[1].data['chi'][0]
+    chin = hdul[1].data['chi'][1]
+    fitc = chin
+    Cz0 = hdul[0].header['Cz0']
+    Cz1 = hdul[0].header['Cz1']
+    Cz2 = hdul[0].header['Cz2']
+    zbes = hdul[0].header['z']
+    zscl = (1.+zbes)
 
     # plot Configuration
     if MB.fzmc == 1:
@@ -2628,46 +2644,54 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2 = fig.add_axes([0.05,0.07,0.37,0.23])
 
     if MB.f_dust:
-        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.Cz2, MB.zgal, add_fir=True)
     else:
-        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.Cz2, MB.zgal)
 
     # Get data points;
-    NRbb   = MB.dict['NRbb']
-    xbb    = MB.dict['xbb'] 
-    fybb   = MB.dict['fybb']
-    eybb   = MB.dict['eybb']
-    exbb   = MB.dict['exbb']
-    snbb   = fybb/eybb
+    NRbb = MB.dict['NRbb']
+    xbb = MB.dict['xbb'] 
+    fybb = MB.dict['fybb']
+    eybb = MB.dict['eybb']
+    exbb = MB.dict['exbb']
+    snbb = fybb/eybb
 
     # Get spec data points;
     dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
-    NR  = dat[:, 0]
-    x   = dat[:, 1]
-    fy00 = dat[:, 2]
-    ey00 = dat[:, 3]
+    NR  = dat[:,0]
+    x   = dat[:,1]
+    fy00 = dat[:,2]
+    ey00 = dat[:,3]
 
     con0 = (NR<1000) #& (fy/ey>SNlim)
     xg0  = x[con0]
     fg0  = fy00[con0] * Cz0
     eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
     fg1  = fy00[con1] * Cz1
     eg1  = ey00[con1] * Cz1
-    con2 = (NR>=10000)#& (fy/ey>SNlim)
+    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
     xg2  = x[con2]
-    fg2  = fy00[con2]
-    eg2  = ey00[con2]
+    fg2  = fy00[con2] * Cz2
+    eg2  = ey00[con2] * Cz2
+
+    con_bb = (NR>=NRbb_lim)
+    xg_bb = x[con_bb]
+    fg_bb = fy00[con_bb]
+    eg_bb = ey00[con_bb]
+
     fy01 = np.append(fg0,fg1)
     ey01 = np.append(eg0,eg1)
+    fy02 = np.append(fy01,fg2)
+    ey02 = np.append(ey01,eg2)
 
-    fy = np.append(fy01,fg2)
-    ey = np.append(ey01,eg2)
+    fy = np.append(fy01,fg_bb)
+    ey = np.append(ey01,eg_bb)
     wht = 1./np.square(ey)
 
     # BB photometry
-    conspec = (NR<10000)
+    conspec = (NR<NRbb_lim)
     sigma = 1.
     conbb = (fybb/eybb > sigma)
     ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
@@ -2690,7 +2714,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         burnin = data['burnin']
         nmc    = data['niter']
         nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
+        Nburn  = burnin
         samples = data['chain'][:]
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
@@ -3035,7 +3059,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     # For the last one
     ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
+    ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='g', label='')
+    ax0.plot(xg2, fg2 * c / np.square(xg2) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
     ax0.set_xlim(2200, 88000)
     ax0.set_xscale('log')
@@ -3093,7 +3118,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
 
 def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
-    tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
+    tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./', NRbb_lim=10000):
     '''
     Creat "cumulative" png for gif image.
     
@@ -3159,6 +3184,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
     fitc  = chin
     Cz0   = hdul[0].header['Cz0']
     Cz1   = hdul[0].header['Cz1']
+    Cz2   = hdul[0].header['Cz2']
     zbes  = hdul[0].header['z']
     zscl = (1.+zbes)
 
@@ -3198,6 +3224,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
 
     # For spec plot
     ax0 = fig.add_axes([0.62,0.61,0.37,0.33])
+
     ###############################
     # Data taken from
     ###############################
@@ -3212,29 +3239,38 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
     xg0  = x[con0]
     fg0  = fy00[con0] * Cz0
     eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
     fg1  = fy00[con1] * Cz1
     eg1  = ey00[con1] * Cz1
-    con2 = (NR>=10000)#& (fy/ey>SNlim)
+    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
     xg2  = x[con2]
-    fg2  = fy00[con2]
-    eg2  = ey00[con2]
+    fg2  = fy00[con2] * Cz2
+    eg2  = ey00[con2] * Cz2
+
+    con_bb = (NR>=NRbb_lim)#& (fy/ey>SNlim)
+    xg_bb  = x[con_bb]
+    fg_bb  = fy00[con_bb]
+    eg_bb  = ey00[con_bb]
+
     fy01 = np.append(fg0,fg1)
-    fy   = np.append(fy01,fg2)
     ey01 = np.append(eg0,eg1)
-    ey   = np.append(ey01,eg2)
+    fy02 = np.append(fy01,fg2)
+    ey02 = np.append(ey01,eg2)
+
+    fy = np.append(fy02,fg_bb)
+    ey = np.append(ey02,eg_bb)
     wht=1./np.square(ey)
 
     dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '.cat', comments='#')
-    NRbb = dat[:, 0]
-    xbb  = dat[:, 1]
-    fybb = dat[:, 2]
-    eybb = dat[:, 3]
-    exbb = dat[:, 4]
+    NRbb = dat[:,0]
+    xbb  = dat[:,1]
+    fybb = dat[:,2]
+    eybb = dat[:,3]
+    exbb = dat[:,4]
     snbb = fybb/eybb
 
-    conspec = (NR<10000) #& (fy/ey>1)
+    conspec = (NR<NRbb_lim) #& (fy/ey>1)
     #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
     conbb = (fybb/eybb>snlimbb)
@@ -3251,7 +3287,6 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
     #ax1.set_xlim(12500, 16000)
     ax0.set_xscale('log')
     ax0.set_ylim(-0.05, ymax)
-
 
     DIR_TMP = './templates/'
     ####################
@@ -3323,7 +3358,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
             else:
                 y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0p, x0p  = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
@@ -3344,9 +3379,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
         Ttmp[kk]  = np.log10(Ttmp[kk])
 
 
-        NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
-        #NPARmin = [np.log10(M16)-0.1, -0.4, 0, -0.6]
-        #NPARmax = [np.log10(M84)+0.1, 0.5, 2., 0.5]
+        NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
         NPARmin = [np.log10(M16)-0.1, -0.4, Av16-0.1, -0.5]
         NPARmax = [np.log10(M84)+0.1, 0.5, Av84+0.1, 0.5]
 
@@ -3361,14 +3394,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
                 bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
                 ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
                 ax.set_xlim(x1min, x1max)
-                #print(x, x1min, x1max)
-                #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-                #ax.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
                 ax.set_yticklabels([])
-                #ax.set_xticklabels([])
-                #ax.set_title('%s'%(Par[i]), fontsize=12)
                 if i == K-1:
                     ax.set_xlabel('%s'%(Par[i]), fontsize=12)
                 if i < K-1:
@@ -3377,14 +3403,11 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
         # Scatter and contour
         for i, x in enumerate(Par):
             for j, y in enumerate(Par):
-                #print(i,j,Par[j], Par[i])
                 if i > j:
                     ax = axes[i, j]
                     ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
                     ax.set_xlabel('%s'%(Par[j]), fontsize=12)
 
-                    #x1min, x1max = np.min(NPAR[j]), np.max(NPAR[j])
-                    #y1min, y1max = np.min(NPAR[i]), np.max(NPAR[i])
                     x1min, x1max = NPARmin[j], NPARmax[j]
                     y1min, y1max = NPARmin[i], NPARmax[i]
                     ax.set_xlim(x1min, x1max)
