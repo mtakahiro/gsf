@@ -211,21 +211,22 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     ############################
     try:
         sig_temp = float(inputs['SIG_TEMP'])
+        print('Template is set to %.1f km/s.'%(sig_temp))
     except:
         sig_temp = 50.
         print('Template resolution is unknown.')
         print('Set to %.1f km/s.'%(sig_temp))
-    dellam = lm[1] - lm[0] # AA/pix
-    R_temp = c/(sig_temp*1e3*1e10)
-    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
 
-    #
+    iixlam = np.argmin(np.abs(lm-4000)) # Around 4000 AA
+    dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
+    R_temp = c / (sig_temp*1e3*1e10)
+    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
     sig_inst = 0 #65 #km/s for Manga
 
     # If grism;
     if f_morp:
-        print('Templates convolution (intrinsic morphology).')
-        if gamma>sig_temp_pix:
+        print('\nStarting templates convolution (intrinsic morphology).')
+        if gamma>sig_temp_pix:# and False:
             sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
         else:
             sig_conv = 0
@@ -250,7 +251,6 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
         try:
             vdisp = float(inputs['VDISP'])
             dellam = lm[1] - lm[0] # AA/pix
-            #R_disp = c/(vdisp*1e3*1e10)
             R_disp = c/(np.sqrt(vdisp**2-sig_inst**2)*1e3*1e10)
             vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
             print('Templates are convolved at %.2f km/s.'%(vdisp))
@@ -289,7 +289,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         flag for adding nebular emissionself.
     tmp_norm : float
         Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
-    '''    
+    '''
 
     inputs = MB.inputs
     ID = MB.ID
@@ -592,7 +592,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                 # Flam to Fnu
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:], m0set=MB.m0set)
-
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 # (1.+zbest) takes acount of the change in delta lam by redshifting.
                 # Note that this is valid only when F_nu.
@@ -618,6 +617,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                     except:
+                        print('Error. No convolution is happening...')
                         spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
                         if zz==0 and ss==0:
                             print('Kernel is too small. No convolution.')

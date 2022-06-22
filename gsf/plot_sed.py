@@ -737,7 +737,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
-
     #
     # Plot Median SED;
     #
@@ -756,12 +755,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_grsm:
         from astropy.convolution import convolve
         from .maketmp_filt import get_LSF
-        LSF, lmtmp = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[::nstep_plot], c=3e18)
-        spec_grsm16 = convolve(ytmp16[::nstep_plot], LSF, boundary='extend')
-        spec_grsm50 = convolve(ytmp50[::nstep_plot], LSF, boundary='extend')
-        spec_grsm84 = convolve(ytmp84[::nstep_plot], LSF, boundary='extend')
-        ax2t.plot(x1_tot[::nstep_plot], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
-
+        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:], c=3e18)
+        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        if True:
+            ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+        else:
+            ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+        
     # Attach the data point in MB;
     MB.sed_wave_obs = xbb
     MB.sed_flux_obs = fybb * c / np.square(xbb) / d
@@ -779,9 +781,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ysumtmp2 = ytmp[:, ::nstep_plot] * 0
         ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
         for ss in range(len(age)):
-            ii = int(len(nage) - ss - 1) # from old to young templates.            
-            #ysumtmp += np.percentile(ytmp_each[:, ::nstep_plot, ii], 50, axis=0)
-            #ax1.plot(x1_tot[::nstep_plot], ysumtmp, linestyle='--', lw=.5, color=col[ii], alpha=0.5)
+            ii = int(len(nage) - ss - 1)
             # !! Take median after summation;
             ysumtmp2[:,:len(xm_tmp)] += ytmp_each[:, ::nstep_plot, ii]
             if f_fill:
@@ -989,11 +989,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             fybb = np.append(fybb,fybbd)
             eybb = np.append(eybb,eybbd)
 
-        col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
+        col5 = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
         col00.append(col5)
-        col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) / d)
+        col6 = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) / d)
         col00.append(col6)
-        col7  = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) / d)
+        col7 = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) / d)
         col00.append(col7)
 
         hdr = fits.Header()
@@ -1161,13 +1161,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.25
 
-        #print(ax1.get_ylim())
-        ax1.text(0.77, 0.7, label,\
-        fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
-        ha='left', va='center', transform=ax1.transAxes)
-        
-    #######################################
+        if f_grsm:
+            ax1.text(0.02, 0.7, label,\
+            fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ha='left', va='center', transform=ax1.transAxes)
+        else:
+            ax1.text(0.77, 0.7, label,\
+            fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ha='left', va='center', transform=ax1.transAxes)
+
     ax1.xaxis.labelpad = -3
+
     if f_grsm:
         if np.max(xg0)<23000: # E.g. WFC3, NIRISS grisms
             conlim = (x0>10000) & (x0<25000)
@@ -1219,9 +1223,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax3t.set_xscale('log')
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
-        #ax3t.set_xlim(7e6, 3e7)
-        #ax3t.set_ylim(1e-4, 0.1)
-        #ax3t.set_yscale('log')
 
     ###############
     # Line name

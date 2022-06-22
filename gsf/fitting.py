@@ -1124,7 +1124,7 @@ class Mainbody():
         return flag_z
 
 
-    def get_zdist(self, f_interact=False):
+    def get_zdist(self, f_interact=False, f_ascii=True):
         '''
         Saves a plot of z-distribution.
 
@@ -1143,8 +1143,16 @@ class Mainbody():
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
             ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',\
-                label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_z0=%.3f$\n$C_z1=%.3f$\n$C_z2=%.3f$'%\
+                label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_{z0}=%.3f$\n$C_{z1}=%.3f$\n$C_{z2}=%.3f$'%\
                 (self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1, self.Cz2))
+
+            if f_ascii:
+                file_ascii_out = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
+                fw_ascii = open(file_ascii_out,'w')
+                fw_ascii.write('# z pz\n')
+                for ii in range(len(xx)):
+                    fw_ascii.write('%.3f %.3f\n'%(xx[ii],yy[ii]))
+                fw_ascii.close()
 
             xx = yy * 0 + self.z_cz[0]
             ax1.plot(xx,yy,linestyle='--',linewidth=1,color='orangered')
@@ -1159,6 +1167,8 @@ class Mainbody():
             # Label:
             ax1.set_xlabel('Redshift')
             ax1.set_ylabel('$dn/dz$')
+            zp_min,zp_max = self.z_cz[0] - (self.z_cz[1]-self.z_cz[0])*3, self.z_cz[2] + (self.z_cz[2]-self.z_cz[1])*3
+            ax1.set_xlim(zp_min,zp_max)
             ax1.legend(loc=0)
             
             # Save:
