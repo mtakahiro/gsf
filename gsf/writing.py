@@ -115,10 +115,19 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             except:
                 pass
 
-            AGEmc[aa,:] = np.percentile(res.flatchain['AGE'+str(aa)][burnin:], [16,50,84])
-            TAUmc[aa,:] = np.percentile(res.flatchain['TAU'+str(aa)][burnin:], [16,50,84])
+            # Do debug..
+            try:
+                AGEmc[aa,:] = np.percentile(res.flatchain['AGE'+str(aa)][burnin:], [16,50,84])
+            except:
+                AGEFIX = self.AGEFIX
+                AGEmc[aa,:] = [AGEFIX, AGEFIX, AGEFIX]
 
-    #
+            try:
+                TAUmc[aa,:] = np.percentile(res.flatchain['TAU'+str(aa)][burnin:], [16,50,84])
+            except:
+                TAUFIX = self.TAUFIX
+                TAUmc[aa,:] = [TAUFIX, TAUFIX, TAUFIX]
+
     msmc = np.percentile(msmc0, [16,50,84])
     try:
         Avb = res.params['Av'].value
@@ -153,7 +162,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     esp  = fds[:,3]
 
     consp = (nrs<10000) & (lams/(1.+zrecom)>3600) & (lams/(1.+zrecom)<4200) & (esp>0)
-    NSN   = len(fsp[consp])
+    NSN = len(fsp[consp])
     if NSN>0:
         SN = np.median((fsp/esp)[consp])
     else:

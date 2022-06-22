@@ -1390,6 +1390,7 @@ class Mainbody():
        # Load Spectral library;
         self.lib = self.fnc.open_spec_fits(fall=0)
         self.lib_all = self.fnc.open_spec_fits(fall=1)
+
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)

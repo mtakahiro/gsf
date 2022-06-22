@@ -776,7 +776,6 @@ class Func_tau:
             hdu0 = self.MB.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
-
         NZ = len(ZZ)
         NT = self.MB.ntau
         NA = self.MB.nage

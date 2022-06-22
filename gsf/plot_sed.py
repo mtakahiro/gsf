@@ -1430,12 +1430,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     Z50 = np.zeros(len(age), dtype='float')
     Z16 = np.zeros(len(age), dtype='float')
     Z84 = np.zeros(len(age), dtype='float')
-    #NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
         vals['Z'+str(aa)] = Z50[aa]
 
     # Light weighted Z.
@@ -1470,6 +1468,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     Cz0 = hdul[0].header['Cz0']
     Cz1 = hdul[0].header['Cz1']
+    Cz2 = hdul[0].header['Cz2']
     zbes = zp50 
     zscl = (1.+zbes)
 
@@ -1477,9 +1476,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Data taken from
     ###############################
     if MB.f_dust:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes, add_fir=True)
     else:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
     NR   = MB.dict['NR']
     x    = MB.dict['x']
@@ -1488,16 +1487,16 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     
     con0 = (NR<1000)
     xg0  = x[con0]
-    fg0  = fy[con0] #* Cz0
-    eg0  = ey[con0] #* Cz0
+    fg0  = fy[con0]
+    eg0  = ey[con0]
     con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
-    fg1  = fy[con1] #* Cz1
-    eg1  = ey[con1] #* Cz1
+    fg1  = fy[con1]
+    eg1  = ey[con1]
     con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
     xg2  = x[con2]
-    fg2  = fy[con2] #* Cz1
-    eg2  = ey[con2] #* Cz1
+    fg2  = fy[con2]
+    eg2  = ey[con2]
     if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
     else:
@@ -1509,11 +1508,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     wht[con_wht] = 1./np.square(ey[con_wht])
 
     # BB data points;
-    NRbb = MB.dict['NRbb'] #dat[:, 0]
-    xbb  = MB.dict['xbb'] #dat[:, 1]
-    fybb = MB.dict['fybb'] #dat[:, 2]
-    eybb = MB.dict['eybb'] #dat[:, 3]
-    exbb = MB.dict['exbb'] #dat[:, 4]
+    NRbb = MB.dict['NRbb']
+    xbb  = MB.dict['xbb']
+    fybb = MB.dict['fybb']
+    eybb = MB.dict['eybb']
+    exbb = MB.dict['exbb']
     snbb = fybb/eybb
 
     ######################
@@ -1552,6 +1551,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
+        f_plot_resid = False
     else:
         if f_plot_resid:
             fig_mosaic = """
@@ -1841,7 +1841,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         xgrism = np.concatenate([xg0,xg1,xg2])
         fgrism = np.concatenate([fg0,fg1,fg2])
-        egrism = np.concatenate([eg0,eg1,eg1])
+        egrism = np.concatenate([eg0,eg1,eg2])
         con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
         con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
