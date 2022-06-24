@@ -177,15 +177,18 @@ class Mainbody():
         #    # If Mdyn is included.
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
 
-        # Scaling for grism; 
-        self.Cz0 = float(inputs['CZ0'])
-        self.Cz1 = float(inputs['CZ1'])
-        self.Cz2 = float(inputs['CZ2'])
 
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
+            # Scaling for grism; 
+            self.Cz0 = float(inputs['CZ0'])
+            self.Cz1 = float(inputs['CZ1'])
+            self.Cz2 = float(inputs['CZ2'])
         except:
             self.DIR_EXTR = False
+            self.Cz0 = 1
+            self.Cz1 = 1
+            self.Cz2 = 1
 
         # BPASS Binary template
         try:
@@ -318,12 +321,21 @@ class Mainbody():
             self.agemin = float(inputs['AGEMIN'])
             self.delage = float(inputs['DELAGE'])
 
+            if self.agemax-self.agemin<self.delage:
+                self.delage = 0.0001
+                self.agemax = self.agemin + self.delage
+
             self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
             self.nage = len(self.ageparam)
 
             self.taumax = float(inputs['TAUMAX'])
             self.taumin = float(inputs['TAUMIN'])
             self.deltau = float(inputs['DELTAU'])
+
+            if self.taumax-self.taumin<self.deltau:
+                self.deltau = 0.0001
+                self.taumax = self.taumin + self.deltau
+
             self.tau = np.arange(self.taumin, self.taumax, self.deltau)
             self.ntau = len(self.tau)
 
@@ -1389,7 +1401,7 @@ class Mainbody():
         print('#################\n')
        # Load Spectral library;
         self.lib = self.fnc.open_spec_fits(fall=0)
-        self.lib_all = self.fnc.open_spec_fits(fall=1)
+        self.lib_all = self.fnc.open_spec_fits(fall=1, orig=True)
 
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)

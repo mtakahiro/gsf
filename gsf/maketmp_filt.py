@@ -646,10 +646,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                 # ASDF
                 # ???
-                #spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
-                #tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_ap})
+                spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
+                tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_ap})
                 tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu[ss,:]})
-                tree_spec_full.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
+                #tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
 
                 # For nebular library;
                 # For every Z, but not for ss and pp.
@@ -1208,10 +1208,12 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     spec_mul_nu_conv[ss,:] = spec_mul_nu[ss,:]
 
                 if f_spec:
-                    ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                    #ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                    ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu[ss,:])
                 
                 # Register filter response;
-                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT, MB=MB, f_regist=False)
+                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu[ss,:], DIR_FILT, MB=MB, f_regist=False)
+
 
                 ##########################################
                 # Writing out the templates to fits table.
@@ -1238,7 +1240,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_ap})
                 tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu[ss,:]})                
-                tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
+                #tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
 
                 # Nebular library;
                 if fneb == 1 and MB.f_bpass==0 and ss==0 and tt==0:

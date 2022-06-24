@@ -1640,7 +1640,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #####################################
     # Open ascii file and stock to array.
     MB.lib = fnc.open_spec_fits(fall=0)
-    MB.lib_all = fnc.open_spec_fits(fall=1)
+    MB.lib_all = fnc.open_spec_fits(fall=1, orig=True)
+
     if f_dust:
         DT0 = float(MB.inputs['TDUST_LOW'])
         DT1 = float(MB.inputs['TDUST_HIG'])
@@ -1960,8 +1961,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             ax1.plot(x1_tot, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
 
         # Grism plot + Fuv flux + LIR.
-        if f_grsm:
-            ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+        #if f_grsm:
+        #    ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         if True:
             # Get FUV flux;
@@ -1992,6 +1993,20 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     
     if f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
+
+    # For grism;
+    if f_grsm:
+        from astropy.convolution import convolve
+        from .maketmp_filt import get_LSF
+        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:], c=3e18)
+        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        if False:#True:
+            ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+        else:
+            ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+
 
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
@@ -2027,9 +2042,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     chi_nd = 0.0
     if f_chind:
         f_ex = np.zeros(len(fy), 'int')
-        for ii in range(len(fy)):
-            if f_exclude:
-                if xbb[ii] in x_ex:
+        if f_exclude:
+            for ii in range(len(fy)):
+                if x[ii] in x_ex:
                     f_ex[ii] = 1
 
         con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
