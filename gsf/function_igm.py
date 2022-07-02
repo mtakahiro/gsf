@@ -98,7 +98,7 @@ def get_column(zin, cosmo, Mpc_cm=3.08568025e+24, z_r=6.0, delz=0.1):
 	'''
 	Returns
 	-------
-	HI column density of IGM at zin, in cm^-3.
+	HI column density of IGM at zin, in cm^-2.
 	'''
 	z = np.arange(z_r, zin, delz)
 	try:
