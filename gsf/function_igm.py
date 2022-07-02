@@ -77,17 +77,20 @@ def get_sig_lya(lam_o, z_s, T=1e4, c=3e18):
 
 def get_nH(z):
 	'''
+	Purpose
+	-------
+	Get HI density by using Cen & Haiman 2000.
+
 	Returns
 	-------
-	HI density in IGM.
+	HI density in IGM, in cm^-3
 	'''
 	try:
 		nH = np.zeros(len(z),dtype='float')
 	except:
 		nH = 0
 
-	# From Cen & Haiman 2000
-	nH = 8.5e-5 * ((1.+z)/8)**3 # in cm^-3
+	nH = 8.5e-5 * ((1.+z)/8)**3
 	return nH
 
 
