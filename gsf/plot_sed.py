@@ -60,7 +60,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
-    
+
+    print('\n### Running plot_sed ###\n')
+
     lcb = '#4682b4' # line color, blue
 
     fnc  = MB.fnc 
@@ -1020,9 +1022,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         try:
             # Muv
             MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = np.percentile(MUV[:],16)
-            hdr['MUV50'] = np.percentile(MUV[:],50)
-            hdr['MUV84'] = np.percentile(MUV[:],84)
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -1035,6 +1037,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             hdr['LIR84'] = np.percentile(Lir[:],84)
         except:
             pass
+
+        # UV beta;
+        from .function import get_uvbeta
+        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = beta_16
+        hdr['UVBETA50'] = beta_50
+        hdr['UVBETA84'] = beta_84
 
         # UVJ
         try:
@@ -1328,6 +1339,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
     
+    print('\n### Running plot_sed_tau ###\n')
+
     lcb = '#4682b4' # line color, blue
 
     fnc  = MB.fnc
@@ -2265,9 +2278,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         try:
             # Muv
             MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = np.percentile(MUV[:],16)
-            hdr['MUV50'] = np.percentile(MUV[:],50)
-            hdr['MUV84'] = np.percentile(MUV[:],84)
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -2280,6 +2293,15 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             hdr['LIR84'] = np.percentile(Lir[:],84)
         except:
             pass
+
+        # UV beta;
+        from .function import get_uvbeta
+        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = beta_16
+        hdr['UVBETA50'] = beta_50
+        hdr['UVBETA84'] = beta_84
 
         # UVJ
         try:

@@ -17,6 +17,31 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 
 
+def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300):
+    '''
+    Purpose
+    -------
+    get UV beta_lambda slope.
+
+    Parameters
+    ----------
+    lm : float array
+        in lambda
+    flam : float array
+        in flambda 
+    '''
+    con_uv = (lm/(1.+zbes)>lam_blue) & (lm/(1.+zbes)<lam_red)
+    #flam = fnutolam(lm,fl)
+    try:
+        fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1) #, w=flam[con_uv])
+        beta = fit_results[0]
+        if np.isnan(beta):
+            beta = -99
+    except:
+        beta = -99
+    return beta
+
+
 def func_tmp(xint,eobs,fmodel):
     '''
     '''

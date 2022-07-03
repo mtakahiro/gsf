@@ -43,6 +43,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
         import matplotlib
         matplotlib.use("Agg")
 
+    print('\n### Running plot_sfh ###\n')
     fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
@@ -798,6 +799,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         matplotlib.use("Agg")
     else:
         import matplotlib
+
+    print('\n### Running plot_sfh_tau ###\n')
 
     fnc = MB.fnc
     bfnc = MB.bfnc
