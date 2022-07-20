@@ -5,6 +5,7 @@ from scipy.integrate import simps
 import pickle as cPickle
 import os
 import scipy.interpolate as interpolate
+import logging
 
 c = 3.e18 # A/s
 #d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
@@ -15,6 +16,19 @@ c = 3.e18 # A/s
 LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
+
+
+def str2bool(v):
+    '''
+    '''
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300):
@@ -546,6 +560,22 @@ def fnutolam(lam, fnu, m0set=25.0):
     Ctmp = lam**2/c * 10**((48.6+m0set)/2.5)
     flam  = fnu / Ctmp
     return flam
+
+
+def delta(x,A):
+    '''
+    '''
+    yy = np.zeros(len(x),float)
+    iix = np.argmin(np.abs(x))
+    if len(x)%2 == 0:
+        logger= logging.getLogger( __name__ )
+        print(logger)
+        print('Input array has an even number.')
+        yy[iix] = A/2.
+        yy[iix+1] = A/2.
+    else:
+        yy[iix] = A
+    return yy
 
 
 def gauss(x,A,sig):

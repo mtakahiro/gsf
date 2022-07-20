@@ -757,11 +757,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_grsm:
         from astropy.convolution import convolve
         from .maketmp_filt import get_LSF
-        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:], c=3e18)
+        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
         spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
         spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
         spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
-        if True:
+        '''
+        plt.close()
+        plt.plot(x1_tot, ytmp50, color='r')
+        plt.plot(x1_tot, spec_grsm50, color='gray')
+        print(spec_grsm50)
+        plt.xlim(8000,20000)
+        plt.show()
+        '''
+        if False:
             ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
         else:
             ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
@@ -1174,11 +1182,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         if f_grsm:
             ax1.text(0.02, 0.7, label,\
-            fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
         else:
-            ax1.text(0.77, 0.7, label,\
-            fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ax1.text(0.02, 0.7, label,\
+            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
 
     ax1.xaxis.labelpad = -3
