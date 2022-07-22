@@ -115,8 +115,12 @@ class Mainbody():
         print('\nFitting : %s\n'%self.ID)
 
         # Read catalog;
-        self.CAT_BB = inputs['CAT_BB']
-        self.fd_cat = ascii.read(self.CAT_BB)
+        try:
+            self.CAT_BB = inputs['CAT_BB']
+            self.fd_cat = ascii.read(self.CAT_BB)
+        except:
+            self.CAT_BB = None
+            self.fd_cat = None
 
         if zman != None:
             self.zgal = zman
@@ -176,8 +180,6 @@ class Mainbody():
         #if self.f_Mdyn:
         #    # If Mdyn is included.
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
-
-
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
             # Scaling for grism; 
@@ -859,7 +861,8 @@ class Mainbody():
 
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
-        zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, f_norm=True):
+        zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
+        f_norm=True, f_lambda=False):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
@@ -894,9 +897,11 @@ class Mainbody():
         self.nmc_cz = int(self.inputs['NMCZ'])
 
         # For z prior.
-        zliml = self.zgal - 0.5
-        if zlimu == None:
-            zlimu = self.zgal + 0.5
+        #zliml = self.zgal - 0.5
+        #if zlimu == None:
+        #    zlimu = self.zgal + 0.5
+        zliml = self.zmcmin
+        zlimu = self.zmcmax
 
         # Observed data;
         sn = self.dict['fy'] / self.dict['ey']

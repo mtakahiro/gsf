@@ -618,6 +618,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Saved template;
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
     ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
+    ytmp_nl = np.zeros((mmax,len(ysum)), dtype='float') # no line
 
     ytmpmax = np.zeros(len(ysum), dtype='float')
     ytmpmin = np.zeros(len(ysum), dtype='float')
@@ -662,7 +663,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             if ss == MB.aamin[0]:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
-                fm_tmp = mod0_tmp
+                fm_tmp = mod0_tmp.copy()
+                fm_tmp_nl = mod0_tmp.copy()
                 if MB.fneb:
                     Aneb_tmp = 10**samples['Aneb'][nr]
                     if not MB.logUFIX == None:
@@ -671,9 +673,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                         logU_tmp = samples['logU'][nr]
                     mod0_tmp, xm_tmp = fnc.tmp03_neb(Aneb_tmp, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
                     fm_tmp += mod0_tmp
+                    # Make no emission line template;
+                    mod0_tmp_nl, xm_tmp_nl = fnc.tmp03_neb(0, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
+                    fm_tmp_nl += mod0_tmp_nl
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
+                fm_tmp_nl += mod0_tmp
 
             # Each;
             ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
@@ -709,12 +715,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
+            model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + np.interp(x1_tot,x1_dust,model_dust)
 
             ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d
+            ytmp_nl[kk,:] = model_tot_nl[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) / d
+            ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) / d
 
         #
         # Grism plot + Fuv flux + LIR.
@@ -745,6 +754,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ytmp16 = np.percentile(ytmp[:,:],16,axis=0)
     ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
     ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
+    ytmp16_nl = np.percentile(ytmp_nl[:,:],16,axis=0)
+    ytmp50_nl = np.percentile(ytmp_nl[:,:],50,axis=0)
+    ytmp84_nl = np.percentile(ytmp_nl[:,:],84,axis=0)
     
     if MB.f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
@@ -769,7 +781,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         plt.xlim(8000,20000)
         plt.show()
         '''
-        if False:
+        if True:
             ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
         else:
             ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
@@ -969,6 +981,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         col3  = fits.Column(name='f_model_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50[:])
         col00.append(col3)
         col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
+        col00.append(col4)
+        col2  = fits.Column(name='f_model_noline_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16_nl[:])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_noline_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50_nl[:])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_noline_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84_nl[:])
         col00.append(col4)
 
         # Each component
