@@ -519,17 +519,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
 
-    dely1 = 0.5
-    while (ymax-0)/dely1<1:
-        dely1 /= 2.
-    while (ymax-0)/dely1>4:
-        dely1 *= 2.
+    if False:
+        dely1 = 0.5
+        while (ymax-0)/dely1<1:
+            dely1 /= 2.
+        while (ymax-0)/dely1>4:
+            dely1 *= 2.
 
-    y1ticks = np.arange(0, ymax, dely1)
-    ax1.set_yticks(y1ticks)
-    ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
-    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax1.yaxis.labelpad = 1.5
+        y1ticks = np.arange(0, ymax, dely1)
+        ax1.set_yticks(y1ticks)
+        ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
+        ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+        ax1.yaxis.labelpad = 1.5
 
     xx = np.arange(100,400000)
     yy = xx * 0

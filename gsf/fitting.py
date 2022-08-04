@@ -141,6 +141,7 @@ class Mainbody():
                     self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
                     self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
+                    print('ZMCMIN and ZMCMAX cannot be found. z range is set to z \pm 1.0')
                     self.zmcmin = None
                     self.zmcmax = None
 
