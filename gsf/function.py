@@ -7,15 +7,13 @@ import os
 import scipy.interpolate as interpolate
 import logging
 
-c = 3.e18 # A/s
-#d = 10**(73.6/2.5) # From [ergs/s/cm2/A] to [ergs/s/cm2/Hz]
-
 ################
 # Line library
 ################
 LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3L', 'O3H', 'Mgb', 'Halpha', 'S2L', 'S2H']
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
+c = 3.e18 # A/s
 
 
 def str2bool(v):
@@ -558,7 +556,7 @@ def fnutolam(lam, fnu, m0set=25.0):
     
     '''
     Ctmp = lam**2/c * 10**((48.6+m0set)/2.5)
-    flam  = fnu / Ctmp
+    flam = fnu / Ctmp
     return flam
 
 
@@ -585,11 +583,6 @@ def gauss(x,A,sig):
 def moffat(xx, A, x0, gamma, alp):
     yy = A * (1. + (xx-x0)**2/gamma**2)**(-alp)
     return yy
-
-
-def get_filt(LIBFILT, NFILT):
-    #f = open(LIBFILT + '.info', 'r')
-    f = open(LIBFILT + '', 'r')
 
 
 def get_fit(x, y, xer, yer, nsfh:str = 'Del.'):
@@ -1133,19 +1126,16 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
         con = (l0>lmin) & (l0<lmax) #& (f0>0)
         lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
-            lamS,spec = l0[con], f0[con]                     # Two columns with wavelength and flux density
-            lamF,filt = lfil, ffil                 # Two columns with wavelength and response in the range [0,1]
-            #filt_int  = np.interp(lamS,lamF,filt)  # Interpolate Filter to common(spectra) wavelength axis
+            lamS,spec = l0[con], f0[con] # Two columns with wavelength and flux density
+            lamF,filt = lfil, ffil # Two columns with wavelength and response in the range [0,1]
             fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
             filt_int = fint(lamS)
             wht = 1.
 
             # This does not work sometimes;
-            #I1  = simps(spec/lamS**2*c*filt_int*lamS,lamS)   #Denominator for Fnu
-            #I2  = simps(filt_int/lamS,lamS)                  #Numerator
             delS = lamS[1]-lamS[0]
-            I1  = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
-            I2  = np.sum(filt_int/lamS*delS)                  #Numerator
+            I1 = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
+            I2 = np.sum(filt_int/lamS*delS)                  #Numerator
             if I2>0:
                 fnu[ii] = I1/I2/c         #Average flux density
             else:
@@ -1245,20 +1235,18 @@ def detect_line(xcont, ycont, wycont, zgal):
 
 
 def check_line_cz(ycont,xcont,wycont,model,zgal):
-    er   = 1./np.sqrt(wycont)
+    er = 1./np.sqrt(wycont)
     try:
         wht2, flag_l = detect_line(xcont, ycont, wycont, zgal)
         if flag_l == 1:
             wycont = wht2
             wht2, flag_l = detect_line(xcont, ycont, wycont,zgal)
-
     except Exception:
-        #print('Error in Line Check.')
         wht2 = wycont
         pass
 
-    z     = np.polyfit(xcont, ycont, 5, w=wht2)
-    p     = np.poly1d(z)
+    z = np.polyfit(xcont, ycont, 5, w=wht2)
+    p = np.poly1d(z)
     ypoly = p(xcont)
 
     return wht2, ypoly
