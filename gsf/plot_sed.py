@@ -19,7 +19,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
     '''
     Parameters
     ----------
@@ -52,15 +52,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     from astropy.io import ascii
     import time
 
-    #if False:#f_silence:
-    #    import matplotlib
-    #    matplotlib.use("Agg")
-    #else:
-    #    matplotlib.use("MacOSX")
+    if False:#f_silence:
+        import matplotlib
+        matplotlib.use("Agg")
+    else:
+        matplotlib.use("MacOSX")
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
-    
+
+    print('\n### Running plot_sed ###\n')
+
     lcb = '#4682b4' # line color, blue
 
     fnc  = MB.fnc 
@@ -182,6 +184,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     Cz0 = hdul[0].header['Cz0']
     Cz1 = hdul[0].header['Cz1']
+    Cz2 = hdul[0].header['Cz2']
     zbes = zp50 
     zscl = (1.+zbes)
 
@@ -189,9 +192,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Data taken from
     ###############################
     if MB.f_dust:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes, add_fir=True)
     else:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
     NR   = MB.dict['NR']
     x    = MB.dict['x']
@@ -202,11 +205,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     xg0  = x[con0]
     fg0  = fy[con0]
     eg0  = ey[con0]
-    con1 = (NR>=1000) & (NR<10000)
+    con1 = (NR>=1000) & (NR<2000)
     xg1  = x[con1]
     fg1  = fy[con1]
     eg1  = ey[con1]
-    if len(xg0)>0 or len(xg1)>0:
+    con2 = (NR>=1000) & (NR<NRbb_lim)
+    xg2  = x[con2]
+    fg2  = fy[con2]
+    eg2  = ey[con2]
+
+    if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
     else:
         f_grsm = False
@@ -263,6 +271,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if MB.f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
+
+        f_plot_resid = False
+        print('Grism data. f_plot_resid is turned off.')
+
     else:
         if f_plot_resid:
             fig_mosaic = """
@@ -507,17 +519,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
 
-    dely1 = 0.5
-    while (ymax-0)/dely1<1:
-        dely1 /= 2.
-    while (ymax-0)/dely1>4:
-        dely1 *= 2.
+    if False:
+        dely1 = 0.5
+        while (ymax-0)/dely1<1:
+            dely1 /= 2.
+        while (ymax-0)/dely1>4:
+            dely1 *= 2.
 
-    y1ticks = np.arange(0, ymax, dely1)
-    ax1.set_yticks(y1ticks)
-    ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
-    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax1.yaxis.labelpad = 1.5
+        y1ticks = np.arange(0, ymax, dely1)
+        ax1.set_yticks(y1ticks)
+        ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
+        ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+        ax1.yaxis.labelpad = 1.5
 
     xx = np.arange(100,400000)
     yy = xx * 0
@@ -572,14 +585,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
-        #ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-        #ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
-        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg2, fg2 * c/np.square(xg2)/d, yerr=eg2 * c/np.square(xg2)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
         ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
-        xgrism = np.concatenate([xg0,xg1])
-        fgrism = np.concatenate([fg0,fg1])
-        egrism = np.concatenate([eg0,eg1])
+        xgrism = np.concatenate([xg0,xg1,xg2])
+        fgrism = np.concatenate([fg0,fg1,fg2])
+        egrism = np.concatenate([eg0,eg1,eg2])
         con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
         con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
@@ -607,6 +619,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Saved template;
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
     ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
+    ytmp_nl = np.zeros((mmax,len(ysum)), dtype='float') # no line
 
     ytmpmax = np.zeros(len(ysum), dtype='float')
     ytmpmin = np.zeros(len(ysum), dtype='float')
@@ -651,7 +664,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             if ss == MB.aamin[0]:
                 mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
-                fm_tmp = mod0_tmp
+                fm_tmp = mod0_tmp.copy()
+                fm_tmp_nl = mod0_tmp.copy()
                 if MB.fneb:
                     Aneb_tmp = 10**samples['Aneb'][nr]
                     if not MB.logUFIX == None:
@@ -660,9 +674,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                         logU_tmp = samples['logU'][nr]
                     mod0_tmp, xm_tmp = fnc.tmp03_neb(Aneb_tmp, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
                     fm_tmp += mod0_tmp
+                    # Make no emission line template;
+                    mod0_tmp_nl, xm_tmp_nl = fnc.tmp03_neb(0, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
+                    fm_tmp_nl += mod0_tmp_nl
             else:
                 mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
+                fm_tmp_nl += mod0_tmp
 
             # Each;
             ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) / d
@@ -698,12 +716,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
+            model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + np.interp(x1_tot,x1_dust,model_dust)
 
             ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d
+            ytmp_nl[kk,:] = model_tot_nl[:] * c/np.square(x1_tot[:])/d
 
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) / d
+            ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) / d
 
         #
         # Grism plot + Fuv flux + LIR.
@@ -728,13 +749,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
-
     #
     # Plot Median SED;
     #
     ytmp16 = np.percentile(ytmp[:,:],16,axis=0)
     ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
     ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
+    ytmp16_nl = np.percentile(ytmp_nl[:,:],16,axis=0)
+    ytmp50_nl = np.percentile(ytmp_nl[:,:],50,axis=0)
+    ytmp84_nl = np.percentile(ytmp_nl[:,:],84,axis=0)
     
     if MB.f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
@@ -747,12 +770,23 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_grsm:
         from astropy.convolution import convolve
         from .maketmp_filt import get_LSF
-        LSF, lmtmp = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[::nstep_plot], c=3e18)
-        spec_grsm16 = convolve(ytmp16[::nstep_plot], LSF, boundary='extend')
-        spec_grsm50 = convolve(ytmp50[::nstep_plot], LSF, boundary='extend')
-        spec_grsm84 = convolve(ytmp84[::nstep_plot], LSF, boundary='extend')
-        ax2t.plot(x1_tot[::nstep_plot], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
-
+        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
+        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        '''
+        plt.close()
+        plt.plot(x1_tot, ytmp50, color='r')
+        plt.plot(x1_tot, spec_grsm50, color='gray')
+        print(spec_grsm50)
+        plt.xlim(8000,20000)
+        plt.show()
+        '''
+        if True:
+            ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+        else:
+            ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+        
     # Attach the data point in MB;
     MB.sed_wave_obs = xbb
     MB.sed_flux_obs = fybb * c / np.square(xbb) / d
@@ -770,9 +804,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ysumtmp2 = ytmp[:, ::nstep_plot] * 0
         ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
         for ss in range(len(age)):
-            ii = int(len(nage) - ss - 1) # from old to young templates.            
-            #ysumtmp += np.percentile(ytmp_each[:, ::nstep_plot, ii], 50, axis=0)
-            #ax1.plot(x1_tot[::nstep_plot], ysumtmp, linestyle='--', lw=.5, color=col[ii], alpha=0.5)
+            ii = int(len(nage) - ss - 1)
             # !! Take median after summation;
             ysumtmp2[:,:len(xm_tmp)] += ytmp_each[:, ::nstep_plot, ii]
             if f_fill:
@@ -951,6 +983,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         col00.append(col3)
         col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
         col00.append(col4)
+        col2  = fits.Column(name='f_model_noline_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16_nl[:])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_noline_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50_nl[:])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_noline_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84_nl[:])
+        col00.append(col4)
 
         # Each component
         # Stellar
@@ -980,11 +1018,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             fybb = np.append(fybb,fybbd)
             eybb = np.append(eybb,eybbd)
 
-        col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
+        col5 = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
         col00.append(col5)
-        col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) / d)
+        col6 = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) / d)
         col00.append(col6)
-        col7  = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) / d)
+        col7 = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) / d)
         col00.append(col7)
 
         hdr = fits.Header()
@@ -1011,9 +1049,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         try:
             # Muv
             MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = np.percentile(MUV[:],16)
-            hdr['MUV50'] = np.percentile(MUV[:],50)
-            hdr['MUV84'] = np.percentile(MUV[:],84)
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -1026,6 +1064,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             hdr['LIR84'] = np.percentile(Lir[:],84)
         except:
             pass
+
+        # UV beta;
+        from .function import get_uvbeta
+        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = beta_16
+        hdr['UVBETA50'] = beta_50
+        hdr['UVBETA84'] = beta_84
 
         # UVJ
         try:
@@ -1131,6 +1178,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
             tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
             tree_spec.update({'wg1_obs': xg1})
+            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d})
+            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d})
+            tree_spec.update({'wg2_obs': xg2})
 
         af = asdf.AsdfFile(tree_spec)
         af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
@@ -1149,13 +1199,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.25
 
-        #print(ax1.get_ylim())
-        ax1.text(0.77, 0.7, label,\
-        fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
-        ha='left', va='center', transform=ax1.transAxes)
-        
-    #######################################
+        if f_grsm:
+            ax1.text(0.02, 0.7, label,\
+            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ha='left', va='center', transform=ax1.transAxes)
+        else:
+            ax1.text(0.02, 0.7, label,\
+            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ha='left', va='center', transform=ax1.transAxes)
+
     ax1.xaxis.labelpad = -3
+
     if f_grsm:
         if np.max(xg0)<23000: # E.g. WFC3, NIRISS grisms
             conlim = (x0>10000) & (x0<25000)
@@ -1207,9 +1261,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         ax3t.set_xscale('log')
         ax3t.set_xticks([100000, 1000000, 10000000])
         ax3t.set_xticklabels(['10', '100', '1000'])
-        #ax3t.set_xlim(7e6, 3e7)
-        #ax3t.set_ylim(1e-4, 0.1)
-        #ax3t.set_yscale('log')
 
     ###############
     # Line name
@@ -1276,7 +1327,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
     '''
     Parameters
     ----------
@@ -1315,6 +1366,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
     
+    print('\n### Running plot_sed_tau ###\n')
+
     lcb = '#4682b4' # line color, blue
 
     fnc  = MB.fnc
@@ -1417,12 +1470,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     Z50 = np.zeros(len(age), dtype='float')
     Z16 = np.zeros(len(age), dtype='float')
     Z84 = np.zeros(len(age), dtype='float')
-    #NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
         vals['Z'+str(aa)] = Z50[aa]
 
     # Light weighted Z.
@@ -1457,6 +1508,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     Cz0 = hdul[0].header['Cz0']
     Cz1 = hdul[0].header['Cz1']
+    Cz2 = hdul[0].header['Cz2']
     zbes = zp50 
     zscl = (1.+zbes)
 
@@ -1464,9 +1516,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     # Data taken from
     ###############################
     if MB.f_dust:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes, add_fir=True)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes, add_fir=True)
     else:
-        MB.dict = MB.read_data(Cz0, Cz1, zbes)
+        MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
     NR   = MB.dict['NR']
     x    = MB.dict['x']
@@ -1475,13 +1527,17 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     
     con0 = (NR<1000)
     xg0  = x[con0]
-    fg0  = fy[con0] #* Cz0
-    eg0  = ey[con0] #* Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    fg0  = fy[con0]
+    eg0  = ey[con0]
+    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
-    fg1  = fy[con1] #* Cz1
-    eg1  = ey[con1] #* Cz1
-    if len(xg0)>0 or len(xg1)>0:
+    fg1  = fy[con1]
+    eg1  = ey[con1]
+    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
+    xg2  = x[con2]
+    fg2  = fy[con2]
+    eg2  = ey[con2]
+    if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
     else:
         f_grsm = False
@@ -1492,11 +1548,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     wht[con_wht] = 1./np.square(ey[con_wht])
 
     # BB data points;
-    NRbb = MB.dict['NRbb'] #dat[:, 0]
-    xbb  = MB.dict['xbb'] #dat[:, 1]
-    fybb = MB.dict['fybb'] #dat[:, 2]
-    eybb = MB.dict['eybb'] #dat[:, 3]
-    exbb = MB.dict['exbb'] #dat[:, 4]
+    NRbb = MB.dict['NRbb']
+    xbb  = MB.dict['xbb']
+    fybb = MB.dict['fybb']
+    eybb = MB.dict['eybb']
+    exbb = MB.dict['exbb']
     snbb = fybb/eybb
 
     ######################
@@ -1535,6 +1591,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
         if f_dust:
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
+        f_plot_resid = False
     else:
         if f_plot_resid:
             fig_mosaic = """
@@ -1623,7 +1680,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #####################################
     # Open ascii file and stock to array.
     MB.lib = fnc.open_spec_fits(fall=0)
-    MB.lib_all = fnc.open_spec_fits(fall=1)
+    MB.lib_all = fnc.open_spec_fits(fall=1, orig=True)
+
     if f_dust:
         DT0 = float(MB.inputs['TDUST_LOW'])
         DT1 = float(MB.inputs['TDUST_HIG'])
@@ -1818,14 +1876,13 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ##########################
     if f_grsm:
         conspec = (NR<10000) #& (fy/ey>1)
-        #ax2t.fill_between(xg1, (fg1-eg1) * c/np.square(xg1)/d, (fg1+eg1) * c/np.square(xg1)/d, lw=0, color='#DF4E00', zorder=10, alpha=0.7, label='')
-        #ax2t.fill_between(xg0, (fg0-eg0) * c/np.square(xg0)/d, (fg0+eg0) * c/np.square(xg0)/d, lw=0, color='royalblue', zorder=10, alpha=0.2, label='')
-        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg2, fg2 * c/np.square(xg2)/d, yerr=eg2 * c/np.square(xg2)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
         ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
-        xgrism = np.concatenate([xg0,xg1])
-        fgrism = np.concatenate([fg0,fg1])
-        egrism = np.concatenate([eg0,eg1])
+        xgrism = np.concatenate([xg0,xg1,xg2])
+        fgrism = np.concatenate([fg0,fg1,fg2])
+        egrism = np.concatenate([eg0,eg1,eg2])
         con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
         con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
@@ -1944,8 +2001,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             ax1.plot(x1_tot, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
 
         # Grism plot + Fuv flux + LIR.
-        if f_grsm:
-            ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
+        #if f_grsm:
+        #    ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         if True:
             # Get FUV flux;
@@ -1976,6 +2033,20 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     
     if f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
+
+    # For grism;
+    if f_grsm:
+        from astropy.convolution import convolve
+        from .maketmp_filt import get_LSF
+        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:], c=3e18)
+        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        if False:#True:
+            ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+        else:
+            ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+
 
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
@@ -2011,9 +2082,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     chi_nd = 0.0
     if f_chind:
         f_ex = np.zeros(len(fy), 'int')
-        for ii in range(len(fy)):
-            if f_exclude:
-                if xbb[ii] in x_ex:
+        if f_exclude:
+            for ii in range(len(fy)):
+                if x[ii] in x_ex:
                     f_ex[ii] = 1
 
         con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
@@ -2234,9 +2305,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         try:
             # Muv
             MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = np.percentile(MUV[:],16)
-            hdr['MUV50'] = np.percentile(MUV[:],50)
-            hdr['MUV84'] = np.percentile(MUV[:],84)
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -2249,6 +2320,15 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             hdr['LIR84'] = np.percentile(Lir[:],84)
         except:
             pass
+
+        # UV beta;
+        from .function import get_uvbeta
+        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = beta_16
+        hdr['UVBETA50'] = beta_50
+        hdr['UVBETA84'] = beta_84
 
         # UVJ
         try:
@@ -2357,6 +2437,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
             tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
             tree_spec.update({'wg1_obs': xg1})
+            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d})
+            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d})
+            tree_spec.update({'wg2_obs': xg2})
 
         af = asdf.AsdfFile(tree_spec)
         af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
@@ -2508,7 +2591,8 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
     return ax
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, scale=1e-19):
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
+    scale=1e-19, NRbb_lim=10000):
     '''
     Purpose
     -------
@@ -2584,14 +2668,15 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
         #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
-    ZZ50  = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
-    chi   = hdul[1].data['chi'][0]
-    chin  = hdul[1].data['chi'][1]
-    fitc  = chin
-    Cz0   = hdul[0].header['Cz0']
-    Cz1   = hdul[0].header['Cz1']
-    zbes  = hdul[0].header['z']
-    zscl  = (1.+zbes)
+    ZZ50 = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
+    chi = hdul[1].data['chi'][0]
+    chin = hdul[1].data['chi'][1]
+    fitc = chin
+    Cz0 = hdul[0].header['Cz0']
+    Cz1 = hdul[0].header['Cz1']
+    Cz2 = hdul[0].header['Cz2']
+    zbes = hdul[0].header['z']
+    zscl = (1.+zbes)
 
     # plot Configuration
     if MB.fzmc == 1:
@@ -2624,46 +2709,54 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax2 = fig.add_axes([0.05,0.07,0.37,0.23])
 
     if MB.f_dust:
-        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal, add_fir=True)
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.Cz2, MB.zgal, add_fir=True)
     else:
-        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.zgal)
+        MB.dict = MB.read_data(MB.Cz0, MB.Cz1, MB.Cz2, MB.zgal)
 
     # Get data points;
-    NRbb   = MB.dict['NRbb']
-    xbb    = MB.dict['xbb'] 
-    fybb   = MB.dict['fybb']
-    eybb   = MB.dict['eybb']
-    exbb   = MB.dict['exbb']
-    snbb   = fybb/eybb
+    NRbb = MB.dict['NRbb']
+    xbb = MB.dict['xbb'] 
+    fybb = MB.dict['fybb']
+    eybb = MB.dict['eybb']
+    exbb = MB.dict['exbb']
+    snbb = fybb/eybb
 
     # Get spec data points;
     dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
-    NR  = dat[:, 0]
-    x   = dat[:, 1]
-    fy00 = dat[:, 2]
-    ey00 = dat[:, 3]
+    NR  = dat[:,0]
+    x   = dat[:,1]
+    fy00 = dat[:,2]
+    ey00 = dat[:,3]
 
     con0 = (NR<1000) #& (fy/ey>SNlim)
     xg0  = x[con0]
     fg0  = fy00[con0] * Cz0
     eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
     fg1  = fy00[con1] * Cz1
     eg1  = ey00[con1] * Cz1
-    con2 = (NR>=10000)#& (fy/ey>SNlim)
+    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
     xg2  = x[con2]
-    fg2  = fy00[con2]
-    eg2  = ey00[con2]
+    fg2  = fy00[con2] * Cz2
+    eg2  = ey00[con2] * Cz2
+
+    con_bb = (NR>=NRbb_lim)
+    xg_bb = x[con_bb]
+    fg_bb = fy00[con_bb]
+    eg_bb = ey00[con_bb]
+
     fy01 = np.append(fg0,fg1)
     ey01 = np.append(eg0,eg1)
+    fy02 = np.append(fy01,fg2)
+    ey02 = np.append(ey01,eg2)
 
-    fy = np.append(fy01,fg2)
-    ey = np.append(ey01,eg2)
+    fy = np.append(fy01,fg_bb)
+    ey = np.append(ey01,eg_bb)
     wht = 1./np.square(ey)
 
     # BB photometry
-    conspec = (NR<10000)
+    conspec = (NR<NRbb_lim)
     sigma = 1.
     conbb = (fybb/eybb > sigma)
     ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
@@ -2686,7 +2779,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         burnin = data['burnin']
         nmc    = data['niter']
         nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
+        Nburn  = burnin
         samples = data['chain'][:]
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
@@ -3031,7 +3124,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
     # For the last one
     ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
+    ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='g', label='')
+    ax0.plot(xg2, fg2 * c / np.square(xg2) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
 
     ax0.set_xlim(2200, 88000)
     ax0.set_xscale('log')
@@ -3089,7 +3183,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
 
 
 def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
-    tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./'):
+    tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./', NRbb_lim=10000):
     '''
     Creat "cumulative" png for gif image.
     
@@ -3155,6 +3249,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
     fitc  = chin
     Cz0   = hdul[0].header['Cz0']
     Cz1   = hdul[0].header['Cz1']
+    Cz2   = hdul[0].header['Cz2']
     zbes  = hdul[0].header['z']
     zscl = (1.+zbes)
 
@@ -3194,6 +3289,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
 
     # For spec plot
     ax0 = fig.add_axes([0.62,0.61,0.37,0.33])
+
     ###############################
     # Data taken from
     ###############################
@@ -3208,29 +3304,38 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
     xg0  = x[con0]
     fg0  = fy00[con0] * Cz0
     eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<10000) #& (fy/ey>SNlim)
+    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
     xg1  = x[con1]
     fg1  = fy00[con1] * Cz1
     eg1  = ey00[con1] * Cz1
-    con2 = (NR>=10000)#& (fy/ey>SNlim)
+    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
     xg2  = x[con2]
-    fg2  = fy00[con2]
-    eg2  = ey00[con2]
+    fg2  = fy00[con2] * Cz2
+    eg2  = ey00[con2] * Cz2
+
+    con_bb = (NR>=NRbb_lim)#& (fy/ey>SNlim)
+    xg_bb  = x[con_bb]
+    fg_bb  = fy00[con_bb]
+    eg_bb  = ey00[con_bb]
+
     fy01 = np.append(fg0,fg1)
-    fy   = np.append(fy01,fg2)
     ey01 = np.append(eg0,eg1)
-    ey   = np.append(ey01,eg2)
+    fy02 = np.append(fy01,fg2)
+    ey02 = np.append(ey01,eg2)
+
+    fy = np.append(fy02,fg_bb)
+    ey = np.append(ey02,eg_bb)
     wht=1./np.square(ey)
 
     dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '.cat', comments='#')
-    NRbb = dat[:, 0]
-    xbb  = dat[:, 1]
-    fybb = dat[:, 2]
-    eybb = dat[:, 3]
-    exbb = dat[:, 4]
+    NRbb = dat[:,0]
+    xbb  = dat[:,1]
+    fybb = dat[:,2]
+    eybb = dat[:,3]
+    exbb = dat[:,4]
     snbb = fybb/eybb
 
-    conspec = (NR<10000) #& (fy/ey>1)
+    conspec = (NR<NRbb_lim) #& (fy/ey>1)
     #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
     #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
     conbb = (fybb/eybb>snlimbb)
@@ -3247,7 +3352,6 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
     #ax1.set_xlim(12500, 16000)
     ax0.set_xscale('log')
     ax0.set_ylim(-0.05, ymax)
-
 
     DIR_TMP = './templates/'
     ####################
@@ -3319,7 +3423,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
             else:
                 y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0p, x0p  = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
@@ -3340,9 +3444,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
         Ttmp[kk]  = np.log10(Ttmp[kk])
 
 
-        NPAR    = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
-        #NPARmin = [np.log10(M16)-0.1, -0.4, 0, -0.6]
-        #NPARmax = [np.log10(M84)+0.1, 0.5, 2., 0.5]
+        NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
         NPARmin = [np.log10(M16)-0.1, -0.4, Av16-0.1, -0.5]
         NPARmax = [np.log10(M84)+0.1, 0.5, Av84+0.1, 0.5]
 
@@ -3357,14 +3459,7 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
                 bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
                 ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
                 ax.set_xlim(x1min, x1max)
-                #print(x, x1min, x1max)
-                #ax2.scatter(np.log10(Ttmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax3.scatter(np.log10(Ztmp), np.log10(Avtmp), c='r', s=1, marker='.', alpha=0.1)
-                #ax.set_xlabel('$\log T_*$/Gyr', fontsize=12)
-                #ax.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
                 ax.set_yticklabels([])
-                #ax.set_xticklabels([])
-                #ax.set_title('%s'%(Par[i]), fontsize=12)
                 if i == K-1:
                     ax.set_xlabel('%s'%(Par[i]), fontsize=12)
                 if i < K-1:
@@ -3373,14 +3468,11 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
         # Scatter and contour
         for i, x in enumerate(Par):
             for j, y in enumerate(Par):
-                #print(i,j,Par[j], Par[i])
                 if i > j:
                     ax = axes[i, j]
                     ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
                     ax.set_xlabel('%s'%(Par[j]), fontsize=12)
 
-                    #x1min, x1max = np.min(NPAR[j]), np.max(NPAR[j])
-                    #y1min, y1max = np.min(NPAR[i]), np.max(NPAR[i])
                     x1min, x1max = NPARmin[j], NPARmax[j]
                     y1min, y1max = NPARmin[i], NPARmax[i]
                     ax.set_xlim(x1min, x1max)

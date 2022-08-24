@@ -77,17 +77,20 @@ def get_sig_lya(lam_o, z_s, T=1e4, c=3e18):
 
 def get_nH(z):
 	'''
+	Purpose
+	-------
+	Get HI density by using Cen & Haiman 2000.
+
 	Returns
 	-------
-	HI density in IGM.
+	HI density in IGM, in cm^-3
 	'''
 	try:
 		nH = np.zeros(len(z),dtype='float')
 	except:
 		nH = 0
 
-	# From Cen & Haiman 2000
-	nH = 8.5e-5 * ((1.+z)/8)**3 # in cm^-3
+	nH = 8.5e-5 * ((1.+z)/8)**3
 	return nH
 
 
@@ -95,7 +98,7 @@ def get_column(zin, cosmo, Mpc_cm=3.08568025e+24, z_r=6.0, delz=0.1):
 	'''
 	Returns
 	-------
-	HI column density of IGM at zin, in cm^-3.
+	HI column density of IGM at zin, in cm^-2.
 	'''
 	z = np.arange(z_r, zin, delz)
 	try:

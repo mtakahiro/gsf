@@ -349,7 +349,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, \
         fd_sed = ascii.read(file_sed)
         fd_stm = ascii.read(file_stm)
 
-        wave0   = fd_sed['col1']
+        wave0 = fd_sed['col1']
         age_stm = fd_stm['col1']
         mass_formed = fd_stm['col2'][0]
 
@@ -429,7 +429,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, \
                         tautmp = ( 10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05) ) / 1e9 # Gyr
                         agetmp = (age[ss]+age[ss-1])/2.
 
-                    flux0  = fd_sed['col%d'%(iis+2)] #sp.get_spectrum(tage=age[ss], peraa=True)
+                    flux0  = fd_sed['col%d'%(iis+2)]
                     ms[ss] = fd_stm['col2'][iistm]
                     mass_formed_tot += mass_formed
 

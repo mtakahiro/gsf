@@ -43,6 +43,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
         import matplotlib
         matplotlib.use("Agg")
 
+    print('\n### Running plot_sfh ###\n')
     fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
@@ -163,14 +164,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     delTu = np.zeros(len(age),dtype='float')
 
     if len(age) == 1:
-    #if tau0[0] < 0: # SSP;
         for aa in range(len(age)):
             try:
                 tau_ssp = float(MB.inputs['TAU_SSP'])
             except:
                 tau_ssp = tau_lim
-            delTl[aa] = tau_ssp/2
-            delTu[aa] = tau_ssp/2
+            delTl[aa] = tau_ssp/2.
+            delTu[aa] = tau_ssp/2.
             if age[aa] < tau_lim:
                 # This is because fsps has the minimum tau = tau_lim
                 delT[aa] = tau_lim
@@ -181,25 +181,21 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             if aa == 0:
                 delTl[aa] = age[aa]
                 delTu[aa] = (age[aa+1]-age[aa])/2.
-                delT[aa]  = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
+                delT[aa] = delTu[aa] + delTl[aa]
             elif Tuni < age[aa]:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = Tuni-age[aa] #delTl[aa] #10.
                 delT[aa]  = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
             elif aa == len(age)-1:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = Tuni - age[aa]
                 delT[aa]  = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
             else:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = (age[aa+1]-age[aa])/2.
                 if age[aa]+delTu[aa]>Tuni:
                     delTu[aa] = Tuni-age[aa]
                 delT[aa] = delTu[aa] + delTl[aa]
-                #print(age[aa],age[aa]-delTl[aa],age[aa]+delTu[aa])
 
     con_delt = (delT<=0)
     delT[con_delt] = 1e10
@@ -354,6 +350,10 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             SFR_SED[mm] = -99
 
         for aa in range(len(age)):
+
+            if Tuni0[aa]<0:
+                continue
+
             if np.sum(10**AM[aa:,mm])>0:
                 AC[aa, mm] = np.log10(np.sum(10**AM[aa:,mm]))
                 ZC[aa, mm] = np.log10(np.sum(10**ZMM[aa:,mm])/10**AC[aa, mm])
@@ -365,8 +365,13 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             ACs = 0
             ALs = 0
             for bb in range(aa, len(age), 1):
+
+                if Tuni0[bb]<0:
+                    continue
+
                 tmpAA = 10**np.random.uniform(-eA[bb],eA[bb])
-                tmpTT = np.random.uniform(-delT[bb]/1e9,delT[bb]/1e9)
+                tmpTT = np.random.uniform(-delT[bb]/1e9/2.,delT[bb]/1e9/2.)
+
                 TC[aa, mm] += (age[bb]+tmpTT) * 10**AAtmp[bb] * mslist[bb] * tmpAA
                 TL[aa, mm] += (age[bb]+tmpTT) * 10**AAtmp[bb] * tmpAA
                 ACs += 10**AAtmp[bb] * mslist[bb] * tmpAA
@@ -374,10 +379,16 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
 
             TC[aa, mm] /= ACs
             TL[aa, mm] /= ALs
+
             if TC[aa, mm]>0:
                 TC[aa, mm] = np.log10(TC[aa, mm])
+            else:
+                TC[aa, mm] = np.nan
+
             if TL[aa, mm]>0:
                 TL[aa, mm] = np.log10(TL[aa, mm])
+            else:
+                TL[aa, mm] = np.nan
 
         # Do stuff...
         time.sleep(0.01)
@@ -798,6 +809,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         matplotlib.use("Agg")
     else:
         import matplotlib
+
+    print('\n### Running plot_sfh_tau ###\n')
 
     fnc = MB.fnc
     bfnc = MB.bfnc
@@ -1590,10 +1603,10 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
         Av_tmp = samples['Av'][mtmp]
 
-        f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
+        f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
         sedpar = f0[1]
-        f1     = fits.open(DIR_TMP + 'ms.fits')
-        mloss  = f1[1].data
+        f1 = fits.open(DIR_TMP + 'ms.fits')
+        mloss = f1[1].data
 
         Avrand = np.random.uniform(-eAv, eAv)
         if Av_tmp + Avrand<0:

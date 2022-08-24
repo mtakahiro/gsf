@@ -241,7 +241,7 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def get_template(self, lib, Amp:float = 1.0, T:float = 1.0, Av:float = 0.0, Z:float = 0.0, zgal:float = 1.0, f_bb:bool = False):
+    def get_template(self, lib, Amp:float = 1.0, T:float = 1.0, Av:float = 0.0, Z:float = 0.0, zgal:float = 1.0, f_bb:bool = False, fneb=False):
         '''
         Gets an element template given a set of parameters.
         Not necessarily the most efficient way, but easy to use.
@@ -282,7 +282,10 @@ class Func:
         if T - self.age[nmodel] != 0:
             print('T=%.2f is not found in age library. T=%.2f is used.'%(T,self.age[nmodel]))
 
-        coln = int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + nmodel)
+        if fneb:
+            coln = int(2 + pp*len(self.ZZ)*1 + NZ*1 + 0)
+        else:
+            coln = int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + nmodel)
         nr = lib[:, 0]
         xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
         yy = lib[:, coln]
@@ -776,12 +779,11 @@ class Func_tau:
             hdu0 = self.MB.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
-
         NZ = len(ZZ)
         NT = self.MB.ntau
         NA = self.MB.nage
         for zz,Z in enumerate(ZZ):
-            for tt,TT in enumerate(self.MB.tau):
+            for tt,TT in enumerate(self.MB.tau):                
                 for ss,TA in enumerate(self.MB.ageparam):
                     if zz == 0 and tt == 0 and ss == 0:
                         nr = hdu0['colnum']

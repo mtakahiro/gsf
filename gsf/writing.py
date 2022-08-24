@@ -1,6 +1,7 @@
 import numpy as np
 from astropy.io import fits
 import asdf
+import gsf
 
 from .function import filconv, calc_Dn4
 
@@ -20,15 +21,18 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     zrecom = self.zgal
     Czrec0 = self.Cz0
     Czrec1 = self.Cz1
+    Czrec2 = self.Cz2
 
     try:
         z_cz = self.z_cz
         scl_cz0 = self.scl_cz0
         scl_cz1 = self.scl_cz1
+        scl_cz2 = self.scl_cz2
     except: # When redshiftfit is skipped.
         z_cz = np.asarray([self.zgal,self.zgal,self.zgal])
         scl_cz0 = np.asarray([self.Cz0,self.Cz0,self.Cz0])
         scl_cz1 = np.asarray([self.Cz1,self.Cz1,self.Cz1])
+        scl_cz2 = np.asarray([self.Cz2,self.Cz2,self.Cz2])
 
     tau0 = self.tau0
     ID0 = self.ID
@@ -111,10 +115,19 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             except:
                 pass
 
-            AGEmc[aa,:] = np.percentile(res.flatchain['AGE'+str(aa)][burnin:], [16,50,84])
-            TAUmc[aa,:] = np.percentile(res.flatchain['TAU'+str(aa)][burnin:], [16,50,84])
+            # Do debug..
+            try:
+                AGEmc[aa,:] = np.percentile(res.flatchain['AGE'+str(aa)][burnin:], [16,50,84])
+            except:
+                AGEFIX = self.AGEFIX
+                AGEmc[aa,:] = [AGEFIX, AGEFIX, AGEFIX]
 
-    #
+            try:
+                TAUmc[aa,:] = np.percentile(res.flatchain['TAU'+str(aa)][burnin:], [16,50,84])
+            except:
+                TAUFIX = self.TAUFIX
+                TAUmc[aa,:] = [TAUFIX, TAUFIX, TAUFIX]
+
     msmc = np.percentile(msmc0, [16,50,84])
     try:
         Avb = res.params['Av'].value
@@ -149,7 +162,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     esp  = fds[:,3]
 
     consp = (nrs<10000) & (lams/(1.+zrecom)>3600) & (lams/(1.+zrecom)<4200) & (esp>0)
-    NSN   = len(fsp[consp])
+    NSN = len(fsp[consp])
     if NSN>0:
         SN = np.median((fsp/esp)[consp])
     else:
@@ -163,6 +176,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['ID']     = ID0
     prihdr['Cz0']    = Czrec0
     prihdr['Cz1']    = Czrec1
+    prihdr['Cz2']    = Czrec2
     prihdr['z']      = zrecom
     prihdr['zmc']    = zmc[1]
     prihdr['SN']     = SN
@@ -174,7 +188,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     prihdr['bic'] = res.bic
     prihdr['nmc'] = nmc
     prihdr['nwalker'] = nwalker
-    import gsf
     prihdr['version'] = gsf.__version__
     prihdu = fits.PrimaryHDU(header=prihdr)
 
@@ -263,6 +276,10 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     # C1 scale
     col50 = fits.Column(name='Cscale1', format='E', unit='', array=scl_cz1[:])
+    col01.append(col50)
+
+    # C2 scale
+    col50 = fits.Column(name='Cscale2', format='E', unit='', array=scl_cz2[:])
     col01.append(col50)
 
     col50 = fits.Column(name='logf', format='E', unit='', array=logf)

@@ -1,6 +1,6 @@
 
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
-    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True):
+    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000):
     '''
     Purpose
     -------
@@ -49,6 +49,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu, vary=f_vary)
     fit_par_cz.add('Cz0', value=1, min=0.5, max=1.5)
     fit_par_cz.add('Cz1', value=1, min=0.5, max=1.5)
+    fit_par_cz.add('Cz2', value=1, min=0.5, max=1.5)
 
     ##############################
     def residual_z(pars):
@@ -56,6 +57,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         z = vals['z']
         Cz0s = vals['Cz0']
         Cz1s = vals['Cz1']
+        Cz2s = vals['Cz2']
 
         xm_s = xm_tmp * (1+z)
         fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
@@ -64,17 +66,23 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         con0 = (NR<1000)
         fy0  = fobs[con0] * Cz0s
         ey0  = eobs[con0] * Cz0s
-        con1 = (NR>=1000) & (NR<10000)
+        con1 = (NR>=1000) & (NR<2000)
         fy1  = fobs[con1] * Cz1s
         ey1  = eobs[con1] * Cz1s
-        con2 = (NR>=10000) # BB
-        fy2  = fobs[con2]
-        ey2  = eobs[con2]
+        con2 = (NR>=2000) & (NR<NRbb_lim)
+        fy2  = fobs[con2] * Cz2s
+        ey2  = eobs[con2] * Cz2s
+        con_bb = (NR>=NRbb_lim) # BB
+        fy_bb  = fobs[con_bb]
+        ey_bb  = eobs[con_bb]
 
         fy01 = np.append(fy0,fy1)
-        fcon = np.append(fy01,fy2)
         ey01 = np.append(ey0,ey1)
-        eycon = np.append(ey01,ey2)
+        fy02 = np.append(fy01,fy2)
+        ey02 = np.append(ey01,ey2)
+
+        fcon = np.append(fy02,fy_bb)
+        eycon = np.append(ey02,ey_bb)
         wht = 1./np.square(eycon)
 
         if f_line_check:
@@ -93,6 +101,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
 
     ###############################
     def lnprob_cz(pars):
+        '''
+        '''
         resid = residual_z(pars) # i.e. (data - model) * wht
         z = pars['z']
         s_z = 1 #pars['f_cz']
@@ -108,12 +118,9 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
             respr = np.log(prior[nzz])
             resid += np.log(2 * np.pi * s_z**2)
             return -0.5 * np.sum(resid) + respr
-
     #################################
 
-    #
-    # Best fit
-    #
+    # Get Best fit
     out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
     keys = fit_report(out_cz).split('\n')
     for key in keys:
@@ -125,7 +132,6 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
             rcsq = float(skey[7])
 
     fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
-
     mini_cz = Minimizer(lnprob_cz, out_cz.params)
     res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 

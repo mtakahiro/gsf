@@ -187,48 +187,46 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
     '''
     Amp = 0
     f_morp = False
-    try:
-        if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
-            f_morp = True
-            try:
-                mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                fm = ascii.read(DIR_EXTR + mor_file)
-                Amp = fm['A']
-                gamma = fm['gamma']
-                if inputs['MORP'] == 'moffat':
-                    alp = fm['alp']
-                else:
-                    alp = 0
-            except Exception:
-                print('Error in reading morphology params.')
-                print('No morphology convolution.')
-                pass
-        else:
-            print('MORP Keywords does not match.')
+    if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
+        f_morp = True
+        try:
+            mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
+            fm = ascii.read(DIR_EXTR + mor_file)
+            Amp = fm['A']
+            gamma = fm['gamma']
+            if inputs['MORP'] == 'moffat':
+                alp = fm['alp']
+            else:
+                alp = 0
+        except Exception:
+            print('Error in reading morphology params.')
             print('No morphology convolution.')
-    except:
-        pass
+            pass
+    else:
+        print('MORP Keywords does not match.')
+        print('No morphology convolution.')
 
     ############################
     # Template convolution;
     ############################
     try:
         sig_temp = float(inputs['SIG_TEMP'])
+        print('Template is set to %.1f km/s.'%(sig_temp))
     except:
         sig_temp = 50.
         print('Template resolution is unknown.')
         print('Set to %.1f km/s.'%(sig_temp))
-    dellam = lm[1] - lm[0] # AA/pix
-    R_temp = c/(sig_temp*1e3*1e10)
-    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
 
-    #
+    iixlam = np.argmin(np.abs(lm-4000)) # Around 4000 AA
+    dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
+    R_temp = c / (sig_temp*1e3*1e10)
+    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
     sig_inst = 0 #65 #km/s for Manga
 
     # If grism;
     if f_morp:
-        print('Templates convolution (intrinsic morphology).')
-        if gamma>sig_temp_pix:
+        print('\nStarting templates convolution (intrinsic morphology).')
+        if gamma>sig_temp_pix:# and False:
             sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
         else:
             sig_conv = 0
@@ -253,7 +251,6 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
         try:
             vdisp = float(inputs['VDISP'])
             dellam = lm[1] - lm[0] # AA/pix
-            #R_disp = c/(vdisp*1e3*1e10)
             R_disp = c/(np.sqrt(vdisp**2-sig_inst**2)*1e3*1e10)
             vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
             print('Templates are convolved at %.2f km/s.'%(vdisp))
@@ -292,7 +289,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         flag for adding nebular emissionself.
     tmp_norm : float
         Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
-    '''    
+    '''
 
     inputs = MB.inputs
     ID = MB.ID
@@ -411,7 +408,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         lm = np.zeros(np.sum(ninp0[:]),dtype='float')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         eobs = np.zeros(np.sum(ninp0[:]),dtype='float')
-        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
             try:
                 fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
@@ -595,7 +592,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                 # Flam to Fnu
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:], m0set=MB.m0set)
-
                 spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 # (1.+zbest) takes acount of the change in delta lam by redshifting.
                 # Note that this is valid only when F_nu.
@@ -621,6 +617,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                     except:
+                        print('Error. No convolution is happening...')
                         spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
                         if zz==0 and ss==0:
                             print('Kernel is too small. No convolution.')
@@ -647,13 +644,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     tree_spec_full.update({'wavelength':wavetmp})
                     tree_spec_full.update({'colnum':nd})
 
+                # ASDF
+                # ???
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
-                # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_ap})
-
-                # ASDF
                 tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu[ss,:]})
-                tree_spec_full.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
+                #tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): spec_mul_nu_conv[ss,:]})
 
                 # For nebular library;
                 # For every Z, but not for ss and pp.
@@ -838,17 +834,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     ##########################################
     fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
+
     for ii in range(len(lm)):
-        if fgrs[ii]==0: # G102
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii, lm[ii]))
-        elif fgrs[ii]==1: # G141
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii+1000, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
+        g_offset = 1000 * fgrs[ii]
+        if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
+        else:
+            fw.write('%d %.5f 0 1000\n'%(ii+g_offset, lm[ii]))
 
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
@@ -1015,8 +1007,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         ninp0 = np.zeros(len(spec_files), dtype='int')
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
+                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp = fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
                 ninp0[ff] = len(lm0tmp)#[con_tmp])
@@ -1024,14 +1016,14 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
         # Constructing arrays.
-        lm   = np.zeros(np.sum(ninp0[:]),dtype='float')
+        lm = np.zeros(np.sum(ninp0[:]),dtype='float')
         fobs = np.zeros(np.sum(ninp0[:]),dtype='float')
         eobs = np.zeros(np.sum(ninp0[:]),dtype='float')
-        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for G102/G141.
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0   = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
+                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                lm0tmp = fd0[:,0]
                 fobs0 = fd0[:,1]
                 eobs0 = fd0[:,2]
                 for ii1 in range(ninp0[ff]):
@@ -1040,7 +1032,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     else:
                         ii = ii1 + np.sum(ninp0[:ff])
                     fgrs[ii] = ff
-                    lm[ii]   = lm0tmp[ii1]
+                    lm[ii] = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
                 f_spec = True
@@ -1108,7 +1100,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         ebb = np.zeros(len(SFILT), dtype='float')
         for ii in range(len(SFILT)):
             fbb[ii] = 0
-            ebb[ii] = -99 #1000
+            ebb[ii] = -99
 
     # Dust flux;
     if MB.f_dust:
@@ -1133,92 +1125,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     Amp = 0
     f_morp = False
     if f_spec:
-        try:
-            if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
-                f_morp = True
-                try:
-                    mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                    #fm = np.loadtxt(DIR_EXTR + mor_file, comments='#')
-                    fm    = ascii.read(DIR_EXTR + mor_file)
-                    Amp   = fm['A']
-                    gamma = fm['gamma']
-                    if inputs['MORP'] == 'moffat':
-                        alp   = fm['alp']
-                    else:
-                        alp   = 0
-                except Exception:
-                    print('Error in reading morphology params.')
-                    print('No morphology convolution.')
-                    pass
-            else:
-                print('MORP Keywords does not match.')
-                print('No morphology convolution.')
-        except:
-            pass
-
-        ############################
-        # Template convolution;
-        ############################
-        try:
-            sig_temp = float(inputs['SIG_TEMP'])
-        except:
-            sig_temp = 50.
-            print('Template resolution is unknown.')
-            print('Set to %.1f km/s.'%(sig_temp))
-        dellam = lm[1] - lm[0] # AA/pix
-        R_temp = c/(sig_temp*1e3*1e10)
-        sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
-
-        #
-        sig_inst = 0 #65 #km/s for Manga
-
-        # If grism;
-        if f_morp:
-            print('Templates convolution (intrinsic morphology).')
-            if gamma>sig_temp_pix:
-                sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
-            else:
-                sig_conv = 0
-                print('Template resolution is broader than Morphology.')
-                print('No convolution is applied to templates.')
-
-            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-            if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
-                LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
-                print('Template convolution with Moffat.')
-            elif inputs['MORP'] == 'gauss':
-                sigma = gamma
-                LSF = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
-                print('Template convolution with Gaussian.')
-                print('params is sigma;',sigma)
-            else:
-                print('Something is wrong with the convolution file. Exiting.')
-                return False
-
-        else: # For slit spectroscopy. To be updated...
-            print('Templates convolution (intrinsic velocity).')
-            try:
-                vdisp = float(inputs['VDISP'])
-                dellam = lm[1] - lm[0] # AA/pix
-                #R_disp = c/(vdisp*1e3*1e10)
-                R_disp = c/(np.sqrt(vdisp**2-sig_inst**2)*1e3*1e10)
-                vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
-                print('Templates are convolved at %.2f km/s.'%(vdisp))
-                if vdisp_pix-sig_temp_pix>0:
-                    sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
-                else:
-                    sig_conv = 0
-            except:
-                vdisp = 0.
-                print('Templates are not convolved.')
-                sig_conv = 0 #np.sqrt(sig_temp_pix**2)
-                pass
-            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-            Amp  = 1.
-            LSF  = gauss(xMof, Amp, sig_conv)
+        LSF, lm = get_LSF(inputs, DIR_EXTR, ID, lm)
     else:
         lm = []
-
 
     ####################################
     # Start generating templates
@@ -1283,31 +1192,28 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     spec_av_tmp = spec_mul[ss,:]
 
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp, m0set=MB.m0set)
-                # (1.+zbest) takes acount of the change in delta lam by redshifting.
-                # Note that this is valid only when F_nu.
-                # When Flambda, /(1.+zbest) will be *(1.+zbest).
+
+                spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
 
                 if len(lm)>0:
                     try:
-                        spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
+                        spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss,:], LSF, boundary='extend')
                     except:
-                        spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
+                        spec_mul_nu_conv[ss,:] = spec_mul_nu[ss,:]
                         if zz==0 and ss==0:
                             print('Kernel is too small. No convolution.')
                 else:
-                    spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
-
-                spec_mul_nu_conv[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                spec_mul_nu_conv[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
-                ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
+                    spec_mul_nu_conv[ss,:] = spec_mul_nu[ss,:]
 
                 if f_spec:
-                    ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                    #ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                    ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu[ss,:])
                 
                 # Register filter response;
-                #if ss == 0 and tt == 0 and zz == 0:
-                #    filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT, fw=True, MB=MB, f_regist=True)
-                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu_conv[ss,:], DIR_FILT, MB=MB, f_regist=False)
+                ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu[ss,:], DIR_FILT, MB=MB, f_regist=False)
+
 
                 ##########################################
                 # Writing out the templates to fits table.
@@ -1330,10 +1236,11 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                     tree_spec_full.update({'colnum':nd})
 
                 # ASDF
+                # ???
                 spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_ap})
-                tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
-
+                tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu[ss,:]})                
+                #tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
 
                 # Nebular library;
                 if fneb == 1 and MB.f_bpass==0 and ss==0 and tt==0:
@@ -1381,14 +1288,11 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                         spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
                         tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
 
-
             #########################
             # Summarize the ML
             #########################
             # ASDF
             tree_ML.update({'ML_'+str(zz)+'_'+str(tt): ms})
-
-
 
     #########################
     # Summarize the templates
@@ -1477,17 +1381,13 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     ##########################################
     fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
+
     for ii in range(len(lm)):
-        if fgrs[ii]==0: # G102
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii, lm[ii]))
-        elif fgrs[ii]==1: # G141
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
-                fw.write('%d %.5f %.5e %.5e\n'%(ii+1000, lm[ii], fobs[ii], eobs[ii]))
-            else:
-                fw.write('%d %.5f 0 1000\n'%(ii+1000, lm[ii]))
+        g_offset = 1000 * fgrs[ii]
+        if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
+            fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
+        else:
+            fw.write('%d %.5f 0 1000\n'%(ii+g_offset, lm[ii]))
 
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
