@@ -639,7 +639,7 @@ class Mainbody():
         -----
         This modeule can be used for any SFHs.
         '''
-        print('READ data with Cz0=%.2f, Cz1=%.2f, Cz2=%.2f, zgal=%.2f'%(Cz0, Cz1, Cz2, zgal))
+        print('Reading data with Cz0=%.2f, Cz1=%.2f, Cz2=%.2f, zgal=%.2f'%(Cz0, Cz1, Cz2, zgal))
 
         ##############
         # Spectrum
