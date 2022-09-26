@@ -1,0 +1,57 @@
+#
+# Input file
+#
+
+#
+# params for MCMC
+#
+NMC		1000 # No. of iteration in SED fitting.
+NWALK		50 # No. of random walker in SED fitting.
+NMCZ		100 # No. of iteration in redshift fitting.
+NWALKZ		10 # No. of random walker in redshift fitting.
+TAU0		-1 # in Gyr for tau; Randomly taken when MCMC.
+FNELD		0 # 
+NTEMP		0 # Number of parallel tempering.
+NCPU		0 # Number of multiprocessing.
+TAU_COMP	1 # comparison between different tau for each ssp when plot.
+
+#
+# Params for data
+#
+DIR_TEMP	./templates/ # Directory of extracted spectra.
+DIR_OUT		./output/
+#DIR_EXTR	./data/ # Directory of extracted spectra.
+DIR_FILT	./filter/ 
+CAT_BB		./GDS_bb_ksirac_uvis.cat # Directory of extracted spectra.
+#FILTER		f125w,f140w,f160w,f225w,f275w,f336w,f435w,f606w,f775w,f814w,f850w,f230w,f360w,f450w,f580w,f800w # Should be match *.fil in FILT_DIT
+FILTER    	203,204,205,207,208,209,1,4,5,6,7,226,18,19,20,21
+#MORP		moffat
+#MORP_FILE	43114_PA00_inp0_moffat_err.cat
+#SPEC_FILE	43114_PA00_inp1_tmp3_err.cat,43114_PA00_inp0_tmp3_err.cat # Make sure files are ordered irw wavelength.
+
+#
+# Params for SED
+#
+AGE         0.01,0.03,0.1,0.3,1.0,3.0
+ZMAX		0.2 # Max metalicity
+ZMIN		0.0 # Min metalicity
+DELZ		0.2 # Delta in logZ. 
+#ZFIX		0.0 # If you want to fix logZ, comment out ZMAX,ZMIN,DELZ, and set this. 
+ZEVOL		0 # Evolution in Z; 1=yes, 0=no.
+AVMIN		0.0 # Minimum Av (Dust Attenuation) in mag.
+AVMAX		4.0 # Maximum Av (Dust Attenuation) in mag.
+#AVFIX		0.0 # Minimum Av (Dust Attenuation) in mag.
+F_ZMC		1 # redshift as a free parameter in mcmc.
+NIMF		0 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.
+
+#
+# Params for target
+#
+ID		    43114
+PA		    00
+ZGAL		1.90212 # Initial guess of source redshift.
+CZ0 		0.83167 # Initial guess of spectral normalization for G102.
+CZ1		    0.96804 # Initial guess of spectral normalization for G141.
+#LINE 		4102,4341,4861,4959 #3869.,3894.6,4102,4341,4960.,5008.  # Emission line, iin AA.
+ZVIS		0 # Visual inspection of redshift. 1=yes, 0=no. If you are not confident with zgal, cz1/2, then ZVIS should be 1 for iteration.
+ADD_NEBULAE	0 # Add nebular lines from Cloudy if 1.

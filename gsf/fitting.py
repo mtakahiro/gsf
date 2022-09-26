@@ -204,6 +204,7 @@ class Mainbody():
             self.f_bpass = 0
 
         # Nebular emission;
+        # Becuase of force_no_neb, add logUs regardless of `ADD_NEBULAE` flag.
         self.fneb = False
         self.nlogU = 0
         try:
@@ -213,23 +214,37 @@ class Mainbody():
                     self.logUMIN = float(inputs['logUMIN'])
                     self.logUMAX = float(inputs['logUMAX'])
                     self.DELlogU = float(inputs['DELlogU'])
-                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
-                    self.nlogU = len(self.logUs)
                 except:
                     self.logUMIN = -2.5
                     self.logUMAX = -2.0
                     self.DELlogU = 0.5
-                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
-                    self.nlogU = len(self.logUs)
+                self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                self.nlogU = len(self.logUs)
+
                 try:
                     self.logUFIX = float(inputs['logUFIX'])
                     self.nlogU = 1
+                    self.logUMIN = self.logUFIX
+                    self.logUMAX = self.logUFIX
+                    self.DELlogU = 0
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
                 except:
                     self.logUFIX = None
+            else:
+                self.fneb = False                
+                self.logUMIN = -2.5
+                self.logUMAX = -2.0
+                self.DELlogU = 0.5
+                self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
         except:
             print('No nebular added.')
+            self.fneb = False
+            self.logUMIN = -2.5
+            self.logUMAX = -2.0
+            self.DELlogU = 0.5
+            self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
             pass
-
+        
         # Outpu directory;
         try:
             self.DIR_OUT = inputs['DIR_OUT']
