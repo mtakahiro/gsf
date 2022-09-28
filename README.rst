@@ -50,12 +50,13 @@ If a user prefers to install in a new conda environment, execute the following b
 
 Then, make sure to install fsps and python-fsps by following their instruction.
 
-Lastly, check your installation;
+Lastly, check your installation by;
 
 .. code-block:: bash
 
     python -m pytest
 
+Done!! :tada:
 
 Examples
 ~~~~~~~~
