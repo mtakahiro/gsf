@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_configfile(name=None):
+def get_configfile(name=None, id='', z=''):
     '''
     Purpose
     -------
@@ -8,8 +8,8 @@ def get_configfile(name=None):
     '''
 
     # Version;
-    import gsf.__init__ as vers
-    ver = vers.__version__
+    import gsf
+    ver = gsf.__version__
 
     if name == None:
         name = 'default.input'
@@ -33,7 +33,7 @@ ZEVOL       0 # Variation in Z at each age pixel; 1=yes, 0=no.\n\
 AVMIN       0\n\
 AVMAX       4.0\n\
 #AVFIX      1.0 # Dust attenuation, fixed to this value.\n\
-ZMC         0 # redshift as a free parameter in mcmc; 1=yes, 2=no.\n\
+F_ZMC         0 # redshift as a free parameter in mcmc; 1=yes, 2=no.\n\
 EZL         0.3 # redshift lower error.\n\
 EZU         0.3 # redshift upper error.\n\
 NIMF        1 # Choice of IMF. 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=van Dokkum, 4=Dave, 5=tabulated, specified in imf.dat file located in the data directory.\n\
@@ -55,26 +55,27 @@ ZVIS        1 # Visual inspection of spectral fit.\n\
 # Params for data\n\
 #\n\
 DIR_TEMP    ./templates/ # Directory of the template library. \n\
-DIR_EXTR    ./ # Directory of extracted spectra.\n\
-#SPEC_FILE  #\n\
+# DIR_EXTR    ./ # Directory of extracted spectra.\n\
+# SPEC_FILE  #\n\
 DIR_FILT    /Users/tmorishita/GitHub/gsf/gsf/example/filter/\n\
 CAT_BB      # Broadband photometric catalog.\n\
-FILTER      308,309,310,311,350,351,352,353,354,355,356,357,1,4,6,202,203,204,205\n\
+#FILTER      308,309,310,311,350,351,352,353,354,355,356,357,1,4,6,202,203,204,205\n\
+SKIPFILT    None\n\
 SNLIM       1.\n\
 #\n\
 # Params for target\n\
 #\n\
-#ID         \n\
+#ID         %s\n\
 PA          00\n\
-#ZGAL       # zpeak from eazy.\n\
+ZGAL        %s# zpeak from eazy.\n\
 CZ0         1.0 # Initial guess of spectral normalization for G102.\n\
 CZ1         1.0 # Initial guess of spectral normalization for G141.\n\
-LINE        0. # Emission line, iin AA.\n\
+LINE        0. # Emission line, in AA.\n\
 #\n\
 # Grism\n\
 #\n\
-MORP        moffat\n\
-MORP_FILE   ./output/l3_nis_f200w_G150C_s00010_moffat.txt\n\
+# MORP        moffat\n\
+# MORP_FILE   ./output/l3_nis_f200w_G150C_s00010_moffat.txt\n\
 #\n\
 # DUST\n\
 #\n\
@@ -84,7 +85,8 @@ MORP_FILE   ./output/l3_nis_f200w_G150C_s00010_moffat.txt\n\
 #TDUST_HIG	22\n\
 #TDUST_DEL	1\n\
 #DIR_DUST    /PATH/To/DL07spec/\n\
-    '%ver)
+    '%(ver,id,z)
+    )
 
 
 if __name__ == "__main__":

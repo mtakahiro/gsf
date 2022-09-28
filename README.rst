@@ -1,7 +1,7 @@
 
 Grism SED Fitter (GSF)
 ~~~~~~~~~~~~~~~~~~~~~~
-version 1.6
+version 1.7 and after
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
 - The main purpose is to explore galaxy star formation histories with a flexible form.
@@ -42,14 +42,21 @@ Required packages will be installed by;
 
     pip install -r requirements.txt 
 
-
-Or if users create a new conda environment, by executing;
+If a user prefers to install in a new conda environment, execute the following before the command above;
 
 .. code-block:: bash
 
-    conda env create -f environment.yml -n gsf
+    conda create -n gsf python=3.10
 
+Then, make sure to install fsps and python-fsps by following their instruction.
 
+Lastly, check your installation by;
+
+.. code-block:: bash
+
+    python -m pytest
+
+Done!! :tada:
 
 Examples
 ~~~~~~~~
@@ -66,7 +73,7 @@ If one needs a new config file
 
     python example/get_configfile.py
 
-Or take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master/example/>`__.
+Take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master/example/>`__ for other use cases.
 
 
 Execution flag

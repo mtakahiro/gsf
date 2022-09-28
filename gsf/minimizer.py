@@ -20,7 +20,7 @@ import warnings
 
 import numpy as np
 from numpy import ndarray, ones_like, sqrt
-from numpy.dual import inv
+from numpy.linalg import inv
 from numpy.linalg import LinAlgError
 from scipy.optimize import basinhopping as scipy_basinhopping
 from scipy.optimize import brute as scipy_brute
