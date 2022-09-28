@@ -72,7 +72,7 @@ If one needs a new config file
 
     python example/get_configfile.py
 
-Or take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master/example/>`__.
+Take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master/example/>`__ for other use cases.
 
 
 Execution flag
