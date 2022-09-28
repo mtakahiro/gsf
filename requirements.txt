@@ -1,3 +1,4 @@
+asdf
 pytest
 astropy
 pandas
@@ -5,6 +6,7 @@ multiprocess
 lmfit
 emcee
 corner
+zeus-mcmc
 numpy>=1.21
 sphinx_automodapi
 # git+https://github.com/dfm/python-fsps
