@@ -42,13 +42,19 @@ Required packages will be installed by;
 
     pip install -r requirements.txt 
 
-
-Or if users create a new conda environment, by executing;
+If users prefer to install in a new conda environment, execute the following before the command above;
 
 .. code-block:: bash
 
-    conda env create -f environment.yml -n gsf
+    conda create -n gsf python=3.10
 
+Then, make sure to install fsps and python-fsps by following their instruction.
+
+Lastly, check your installation;
+
+.. code-block:: bash
+
+    python -m pytest
 
 
 Examples
