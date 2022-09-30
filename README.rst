@@ -6,7 +6,7 @@
 
    </strike>
 
-GSF (|ss| Grism |se|Great SED Fitter)
+GSF (|ss| Grism |se| Great SED Fitter)
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
