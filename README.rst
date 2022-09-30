@@ -47,8 +47,9 @@ If a user prefers to install in a new conda environment, execute the following b
 .. code-block:: bash
 
     conda create -n gsf python=3.10
+    conda activate gsf
 
-Then, make sure to install fsps and python-fsps by following their instruction.
+Then, make sure to install `fsps <https://github.com/cconroy20/fsps>`__ and `python-fsps <https://github.com/dfm/python-fsps>`__ by following their instruction.
 
 Lastly, check your installation by;
 
