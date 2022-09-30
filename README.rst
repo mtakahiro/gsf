@@ -30,9 +30,6 @@ Pre-requirement
 - fsps
 
 
-To run stellar population model, users need to install `fsps <https://github.com/cconroy20/fsps>`__ by following their instruction.
-
-
 Installation & Documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
