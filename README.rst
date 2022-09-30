@@ -1,5 +1,12 @@
+.. |ss| raw:: html
 
-GSF (:strike:`Grism`Great SED Fitter)
+   <strike>
+
+.. |se| raw:: html
+
+   </strike>
+
+GSF (|ss| Grism |se|Great SED Fitter)
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
@@ -7,6 +14,7 @@ version 1.7 and after
 - The main purpose is to explore galaxy star formation histories with a flexible form.
 - The code uses FSPS templates generated via python-fsps.
 - It was originally design for HST grism data, but now it can process geranal (e.g.,broad band photometry) dataset too. 
+
 
 ========================================================================================
 
