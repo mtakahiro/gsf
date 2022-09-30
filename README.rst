@@ -1,5 +1,5 @@
 
-GSF (~Grism~ Great SED Fitter)
+GSF (:strike:`Grism`Great SED Fitter)
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
