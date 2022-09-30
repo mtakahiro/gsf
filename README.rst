@@ -1,12 +1,12 @@
 
-Grism SED Fitter (GSF)
+GSF (~~Grism~~ Great SED Fitter)
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
 - SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
 - The main purpose is to explore galaxy star formation histories with a flexible form.
 - The code uses FSPS templates generated via python-fsps.
-- Due to the complex nature of grism data and code, feel free to contact the author.
+- It was originally design for HST grism data, but now it can process geranal (e.g.,broad band photometry) dataset too. 
 
 ========================================================================================
 
