@@ -92,33 +92,9 @@ Execution flag
 
 Release notes
 ~~~~~~~~~~~~~
-- v1.7.5, pytest has been implemented.
-- From v1.6, emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
-- Far IR data set can be fitted simultaneously with a simple gray body spectrum (to be published in a future version).
-- From v1.3, log-space samplings for amplitude parameters are implemented.
-- From v1.2, BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
-- From v1.2, data set without grism data, despite the code's name, can be also provided.
-
-
-Citation
-~~~~~~~~
-
-    @ARTICLE{2019ApJ...877..141M,
-    author = {{Morishita}, T. and {Abramson}, L.~E. and {Treu}, T. and {Brammer}, G.~B. and {Jones}, T. and {Kelly}, P. and {Stiavelli}, M. and {Trenti}, M. and {Vulcani}, B. and {Wang}, X.},
-    title = "{Massive Dead Galaxies at z {\ensuremath{\sim}} 2 with HST Grism Spectroscopy. I. Star Formation Histories and Metallicity Enrichment}",
-    journal = {\apj},
-    keywords = {galaxies: abundances, galaxies: evolution, galaxies: formation, galaxies: high-redshift, galaxies: star formation, Astrophysics - Astrophysics of Galaxies},
-    year = 2019,
-    month = jun,
-    volume = {877},
-    number = {2},
-    eid = {141},
-    pages = {141},
-    doi = {10.3847/1538-4357/ab1d53},
-    archivePrefix = {arXiv},
-    eprint = {1812.06980},
-    primaryClass = {astro-ph.GA},
-    adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M},
-    adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-    }
-
+- V1.7.5: pytest has been implemented.
+- V1.6: Emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
+- Far-IR data set can be fitted simultaneously with a simple gray body spectrum (to be published in a future version).
+- V1.3: log-space samplings for amplitude parameters are implemented.
+- V1.2: BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
+- Data set without grism data, despite the code's name, can be also provided.
