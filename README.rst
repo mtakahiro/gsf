@@ -104,21 +104,21 @@ Citation
 ~~~~~~~~
 
     @ARTICLE{2019ApJ...877..141M,
-        author = {{Morishita}, T. and {Abramson}, L.~E. and {Treu}, T. and {Brammer}, G.~B. and {Jones}, T. and {Kelly}, P. and {Stiavelli}, M. and {Trenti}, M. and {Vulcani}, B. and {Wang}, X.},
-            title = "{Massive Dead Galaxies at z {\ensuremath{\sim}} 2 with HST Grism Spectroscopy. I. Star Formation Histories and Metallicity Enrichment}",
-        journal = {\apj},
-        keywords = {galaxies: abundances, galaxies: evolution, galaxies: formation, galaxies: high-redshift, galaxies: star formation, Astrophysics - Astrophysics of Galaxies},
-            year = 2019,
-            month = jun,
-        volume = {877},
-        number = {2},
-            eid = {141},
-            pages = {141},
-            doi = {10.3847/1538-4357/ab1d53},
+    author = {{Morishita}, T. and {Abramson}, L.~E. and {Treu}, T. and {Brammer}, G.~B. and {Jones}, T. and {Kelly}, P. and {Stiavelli}, M. and {Trenti}, M. and {Vulcani}, B. and {Wang}, X.},
+    title = "{Massive Dead Galaxies at z {\ensuremath{\sim}} 2 with HST Grism Spectroscopy. I. Star Formation Histories and Metallicity Enrichment}",
+    journal = {\apj},
+    keywords = {galaxies: abundances, galaxies: evolution, galaxies: formation, galaxies: high-redshift, galaxies: star formation, Astrophysics - Astrophysics of Galaxies},
+    year = 2019,
+    month = jun,
+    volume = {877},
+    number = {2},
+    eid = {141},
+    pages = {141},
+    doi = {10.3847/1538-4357/ab1d53},
     archivePrefix = {arXiv},
-        eprint = {1812.06980},
+    eprint = {1812.06980},
     primaryClass = {astro-ph.GA},
-        adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M},
-        adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M},
+    adsnote = {Provided by the SAO/NASA Astrophysics Data System}
     }
 
