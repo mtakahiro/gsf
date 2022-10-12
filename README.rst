@@ -92,7 +92,7 @@ Execution flag
 
 Release notes
 ~~~~~~~~~~~~~
-- V1.7.5: pytest has been implemented.
+- V1.7.4: pytest has been implemented.
 - V1.6: Emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
 - Far-IR data set can be fitted simultaneously with a simple gray body spectrum (to be published in a future version).
 - V1.3: log-space samplings for amplitude parameters are implemented.
