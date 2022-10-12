@@ -84,15 +84,41 @@ Take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master
 
 Execution flag
 ~~~~~~~~~~~~~~
-- 0: Generating z=0 templates (takes a while if MILES). Start from here if parameter in config file is changed. Then go to 1.
-- 1: Redshift template to z=z_input, using pre-existing z=0 templates (from step0). Then go to 2.
-- 2: Fitting part, using pre-existing z=z_input templates (from step1). Then go to 3.
-- 3: Only plot SFH and SED using existing result files.
+- 0: Generating z=0 templates (takes a while if MILES). Start from here if any critical parameter (e.g., Z-range, age bins) in config file is changed. This will then automatically proceed to the next step.
+- 1: Redshift template to z=z_input, by using existing z=0 templates (from step0). This will then automatically proceed to the next step.
+- 2: Fitting part, by using existing redshifted templates (from step1). This will then automatically proceed to the next step.
+- 3: Creates SFH and SED plots by using the fitting results.
+
 
 Release notes
 ~~~~~~~~~~~~~
+- v1.7.5, pytest has been implemented.
 - From v1.6, emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
 - Far IR data set can be fitted simultaneously with a simple gray body spectrum (to be published in a future version).
 - From v1.3, log-space samplings for amplitude parameters are implemented.
 - From v1.2, BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
 - From v1.2, data set without grism data, despite the code's name, can be also provided.
+
+
+Citation
+~~~~~~~~
+
+    @ARTICLE{2019ApJ...877..141M,
+        author = {{Morishita}, T. and {Abramson}, L.~E. and {Treu}, T. and {Brammer}, G.~B. and {Jones}, T. and {Kelly}, P. and {Stiavelli}, M. and {Trenti}, M. and {Vulcani}, B. and {Wang}, X.},
+            title = "{Massive Dead Galaxies at z {\ensuremath{\sim}} 2 with HST Grism Spectroscopy. I. Star Formation Histories and Metallicity Enrichment}",
+        journal = {\apj},
+        keywords = {galaxies: abundances, galaxies: evolution, galaxies: formation, galaxies: high-redshift, galaxies: star formation, Astrophysics - Astrophysics of Galaxies},
+            year = 2019,
+            month = jun,
+        volume = {877},
+        number = {2},
+            eid = {141},
+            pages = {141},
+            doi = {10.3847/1538-4357/ab1d53},
+    archivePrefix = {arXiv},
+        eprint = {1812.06980},
+    primaryClass = {astro-ph.GA},
+        adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M},
+        adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
+
