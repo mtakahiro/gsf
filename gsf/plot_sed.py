@@ -1198,11 +1198,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.45
         else:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.25
 
@@ -2457,11 +2457,11 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if f_dust:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            label = 'ID: %s\n$z:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.45
         else:
-            label = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
+            label = 'ID: %s\n$z:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
             ylabel = ymax*0.4
 
@@ -2910,19 +2910,19 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     # For redshift
     if zbes<2:
         zred  = [zbes, 2, 3, 6]
-        zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
+        zredl = ['$z$', 2, 3, 6]
     elif zbes<2.5:
         zred  = [zbes, 2.5, 3, 6]
-        zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
+        zredl = ['$z$', 2.5, 3, 6]
     elif zbes<3.:
         zred  = [zbes, 3, 6]
-        zredl = ['$z_\mathrm{obs.}$', 3, 6]
+        zredl = ['$z$', 3, 6]
     elif zbes<6:
         zred  = [zbes, 6]
-        zredl = ['$z_\mathrm{obs.}$', 6]
+        zredl = ['$z$', 6]
     else:
         zred  = [zbes, 12]
-        zredl = ['$z_\mathrm{obs.}$', 12]
+        zredl = ['$z$', 12]
 
     Tzz   = np.zeros(len(zred), dtype='float')
     for zz in range(len(zred)):
@@ -3981,17 +3981,17 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
         # For redshift
         if zbes<2:
             zred  = [zbes, 2, 3, 6]
-            #zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
-            zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
+            #zredl = ['$z$', 2, 3, 6]
+            zredl = ['$z$', 2, 3, 6]
         elif zbes<2.5:
             zred  = [zbes, 2.5, 3, 6]
-            zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
+            zredl = ['$z$', 2.5, 3, 6]
         elif zbes<3.:
             zred  = [zbes, 3, 6]
-            zredl = ['$z_\mathrm{obs.}$', 3, 6]
+            zredl = ['$z$', 3, 6]
         elif zbes<6:
             zred  = [zbes, 6]
-            zredl = ['$z_\mathrm{obs.}$', 6]
+            zredl = ['$z$', 6]
 
         Tzz   = np.zeros(len(zred), dtype='float')
         for zz in range(len(zred)):
