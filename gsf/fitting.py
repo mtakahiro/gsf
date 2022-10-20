@@ -979,7 +979,7 @@ class Mainbody():
         # Attach prior:
         self.z_prior = zz_prob
         self.p_prior = prior_s
-        
+
         # Plot;
         if self.fzvis==1:
             import matplotlib as mpl

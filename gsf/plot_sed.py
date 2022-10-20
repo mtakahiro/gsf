@@ -2598,7 +2598,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
     return ax
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=300, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
     scale=1e-19, NRbb_lim=10000):
     '''
     Purpose
@@ -2634,7 +2634,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     # Open result file
     ###########################
     lib = fnc.open_spec_fits(fall=0)
-    lib_all = fnc.open_spec_fits(fall=1)
+    lib_all = fnc.open_spec_fits(fall=1, orig=True)
 
     file = MB.DIR_OUT + 'summary_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
@@ -2770,9 +2770,10 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)
 
     conebb_ls = (fybb/eybb <= sigma)
-    leng = np.max(fybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d) * 0.05
-    ax0.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, yerr=leng,\
-        uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, linestyle='',color='r', marker='', ms=4, label='', zorder=4, capsize=3)
+    if len(fybb[conebb_ls])>0:
+        leng = np.max(fybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d) * 0.05
+        ax0.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, yerr=leng,\
+            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) / d * sigma, linestyle='',color='r', marker='', ms=4, label='', zorder=4, capsize=3)
     
     ####################
     # MCMC corner plot.
@@ -2782,11 +2783,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     data  = loadcpkl(file)
 
     try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        ndim = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin
+        nmc = data['niter']
+        nwalk = data['nwalkers']
+        Nburn = burnin
         samples = data['chain'][:]
     except:
         if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
@@ -2798,7 +2799,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     nc = np.arange(0, nmc, 1)
     col = getcmap((nc-0)/(nmc-0))
 
-    #for kk in range(0,nmc,1):
     Ntmp = np.zeros(mmax, dtype='float')
     lmtmp= np.zeros(mmax, dtype='float')
     Avtmp= np.zeros(mmax, dtype='float')
@@ -2924,7 +2924,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         zred  = [zbes, 12]
         zredl = ['$z$', 12]
 
-    Tzz   = np.zeros(len(zred), dtype='float')
+    Tzz = np.zeros(len(zred), dtype='float')
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value) #/ cc.Gyr_s
         if Tzz[zz] < TMIN:
@@ -2990,19 +2990,19 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
+                y0, x0 = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
                 y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
                 ysump = y0p #* 1e18
-                ysum  = y0  #* 1e18
+                ysum = y0  #* 1e18
                 if AA_tmp/Asum > flim:
-                    ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.1)
+                    ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
             else:
                 y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
-                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
+                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
                 ysump += y0p  #* 1e18
-                ysum  += y0_r #* 1e18
+                ysum += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
-                    ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.1)
+                    ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
 
         for ss in range(len(age)):
             ii = ss # from old to young templates.
@@ -3013,14 +3013,14 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
                 ZC[ss] = -99
 
         # Plot Total
-        ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=.1, color='gray', zorder=-1, label='', alpha=0.1)
+        ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=.1, color='gray', zorder=-1, label='', alpha=0.01)
 
         if len(age)==1:
             ax1.plot(age[:], SF[:], marker='.', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
             ax2.plot(age[:], ZC[:], marker='.', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
         else:
-            ax1.plot(age[:], SF[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
-            ax2.plot(age[:], ZC[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.1)
+            ax1.plot(age[:], SF[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
+            ax2.plot(age[:], ZC[:], marker='', linestyle='-', lw=.1, color='k', zorder=-1, label='', alpha=0.01)
 
         # Get ymax
         if f_plot_filter:
@@ -3035,11 +3035,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
         # Convert into log
         Ztmp[kk] /= ACtmp[kk]
         Ttmp[kk] /= ACtmp[kk]
-        Ntmp[kk]  = kk
+        Ntmp[kk] = kk
 
         lmtmp[kk] = np.log10(lmtmp[kk])
-        Ztmp[kk]  = np.log10(Ztmp[kk])
-        Ttmp[kk]  = np.log10(Ttmp[kk])
+        Ztmp[kk] = np.log10(Ztmp[kk])
+        Ttmp[kk] = np.log10(Ttmp[kk])
 
         if MB.fzmc == 1:
             NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
@@ -3080,14 +3080,14 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
             for j, y in enumerate(Par):
                 if i > j:
                     ax = axes[i, j]
-                    ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
+                    ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='.', alpha=0.01)
                     ax.set_xlabel('%s'%(Par[j]), fontsize=12)
 
                     if kk == mmax-1:
                         try:
                             Xcont, Ycont, Zcont = density_estimation(NPAR[j], NPAR[i])
                             mZ = np.max(Zcont)
-                            ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='gray')
+                            ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='orange')
                         except:
                             print('Error occurs when density estimation. Maybe because some params are fixed.')
                             pass
@@ -3139,12 +3139,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=30
     ax0.set_ylim(-ymax * scl_yaxis, ymax)
     ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
     ax0.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
-    ax1.set_xlabel('$t$ (Gyr)', fontsize=12)
+    ax1.set_xlabel('$t_\mathrm{lookback}$ (Gyr)', fontsize=12)
     ax1.set_ylabel('$\dot{M_*}/M_\odot$yr$^{-1}$', fontsize=12)
     ax1.set_xlim(np.min(age)*0.8, Txmax)
     ax1.set_ylim(0, SFmax)
     ax1.set_xscale('log')
-    ax2.set_xlabel('$t$ (Gyr)', fontsize=12)
+    ax2.set_xlabel('$t_\mathrm{lookback}$ (Gyr)', fontsize=12)
     ax2.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
     ax2.set_xlim(np.min(age)*0.8, Txmax)
     if round(np.min(Z),2) == round(np.max(Z),2):
