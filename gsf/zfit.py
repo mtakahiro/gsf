@@ -1,6 +1,6 @@
 
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
-    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000):
+    nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000, include_photometry=True):
     '''
     Purpose
     -------
@@ -40,10 +40,16 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
 
     '''
 
-    from .function import check_line_cz_man
     import numpy as np
+    import sys
     from lmfit import Model, Parameters, minimize, fit_report, Minimizer
     import scipy.interpolate as interpolate
+    from .function import check_line_cz_man
+
+    if zliml == None or zlimu == None:
+        print('z range is not set for the z-fit function. Exiting.')
+        print('Specify `ZMCMIN` and `ZMCMIN` in your input file.')
+        sys.exit()
 
     fit_par_cz = Parameters()
     fit_par_cz.add('z', value=zbest, min=zliml, max=zlimu, vary=f_vary)
@@ -53,6 +59,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
 
     ##############################
     def residual_z(pars):
+        '''
+        '''
         vals = pars.valuesdict()
         z = vals['z']
         Cz0s = vals['Cz0']
@@ -81,9 +89,16 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
         fy02 = np.append(fy01,fy2)
         ey02 = np.append(ey01,ey2)
 
-        fcon = np.append(fy02,fy_bb)
-        eycon = np.append(ey02,ey_bb)
-        wht = 1./np.square(eycon)
+        if include_photometry and len(fy_bb)>0:
+            # print('Including bb photometry in the redshift fit...')
+            fcon = np.append(fy02,fy_bb)
+            eycon = np.append(ey02,ey_bb)
+            wht = 1./np.square(eycon)
+        else:
+            # print('Not including bb photometry in the redshift fit...')
+            fcon = fy02
+            eycon = ey02
+            wht = 1./np.square(eycon)
 
         if f_line_check:
             try:

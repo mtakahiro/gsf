@@ -183,12 +183,15 @@ class Mainbody():
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
+        except:
+            self.DIR_EXTR = False
+
+        try:
             # Scaling for grism; 
             self.Cz0 = float(inputs['CZ0'])
             self.Cz1 = float(inputs['CZ1'])
             self.Cz2 = float(inputs['CZ2'])
         except:
-            self.DIR_EXTR = False
             self.Cz0 = 1
             self.Cz1 = 1
             self.Cz2 = 1
@@ -878,7 +881,7 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
         zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
-        f_norm=True, f_lambda=False):
+        f_norm=True, f_lambda=False, zmax=20):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
@@ -953,12 +956,12 @@ class Mainbody():
             zprob = dprob[:,0]
             cprob = dprob[:,1]
             # Then interpolate to a common z grid;
-            zz_prob = np.arange(0,13,delzz)
+            zz_prob = np.arange(0,zmax,delzz)
             cprob_s = np.interp(zz_prob, zprob, cprob)
             prior_s = np.exp(-0.5 * cprob_s)
             prior_s /= np.sum(prior_s)
         else:
-            zz_prob = np.arange(0,13,delzz)
+            zz_prob = np.arange(0,zmax,delzz)
             if priors != None:
                 zprob = priors['z']
                 cprob = priors['chi2']
@@ -972,7 +975,7 @@ class Mainbody():
                     #prior_s /= np.sum(prior_s)
 
             else:
-                zz_prob = np.arange(0,13,delzz)
+                zz_prob = np.arange(0,zmax,delzz)
                 prior_s = zz_prob * 0 + 1.
                 prior_s /= np.sum(prior_s)
 
@@ -989,7 +992,10 @@ class Mainbody():
             data_model[:,1] = fm_s
             data_model[:,2] = fy_cz
             data_model[:,3] = ey_cz
-            data_model_sort = np.sort(data_model, axis=0)
+            
+            data_model_sort = data_model[data_model[:, 0].argsort()]            
+            #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
+
             plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
             plt.plot(data_model_sort[:,0], data_model_sort[:,2],'.b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(data_model_sort[:,0], data_model_sort[:,2], yerr=data_model_sort[:,3], color='b', capsize=0, linewidth=0.5) # Observation
@@ -1032,7 +1038,7 @@ class Mainbody():
                 print('Redshift error is assumed to %.1f.'%(ezmin))
 
             z_cz = [zmcmin, self.zprev, zmcmax]
-            zrecom  = z_cz[1]
+            zrecom = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
             scl_cz2 = [1.,1.,1.]
@@ -1067,7 +1073,8 @@ class Mainbody():
             data_model_new = np.zeros((len(x_cz),4),'float')
             data_model_new[:,0] = x_cz
             data_model_new[:,1] = fm_s
-            data_model_new_sort = np.sort(data_model_new, axis=0)
+            # data_model_new_sort = np.sort(data_model_new, axis=0)
+            data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]            
 
             plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
@@ -1092,14 +1099,17 @@ class Mainbody():
             data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 data_obsbb[:,2] = fm_tmp
-            data_obsbb_sort = np.sort(data_obsbb, axis=0)
+            #data_obsbb_sort = np.sort(data_obsbb, axis=0)
+            data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
+            
 
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
             else:
                 model_spec = np.zeros((len(fm_tmp),2), 'float')
                 model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
-                model_spec_sort = np.sort(model_spec, axis=0)
+                #model_spec_sort = np.sort(model_spec, axis=0)
+                model_spec_sort = model_spec[model_spec[:, 0].argsort()]            
                 plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:
