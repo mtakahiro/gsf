@@ -231,7 +231,7 @@ class Mainbody():
                     self.logUMIN = self.logUFIX
                     self.logUMAX = self.logUFIX
                     self.DELlogU = 0
-                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                    self.logUs = np.asarray([self.logUMAX])
                 except:
                     self.logUFIX = None
             else:
