@@ -1,3 +1,9 @@
+import numpy as np
+import sys
+from lmfit import Model, Parameters, minimize, fit_report, Minimizer
+import scipy.interpolate as interpolate
+import matplotlib.pyplot as plt
+from .function import check_line_cz_man
 
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
     nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000, include_photometry=True):
@@ -39,13 +45,6 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     fitc_cz :
 
     '''
-
-    import numpy as np
-    import sys
-    from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-    import scipy.interpolate as interpolate
-    from .function import check_line_cz_man
-
     if zliml == None or zlimu == None:
         print('z range is not set for the z-fit function. Exiting.')
         print('Specify `ZMCMIN` and `ZMCMIN` in your input file.')
@@ -151,3 +150,33 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz
+
+
+def get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp, file_zprob, rms_lim=1e4):
+    '''
+    zz_prob : float array
+        redshift array for fit.
+    fy_cz, ey_cz, x_cz : 
+        observed values.
+    fm_tmp, xm_tmp :
+        template.
+    file_zprob : str
+        output file
+    '''
+    mask = (ey_cz<rms_lim)
+    prob_cz = np.zeros(len(zz_prob), float)
+    fw = open(file_zprob, 'w')
+    fw.write('# z p(z)\n')
+    for ii in range(len(zz_prob)):
+        z = zz_prob[ii]
+        xm_s = xm_tmp * (1+z)
+        fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
+        fm_s = fint(x_cz)
+
+        wht = 1./np.square(ey_cz)
+        # print(np.nansum((fm_s - fy_cz)**2 * (wht)))
+        lnprob_cz = -0.5 * np.nansum( np.square((fm_s - fy_cz)[mask] * np.sqrt(wht[mask])) ) # i.e. (residual/sigma)^2
+        prob_cz[ii] = np.exp(lnprob_cz)
+        fw.write('%.3f %.3e\n'%(z,prob_cz[ii]))
+        
+    fw.close()

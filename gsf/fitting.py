@@ -21,7 +21,7 @@ import corner
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
-from .zfit import check_redshift
+from .zfit import check_redshift,get_chi2
 from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
@@ -881,13 +881,19 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
         zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
-        f_norm=True, f_lambda=False, zmax=20):
+        f_norm=True, f_lambda=False, zmax=20, fit_photometry=False):
         '''
+        Purpose
+        -------
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
+        When spectrun is provided, this does redshift fit, but **by using the SED model guessed from the BB photometry**.
+        Thus, providing good BB photometry is critical in this step.
 
         Parameters
         ----------
+        xm_tmp, fm_tmp : float array
+            SED model.
         delzz : float
             Delta z in redshift search space
         zliml : float
@@ -926,7 +932,11 @@ class Mainbody():
         sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        con_cz = (self.dict['NR']<NRbb_lim) & (sn>snlim)
+        if fit_photometry:
+            con_cz = (sn>snlim)
+        else:
+            con_cz = (self.dict['NR']<NRbb_lim) & (sn>snlim)
+
         if len(self.dict['fy'][con_cz])==0:
             if f_bb_zfit:
                 con_cz = (sn>snlim)
@@ -961,7 +971,8 @@ class Mainbody():
             prior_s = np.exp(-0.5 * cprob_s)
             prior_s /= np.sum(prior_s)
         else:
-            zz_prob = np.arange(0,zmax,delzz)
+            #zz_prob = np.arange(0,zmax,delzz)
+            zz_prob = np.arange(zliml,zlimu,delzz)
             if priors != None:
                 zprob = priors['z']
                 cprob = priors['chi2']
@@ -975,7 +986,7 @@ class Mainbody():
                     #prior_s /= np.sum(prior_s)
 
             else:
-                zz_prob = np.arange(0,zmax,delzz)
+                # zz_prob = np.arange(0,zmax,delzz)
                 prior_s = zz_prob * 0 + 1.
                 prior_s /= np.sum(prior_s)
 
@@ -999,6 +1010,11 @@ class Mainbody():
             plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
             plt.plot(data_model_sort[:,0], data_model_sort[:,2],'.b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(data_model_sort[:,0], data_model_sort[:,2], yerr=data_model_sort[:,3], color='b', capsize=0, linewidth=0.5) # Observation
+
+            # Write prob distribution;
+            if True:
+                self.file_zprob = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
+                get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
 
             print('############################')
             print('Start MCMC for redshift fit')
@@ -1168,6 +1184,8 @@ class Mainbody():
 
     def get_zdist(self, f_interact=False, f_ascii=True):
         '''
+        Purpose
+        -------
         Saves a plot of z-distribution.
 
         Parameters
@@ -1189,11 +1207,11 @@ class Mainbody():
                 (self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1, self.Cz2))
 
             if f_ascii:
-                file_ascii_out = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
+                file_ascii_out = self.DIR_OUT + 'zmc_' + self.ID + '.txt'
                 fw_ascii = open(file_ascii_out,'w')
                 fw_ascii.write('# z pz\n')
-                for ii in range(len(xx)):
-                    fw_ascii.write('%.3f %.3f\n'%(xx[ii],yy[ii]))
+                for ii in range(len(n)):
+                    fw_ascii.write('%.3f %.3f\n'%(nbins[ii]+(nbins[ii+1]-nbins[ii])/2.,n[ii]))
                 fw_ascii.close()
 
             xx = yy * 0 + self.z_cz[0]
@@ -1214,19 +1232,44 @@ class Mainbody():
             ax1.legend(loc=0)
             
             # Save:
-            file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
+            file_out = self.DIR_OUT + 'zmc_' + self.ID + '.png'
             print('Figure is saved in %s'%file_out)
 
             if f_interact:
                 fig.savefig(file_out, dpi=300)
-                return fig, ax1
+                # return fig, ax1
             else:
                 plt.savefig(file_out, dpi=300)
                 plt.close()
-                return True
+                # return True
         except:
             print('z-distribution figure is not generated.')
             pass
+
+        # Also, make zprob;
+        fig = plt.figure(figsize=(6.5,2.5))
+        fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
+        ax1 = fig.add_subplot(111)
+
+        fd = ascii.read(self.file_zprob)
+        z = fd['z']
+        pz = fd['p(z)']
+        pz /= pz.max()
+
+        # prob:
+        ax1.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
+
+        # Label:
+        ax1.set_xlabel('Redshift')
+        ax1.set_ylabel('$p(z)$')
+        file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
+        if f_interact:
+            fig.savefig(file_out, dpi=300)
+        else:
+            plt.savefig(file_out, dpi=300)
+            plt.close()
+
+
 
 
     def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
@@ -1641,8 +1684,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            #con_bb = (nrd_tmp>=1e4)
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, fit_photometry=False)
 
         #################################################
         # Gor for mcmc phase
