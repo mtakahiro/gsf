@@ -1061,10 +1061,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         try:
             # Muv
-            MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
-            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
-            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
+            MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -2322,10 +2322,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         try:
             # Muv
-            MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
-            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
-            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
+            MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
