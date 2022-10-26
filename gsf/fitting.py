@@ -992,7 +992,7 @@ class Mainbody():
             data_model[:,1] = fm_s
             data_model[:,2] = fy_cz
             data_model[:,3] = ey_cz
-            
+
             data_model_sort = data_model[data_model[:, 0].argsort()]            
             #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
 
@@ -1074,7 +1074,7 @@ class Mainbody():
             data_model_new[:,0] = x_cz
             data_model_new[:,1] = fm_s
             # data_model_new_sort = np.sort(data_model_new, axis=0)
-            data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]            
+            data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
 
             plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
@@ -1102,14 +1102,13 @@ class Mainbody():
             #data_obsbb_sort = np.sort(data_obsbb, axis=0)
             data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
             
-
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
             else:
                 model_spec = np.zeros((len(fm_tmp),2), 'float')
                 model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
                 #model_spec_sort = np.sort(model_spec, axis=0)
-                model_spec_sort = model_spec[model_spec[:, 0].argsort()]            
+                model_spec_sort = model_spec[model_spec[:, 0].argsort()]
                 plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:

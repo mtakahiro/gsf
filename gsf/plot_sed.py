@@ -17,6 +17,7 @@ import corner
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
+
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
@@ -98,7 +99,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d * scale 
 
     ##################
     # Fitting Results
@@ -296,6 +296,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             fig = plt.figure(figsize=(5.5,2.2))
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
+
+    # Determine scale here;
+    if scale == None:
+        conbb_hs = (fybb/eybb > SNlim)
+        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d))) / 10
+    d = MB.d * scale
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -1198,12 +1204,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
-            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))#, fin_chi2)
             ylabel = ymax*0.45
         else:
-            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))
             ylabel = ymax*0.25
 
         if f_grsm:
@@ -1402,7 +1408,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d * scale
     
     ##################
     # Fitting Results
@@ -1613,6 +1618,12 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             fig = plt.figure(figsize=(5.5,2.2))
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
+
+    # Determine scale here;
+    if scale == None:
+        conbb_hs = (fybb/eybb > SNlim)
+        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
+    d = MB.d * scale
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -2621,7 +2632,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     ID   = MB.ID
     Z    = MB.Zall
     age  = MB.age
-    d = MB.d * scale
     c = MB.c
 
     tau0 = MB.tau0 
@@ -2761,6 +2771,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     fy = np.append(fy01,fg_bb)
     ey = np.append(ey01,eg_bb)
     wht = 1./np.square(ey)
+
+    # Determine scale here;
+    if scale == None:
+        conbb_hs = (fybb/eybb > SNlim)
+        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
+    d = MB.d * scale
 
     # BB photometry
     conspec = (NR<NRbb_lim)
