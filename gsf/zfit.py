@@ -5,6 +5,84 @@ import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 from .function import check_line_cz_man
 
+
+def lnprob_cz(pars, zprior, prior, zliml, zlimu, args, kwargs):
+    '''
+    '''
+    resid = residual_z(pars, *args, **kwargs) # i.e. (data - model) * wht
+    z = pars['z']
+    s_z = 1 #pars['f_cz']
+    resid *= 1/s_z
+    resid *= resid
+    
+    nzz = np.argmin(np.abs(zprior-z))
+
+    # For something unacceptable;
+    if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
+        return -np.inf
+    else:
+        respr = np.log(prior[nzz])
+        resid += np.log(2 * np.pi * s_z**2)
+        return -0.5 * np.sum(resid) + respr
+
+
+def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, include_photometry=True, f_line_check=False):
+    '''
+    '''
+    vals = pars.valuesdict()
+    z = vals['z']
+    Cz0s = vals['Cz0']
+    Cz1s = vals['Cz1']
+    Cz2s = vals['Cz2']
+
+    xm_s = xm_tmp * (1+z)
+    fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
+    fm_s = fint(xobs)
+
+    con0 = (NR<1000)
+    fy0  = fobs[con0] * Cz0s
+    ey0  = eobs[con0] * Cz0s
+    con1 = (NR>=1000) & (NR<2000)
+    fy1  = fobs[con1] * Cz1s
+    ey1  = eobs[con1] * Cz1s
+    con2 = (NR>=2000) & (NR<NRbb_lim)
+    fy2  = fobs[con2] * Cz2s
+    ey2  = eobs[con2] * Cz2s
+    con_bb = (NR>=NRbb_lim) # BB
+    fy_bb  = fobs[con_bb]
+    ey_bb  = eobs[con_bb]
+
+    fy01 = np.append(fy0,fy1)
+    ey01 = np.append(ey0,ey1)
+    fy02 = np.append(fy01,fy2)
+    ey02 = np.append(ey01,ey2)
+
+    if include_photometry and len(fy_bb)>0:
+        # print('Including bb photometry in the redshift fit...')
+        fcon = np.append(fy02,fy_bb)
+        eycon = np.append(ey02,ey_bb)
+        wht = 1./np.square(eycon)
+    else:
+        # print('Not including bb photometry in the redshift fit...')
+        fcon = fy02
+        eycon = ey02
+        wht = 1./np.square(eycon)
+
+    if f_line_check:
+        try:
+            wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+        except:
+            wht2 = wht
+    else:
+        wht2 = wht
+        
+    if fobs is None:
+        print('Data is none')
+        return fm_s
+    else:
+        return (fm_s - fcon) * np.sqrt(wht2) # i.e. residual/sigma
+
+
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
     nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000, include_photometry=True):
     '''
@@ -56,86 +134,11 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     fit_par_cz.add('Cz1', value=1, min=0.5, max=1.5)
     fit_par_cz.add('Cz2', value=1, min=0.5, max=1.5)
 
-    ##############################
-    def residual_z(pars):
-        '''
-        '''
-        vals = pars.valuesdict()
-        z = vals['z']
-        Cz0s = vals['Cz0']
-        Cz1s = vals['Cz1']
-        Cz2s = vals['Cz2']
-
-        xm_s = xm_tmp * (1+z)
-        fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
-        fm_s = fint(xobs)
-
-        con0 = (NR<1000)
-        fy0  = fobs[con0] * Cz0s
-        ey0  = eobs[con0] * Cz0s
-        con1 = (NR>=1000) & (NR<2000)
-        fy1  = fobs[con1] * Cz1s
-        ey1  = eobs[con1] * Cz1s
-        con2 = (NR>=2000) & (NR<NRbb_lim)
-        fy2  = fobs[con2] * Cz2s
-        ey2  = eobs[con2] * Cz2s
-        con_bb = (NR>=NRbb_lim) # BB
-        fy_bb  = fobs[con_bb]
-        ey_bb  = eobs[con_bb]
-
-        fy01 = np.append(fy0,fy1)
-        ey01 = np.append(ey0,ey1)
-        fy02 = np.append(fy01,fy2)
-        ey02 = np.append(ey01,ey2)
-
-        if include_photometry and len(fy_bb)>0:
-            # print('Including bb photometry in the redshift fit...')
-            fcon = np.append(fy02,fy_bb)
-            eycon = np.append(ey02,ey_bb)
-            wht = 1./np.square(eycon)
-        else:
-            # print('Not including bb photometry in the redshift fit...')
-            fcon = fy02
-            eycon = ey02
-            wht = 1./np.square(eycon)
-
-        if f_line_check:
-            try:
-                wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
-            except:
-                wht2 = wht
-        else:
-            wht2 = wht
-            
-        if fobs is None:
-            print('Data is none')
-            return fm_s
-        else:
-            return (fm_s - fcon) * np.sqrt(wht2) # i.e. residual/sigma
-
-    ###############################
-    def lnprob_cz(pars):
-        '''
-        '''
-        resid = residual_z(pars) # i.e. (data - model) * wht
-        z = pars['z']
-        s_z = 1 #pars['f_cz']
-        resid *= 1/s_z
-        resid *= resid
-        
-        nzz = np.argmin(np.abs(zprior-z))
-
-        # For something unacceptable;
-        if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
-            return -np.inf
-        else:
-            respr = np.log(prior[nzz])
-            resid += np.log(2 * np.pi * s_z**2)
-            return -0.5 * np.sum(resid) + respr
-    #################################
-
     # Get Best fit
-    out_cz  = minimize(residual_z, fit_par_cz, method='nelder')
+    args_res = (xm_tmp, fm_tmp, xobs, fobs, eobs, NR)
+    kwargs_res = {'include_photometry':include_photometry, 'f_line_check':f_line_check, 'NRbb_lim':NRbb_lim}
+
+    out_cz  = minimize(residual_z, fit_par_cz, args=args_res, method='nelder')
     keys = fit_report(out_cz).split('\n')
     for key in keys:
         if key[4:7] == 'chi':
@@ -146,7 +149,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
             rcsq = float(skey[7])
 
     fitc_cz = [csq, rcsq] # Chi2, Reduced-chi2
-    mini_cz = Minimizer(lnprob_cz, out_cz.params)
+
+    mini_cz = Minimizer(lnprob_cz, out_cz.params, (zprior, prior, zliml, zlimu, args_res, kwargs_res))
     res_cz = mini_cz.emcee(burn=int(nmc_cz/2), steps=nmc_cz, thin=nthin, nwalkers=nwalk_cz, params=out_cz.params, is_weighted=True)
 
     return res_cz, fitc_cz

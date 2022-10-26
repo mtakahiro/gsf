@@ -16,6 +16,7 @@ import string
 import timeit
 from scipy import stats
 from scipy.stats import norm
+import scipy.interpolate as interpolate
 from astropy.io import fits,ascii
 import corner
 
@@ -802,7 +803,6 @@ class Mainbody():
         chi2s : numpy.array
             Array of chi2 values corresponding to zspace.
         '''
-        import scipy.interpolate as interpolate
 
         zspace = np.arange(zliml,zlimu,delzz)
         chi2s  = np.zeros((len(zspace),2), 'float')
@@ -881,7 +881,7 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
         zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
-        f_norm=True, f_lambda=False, zmax=20, fit_photometry=False):
+        f_norm=True, f_lambda=False, zmax=20, fit_photometry=False, f_exclude_negative=False):
         '''
         Purpose
         -------
@@ -910,21 +910,20 @@ class Mainbody():
             If True, line masking.
         priors : dict, optional
             Dictionary that contains z (redshift grid) and chi2 (chi-square).
+        f_exclude_negative : bool
+            Exclude negative fluxes in spectrum.
 
         Notes
         -----
         Spectral data must be provided to make this work.
 
         '''
-        import scipy.interpolate as interpolate
+        self.file_zprob = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
 
         # NMC for zfit
         self.nmc_cz = int(self.inputs['NMCZ'])
 
         # For z prior.
-        #zliml = self.zgal - 0.5
-        #if zlimu == None:
-        #    zlimu = self.zgal + 0.5
         zliml = self.zmcmin
         zlimu = self.zmcmax
 
@@ -933,16 +932,19 @@ class Mainbody():
 
         # Only spec data?
         if fit_photometry:
-            con_cz = (sn>snlim)
+            con_cz = ()#(sn>snlim)
         else:
-            con_cz = (self.dict['NR']<NRbb_lim) & (sn>snlim)
+            con_cz = (self.dict['NR']<NRbb_lim) #& (sn>snlim)
 
         if len(self.dict['fy'][con_cz])==0:
             if f_bb_zfit:
-                con_cz = (sn>snlim)
+                con_cz = ()#(sn>snlim)
             else:
                 return 'y'
 
+        if f_exclude_negative:
+            con_cz &= (sn>snlim)
+            
         fy_cz = self.dict['fy'][con_cz] # Already scaled by self.Cz0
         ey_cz = self.dict['ey'][con_cz]
         x_cz = self.dict['x'][con_cz] # Observed range
@@ -1013,7 +1015,6 @@ class Mainbody():
 
             # Write prob distribution;
             if True:
-                self.file_zprob = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
                 get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
 
             print('############################')
@@ -1246,30 +1247,30 @@ class Mainbody():
             print('z-distribution figure is not generated.')
             pass
 
-        # Also, make zprob;
-        fig = plt.figure(figsize=(6.5,2.5))
-        fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-        ax1 = fig.add_subplot(111)
 
-        fd = ascii.read(self.file_zprob)
-        z = fd['z']
-        pz = fd['p(z)']
-        pz /= pz.max()
+        if os.path.exists(self.file_zprob):
+            # Also, make zprob;
+            fig = plt.figure(figsize=(6.5,2.5))
+            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = fig.add_subplot(111)
 
-        # prob:
-        ax1.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
+            fd = ascii.read(self.file_zprob)
+            z = fd['z']
+            pz = fd['p(z)']
+            pz /= pz.max()
 
-        # Label:
-        ax1.set_xlabel('Redshift')
-        ax1.set_ylabel('$p(z)$')
-        file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
-        if f_interact:
-            fig.savefig(file_out, dpi=300)
-        else:
-            plt.savefig(file_out, dpi=300)
-            plt.close()
+            # prob:
+            ax1.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
 
-
+            # Label:
+            ax1.set_xlabel('Redshift')
+            ax1.set_ylabel('$p(z)$')
+            file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
+            if f_interact:
+                fig.savefig(file_out, dpi=300)
+            else:
+                plt.savefig(file_out, dpi=300)
+                plt.close()
 
 
     def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
@@ -1598,7 +1599,8 @@ class Mainbody():
 
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
-            f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True):
+            f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
+            f_chind:bool=True):
         '''
         Main module of this script.
 
@@ -1767,7 +1769,7 @@ class Mainbody():
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                             moves=moves, maxiter=1e6,\
-                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
+                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind},\
                             )
                         # Run MCMC
                         nburn = int(self.nmc/10)
