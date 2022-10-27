@@ -631,7 +631,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                     except:
-                        print('Error. No convolution is happening...')
+                        #print('Error. No convolution is happening...')
                         spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
                         if zz==0 and ss==0:
                             print('Kernel is too small. No convolution.')

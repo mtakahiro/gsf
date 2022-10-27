@@ -784,17 +784,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         from astropy.convolution import convolve
         from .maketmp_filt import get_LSF
         LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
-        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
-        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
-        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
-        '''
-        plt.close()
-        plt.plot(x1_tot, ytmp50, color='r')
-        plt.plot(x1_tot, spec_grsm50, color='gray')
-        print(spec_grsm50)
-        plt.xlim(8000,20000)
-        plt.show()
-        '''
+        try:
+            spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+            spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+            spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        except:
+            spec_grsm16 = ytmp16[:]
+            spec_grsm50 = ytmp50[:]
+            spec_grsm84 = ytmp84[:]
+
         if True:
             ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
         else:
@@ -1018,11 +1016,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             
         # Grism;
         if f_grsm:
-            col2  = fits.Column(name='f_model_conv_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm16)
+            col2 = fits.Column(name='f_model_conv_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm16)
             col00.append(col2)
-            col3  = fits.Column(name='f_model_conv_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm50)
+            col3 = fits.Column(name='f_model_conv_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm50)
             col00.append(col3)
-            col4  = fits.Column(name='f_model_conv_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm84)
+            col4 = fits.Column(name='f_model_conv_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm84)
             col00.append(col4)
 
         # BB for dust

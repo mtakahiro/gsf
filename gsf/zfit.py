@@ -41,6 +41,8 @@ def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, inclu
 
     xm_s = xm_tmp * (1+z)
     fint = interpolate.interp1d(xm_s, fm_tmp, kind='nearest', fill_value="extrapolate")
+    # @@@ Maybe for future consideration.
+    # fint = interpolate.interp1d(xm_s, fm_tmp, kind='linear', fill_value="extrapolate")
     fm_s = fint(xobs)
 
     con0 = (NR<1000)

@@ -94,6 +94,7 @@ class Mainbody():
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
+        self.fitc_cz_prev = None
 
         # Magzp;
         try:
@@ -409,6 +410,7 @@ class Mainbody():
                 self.has_ZFIX = True
             else:
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
+
         # If BPASS;
         if self.f_bpass == 1:
             try:
@@ -421,6 +423,7 @@ class Mainbody():
             self.Zsun = 0.020
             Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
             Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
+
             try: # If ZFIX is found;
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
@@ -441,7 +444,9 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
                 print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
-            
+                if len(self.Zall)>1:
+                    self.has_ZFIX = False
+                    self.ZFIX = None
 
         # N of param:
         self.has_AVFIX = False
@@ -1042,6 +1047,7 @@ class Mainbody():
             print('Recommended redshift, Cz0, Cz1, and Cz2, %.5f %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, Czrec2, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
+            self.fitc_cz = fitc_cz[1]
 
         else:
             print('fzvis is set to False. z fit not happening.')
@@ -1164,8 +1170,8 @@ class Mainbody():
             print('##############################################################\n')
             plt.show()
 
-            flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1 and Cz2, %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
-                (self.zgal, self.Cz0, self.Cz1, self.Cz2))
+            flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1, Cz2, and chi2/nu, %.5f %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
+                (self.zgal, self.Cz0, self.Cz1, self.Cz2, self.fitc_cz_prev))
         else:
             flag_z = 'y'
 
@@ -1184,6 +1190,7 @@ class Mainbody():
         self.scl_cz1 = scl_cz1
         self.scl_cz2 = scl_cz2
         self.res_cz = res_cz
+        self.fitc_cz_prev = fitc_cz[1]
 
         return flag_z
 
@@ -1447,10 +1454,10 @@ class Mainbody():
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
         else:
-            try:
+            if self.has_ZFIX:
                 aa = 0
                 fit_params.add('Z'+str(aa), value=self.ZFIX, vary=False)
-            except:
+            else:
                 aa = 0
                 if np.min(self.Zall)==np.max(self.Zall):
                     fit_params.add('Z'+str(aa), value=np.min(self.Zall), vary=False)
@@ -1668,6 +1675,8 @@ class Mainbody():
             rcsq = out.redchi
             fitc = [csq, rcsq] # Chi2, Reduced-chi2
             ZZ = Zbest # This is really important/does affect lnprob/residual.
+            if self.fitc_cz_prev == None:
+                self.fitc_cz_prev = rcsq
 
             print('\n\n')
             print('#####################################')
@@ -2061,8 +2070,8 @@ class Mainbody():
         else:
             print('\n\n')
             
-            flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, Cz1, and Cz2 , %.5f %.5f %.5f %.5f? ([y]/n) '%\
-                (self.zrecom, self.Czrec0, self.Czrec1, self.Czrec2))
+            flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, Cz1, Cz2, and chi2/nu , %.5f %.5f %.5f %.5f %.5f? ([y]/n) '%\
+                (self.zrecom, self.Czrec0, self.Czrec1, self.Czrec2, self.fitc_cz_prev))
 
             self.get_zdist()
 
