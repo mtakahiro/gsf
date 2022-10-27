@@ -1021,7 +1021,7 @@ class Mainbody():
             print('Start MCMC for redshift fit')
             print('############################')
             res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, self.z_prior, self.p_prior, \
-                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
+                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, include_photometry=False)
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -1168,6 +1168,11 @@ class Mainbody():
                 (self.zgal, self.Cz0, self.Cz1, self.Cz2))
         else:
             flag_z = 'y'
+
+        try:
+            self.z_cz_prev = self.z_cz
+        except:
+            self.z_cz_prev = [self.zgal,self.zgal,self.zgal]
 
         # Write it to self;
         self.zrecom = zrecom
@@ -1693,8 +1698,6 @@ class Mainbody():
         #################################################
         if flag_z == 'y' or flag_z == '':
 
-            self.get_zdist()
-
             #######################
             # Add parameters;
             #######################
@@ -2057,8 +2060,12 @@ class Mainbody():
 
         else:
             print('\n\n')
+            
             flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, Cz1, and Cz2 , %.5f %.5f %.5f %.5f? ([y]/n) '%\
                 (self.zrecom, self.Czrec0, self.Czrec1, self.Czrec2))
+
+            self.get_zdist()
+
             if flag_gen == 'y' or flag_gen == '':
                 self.zprev = self.zgal # Input redshift for previous run
                 self.zgal = self.zrecom # Recommended redshift from previous run

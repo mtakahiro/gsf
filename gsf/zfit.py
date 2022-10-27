@@ -14,16 +14,20 @@ def lnprob_cz(pars, zprior, prior, zliml, zlimu, args, kwargs):
     s_z = 1 #pars['f_cz']
     resid *= 1/s_z
     resid *= resid
-    
-    nzz = np.argmin(np.abs(zprior-z))
 
-    # For something unacceptable;
-    if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
-        return -np.inf
+    if False:
+        nzz = np.argmin(np.abs(zprior-z))
+
+        # For something unacceptable;
+        if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
+            return -np.inf
+        else:
+            respr = np.log(prior[nzz])
+            resid += np.log(2 * np.pi * s_z**2)
+            return -0.5 * np.sum(resid) + respr
     else:
-        respr = np.log(prior[nzz])
         resid += np.log(2 * np.pi * s_z**2)
-        return -0.5 * np.sum(resid) + respr
+        return -0.5 * np.sum(resid)
 
 
 def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, include_photometry=True, f_line_check=False):
