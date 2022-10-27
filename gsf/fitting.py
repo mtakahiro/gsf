@@ -1666,9 +1666,11 @@ class Mainbody():
         ####################################
         # Get initial parameters
         if not skip_fitz or out == None:
-
+            
+            # Do you want to prepare a template for redshift fit by using only spectrum?;
+            f_only_spec = False
             out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
-            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID, f_only_spec=f_only_spec)
 
             # Best fit
             csq = out.chisqr

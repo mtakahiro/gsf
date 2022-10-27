@@ -248,7 +248,8 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, chidef=None, Zbest=0, f_keep=False):
+def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, 
+    chidef=None, Zbest=0, f_keep=False, f_only_spec=False):
     '''
     Get initial parameters at various Z
     '''
@@ -283,7 +284,10 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
                 fit_params['Z'+str(aa)].value = ZZ
 
         f_fir = False
-        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), method=fit_name) # nelder is the most efficient.
+
+        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), 
+            method=fit_name, kws={'f_only_spec':f_only_spec})
+            
         csq = out_tmp.chisqr
         rcsq = out_tmp.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
