@@ -1047,7 +1047,7 @@ class Mainbody():
             print('Recommended redshift, Cz0, Cz1, and Cz2, %.5f %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, Czrec2, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
-            self.fitc_cz = fitc_cz[1]
+            #self.fitc_cz = fitc_cz[1]
 
         else:
             print('fzvis is set to False. z fit not happening.')
@@ -1069,6 +1069,8 @@ class Mainbody():
             Czrec1 = scl_cz1[1]
             Czrec2 = scl_cz2[1]
             res_cz = None
+            #self.fitc_cz = z_cz[1]
+            fitc_cz = [99,99]
 
             # If this label is being used, it means that the fit is failed.
             fit_label = 'Current model'
@@ -1293,10 +1295,10 @@ class Mainbody():
         f_add = False
         # Redshift
         if self.fzmc == 1:
-            if zmin == None:
-                self.zmcmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
-            if zmax == None:
-                self.zmcmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
+            # if zmin == None:
+            #     self.zmcmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
+            # if zmax == None:
+            #     self.zmcmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
             fit_params.add('zmc', value=self.zgal, min=self.zmcmin, max=self.zmcmax)
             print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(self.zmcmin, self.zmcmax))
             f_add = True
@@ -1612,7 +1614,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True):
+            f_chind:bool=True, ncpu:int=0):
         '''
         Main module of this script.
 
@@ -1727,8 +1729,9 @@ class Mainbody():
                     fit_name = self.fneld
 
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
-                print('\nMinimizer refinement;')
-                print(fit_report(out))
+                # showing this is confusing.
+                # print('\nMinimizer refinement;')
+                # print(fit_report(out))
 
                 # Fix params to what we had before.
                 if self.fzmc:
@@ -1752,7 +1755,6 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            ncpu = 0
 
             print('########################')
             print('### Starting sampling ##')
