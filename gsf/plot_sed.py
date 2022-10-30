@@ -289,12 +289,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             AAAA
             BBBB
             """
-            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.2))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = axes['A']
         else:
-            fig = plt.figure(figsize=(5.5,2.2))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            fig = plt.figure(figsize=(5.5,2.))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
 
     # Determine scale here;
@@ -501,8 +501,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     xboxl = 17000
     xboxu = 28000
 
-    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=12)
-    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
+    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=11)
+    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=11,labelpad=-2)
 
     x1min = 2000
     x1max = 100000
