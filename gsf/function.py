@@ -554,12 +554,18 @@ def flamtonu(lam, flam, m0set=25.0):
     return fnu
 
 
-def fnutolam(lam, fnu, m0set=25.0):
+def fnutolam(lam, fnu, m0set=25.0, m0=-48.6):
     '''
     Converts from Fnu to Flam, from mag zeropoint of m0set (to -48.6).
-    
+
+    Parameters
+    ----------
+    m0set : float
+        current magzp.
+    m0 : float
+        target magzp. The default, -48.6, is for flam (erg/s/cm2/lambda).
     '''
-    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5)
+    Ctmp = lam**2/c * 10**((m0set-m0)/2.5)
     flam = fnu / Ctmp
     return flam
 
