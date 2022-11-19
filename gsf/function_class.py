@@ -224,7 +224,7 @@ class Func:
         elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
             yyd, xxd, nrd = dust_kc(xx, yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
-            print('No entry. Dust model is set to Calzetti')
+            print('No valid entry. Dust model is set to Calzetti')
             yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
 
         xxd *= (1.+zgal)
@@ -940,7 +940,7 @@ class Func_tau:
         elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
             yyd, xxd, nrd = dust_kc(xx, yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
-            print('No entry. Dust model is set to Calzetti')
+            print('No valid entry. Dust model is set to Calzetti')
             yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
 
         xxd *= (1.+zgal)
