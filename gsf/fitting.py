@@ -1570,41 +1570,6 @@ class Mainbody():
                     delpar = 0
                     if np.random.uniform(0,1) > (1. - 1./self.ndim):        
                         pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
-                        '''
-                        if key[0] == 'A':
-                            pos[ii,aa] += np.random.uniform(-0.2, 0.2)
-                            if pos[ii,aa] < self.Amin:
-                                pos[ii,aa] = self.Amin
-                            if pos[ii,aa] > self.Amax:
-                                pos[ii,aa] = self.Amax
-                        elif key[0] == 'Z':
-                            if self.delZ>0.01:
-                                pos[ii,aa] += np.random.uniform(-self.delZ*3, self.delZ*3)
-                                if pos[ii,aa] < self.Zmin:
-                                    pos[ii,aa] = self.Zmin
-                                if pos[ii,aa] > self.Zmax:
-                                    pos[ii,aa] = self.Zmax
-                        elif key[:2] == 'Av':
-                            pos[ii,aa] = np.random.uniform(self.Avmin, self.Avmax)
-                            if pos[ii,aa] < self.Avmin:
-                                pos[ii,aa] = self.Avmin
-                            if pos[ii,aa] > self.Avmax:
-                                pos[ii,aa] = self.Avmax
-                        elif key[:3] == 'AGE':
-                            pos[ii,aa] += np.random.uniform(-self.delage*nshuf, self.delage*nshuf)
-                            if pos[ii,aa] < self.agemin:
-                                pos[ii,aa] = self.agemin
-                            if pos[ii,aa] > self.agemax:
-                                pos[ii,aa] = self.agemax
-                        elif key[:3] == 'TAU':
-                            pos[ii,aa] += np.random.uniform(-self.deltau*nshuf, self.deltau*nshuf)
-                            if pos[ii,aa] < self.taumin:
-                                pos[ii,aa] = self.taumin
-                            if pos[ii,aa] > self.taumax:
-                                pos[ii,aa] = self.taumax
-                        else:
-                            pos[ii,aa] += 0
-                        '''
                     else:
                         if pos[ii,aa]<out.params[key].min+delpar or pos[ii,aa]>out.params[key].max-delpar:
                             pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
@@ -1616,7 +1581,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False):
         '''
         Main module of this script.
 
@@ -1787,7 +1752,7 @@ class Mainbody():
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                             moves=moves, maxiter=1e6,\
-                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind},\
+                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 'f_prior_sfh':f_prior_sfh},\
                             )
                         # Run MCMC
                         nburn = int(self.nmc/10)
@@ -1807,7 +1772,7 @@ class Mainbody():
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                         moves=moves, maxiter=1e4,\
-                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
+                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_prior_sfh':f_prior_sfh},\
                         )
 
                 else:
@@ -1816,7 +1781,7 @@ class Mainbody():
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
                         #moves=moves,\
-                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf},\
+                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 'f_prior_sfh':f_prior_sfh},\
                         )
 
                 if check_converge:

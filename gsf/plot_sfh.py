@@ -197,6 +197,9 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
                     delTu[aa] = Tuni-age[aa]
                 delT[aa] = delTu[aa] + delTl[aa]
 
+            if delTu[aa]<0:
+                delTu[aa] = 1e3
+
     con_delt = (delT<=0)
     delT[con_delt] = 1e10
     delT[:] *= 1e9 # Gyr to yr
@@ -216,9 +219,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
         burnin = data['burnin']
         nmc    = data['niter']
         nwalk  = data['nwalkers']
-        Nburn  = burnin #* nwalk/10/2 # I think this takes 3/4 of samples
-        #if nmc>1000:
-        #    Nburn  = 500
+        Nburn  = burnin
         samples = data['chain'][:]
     except:
         print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
