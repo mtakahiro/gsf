@@ -1,13 +1,13 @@
 asdf
-pytest
 astropy
-pandas
-multiprocess
-lmfit
-emcee
 corner
-zeus-mcmc
+emcee
+lmfit
+multiprocess
 numpy>=1.21
+pandas
+pytest
 sphinx_automodapi
+zeus-mcmc
 # git+https://github.com/dfm/python-fsps
 git+https://github.com/mtakahiro/gsf

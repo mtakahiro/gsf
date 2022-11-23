@@ -143,7 +143,7 @@ class Mainbody():
                     self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
                     self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
-                    print('ZMCMIN and ZMCMAX cannot be found. z range is set to z \pm 1.0')
+                    print('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
                     self.zmcmin = None
                     self.zmcmax = None
 
@@ -1294,12 +1294,13 @@ class Mainbody():
 
         '''
         f_add = False
+
         # Redshift
         if self.fzmc == 1:
-            # if zmin == None:
-            #     self.zmcmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
-            # if zmax == None:
-            #     self.zmcmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
+            if zmin == None:
+                self.zmcmin = 0
+            if zmax == None:
+                self.zmcmax = 15
             fit_params.add('zmc', value=self.zgal, min=self.zmcmin, max=self.zmcmax)
             print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(self.zmcmin, self.zmcmax))
             f_add = True
