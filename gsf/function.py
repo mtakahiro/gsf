@@ -248,7 +248,8 @@ def loadcpkl(cpklfile):
     return data
 
 
-def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, chidef=None, Zbest=0, f_keep=False):
+def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, 
+    chidef=None, Zbest=0, f_keep=False, f_only_spec=False):
     '''
     Get initial parameters at various Z
     '''
@@ -283,7 +284,10 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0, c
                 fit_params['Z'+str(aa)].value = ZZ
 
         f_fir = False
-        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), method=fit_name) # nelder is the most efficient.
+
+        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), 
+            method=fit_name, kws={'f_only_spec':f_only_spec})
+            
         csq = out_tmp.chisqr
         rcsq = out_tmp.redchi
         fitc = [csq, rcsq] # Chi2, Reduced-chi2
@@ -550,12 +554,18 @@ def flamtonu(lam, flam, m0set=25.0):
     return fnu
 
 
-def fnutolam(lam, fnu, m0set=25.0):
+def fnutolam(lam, fnu, m0set=25.0, m0=-48.6):
     '''
     Converts from Fnu to Flam, from mag zeropoint of m0set (to -48.6).
-    
+
+    Parameters
+    ----------
+    m0set : float
+        current magzp.
+    m0 : float
+        target magzp. The default, -48.6, is for flam (erg/s/cm2/lambda).
     '''
-    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5)
+    Ctmp = lam**2/c * 10**((m0set-m0)/2.5)
     flam = fnu / Ctmp
     return flam
 

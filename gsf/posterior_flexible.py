@@ -19,7 +19,8 @@ class Post:
         self.Na = len(self.mb.age)
 
 
-    def residual(self, pars, fy:float, ey:float, wht:float, f_fir:bool, out:bool=False, f_val:bool=False, f_penlize:bool=True):
+    def residual(self, pars, fy:float, ey:float, wht:float, f_fir:bool, out:bool=False, 
+        f_val:bool=False, f_penlize:bool=True, f_only_spec:bool=False):
         '''
         Parameters
         ----------
@@ -61,6 +62,13 @@ class Post:
                 logf = -np.inf
         else:
             logf = -np.inf # temporary... (if f is param, then take from vals dictionary.)
+
+        if f_only_spec:
+            contmp = (self.mb.dict['NR']<10000)
+            fy = fy[contmp]
+            ey = ey[contmp]
+            wht = wht[contmp]
+            model = model[contmp]
 
         sig = wht[:] * 0
         con_res = (wht>0)

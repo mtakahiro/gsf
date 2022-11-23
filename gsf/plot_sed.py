@@ -17,6 +17,7 @@ import corner
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
+
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
@@ -98,7 +99,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d * scale 
 
     ##################
     # Fitting Results
@@ -289,13 +289,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             AAAA
             BBBB
             """
-            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.2))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = axes['A']
         else:
-            fig = plt.figure(figsize=(5.5,2.2))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+            fig = plt.figure(figsize=(5.5,2.))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
+
+    # Determine scale here;
+    if scale == None:
+        conbb_hs = (fybb/eybb > SNlim)
+        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d))) / 10
+    d = MB.d * scale
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -495,8 +501,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     xboxl = 17000
     xboxu = 28000
 
-    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=12)
-    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
+    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=11)
+    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=11,labelpad=-2)
 
     x1min = 2000
     x1max = 100000
@@ -778,17 +784,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         from astropy.convolution import convolve
         from .maketmp_filt import get_LSF
         LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
-        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
-        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
-        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
-        '''
-        plt.close()
-        plt.plot(x1_tot, ytmp50, color='r')
-        plt.plot(x1_tot, spec_grsm50, color='gray')
-        print(spec_grsm50)
-        plt.xlim(8000,20000)
-        plt.show()
-        '''
+        try:
+            spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+            spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+            spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        except:
+            spec_grsm16 = ytmp16[:]
+            spec_grsm50 = ytmp50[:]
+            spec_grsm84 = ytmp84[:]
+
         if True:
             ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
         else:
@@ -1012,11 +1016,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             
         # Grism;
         if f_grsm:
-            col2  = fits.Column(name='f_model_conv_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm16)
+            col2 = fits.Column(name='f_model_conv_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm16)
             col00.append(col2)
-            col3  = fits.Column(name='f_model_conv_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm50)
+            col3 = fits.Column(name='f_model_conv_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm50)
             col00.append(col3)
-            col4  = fits.Column(name='f_model_conv_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm84)
+            col4 = fits.Column(name='f_model_conv_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm84)
             col00.append(col4)
 
         # BB for dust
@@ -1055,10 +1059,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         try:
             # Muv
-            MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
-            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
-            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
+            MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -1198,12 +1202,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if f_label:
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
-            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))#, fin_chi2)
             ylabel = ymax*0.45
         else:
-            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']), fin_chi2)
+            label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))
             ylabel = ymax*0.25
 
         if f_grsm:
@@ -1402,7 +1406,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     chimax = 1.
     m0set = MB.m0set
     Mpc_cm = MB.Mpc_cm
-    d = MB.d * scale
     
     ##################
     # Fitting Results
@@ -1613,6 +1616,12 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             fig = plt.figure(figsize=(5.5,2.2))
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
+
+    # Determine scale here;
+    if scale == None:
+        conbb_hs = (fybb/eybb > SNlim)
+        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
+    d = MB.d * scale
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -2311,10 +2320,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         try:
             # Muv
-            MUV = -2.5 * np.log10(Fuv[:]) + 25.0
-            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + 25.0
-            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + 25.0
-            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + 25.0
+            MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
+            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
+            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
+            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -2621,7 +2630,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     ID   = MB.ID
     Z    = MB.Zall
     age  = MB.age
-    d = MB.d * scale
     c = MB.c
 
     tau0 = MB.tau0 
@@ -2761,6 +2769,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     fy = np.append(fy01,fg_bb)
     ey = np.append(ey01,eg_bb)
     wht = 1./np.square(ey)
+
+    # Determine scale here;
+    if scale == None:
+        conbb_hs = (fybb/eybb > SNlim)
+        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
+    d = MB.d * scale
 
     # BB photometry
     conspec = (NR<NRbb_lim)

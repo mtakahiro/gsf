@@ -16,12 +16,13 @@ import string
 import timeit
 from scipy import stats
 from scipy.stats import norm
+import scipy.interpolate as interpolate
 from astropy.io import fits,ascii
 import corner
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
-from .zfit import check_redshift
+from .zfit import check_redshift,get_chi2
 from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
@@ -93,6 +94,7 @@ class Mainbody():
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
+        self.fitc_cz_prev = None
 
         # Magzp;
         try:
@@ -183,12 +185,15 @@ class Mainbody():
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
+        except:
+            self.DIR_EXTR = False
+
+        try:
             # Scaling for grism; 
             self.Cz0 = float(inputs['CZ0'])
             self.Cz1 = float(inputs['CZ1'])
             self.Cz2 = float(inputs['CZ2'])
         except:
-            self.DIR_EXTR = False
             self.Cz0 = 1
             self.Cz1 = 1
             self.Cz2 = 1
@@ -227,7 +232,7 @@ class Mainbody():
                     self.logUMIN = self.logUFIX
                     self.logUMAX = self.logUFIX
                     self.DELlogU = 0
-                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                    self.logUs = np.asarray([self.logUMAX])
                 except:
                     self.logUFIX = None
             else:
@@ -405,6 +410,7 @@ class Mainbody():
                 self.has_ZFIX = True
             else:
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
+
         # If BPASS;
         if self.f_bpass == 1:
             try:
@@ -417,6 +423,7 @@ class Mainbody():
             self.Zsun = 0.020
             Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
             Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
+
             try: # If ZFIX is found;
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
@@ -437,7 +444,9 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
                 print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
-            
+                if len(self.Zall)>1:
+                    self.has_ZFIX = False
+                    self.ZFIX = None
 
         # N of param:
         self.has_AVFIX = False
@@ -799,7 +808,6 @@ class Mainbody():
         chi2s : numpy.array
             Array of chi2 values corresponding to zspace.
         '''
-        import scipy.interpolate as interpolate
 
         zspace = np.arange(zliml,zlimu,delzz)
         chi2s  = np.zeros((len(zspace),2), 'float')
@@ -878,13 +886,19 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
         zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
-        f_norm=True, f_lambda=False):
+        f_norm=True, f_lambda=False, zmax=20, fit_photometry=False, f_exclude_negative=False):
         '''
+        Purpose
+        -------
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
+        When spectrun is provided, this does redshift fit, but **by using the SED model guessed from the BB photometry**.
+        Thus, providing good BB photometry is critical in this step.
 
         Parameters
         ----------
+        xm_tmp, fm_tmp : float array
+            SED model.
         delzz : float
             Delta z in redshift search space
         zliml : float
@@ -901,35 +915,47 @@ class Mainbody():
             If True, line masking.
         priors : dict, optional
             Dictionary that contains z (redshift grid) and chi2 (chi-square).
+        f_exclude_negative : bool
+            Exclude negative fluxes in spectrum.
 
         Notes
         -----
         Spectral data must be provided to make this work.
 
         '''
-        import scipy.interpolate as interpolate
+        self.file_zprob = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
 
         # NMC for zfit
         self.nmc_cz = int(self.inputs['NMCZ'])
 
         # For z prior.
-        #zliml = self.zgal - 0.5
-        #if zlimu == None:
-        #    zlimu = self.zgal + 0.5
-        zliml = self.zmcmin
-        zlimu = self.zmcmax
+        if self.zmcmin != None:
+            zliml = self.zmcmin
+        else:
+            zliml = 0
+        if self.zmcmax != None:
+            zlimu = self.zmcmax
+        else:
+            zlimu = 20
 
         # Observed data;
         sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        con_cz = (self.dict['NR']<NRbb_lim) & (sn>snlim)
+        if fit_photometry:
+            con_cz = ()#(sn>snlim)
+        else:
+            con_cz = (self.dict['NR']<NRbb_lim) #& (sn>snlim)
+
         if len(self.dict['fy'][con_cz])==0:
             if f_bb_zfit:
-                con_cz = (sn>snlim)
+                con_cz = ()#(sn>snlim)
             else:
                 return 'y'
 
+        if f_exclude_negative:
+            con_cz &= (sn>snlim)
+            
         fy_cz = self.dict['fy'][con_cz] # Already scaled by self.Cz0
         ey_cz = self.dict['ey'][con_cz]
         x_cz = self.dict['x'][con_cz] # Observed range
@@ -953,12 +979,12 @@ class Mainbody():
             zprob = dprob[:,0]
             cprob = dprob[:,1]
             # Then interpolate to a common z grid;
-            zz_prob = np.arange(0,13,delzz)
+            zz_prob = np.arange(0,zmax,delzz)
             cprob_s = np.interp(zz_prob, zprob, cprob)
             prior_s = np.exp(-0.5 * cprob_s)
             prior_s /= np.sum(prior_s)
         else:
-            zz_prob = np.arange(0,13,delzz)
+            zz_prob = np.arange(zliml,zlimu,delzz)
             if priors != None:
                 zprob = priors['z']
                 cprob = priors['chi2']
@@ -969,10 +995,7 @@ class Mainbody():
                 prior_s[con_pri] = 0
                 if f_norm:
                     prior_s /= np.sum(prior_s)
-                    #prior_s /= np.sum(prior_s)
-
             else:
-                zz_prob = np.arange(0,13,delzz)
                 prior_s = zz_prob * 0 + 1.
                 prior_s /= np.sum(prior_s)
 
@@ -989,16 +1012,23 @@ class Mainbody():
             data_model[:,1] = fm_s
             data_model[:,2] = fy_cz
             data_model[:,3] = ey_cz
-            data_model_sort = np.sort(data_model, axis=0)
+
+            data_model_sort = data_model[data_model[:, 0].argsort()]            
+            #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
+
             plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
             plt.plot(data_model_sort[:,0], data_model_sort[:,2],'.b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
             plt.errorbar(data_model_sort[:,0], data_model_sort[:,2], yerr=data_model_sort[:,3], color='b', capsize=0, linewidth=0.5) # Observation
+
+            # Write prob distribution;
+            if True:
+                get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
 
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
             res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, self.z_prior, self.p_prior, \
-                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz)
+                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, include_photometry=False)
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -1019,6 +1049,7 @@ class Mainbody():
             print('Recommended redshift, Cz0, Cz1, and Cz2, %.5f %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, Czrec2, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
+            #self.fitc_cz = fitc_cz[1]
 
         else:
             print('fzvis is set to False. z fit not happening.')
@@ -1032,7 +1063,7 @@ class Mainbody():
                 print('Redshift error is assumed to %.1f.'%(ezmin))
 
             z_cz = [zmcmin, self.zprev, zmcmax]
-            zrecom  = z_cz[1]
+            zrecom = z_cz[1]
             scl_cz0 = [1.,1.,1.]
             scl_cz1 = [1.,1.,1.]
             scl_cz2 = [1.,1.,1.]
@@ -1040,6 +1071,7 @@ class Mainbody():
             Czrec1 = scl_cz1[1]
             Czrec2 = scl_cz2[1]
             res_cz = None
+            fitc_cz = [99,99]
 
             # If this label is being used, it means that the fit is failed.
             fit_label = 'Current model'
@@ -1067,7 +1099,8 @@ class Mainbody():
             data_model_new = np.zeros((len(x_cz),4),'float')
             data_model_new[:,0] = x_cz
             data_model_new[:,1] = fm_s
-            data_model_new_sort = np.sort(data_model_new, axis=0)
+            # data_model_new_sort = np.sort(data_model_new, axis=0)
+            data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
 
             plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
             plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
@@ -1092,14 +1125,16 @@ class Mainbody():
             data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 data_obsbb[:,2] = fm_tmp
-            data_obsbb_sort = np.sort(data_obsbb, axis=0)
-
+            #data_obsbb_sort = np.sort(data_obsbb, axis=0)
+            data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
+            
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
             else:
                 model_spec = np.zeros((len(fm_tmp),2), 'float')
                 model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
-                model_spec_sort = np.sort(model_spec, axis=0)
+                #model_spec_sort = np.sort(model_spec, axis=0)
+                model_spec_sort = model_spec[model_spec[:, 0].argsort()]
                 plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
             try:
@@ -1138,10 +1173,15 @@ class Mainbody():
             print('##############################################################\n')
             plt.show()
 
-            flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1 and Cz2, %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
-                (self.zgal, self.Cz0, self.Cz1, self.Cz2))
+            flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1, Cz2, and chi2/nu, %.5f %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
+                (self.zgal, self.Cz0, self.Cz1, self.Cz2, self.fitc_cz_prev))
         else:
             flag_z = 'y'
+
+        try:
+            self.z_cz_prev = self.z_cz
+        except:
+            self.z_cz_prev = [self.zgal,self.zgal,self.zgal]
 
         # Write it to self;
         self.zrecom = zrecom
@@ -1153,12 +1193,15 @@ class Mainbody():
         self.scl_cz1 = scl_cz1
         self.scl_cz2 = scl_cz2
         self.res_cz = res_cz
+        self.fitc_cz_prev = fitc_cz[1]
 
         return flag_z
 
 
     def get_zdist(self, f_interact=False, f_ascii=True):
         '''
+        Purpose
+        -------
         Saves a plot of z-distribution.
 
         Parameters
@@ -1180,11 +1223,11 @@ class Mainbody():
                 (self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1, self.Cz2))
 
             if f_ascii:
-                file_ascii_out = self.DIR_OUT + 'zprob_' + self.ID + '.txt'
+                file_ascii_out = self.DIR_OUT + 'zmc_' + self.ID + '.txt'
                 fw_ascii = open(file_ascii_out,'w')
                 fw_ascii.write('# z pz\n')
-                for ii in range(len(xx)):
-                    fw_ascii.write('%.3f %.3f\n'%(xx[ii],yy[ii]))
+                for ii in range(len(n)):
+                    fw_ascii.write('%.3f %.3f\n'%(nbins[ii]+(nbins[ii+1]-nbins[ii])/2.,n[ii]))
                 fw_ascii.close()
 
             xx = yy * 0 + self.z_cz[0]
@@ -1205,19 +1248,44 @@ class Mainbody():
             ax1.legend(loc=0)
             
             # Save:
-            file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
+            file_out = self.DIR_OUT + 'zmc_' + self.ID + '.png'
             print('Figure is saved in %s'%file_out)
 
             if f_interact:
                 fig.savefig(file_out, dpi=300)
-                return fig, ax1
+                # return fig, ax1
             else:
                 plt.savefig(file_out, dpi=300)
                 plt.close()
-                return True
+                # return True
         except:
             print('z-distribution figure is not generated.')
             pass
+
+
+        if os.path.exists(self.file_zprob):
+            # Also, make zprob;
+            fig = plt.figure(figsize=(6.5,2.5))
+            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = fig.add_subplot(111)
+
+            fd = ascii.read(self.file_zprob)
+            z = fd['z']
+            pz = fd['p(z)']
+            pz /= pz.max()
+
+            # prob:
+            ax1.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
+
+            # Label:
+            ax1.set_xlabel('Redshift')
+            ax1.set_ylabel('$p(z)$')
+            file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
+            if f_interact:
+                fig.savefig(file_out, dpi=300)
+            else:
+                plt.savefig(file_out, dpi=300)
+                plt.close()
 
 
     def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
@@ -1228,10 +1296,10 @@ class Mainbody():
         f_add = False
         # Redshift
         if self.fzmc == 1:
-            if zmin == None:
-                self.zmcmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
-            if zmax == None:
-                self.zmcmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
+            # if zmin == None:
+            #     self.zmcmin = self.zgal-(self.z_cz[1]-self.z_cz[0])*sigz
+            # if zmax == None:
+            #     self.zmcmax = self.zgal+(self.z_cz[2]-self.z_cz[1])*sigz
             fit_params.add('zmc', value=self.zgal, min=self.zmcmin, max=self.zmcmax)
             print('Redshift is set as a free parameter (z in [%.2f:%.2f])'%(self.zmcmin, self.zmcmax))
             f_add = True
@@ -1389,10 +1457,10 @@ class Mainbody():
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
         else:
-            try:
+            if self.has_ZFIX:
                 aa = 0
                 fit_params.add('Z'+str(aa), value=self.ZFIX, vary=False)
-            except:
+            else:
                 aa = 0
                 if np.min(self.Zall)==np.max(self.Zall):
                     fit_params.add('Z'+str(aa), value=np.min(self.Zall), vary=False)
@@ -1546,7 +1614,8 @@ class Mainbody():
 
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
-            f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True):
+            f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
+            f_chind:bool=True, ncpu:int=0):
         '''
         Main module of this script.
 
@@ -1600,15 +1669,19 @@ class Mainbody():
         ####################################
         # Get initial parameters
         if not skip_fitz or out == None:
-
+            
+            # Do you want to prepare a template for redshift fit by using only spectrum?;
+            f_only_spec = False
             out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
-            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID, f_only_spec=f_only_spec)
 
             # Best fit
             csq = out.chisqr
             rcsq = out.redchi
             fitc = [csq, rcsq] # Chi2, Reduced-chi2
             ZZ = Zbest # This is really important/does affect lnprob/residual.
+            if self.fitc_cz_prev == None:
+                self.fitc_cz_prev = rcsq
 
             print('\n\n')
             print('#####################################')
@@ -1632,15 +1705,12 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            #con_bb = (nrd_tmp>=1e4)
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, fit_photometry=False)
 
         #################################################
         # Gor for mcmc phase
         #################################################
         if flag_z == 'y' or flag_z == '':
-
-            self.get_zdist()
 
             #######################
             # Add parameters;
@@ -1660,8 +1730,9 @@ class Mainbody():
                     fit_name = self.fneld
 
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
-                print('\nMinimizer refinement;')
-                print(fit_report(out))
+                # showing this is confusing.
+                # print('\nMinimizer refinement;')
+                # print(fit_report(out))
 
                 # Fix params to what we had before.
                 if self.fzmc:
@@ -1685,7 +1756,6 @@ class Mainbody():
 
             ################################
             print('\nMinimizer Defined\n')
-            ncpu = 0
 
             print('########################')
             print('### Starting sampling ##')
@@ -1716,7 +1786,7 @@ class Mainbody():
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                             moves=moves, maxiter=1e6,\
-                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf},\
+                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind},\
                             )
                         # Run MCMC
                         nburn = int(self.nmc/10)
@@ -2004,8 +2074,12 @@ class Mainbody():
 
         else:
             print('\n\n')
-            flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, Cz1, and Cz2 , %.5f %.5f %.5f %.5f? ([y]/n) '%\
-                (self.zrecom, self.Czrec0, self.Czrec1, self.Czrec2))
+            
+            flag_gen = raw_input('Do you want to make templates with recommended redshift, Cz0, Cz1, Cz2, and chi2/nu , %.5f %.5f %.5f %.5f %.5f? ([y]/n) '%\
+                (self.zrecom, self.Czrec0, self.Czrec1, self.Czrec2, self.fitc_cz_prev))
+
+            self.get_zdist()
+
             if flag_gen == 'y' or flag_gen == '':
                 self.zprev = self.zgal # Input redshift for previous run
                 self.zgal = self.zrecom # Recommended redshift from previous run

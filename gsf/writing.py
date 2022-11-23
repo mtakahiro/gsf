@@ -24,7 +24,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     Czrec2 = self.Cz2
 
     try:
-        z_cz = self.z_cz
+        z_cz = self.z_cz_prev
         scl_cz0 = self.scl_cz0
         scl_cz1 = self.scl_cz1
         scl_cz2 = self.scl_cz2

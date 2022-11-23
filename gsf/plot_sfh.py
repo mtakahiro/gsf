@@ -538,9 +538,12 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     elif zbes<6:
         zred  = [zbes, 5, 6, 9]
         zredl = ['$z_\mathrm{obs.}$', 5, 6, 9]
-    else:
+    elif zbes<12:
         zred  = [zbes, 12]
         zredl = ['$z_\mathrm{obs.}$', 12]
+    else:
+        zred  = [zbes, 20]
+        zredl = ['$z_\mathrm{obs.}$', 20]
 
     Tzz = np.zeros(len(zred), dtype='float')
     for zz in range(len(zred)):
@@ -652,7 +655,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     col50 = fits.Column(name='Z84', format='E', unit='logZsun', array=ZCp[:,2])
     col02.append(col50)
     
-    colms  = fits.ColDefs(col02)
+    colms = fits.ColDefs(col02)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
     file_sfh = MB.DIR_OUT + 'SFH_' + ID + '.fits'
@@ -685,17 +688,27 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
 
     ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    y3min, y3max = np.min(Z), np.max(Z)
 
     if not skip_zhist:
+
+        delZl = 0.4 # only for label. not delZ of Zall.
+        delZZl = delZl / 4
+
+        y3min, y3max = np.min(Z), np.max(Z)+delZZl
         ax4.set_xlim(Txmin, Txmax)
-        ax4.set_ylim(y3min-0.05, y3max)
+        # There is a bug that lower size does not match with label.
+        # ax4.set_ylim(y3min-delZZl, y3max+delZZl)
+        ax4.set_ylim(y3min, y3max)
         ax4.set_xscale('log')
 
         if f_axis_force:
-            ax4.set_yticks([-0.8, -0.4, 0., 0.4])
-            ax4.set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
-        
+            Zticks = np.arange(MB.Zall.min(), MB.Zall.max()+delZZl, delZl)
+            ax4.set_yticks(Zticks)
+            Zlabels = []
+            for Ztmp in Zticks:
+                Zlabels.append('%.1f'%(Ztmp))
+            #ax4.set_yticklabels(Zlabels)
+
         ax4.yaxis.labelpad = -2
         ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
         ax4.set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
@@ -1205,9 +1218,12 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     elif zbes<6:
         zred  = [zbes, 5, 6, 9]
         zredl = ['$z_\mathrm{obs.}$', 5, 6, 9]
-    else:
+    elif zbes<12:
         zred  = [zbes, 12]
         zredl = ['$z_\mathrm{obs.}$', 12]
+    else:
+        zred  = [zbes, 20]
+        zredl = ['$z_\mathrm{obs.}$', 20]
 
     Tzz = np.zeros(len(zred), dtype='float')
     for zz in range(len(zred)):

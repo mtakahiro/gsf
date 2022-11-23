@@ -435,16 +435,23 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # READ BB photometry from CAT_BB:
     #############################
     if CAT_BB:
+        key_id = 'id'
         fd0 = ascii.read(CAT_BB)
-        id0 = fd0['id'].astype('str')
+        try:
+            id0 = fd0[key_id].astype('str')
+        except:
+            key_id = 'ID'
+            id0 = fd0[key_id].astype('str')
+
         ii0 = np.where(id0[:]==ID)
         try:
             if len(ii0[0]) == 0:
                 print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
                 return False
-            id = fd0['id'][ii0]
+            id = fd0[key_id][ii0]
         except:
             print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
+            print(fd0)
             return False
 
         fbb = np.zeros(len(SFILT), dtype='float')
@@ -494,18 +501,25 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
     # Dust flux;
     if MB.f_dust:
+        key_id = 'id'
         fdd = ascii.read(CAT_BB_DUST)
         try:
-            id0 = fdd['id'].astype('str')
+            try:
+                id0 = fdd[key_id].astype('str')
+            except:
+                key_id = 'ID'
+                id0 = fdd[key_id].astype('str')
+
             ii0 = np.where(id0[:]==ID)
             try:
-                id = fd0['id'][ii0]
+                id = fd0[key_id][ii0]
             except:
                 print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(ID))
                 return False
         except:
             return False
-        id = fdd['id']
+            
+        id = fdd[key_id]
 
         fbb_d = np.zeros(len(DFILT), dtype='float')
         ebb_d = np.zeros(len(DFILT), dtype='float')
@@ -617,7 +631,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     try:
                         spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                     except:
-                        print('Error. No convolution is happening...')
+                        #print('Error. No convolution is happening...')
                         spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
                         if zz==0 and ss==0:
                             print('Kernel is too small. No convolution.')
