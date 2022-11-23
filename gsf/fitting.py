@@ -929,8 +929,14 @@ class Mainbody():
         self.nmc_cz = int(self.inputs['NMCZ'])
 
         # For z prior.
-        zliml = self.zmcmin
-        zlimu = self.zmcmax
+        if self.zmcmin != None:
+            zliml = self.zmcmin
+        else:
+            zliml = 0
+        if self.zmcmax != None:
+            zlimu = self.zmcmax
+        else:
+            zlimu = 20
 
         # Observed data;
         sn = self.dict['fy'] / self.dict['ey']
@@ -978,7 +984,6 @@ class Mainbody():
             prior_s = np.exp(-0.5 * cprob_s)
             prior_s /= np.sum(prior_s)
         else:
-            #zz_prob = np.arange(0,zmax,delzz)
             zz_prob = np.arange(zliml,zlimu,delzz)
             if priors != None:
                 zprob = priors['z']
@@ -990,10 +995,7 @@ class Mainbody():
                 prior_s[con_pri] = 0
                 if f_norm:
                     prior_s /= np.sum(prior_s)
-                    #prior_s /= np.sum(prior_s)
-
             else:
-                # zz_prob = np.arange(0,zmax,delzz)
                 prior_s = zz_prob * 0 + 1.
                 prior_s /= np.sum(prior_s)
 
@@ -1069,7 +1071,6 @@ class Mainbody():
             Czrec1 = scl_cz1[1]
             Czrec2 = scl_cz2[1]
             res_cz = None
-            #self.fitc_cz = z_cz[1]
             fitc_cz = [99,99]
 
             # If this label is being used, it means that the fit is failed.
