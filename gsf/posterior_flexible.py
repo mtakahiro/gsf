@@ -51,7 +51,7 @@ class Post:
             x1 = np.append(x1,x1_dust[n_optir:])
 
         if self.mb.fneb:
-            n_optir = self.mb.n_optir #len(model)
+            n_optir = self.mb.n_optir
             model_neb, x1_neb = self.mb.fnc.tmp04_neb(vals)
             model[:n_optir] += model_neb
 
@@ -135,7 +135,8 @@ class Post:
 
 
     def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
-        lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None):
+        lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None,
+        f_prior_sfh=False):
         '''
         Parameters
         ----------
@@ -165,7 +166,7 @@ class Post:
             logf = vals['logf']
         else:
             logf = -np.inf
-                
+
         if False:
             # Checking multiple peak model
             if self.mb.SFH_FORM != -99 and self.mb.npeak>1:
@@ -260,6 +261,10 @@ class Post:
             else:
                 respr += np_log(prior[nzz])
 
+        # Prior for SFH;
+        if f_prior_sfh:
+            respr += self.get_sfh_prior(vals, norder=4, alpha=100.0)
+
         lnposterior = lnlike + respr
         if not np.isfinite(lnposterior):
             print('Posterior unacceptable.')
@@ -267,3 +272,32 @@ class Post:
 
         return lnposterior
 
+
+    def get_sfh_prior(self, vals, norder=3, alpha=100.0):
+        '''
+        Fit SFH with an n-order polynomial and reflect the residual to the prior.
+        Fit should be done in log-log space.
+        '''
+        t = np.log10(self.mb.age)
+        y = []
+        vary = []
+        for aa in range(self.Na):
+            y.append(vals['A%d'%aa])
+            vary.append(vals['A%d'%aa].vary)
+        y = np.asarray(y)
+
+        con = (vary)
+        z = np.polyfit(t[con], y[con], norder)
+        yfit = np.polyval(z,t[con])
+        yres = (y[con] - yfit)
+
+        if False:
+            import matplotlib.pyplot as plt
+            plt.plot(t,y)
+            plt.plot(t[con],yfit)
+            plt.show()
+            hoge
+
+        lnprior = -0.5 * (np.sum(yres**2) * alpha)
+
+        return lnprior
