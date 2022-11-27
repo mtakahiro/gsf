@@ -136,7 +136,7 @@ class Post:
 
     def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
         lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None,
-        f_prior_sfh=False):
+        f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3):
         '''
         Parameters
         ----------
@@ -263,7 +263,7 @@ class Post:
 
         # Prior for SFH;
         if f_prior_sfh:
-            respr += self.get_sfh_prior(vals, norder=4, alpha=100.0)
+            respr += self.get_sfh_prior(vals, norder=norder_sfh_prior, alpha=alpha_sfh_prior)
 
         lnposterior = lnlike + respr
         if not np.isfinite(lnposterior):

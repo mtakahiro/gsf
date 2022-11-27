@@ -89,8 +89,8 @@ def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5
 	return ytmp_abs
 
 
-def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5, R_b1=0.0,
-	delta_v_0=600):
+def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5, 
+	R_b1=1.0, delta_v_0=600, alpha_x=1.0):
 	'''
 	Purpose
 	-------
@@ -122,20 +122,21 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5, R_b1=0.0,
 
 	xtmp_obs = xtmp * (1+zin)
 
-	x_D = get_XI(zin) # neutral fraction
+	x_HI = get_XI(zin) # neutral fraction
+	x_D = alpha_x * x_HI # x_D is not clear..
 	delta_lam = (xtmp - xLL) * (zin + 1)
-	delta_lam_fine = (np.linspace(900,2000,10000) - xLL) * (zin + 1)
+	delta_lam_fine = (np.linspace(900,2000,1000) - xLL) * (zin + 1)
 
 	delta_v = ckms * delta_lam_fine / (xLL * (1.+zin))
 	delta_v_b1 = delta_v
 	if R_b1>0:
-		delta_v_b1 += cosmo.H(zin).value * R_bi / (1.+zin) # km / (Mpc s) * Mpc
+		delta_v_b1 += cosmo.H(zin).value * R_b1 / (1.+zin) # km / (Mpc s) * Mpc
 
 	tau_fine = 2.3 * x_D * (delta_v_b1/delta_v_0)**(-1) * ((1+zin)/10)**(3/2)
 	con_tau = (tau_fine < 0) | (delta_v_b1 == 0)
 	tau_fine[con_tau] = 100
 
-	fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='linear', fill_value="extrapolate")
+	fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='nearest', fill_value="extrapolate")
 	tau = fint(delta_lam)
 
 	# import matplotlib.pyplot as plt

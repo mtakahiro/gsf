@@ -689,7 +689,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         
                         if f_IGM:
                             # import matplotlib.pyplot as plt
-                            # plt.plot(wave, spec_mul_neb[zz,uu,:], '-.')
+                            # plt.plot(wave, spec_mul_neb[zz,uu,:], '.', ls='-')
 
                             # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                             spec_neb_av_tmp = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
@@ -697,7 +697,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
                             # plt.plot(wave, spec_mul_neb[zz,uu,:], '-x')
-                            # plt.xlim(1000,1500)
+                            # plt.xlim(1000,2300)
                             # plt.show()
                             # hoge
 
