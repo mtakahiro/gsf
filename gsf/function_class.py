@@ -534,6 +534,9 @@ class Func:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
         xxd *= (1.+zmc)
 
+        # IGM attenuation here?;
+        
+
         if self.dust_model != 0:
             # This may be needed when not calzetti model
             nrd_yyd = np.zeros((len(nrd),3), dtype=float)

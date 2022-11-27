@@ -597,7 +597,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 # IGM attenuation.
                 ###################
                 if f_IGM:
-                    spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    # spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    spec_av_tmp = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                     spec_mul[ss,:] = spec_av_tmp
 
                 # Distance;
@@ -687,8 +688,18 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         spec_mul_neb[zz,uu,:][con_neb] = 0
                         
                         if f_IGM:
-                            spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            # import matplotlib.pyplot as plt
+                            # plt.plot(wave, spec_mul_neb[zz,uu,:], '-.')
+
+                            # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            spec_neb_av_tmp = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            # spec_neb_av_tmp = masongronke_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
+
+                            # plt.plot(wave, spec_mul_neb[zz,uu,:], '-x')
+                            # plt.xlim(1000,1500)
+                            # plt.show()
+                            # hoge
 
                         spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
                         
