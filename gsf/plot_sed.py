@@ -20,7 +20,8 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
+    x1min=4000):
     '''
     Parameters
     ----------
@@ -281,7 +282,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         f_plot_resid = False
         print('Grism data. f_plot_resid is turned off.')
-
     else:
         if f_plot_resid:
             fig_mosaic = """
@@ -293,7 +293,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = axes['A']
         else:
-            fig = plt.figure(figsize=(5.5,2.))
+            if f_plot_filter:
+                fig = plt.figure(figsize=(5.5,2.))
+            else:
+                fig = plt.figure(figsize=(5.5,1.8))
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
 
@@ -495,17 +498,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #############
     # Main result
     #############
-    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1)
+    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
 
     xboxl = 17000
     xboxu = 28000
 
-    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=11)
-    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=11,labelpad=-2)
+    ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
+    ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
 
-    x1min = 2000
     x1max = 100000
+    if x1max < np.max(xbb):
+        x1max = np.max(xbb) * 1.5
+    if x1min > np.min(xbb[conbb_ymax]):
+        x1min = np.min(xbb[conbb_ymax]) / 1.5
+
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
     if MB.f_dust:
@@ -513,12 +520,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
         xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
 
-    #if x1max < np.max(xbb[conbb_ymax]):
-    #    x1max = np.max(xbb[conbb_ymax]) * 1.5
-    if x1max < np.max(xbb):
-        x1max = np.max(xbb) * 1.5
-    if x1min > np.min(xbb[conbb_ymax]):
-        x1min = np.min(xbb[conbb_ymax]) / 1.5
+    if x1min > 2500:
+        xticks = xticks[1:]
+        xlabels = xlabels[1:]
 
     ax1.set_xlim(x1min, x1max)
     ax1.set_xscale('log')
@@ -527,7 +531,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     else:
         scl_yaxis = 0.1
     ax1.set_ylim(-ymax*scl_yaxis,ymax)
-    ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+
+    if False:
+        ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=7)
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
@@ -1200,6 +1206,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # SED params in plot
     #
     if f_label:
+        fs_label = 8
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
@@ -1211,12 +1218,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ylabel = ymax*0.25
 
         if f_grsm:
-            ax1.text(0.02, 0.7, label,\
-            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ax1.text(0.02, 0.68, label,\
+            fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
         else:
-            ax1.text(0.02, 0.7, label,\
-            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ax1.text(0.02, 0.68, label,\
+            fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
 
     ax1.xaxis.labelpad = -3
