@@ -1189,20 +1189,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
             tree_spec['model'].update({'fnu_dust': ytmp_dust50 / (c / np.square(x1_dust[:]) / d) * Cnu_to_Jy * u.uJy})
 
-        # BB for dust
+        # Obs BB
         tree_spec['obs'].update({'wave_bb': xbb * u.AA})
-        tree_spec['obs'].update({'fnu_bb': fybb[:] * c / np.square(xbb[:]) / d * Cnu_to_Jy * u.uJy})
-        tree_spec['obs'].update({'enu_bb': eybb[:] * c / np.square(xbb[:]) / d * Cnu_to_Jy * u.uJy})
+        tree_spec['obs'].update({'fnu_bb': fybb[:] * Cnu_to_Jy * u.uJy})
+        tree_spec['obs'].update({'enu_bb': eybb[:] * Cnu_to_Jy * u.uJy})
         # grism:
         if f_grsm:
-            tree_spec['obs'].update({'fg0': fg0 * c/np.square(xg0)/d * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'eg0': eg0 * c/np.square(xg0)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'fg0': fg0 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg0': eg0 * Cnu_to_Jy * u.uJy})
             tree_spec['obs'].update({'wg0': xg0 * u.AA})
-            tree_spec['obs'].update({'fg1': fg1 * c/np.square(xg1)/d * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'eg1': eg1 * c/np.square(xg1)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'fg1': fg1 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg1': eg1 * Cnu_to_Jy * u.uJy})
             tree_spec['obs'].update({'wg1': xg1 * u.AA})
-            tree_spec['obs'].update({'fg2': fg2 * c/np.square(xg2)/d * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'eg2': eg2 * c/np.square(xg2)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'fg2': fg2 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg2': eg2 * Cnu_to_Jy * u.uJy})
             tree_spec['obs'].update({'wg2': xg2 * u.AA})
 
         af = asdf.AsdfFile(tree_spec)
