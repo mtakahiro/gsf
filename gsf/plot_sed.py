@@ -54,18 +54,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     from astropy.io import ascii
     import time
 
-    if f_silence:
-        try:
-            import matplotlib
-            matplotlib.use("Agg")
-        except:
-            print('matplotlib Agg backend is not found.')
-            pass
-    else:
-        try:
-            matplotlib.use("MacOSX")
-        except:
-            pass
+    # if f_silence:
+    #     try:
+    #         import matplotlib
+    #         matplotlib.use("Agg")
+    #     except:
+    #         print('matplotlib Agg backend is not found.')
+    #         pass
+    # else:
+    #     try:
+    #         matplotlib.use("MacOSX")
+    #     except:
+    #         pass
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
@@ -1128,6 +1128,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         # Version;
         import gsf
+        from astropy import units as u
         hdr['version'] = gsf.__version__
 
         # Write;
@@ -1143,64 +1144,69 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             'library': '%s'%(LIBRARY),
             'nimf': '%s'%(nimf),
             'scale': scale,
+            'm0set': MB.m0set,
             'version_gsf': gsf.__version__
         }
+        tree_spec['model'] = {}
+        tree_spec['obs'] = {}
+        Cnu_to_Jy = 10**((m0set-23.9)) # to microJy.
 
         # BB;
-        tree_spec.update({'wave': lbb})
-        tree_spec.update({'fnu_16': fbb16_nu})
-        tree_spec.update({'fnu_50': fbb_nu})
-        tree_spec.update({'fnu_84': fbb84_nu})
+        tree_spec['model'].update({'wave_bb': lbb * u.AA})
+        tree_spec['model'].update({'fnu_bb_16': fbb16_nu * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
         # full spectrum;
-        tree_spec.update({'wave_model': x1_tot})
-        tree_spec.update({'f_model_16': ytmp16})
-        tree_spec.update({'f_model_50': ytmp50})
-        tree_spec.update({'f_model_84': ytmp84})
+        tree_spec['model'].update({'wave': x1_tot * u.AA})
+        tree_spec['model'].update({'fnu_16': ytmp16 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_50': ytmp50 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_84': ytmp84 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
 
         # EW;
         try:
             for ii in range(len(EW50)):
-                tree_spec.update({'EW_%s_16'%(ew_label[ii]): EW16[ii]})
-                tree_spec.update({'EW_%s_50'%(ew_label[ii]): EW50[ii]})
-                tree_spec.update({'EW_%s_84'%(ew_label[ii]): EW84[ii]})
-                tree_spec.update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii]})
-                tree_spec.update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii]})
-                tree_spec.update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii]})
-                tree_spec.update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii]})
-                tree_spec.update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii]})
-                tree_spec.update({'L_%s_16'%(ew_label[ii]): L16[ii]})
-                tree_spec.update({'L_%s_50'%(ew_label[ii]): L50[ii]})
-                tree_spec.update({'L_%s_84'%(ew_label[ii]): L84[ii]})
+                tree_spec['model'].update({'EW_%s_16'%(ew_label[ii]): EW16[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_50'%(ew_label[ii]): EW50[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_84'%(ew_label[ii]): EW84[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii] * u.AA})
+                tree_spec['model'].update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii] / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii] / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii] / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'L_%s_16'%(ew_label[ii]): L16[ii] * u.erg / u.s})
+                tree_spec['model'].update({'L_%s_50'%(ew_label[ii]): L50[ii] * u.erg / u.s})
+                tree_spec['model'].update({'L_%s_84'%(ew_label[ii]): L84[ii] * u.erg / u.s})
         except:
             pass
 
         # Each component
         # Stellar
-        tree_spec.update({'wave_model_stel': x0})
+        tree_spec['model'].update({'wave_stel': x0 * u.AA})
         for aa in range(len(age)):
-            tree_spec.update({'f_model_stel_%d'%aa: f_50_comp[aa,:]})
+            tree_spec['model'].update({'fnu_stel_%d'%aa: f_50_comp[aa,:] / (c / np.square(x0[:]) / d) * Cnu_to_Jy * u.uJy})
         if MB.f_dust:
             # dust
-            tree_spec.update({'wave_model_dust': x1_dust})
-            tree_spec.update({'f_model_dust': ytmp_dust50})            
+            tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
+            tree_spec['model'].update({'fnu_dust': ytmp_dust50 / (c / np.square(x1_dust[:]) / d) * Cnu_to_Jy * u.uJy})
+
         # BB for dust
-        tree_spec.update({'wave_obs': xbb})
-        tree_spec.update({'f_obs': fybb[:] * c / np.square(xbb[:]) / d})
-        tree_spec.update({'e_obs': eybb[:] * c / np.square(xbb[:]) / d})
+        tree_spec['obs'].update({'wave_bb': xbb * u.AA})
+        tree_spec['obs'].update({'fnu_bb': fybb[:] * c / np.square(xbb[:]) / d * Cnu_to_Jy * u.uJy})
+        tree_spec['obs'].update({'enu_bb': eybb[:] * c / np.square(xbb[:]) / d * Cnu_to_Jy * u.uJy})
         # grism:
         if f_grsm:
-            tree_spec.update({'fg0_obs': fg0 * c/np.square(xg0)/d})
-            tree_spec.update({'eg0_obs': eg0 * c/np.square(xg0)/d})
-            tree_spec.update({'wg0_obs': xg0})
-            tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
-            tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
-            tree_spec.update({'wg1_obs': xg1})
-            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d})
-            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d})
-            tree_spec.update({'wg2_obs': xg2})
+            tree_spec['obs'].update({'fg0': fg0 * c/np.square(xg0)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg0': eg0 * c/np.square(xg0)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'wg0': xg0 * u.AA})
+            tree_spec['obs'].update({'fg1': fg1 * c/np.square(xg1)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg1': eg1 * c/np.square(xg1)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'wg1': xg1 * u.AA})
+            tree_spec['obs'].update({'fg2': fg2 * c/np.square(xg2)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg2': eg2 * c/np.square(xg2)/d * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'wg2': xg2 * u.AA})
 
         af = asdf.AsdfFile(tree_spec)
-        af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
+        af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
 
     #
     # SED params in plot
