@@ -142,7 +142,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     else:
         MB.fnc = Func_tau(MB) # Set up the number of Age/ZZ
         MB.bfnc = Basic_tau(MB)
-        
+
     #
     # Make templates based on input redsfift.
     #
@@ -183,7 +183,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     try:
         aftmp = MB.af
     except:
-        MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+        MB.af = asdf.open(os.path.join(MB.DIR_TMP, 'spec_all_' + MB.ID + '.asdf'))
 
     if fplt <= 2:
         #

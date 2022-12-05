@@ -637,8 +637,15 @@ class Mainbody():
         except:
             self.force_agefix = False
 
-        print('\n')
+        # SFH prior;
+        # try:
+        #     self.norder_sfh_prior = int(inputs['norder_sfh_prior'])
+        #     self.f_prior_sfh = True
+        # except:
+        #     self.norder_sfh_prior = None
+        #     self.f_prior_sfh = False
 
+        print('\n')
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
