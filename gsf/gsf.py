@@ -109,7 +109,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
 def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, 
     f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, 
     skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None, 
-    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19):
+    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True, f_prior_sfh=False, norder_sfh_prior=3):
     '''
     Purpose
     -------
@@ -191,7 +191,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         #
         MB.zprev = MB.zgal 
         MB.ndim_keep = MB.ndim
-        flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
+        flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
+            f_prior_sfh=f_prior_sfh, norder_sfh_prior=norder_sfh_prior)
         while (flag_suc and flag_suc!=2):
 
             MB.ndim = MB.ndim_keep
@@ -209,7 +210,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
             print('Going into another round with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini)
+            flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
+                f_prior_sfh=f_prior_sfh, norder_sfh_prior=norder_sfh_prior)
 
         # Total calculation time
         stop = timeit.default_timer()
@@ -234,7 +236,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=figpdf, save_sed=save_sed, mmax=mmax,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
-        f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale)
+        f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
 
     '''
     if fplt == 4:

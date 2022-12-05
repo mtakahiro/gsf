@@ -1581,7 +1581,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3):
         '''
         Main module of this script.
 
@@ -1752,7 +1752,8 @@ class Mainbody():
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                             moves=moves, maxiter=1e6,\
-                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 'f_prior_sfh':f_prior_sfh},\
+                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 
+                            'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
                             )
                         # Run MCMC
                         nburn = int(self.nmc/10)
@@ -1772,7 +1773,8 @@ class Mainbody():
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                         moves=moves, maxiter=1e4,\
-                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_prior_sfh':f_prior_sfh},\
+                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 
+                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
                         )
 
                 else:
@@ -1781,7 +1783,8 @@ class Mainbody():
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
                         #moves=moves,\
-                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 'f_prior_sfh':f_prior_sfh},\
+                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 
+                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
                         )
 
                 if check_converge:
