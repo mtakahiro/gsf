@@ -15,7 +15,6 @@ from astropy.convolution import convolve, convolve_fft
 # Custom modules
 from .function import *
 from .function_igm import *
-col  = ['b', 'skyblue', 'g', 'orange', 'r']
 
 
 def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
@@ -290,7 +289,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tmp_norm : float
         Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
     '''
-
     inputs = MB.inputs
     ID = MB.ID
     age = MB.age
@@ -597,7 +595,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 # IGM attenuation.
                 ###################
                 if f_IGM:
-                    spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    # spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    MB.x_HI = x_HI
                     spec_mul[ss,:] = spec_av_tmp
 
                 # Distance;
@@ -687,7 +687,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         spec_mul_neb[zz,uu,:][con_neb] = 0
                         
                         if f_IGM:
-                            spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            # spec_neb_av_tmp = masongronke_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
                         spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
@@ -728,6 +730,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     #########################
     # Summarize the templates
     #########################
+    tree['id'] = ID
+    tree['z'] = zbest
+    try:
+        tree['x_HI'] = x_HI
+    except:
+        pass
+
     tree.update({'spec' : tree_spec})
     tree.update({'spec_full' : tree_spec_full})
     tree.update({'ML' : tree_ML})
@@ -1201,7 +1210,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 # IGM attenuation.
                 ##################
                 if f_IGM:
-                    spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    # spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
                 else:
                     spec_av_tmp = spec_mul[ss,:]
 
@@ -1277,7 +1287,8 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                         spec_mul_neb[zz,uu,:][con_neb] = 0
                         
                         if f_IGM:
-                            spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                            spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
                         spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
@@ -1311,6 +1322,12 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     #########################
     # Summarize the templates
     #########################
+    tree['id'] = ID
+    tree['z'] = zbest
+    try:
+        tree['x_HI'] = x_HI
+    except:
+        pass
     tree.update({'spec' : tree_spec})
     tree.update({'spec_full' : tree_spec_full})
     tree.update({'ML' : tree_ML})

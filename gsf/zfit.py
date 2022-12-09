@@ -64,12 +64,10 @@ def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, inclu
     ey02 = np.append(ey01,ey2)
 
     if include_photometry and len(fy_bb)>0:
-        # print('Including bb photometry in the redshift fit...')
         fcon = np.append(fy02,fy_bb)
         eycon = np.append(ey02,ey_bb)
         wht = 1./np.square(eycon)
     else:
-        # print('Not including bb photometry in the redshift fit...')
         fcon = fy02
         eycon = ey02
         wht = 1./np.square(eycon)

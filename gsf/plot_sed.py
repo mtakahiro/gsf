@@ -20,7 +20,8 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
+    x1min=4000):
     '''
     Parameters
     ----------
@@ -53,18 +54,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     from astropy.io import ascii
     import time
 
-    if f_silence:
-        try:
-            import matplotlib
-            matplotlib.use("Agg")
-        except:
-            print('matplotlib Agg backend is not found.')
-            pass
-    else:
-        try:
-            matplotlib.use("MacOSX")
-        except:
-            pass
+    # if f_silence:
+    #     try:
+    #         import matplotlib
+    #         matplotlib.use("Agg")
+    #     except:
+    #         print('matplotlib Agg backend is not found.')
+    #         pass
+    # else:
+    #     try:
+    #         matplotlib.use("MacOSX")
+    #     except:
+    #         pass
 
     def gaus(x,a,x0,sigma):
         return a*exp(-(x-x0)**2/(2*sigma**2))
@@ -281,7 +282,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         f_plot_resid = False
         print('Grism data. f_plot_resid is turned off.')
-
     else:
         if f_plot_resid:
             fig_mosaic = """
@@ -293,7 +293,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = axes['A']
         else:
-            fig = plt.figure(figsize=(5.5,2.))
+            if f_plot_filter:
+                fig = plt.figure(figsize=(5.5,2.))
+            else:
+                fig = plt.figure(figsize=(5.5,1.8))
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
 
@@ -495,17 +498,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #############
     # Main result
     #############
-    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1)
+    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
 
     xboxl = 17000
     xboxu = 28000
 
-    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=11)
-    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=11,labelpad=-2)
+    ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
+    ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
 
-    x1min = 2000
     x1max = 100000
+    if x1max < np.max(xbb):
+        x1max = np.max(xbb) * 1.5
+    if x1min > np.min(xbb[conbb_ymax]):
+        x1min = np.min(xbb[conbb_ymax]) / 1.5
+
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
     if MB.f_dust:
@@ -513,12 +520,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
         xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
 
-    #if x1max < np.max(xbb[conbb_ymax]):
-    #    x1max = np.max(xbb[conbb_ymax]) * 1.5
-    if x1max < np.max(xbb):
-        x1max = np.max(xbb) * 1.5
-    if x1min > np.min(xbb[conbb_ymax]):
-        x1min = np.min(xbb[conbb_ymax]) / 1.5
+    if x1min > 2500:
+        xticks = xticks[1:]
+        xlabels = xlabels[1:]
 
     ax1.set_xlim(x1min, x1max)
     ax1.set_xscale('log')
@@ -527,7 +531,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     else:
         scl_yaxis = 0.1
     ax1.set_ylim(-ymax*scl_yaxis,ymax)
-    ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+
+    if False:
+        ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=7)
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
@@ -1122,6 +1128,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         # Version;
         import gsf
+        from astropy import units as u
         hdr['version'] = gsf.__version__
 
         # Write;
@@ -1137,69 +1144,75 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             'library': '%s'%(LIBRARY),
             'nimf': '%s'%(nimf),
             'scale': scale,
+            'm0set': MB.m0set,
             'version_gsf': gsf.__version__
         }
+        tree_spec['model'] = {}
+        tree_spec['obs'] = {}
+        Cnu_to_Jy = 10**((m0set-23.9)) # to microJy.
 
         # BB;
-        tree_spec.update({'wave': lbb})
-        tree_spec.update({'fnu_16': fbb16_nu})
-        tree_spec.update({'fnu_50': fbb_nu})
-        tree_spec.update({'fnu_84': fbb84_nu})
+        tree_spec['model'].update({'wave_bb': lbb * u.AA})
+        tree_spec['model'].update({'fnu_bb_16': fbb16_nu * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
         # full spectrum;
-        tree_spec.update({'wave_model': x1_tot})
-        tree_spec.update({'f_model_16': ytmp16})
-        tree_spec.update({'f_model_50': ytmp50})
-        tree_spec.update({'f_model_84': ytmp84})
+        tree_spec['model'].update({'wave': x1_tot * u.AA})
+        tree_spec['model'].update({'fnu_16': ytmp16 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_50': ytmp50 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_84': ytmp84 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
 
         # EW;
         try:
             for ii in range(len(EW50)):
-                tree_spec.update({'EW_%s_16'%(ew_label[ii]): EW16[ii]})
-                tree_spec.update({'EW_%s_50'%(ew_label[ii]): EW50[ii]})
-                tree_spec.update({'EW_%s_84'%(ew_label[ii]): EW84[ii]})
-                tree_spec.update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii]})
-                tree_spec.update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii]})
-                tree_spec.update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii]})
-                tree_spec.update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii]})
-                tree_spec.update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii]})
-                tree_spec.update({'L_%s_16'%(ew_label[ii]): L16[ii]})
-                tree_spec.update({'L_%s_50'%(ew_label[ii]): L50[ii]})
-                tree_spec.update({'L_%s_84'%(ew_label[ii]): L84[ii]})
+                tree_spec['model'].update({'EW_%s_16'%(ew_label[ii]): EW16[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_50'%(ew_label[ii]): EW50[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_84'%(ew_label[ii]): EW84[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii] * u.AA})
+                tree_spec['model'].update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii] / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii] / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii] / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'L_%s_16'%(ew_label[ii]): L16[ii] * u.erg / u.s})
+                tree_spec['model'].update({'L_%s_50'%(ew_label[ii]): L50[ii] * u.erg / u.s})
+                tree_spec['model'].update({'L_%s_84'%(ew_label[ii]): L84[ii] * u.erg / u.s})
         except:
             pass
 
         # Each component
         # Stellar
-        tree_spec.update({'wave_model_stel': x0})
+        tree_spec['model'].update({'wave_stel': x0 * u.AA})
         for aa in range(len(age)):
-            tree_spec.update({'f_model_stel_%d'%aa: f_50_comp[aa,:]})
+            tree_spec['model'].update({'fnu_stel_%d'%aa: f_50_comp[aa,:] / (c / np.square(x0[:]) / d) * Cnu_to_Jy * u.uJy})
         if MB.f_dust:
             # dust
-            tree_spec.update({'wave_model_dust': x1_dust})
-            tree_spec.update({'f_model_dust': ytmp_dust50})            
-        # BB for dust
-        tree_spec.update({'wave_obs': xbb})
-        tree_spec.update({'f_obs': fybb[:] * c / np.square(xbb[:]) / d})
-        tree_spec.update({'e_obs': eybb[:] * c / np.square(xbb[:]) / d})
+            tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
+            tree_spec['model'].update({'fnu_dust': ytmp_dust50 / (c / np.square(x1_dust[:]) / d) * Cnu_to_Jy * u.uJy})
+
+        # Obs BB
+        tree_spec['obs'].update({'wave_bb': xbb * u.AA})
+        tree_spec['obs'].update({'fnu_bb': fybb[:] * Cnu_to_Jy * u.uJy})
+        tree_spec['obs'].update({'enu_bb': eybb[:] * Cnu_to_Jy * u.uJy})
         # grism:
         if f_grsm:
-            tree_spec.update({'fg0_obs': fg0 * c/np.square(xg0)/d})
-            tree_spec.update({'eg0_obs': eg0 * c/np.square(xg0)/d})
-            tree_spec.update({'wg0_obs': xg0})
-            tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d})
-            tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d})
-            tree_spec.update({'wg1_obs': xg1})
-            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d})
-            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d})
-            tree_spec.update({'wg2_obs': xg2})
+            tree_spec['obs'].update({'fg0': fg0 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg0': eg0 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'wg0': xg0 * u.AA})
+            tree_spec['obs'].update({'fg1': fg1 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg1': eg1 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'wg1': xg1 * u.AA})
+            tree_spec['obs'].update({'fg2': fg2 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'eg2': eg2 * Cnu_to_Jy * u.uJy})
+            tree_spec['obs'].update({'wg2': xg2 * u.AA})
 
         af = asdf.AsdfFile(tree_spec)
-        af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
+        af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
 
     #
     # SED params in plot
     #
     if f_label:
+        fs_label = 8
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
@@ -1211,12 +1224,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ylabel = ymax*0.25
 
         if f_grsm:
-            ax1.text(0.02, 0.7, label,\
-            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ax1.text(0.02, 0.68, label,\
+            fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
         else:
-            ax1.text(0.02, 0.7, label,\
-            fontsize=6, bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+            ax1.text(0.02, 0.68, label,\
+            fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
 
     ax1.xaxis.labelpad = -3

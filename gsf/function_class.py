@@ -5,6 +5,7 @@ import asdf
 
 from .function import *
 from .basic_func import Basic
+from .function_igm import dijkstra_igm_abs
 
 
 class Func:
@@ -173,7 +174,7 @@ class Func:
         return lib
 
 
-    def open_spec_fits_dir(self, nage:int, nz:int, kk, Av00:float, zgal:float, A00:float):
+    def open_spec_fits_dir(self, nage:int, nz:int, kk, Av00:float, zgal:float, A00:float, f_IGM=True):
         '''
         Load template in obs range.
         But for weird template.
@@ -430,7 +431,8 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False):
+    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False,
+        f_IGM=True):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -509,6 +511,7 @@ class Func:
         
         self.MB.logMtmp = np.log10(Mtot)
 
+        # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
@@ -532,8 +535,8 @@ class Func:
             yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
         else:
             yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        xxd *= (1.+zmc)
 
+        xxd *= (1.+zmc)
         if self.dust_model != 0:
             # This may be needed when not calzetti model
             nrd_yyd = np.zeros((len(nrd),3), dtype=float)

@@ -2,6 +2,153 @@ from scipy import asarray as ar,exp
 import numpy as np
 import sys
 from scipy.integrate import simps
+from scipy import integrate
+
+
+def get_XI(z, zout=6, zin=8):
+	'''
+	Very simplified model.
+	'''
+	zs = np.linspace(zout, zin, 100)
+	if z < zout:
+		XI = 0
+	elif z > zin:
+		XI = 1.
+	else:
+		XI = (z-zout) / (zin-zout) * 1.0
+
+	return XI
+
+
+def get_dtdz(z, zs, dtdzs):
+	'''
+	'''
+	iix = np.argmin(np.abs(zs[:-1]-z))
+	return dtdzs[iix]
+
+
+def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5, zobs=6, xLLL=1400):
+	'''
+	Purpose
+	-------
+
+	Parameters
+	----------
+	xtmp : float array
+		Rest-frame wavelength, in AA.
+	ytmp : float array
+		flux, in f_lambda.
+	zin : target redshift of IGM application
+
+	Returns
+	-------
+	IGM attenuated flux.
+	'''
+	if cosmo == None:
+		from astropy.cosmology import WMAP9 as cosmo
+
+	tau = np.zeros(len(xtmp), dtype=float)
+	xobs = xtmp * (1.*zin)
+	ytmp_abs = np.zeros(len(ytmp), float)
+	zs = np.linspace(zobs,zin,1000)
+
+	xtmp_obs = xtmp * (1+zin)
+	x_HI = 0.8
+	T = 1e0 #1e4 # K
+	sigma_0 = 5.9e-14 * (T / 1e4)**(-1/2) # cm2
+	a_V = 4.7e-4  * (T / 1e4)**(-1/2) # 
+	nu_a = 2.46e15 #Hz
+	k_B = 1.380649e-23 / (1e3)**2 #m2 kg s-2 K-1 * (km/m)**2 = km2 kg/s2/K
+	m_p = 1.67262192e-27 #kilograms
+	delta_nu_d = nu_a * np.sqrt(2 * k_B * T / m_p / ckms**2)
+
+	dtdzs = (cosmo.age(zs)[0:-1].value - cosmo.age(zs)[1:].value) * 1e9 * 365.25 * 3600 * 24 / np.diff(zs) # s
+
+	# xLL = 1390
+	for ii in range(len(xtmp_obs)):
+		if xtmp[ii] < xLL:
+			tau[ii] = 100
+		elif xtmp[ii] < xLLL:
+			nu = c / xtmp_obs[ii] # Hz
+			x = (nu - nu_a) / delta_nu_d
+			phi_x = get_H(x,a_V) #
+
+			# tau[ii] = integrate.quad(lambda z: ckms * get_dtdz(z, zs, dtdzs) * x_HI * sigma_0 * phi_x, zobs, zin)[0] *  get_column(zin, cosmo)
+			tau[ii] = integrate.quad(lambda z: ckms * get_dtdz(z, zs, dtdzs) * x_HI * (1.88e-7 * (1+z)**3) * sigma_0 * phi_x, zobs, zin)[0]
+			print(tau[ii], xtmp_obs[ii])
+		else:
+			tau[ii] = 1e-9
+
+	# R_b1 = 0.0 # Mpc
+	# x_D = 0.8 # neutral fraction
+	#NH = get_column(zin, cosmo)
+	ytmp_abs = ytmp * np.exp(-tau)
+	# con = ()
+	# ytmp_abs[con] = ytmp[con] * np.exp(-tau[con])
+
+	return ytmp_abs
+
+
+def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5, 
+	R_b1=1.0, delta_v_0=600, alpha_x=1.0):
+	'''
+	Purpose
+	-------
+	Apply IMG-attenuation of Dijikstra (2014).
+	https://www.cambridge.org/core/services/aop-cambridge-core/content/view/S1323358014000332
+
+	Parameters
+	----------
+	xtmp : float array
+		Rest-frame wavelength, in AA.
+	ytmp : float array
+		flux, in f_lambda.
+	zin : 
+		target redshift of IGM application
+	R_b1 : float
+		Bubble size, in Mpc
+
+	Returns
+	-------
+	IGM attenuated flux.
+	'''
+	import scipy.interpolate as interpolate
+	if cosmo == None:
+		from astropy.cosmology import WMAP9 as cosmo
+
+	tau = np.zeros(len(xtmp), dtype=float)
+	xobs = xtmp * (1.*zin)
+	ytmp_abs = np.zeros(len(ytmp), float)
+
+	xtmp_obs = xtmp * (1+zin)
+
+	x_HI = get_XI(zin) # neutral fraction
+	x_D = alpha_x * x_HI # x_D is not clear..
+	delta_lam = (xtmp - xLL) * (zin + 1)
+	delta_lam_fine = (np.linspace(900,2000,1000) - xLL) * (zin + 1)
+
+	delta_v = ckms * delta_lam_fine / (xLL * (1.+zin))
+	delta_v_b1 = delta_v
+	if R_b1>0:
+		delta_v_b1 += cosmo.H(zin).value * R_b1 / (1.+zin) # km / (Mpc s) * Mpc
+
+	tau_fine = 2.3 * x_D * (delta_v_b1/delta_v_0)**(-1) * ((1+zin)/10)**(3/2)
+	con_tau = (tau_fine < 0) | (delta_v_b1 == 0)
+	tau_fine[con_tau] = 100
+
+	fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='nearest', fill_value="extrapolate")
+	tau = fint(delta_lam)
+
+	# import matplotlib.pyplot as plt
+	# plt.close()
+	# plt.plot(xtmp, tau[:] )
+	# plt.xlim(1200,1500)
+	# plt.show()
+	# hoge
+
+	ytmp_abs = ytmp * np.exp(-tau)
+
+	return ytmp_abs
 
 
 def madau_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216.):
@@ -25,10 +172,9 @@ def madau_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216.):
 	if cosmo == None:
 		from astropy.cosmology import WMAP9 as cosmo
 
-	tau = np.zeros(len(xtmp), dtype='float')
-	#xLL = 912.
+	tau = np.zeros(len(xtmp), dtype=float)
 	xobs = xtmp * (1.*zin)
-	ytmp_abs = np.zeros(len(ytmp), 'float')
+	ytmp_abs = np.zeros(len(ytmp), float)
 
 	NH = get_column(zin, cosmo)
 	tau = (NH/1.6e17) * (xtmp/xLL)**(3.)

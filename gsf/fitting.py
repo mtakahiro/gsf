@@ -637,8 +637,15 @@ class Mainbody():
         except:
             self.force_agefix = False
 
-        print('\n')
+        # SFH prior;
+        # try:
+        #     self.norder_sfh_prior = int(inputs['norder_sfh_prior'])
+        #     self.f_prior_sfh = True
+        # except:
+        #     self.norder_sfh_prior = None
+        #     self.f_prior_sfh = False
 
+        print('\n')
 
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
@@ -886,7 +893,7 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
         zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
-        f_norm=True, f_lambda=False, zmax=20, fit_photometry=False, f_exclude_negative=False):
+        f_norm=True, f_lambda=False, zmax=20, include_bb=False, f_exclude_negative=False):
         '''
         Purpose
         -------
@@ -909,8 +916,8 @@ class Mainbody():
             Minimum redshift uncertainty.
         snlim : float
             SN limit for data points. Those below the number will be cut from the fit.
-        f_bb_zfit : bool
-            Redshift fitting if only BB data. If False, returns nothing.
+        include_bb : bool
+            Turn this True if Redshift fitting is requred for only BB data.
         f_line_check : bool
             If True, line masking.
         priors : dict, optional
@@ -942,16 +949,10 @@ class Mainbody():
         sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        if fit_photometry:
+        if include_bb:
             con_cz = ()#(sn>snlim)
         else:
             con_cz = (self.dict['NR']<NRbb_lim) #& (sn>snlim)
-
-        if len(self.dict['fy'][con_cz])==0:
-            if f_bb_zfit:
-                con_cz = ()#(sn>snlim)
-            else:
-                return 'y'
 
         if f_exclude_negative:
             con_cz &= (sn>snlim)
@@ -1004,7 +1005,10 @@ class Mainbody():
         self.p_prior = prior_s
 
         # Plot;
-        if self.fzvis==1:
+        if len(self.dict['fy'][con_cz])==0:
+            return 'y'
+
+        if self.fzvis==1 and (include_bb | len(fy_cz)>0):
             import matplotlib as mpl
             mpl.use('TkAgg')
             data_model = np.zeros((len(x_cz),4),'float')
@@ -1027,8 +1031,13 @@ class Mainbody():
             print('############################')
             print('Start MCMC for redshift fit')
             print('############################')
-            res_cz, fitc_cz = check_redshift(fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.zgal, self.z_prior, self.p_prior, \
-                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, include_photometry=False)
+            res_cz, fitc_cz = check_redshift(
+                fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), 
+                self.zgal, self.z_prior, self.p_prior,
+                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
+                include_photometry=include_photometry_zfit
+                )
+
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
             scl_cz0 = np.percentile(res_cz.flatchain['Cz0'], [16,50,84])
             scl_cz1 = np.percentile(res_cz.flatchain['Cz1'], [16,50,84])
@@ -1361,24 +1370,30 @@ class Mainbody():
             self.Aini = 1
 
         if self.SFH_FORM==-99:
+            self.age_vary = []
             if len(self.age) != len(self.aamin):
                 for aa in range(len(self.age)):
                     if aa not in self.aamin:
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1                    
+                        self.age_vary.append(False)
                     else:
                         fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
+                        self.age_vary.append(True)
             else:
                 for aa in range(len(self.age)):
                     if self.age[aa] == 99:
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
+                        self.age_vary.append(False)
                     elif self.age[aa]>agemax and not self.force_agefix:
                         print('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
+                        self.age_vary.append(False)
                     else:
                         fit_params.add('A'+str(aa), value=self.Aini, min=self.Amin, max=self.Amax)
+                        self.age_vary.append(True)
 
         else:
             for aa in range(self.npeak):
@@ -1581,7 +1596,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3):
         '''
         Main module of this script.
 
@@ -1671,7 +1686,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, fit_photometry=False)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=False)
 
         #################################################
         # Gor for mcmc phase
@@ -1752,7 +1767,8 @@ class Mainbody():
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                             args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                             moves=moves, maxiter=1e6,\
-                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 'f_prior_sfh':f_prior_sfh},\
+                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 
+                            'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
                             )
                         # Run MCMC
                         nburn = int(self.nmc/10)
@@ -1772,7 +1788,8 @@ class Mainbody():
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
                         moves=moves, maxiter=1e4,\
-                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_prior_sfh':f_prior_sfh},\
+                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 
+                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
                         )
 
                 else:
@@ -1781,7 +1798,8 @@ class Mainbody():
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
                         #moves=moves,\
-                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 'f_prior_sfh':f_prior_sfh},\
+                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 
+                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
                         )
 
                 if check_converge:

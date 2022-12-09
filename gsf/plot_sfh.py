@@ -17,11 +17,9 @@ from .function_class import Func
 from .basic_func import Basic
 from .function_igm import *
 
-lcb   = '#4682b4' # line color, blue
-sfrllim = 1e-20
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/', \
-    dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
+def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
+    dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
     f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=True):
     '''
     Purpose
@@ -131,7 +129,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID + '.cat'
+        file = os.path.join(DIR_TMP, 'spec_obs_' + ID + '.cat')
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -330,14 +328,17 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             Arand = np.random.uniform(-eA[aa],eA[aa])
             Zrand = np.random.uniform(-eZ[aa],eZ[aa])
             f_m_sur = sedpar0['frac_mass_survive_%d'%nZtmp][aa]
-            
-            # quantity in log scale;
-            AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
-            AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
-            SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # / ml
-            ZM[aa, mm] = ZZtmp[aa] + Zrand
-            ZMM[aa, mm]= ZZtmp[aa] + AAtmp[aa] + np.log10(mslist[aa]) + Zrand
-            ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
+
+            if True:# Age limit here?
+                # quantity in log scale;
+                AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
+                AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
+                SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # / ml
+                ZM[aa, mm] = ZZtmp[aa] + Zrand
+                ZMM[aa, mm]= ZZtmp[aa] + AAtmp[aa] + np.log10(mslist[aa]) + Zrand
+                ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
+            if SF[aa, mm] < -10:
+                SF[aa, mm] = np.nan
 
             # SFR from SED. This will be converted in log later;
             if age[aa]<=tset_SFR_SED:
@@ -408,14 +409,14 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     ZLp = np.zeros((len(age),3), dtype='float')
     SFp = np.zeros((len(age),3), dtype='float')
     for aa in range(len(age)):
-       AMp[aa,:] = np.percentile(AM[aa,:], [16,50,84])
-       ACp[aa,:] = np.percentile(AC[aa,:], [16,50,84])
-       ZMp[aa,:] = np.percentile(ZM[aa,:], [16,50,84])
-       ZCp[aa,:] = np.percentile(ZC[aa,:], [16,50,84])
-       ZLp[aa,:] = np.percentile(ZL[aa,:], [16,50,84])
-       SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
+       AMp[aa,:] = np.nanpercentile(AM[aa,:], [16,50,84])
+       ACp[aa,:] = np.nanpercentile(AC[aa,:], [16,50,84])
+       ZMp[aa,:] = np.nanpercentile(ZM[aa,:], [16,50,84])
+       ZCp[aa,:] = np.nanpercentile(ZC[aa,:], [16,50,84])
+       ZLp[aa,:] = np.nanpercentile(ZL[aa,:], [16,50,84])
+       SFp[aa,:] = np.nanpercentile(SF[aa,:], [16,50,84])
 
-    SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
+    SFR_SED_med = np.nanpercentile(SFR_SED[:],[16,50,84])
     if f_SFRSED_plot:
         ax1.errorbar(delt_tot/2./1e9, SFR_SED_med[1], xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
         yerr=[[SFR_SED_med[1]-SFR_SED_med[0]],[SFR_SED_med[2]-SFR_SED_med[1]]], \
@@ -481,9 +482,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     #
     ax2label = ''
     ax2.fill_between(age[conA], ACp[:,0][conA], ACp[:,2][conA], linestyle='-', color='k', alpha=0.5)
-    ax2.errorbar(age[conA], ACp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9], \
+    ax2.errorbar(age[conA], ACp[:,1][conA], xerr=[delTl[:][conA]/1e9,delTu[:][conA]/1e9],
         yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label, zorder=1)
-    #ax2.scatter(age[conA], ACp[:,1][conA], marker='.', c='k', s=msize)
 
     if f_symbol:
         tbnd = 0.0001
@@ -491,7 +491,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
         for ii in range(len(age)):
             aa = len(age) -1 - ii
             agebin = np.arange(0, age[aa], delTu[aa]/1e10)
-            ax2.errorbar(age[aa], ACp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], \
+            ax2.errorbar(age[aa], ACp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]],
                 yerr=[[ACp[aa,1]-ACp[aa,0]],[ACp[aa,2]-ACp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=2)
 
             tbnd = age[aa]+delT[aa]/2./1e9
@@ -662,6 +662,51 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     file_sfh = MB.DIR_OUT + 'SFH_' + ID + '.fits'
     hdu.writeto(file_sfh, overwrite=True)
 
+    # ASDF;
+    from astropy import units as u
+
+    # ASDF;
+    tree_sfh = {
+        'id': ID,
+        'redshift': '%.3f'%zbes,
+        'nimf': '%s'%(IMF),
+        'version_gsf': gsf.__version__
+    }
+    tree_sfh['sfh'] = {}
+
+    for ii in range(len(percs)):
+        tree_sfh['zmc_%d'%percs[ii]] = '%.3f'%zmc[ii]
+    for ii in range(len(percs)):
+        tree_sfh['Mstel_%d'%percs[ii]] = '%.3f'%(10**ACP[ii]) * u.Msun
+    for ii in range(len(percs)):
+        tree_sfh['SFR_%d'%percs[ii]] = '%.3f'%(10**SFR_SED_med[ii]) * u.Msun / u.yr
+    for ii in range(len(percs)):
+        tree_sfh['Z_MW_%d'%percs[ii]] = '%.3f'%ZCP[ii]
+    for ii in range(len(percs)):
+        tree_sfh['Z_LW_%d'%percs[ii]] = '%.3f'%ZLP[ii]
+    for ii in range(len(percs)):
+        tree_sfh['T_MW_%d'%percs[ii]] = '%.3f'%(10**TMW[ii]) * u.Gyr
+    for ii in range(len(percs)):
+        tree_sfh['T_LW_%d'%percs[ii]] = '%.3f'%(10**TLW[ii]) * u.Gyr
+    for ii in range(len(percs)):
+        tree_sfh['AV_%d'%percs[ii]] = '%.3f'%Avtmp[ii]*u.mag
+
+    tree_sfh['sfh'].update({'time': age * u.Gyr})
+    tree_sfh['sfh'].update({'time_l': (age[:]-delTl[:]/1e9) * u.Gyr})
+    tree_sfh['sfh'].update({'time_u': (age[:]+delTl[:]/1e9) * u.Gyr})
+    tree_sfh['sfh'].update({'SFR16': 10**SFp[:,0] * u.Msun / u.yr})
+    tree_sfh['sfh'].update({'SFR50': 10**SFp[:,1] * u.Msun / u.yr})
+    tree_sfh['sfh'].update({'SFR84': 10**SFp[:,2] * u.Msun / u.yr})
+    tree_sfh['sfh'].update({'Mstel16': 10**ACp[:,0] * u.Msun})
+    tree_sfh['sfh'].update({'Mstel50': 10**ACp[:,1] * u.Msun})
+    tree_sfh['sfh'].update({'Mstel84': 10**ACp[:,2] * u.Msun})
+    tree_sfh['sfh'].update({'logZ16': ZCp[:,0]})
+    tree_sfh['sfh'].update({'logZ50': ZCp[:,1]})
+    tree_sfh['sfh'].update({'logZ84': ZCp[:,2]})
+
+    af = asdf.AsdfFile(tree_sfh)
+    af.write_to(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)), all_array_compression='zlib')
+
     # Attach to MB;
     MB.sfh_tlook = age
     MB.sfh_tlookl= delTl[:][conA]/1e9
@@ -678,7 +723,7 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
 
     # SFH
     zzall = np.arange(1.,12,0.01)
-    Tall = MB.cosmo.age(zzall).value # , use_flat=True, **cosmo)
+    Tall = MB.cosmo.age(zzall).value
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
@@ -697,8 +742,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
 
         y3min, y3max = np.min(Z), np.max(Z)+delZZl
         ax4.set_xlim(Txmin, Txmax)
-        # There is a bug that lower size does not match with label.
-        # ax4.set_ylim(y3min-delZZl, y3max+delZZl)
         ax4.set_ylim(y3min, y3max)
         ax4.set_xscale('log')
 
@@ -708,7 +751,6 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
             Zlabels = []
             for Ztmp in Zticks:
                 Zlabels.append('%.1f'%(Ztmp))
-            #ax4.set_yticklabels(Zlabels)
 
         ax4.yaxis.labelpad = -2
         ax4.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
@@ -750,7 +792,8 @@ def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, 
     fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
 
-def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
+def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
+    sfrllim=1e-20):
     '''
     Parameters
     ----------
@@ -799,8 +842,8 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.):
     return tt, yy, yyms
 
 
-def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/', \
-    dust_model=0, DIR_TMP='./templates/', f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, \
+def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/',
+    dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
     f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
     '''
     Purpose
