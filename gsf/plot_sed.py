@@ -334,8 +334,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
         try:
             # For any data removed fron fit (i.e. IRAC excess):
-            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
-            NR_ex = data_ex['col1']
+            #data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
+            NR_ex = MB.data['bb_obs_removed']['NR']# data_ex['col1']
         except:
             NR_ex = []
 
@@ -357,15 +357,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     try:
         col_ex = 'lawngreen'
         # Currently, this file is made after FILTER_SKIP;
-        data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
-        x_ex = data_ex['col2']
-        fy_ex = data_ex['col3']
-        ey_ex = data_ex['col4']
-        ex_ex = data_ex['col5']
+        # data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
+        # x_ex = data_ex['col2']
+        # fy_ex = data_ex['col3']
+        # ey_ex = data_ex['col4']
+        # ex_ex = data_ex['col5']
+        x_ex, fy_ex, ey_ex, ex_ex = MB.data['bb_obs_removed']['x'], MB.data['bb_obs_removed']['fy'], MB.data['bb_obs_removed']['ey'], MB.data['bb_obs_removed']['ex']
 
-        ax1.errorbar(x_ex, fy_ex * c / np.square(x_ex) / d, \
-        xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5)
-        ax1.scatter(x_ex, fy_ex * c / np.square(x_ex) / d, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30)
+        ax1.errorbar(
+            x_ex, fy_ex * c / np.square(x_ex) / d,
+            xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d, color='k', linestyle='', linewidth=0.5, zorder=5
+            )
+        ax1.scatter(
+            x_ex, fy_ex * c / np.square(x_ex) / d, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30
+            )
         f_exclude = True
     except:
         pass
@@ -751,7 +756,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         #if f_grsm:
             #ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
-        # Get FUV flux;
+        # Get FUV flux density;
         Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk] = 0
@@ -864,9 +869,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
         from scipy import special
-        #x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
-        #f_erf = special.erf(x_erf)
-        #chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
         x_erf = (ey_revised[con_up] - ysump[con_up]) / (np.sqrt(2) * ey_revised[con_up])
         f_erf = special.erf(x_erf)
         chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey_revised[con_up] * (1 + f_erf)) )
@@ -1070,15 +1072,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
             hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
+            # Flam to Fnu
+            hdr['LUV16'] = 10**(-0.4*hdr['MUV16'])
+            hdr['LUV50'] = 10**(-0.4*hdr['MUV50'])
+            hdr['LUV84'] = 10**(-0.4*hdr['MUV84'])
+
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
             hdr['FUV50'] = np.percentile(Fuv28[:],50)
             hdr['FUV84'] = np.percentile(Fuv28[:],84)
 
-            # LIR
-            hdr['LIR16'] = np.percentile(Lir[:],16)
-            hdr['LIR50'] = np.percentile(Lir[:],50)
-            hdr['LIR84'] = np.percentile(Lir[:],84)
+            # # LIR
+            # hdr['LIR16'] = np.percentile(Lir[:],16)
+            # hdr['LIR50'] = np.percentile(Lir[:],50)
+            # hdr['LIR84'] = np.percentile(Lir[:],84)
         except:
             pass
 

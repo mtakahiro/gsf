@@ -272,7 +272,10 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
     tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True):
     '''
+    Purpose
+    -------
     Make SPECTRA at given z and filter set.
+    Also, after v1.8, through this function library and data are register to the main class object, MB.
     
     Parameters
     ----------
@@ -298,7 +301,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     DIR_TMP = MB.DIR_TMP
     zbest = MB.zgal
     tau0 = MB.tau0
-    Lsun = 3.839 * 1e33 #erg s-1
 
     try:
         af = MB.af0
@@ -606,7 +608,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                 # Flam to Fnu
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_mul[ss,:], m0set=MB.m0set)
-                spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                spec_mul_nu[ss,:] *= MB.Lsun / (4.*np.pi*DL**2/(1.+zbest))
                 # (1.+zbest) takes acount of the change in delta lam by redshifting.
                 # Note that this is valid only when F_nu.
                 # When Flambda, /(1.+zbest) will be *(1.+zbest).
@@ -694,7 +696,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                         spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
                         
-                        spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                        spec_mul_neb_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
                         
                         spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                         ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
@@ -855,9 +857,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # For observation.
     # Write out for the Multi-component fitting.
     ##########################################
-    fw = open(DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
+    MB.data = {}
+    file_tmp = 'tmp_library.txt'
+    fw = open(file_tmp,'w')#DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
-
     for ii in range(len(lm)):
         g_offset = 1000 * fgrs[ii]
         if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
@@ -872,9 +875,19 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
         else:
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
-
     fw.close()
-    fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
+
+    # register;
+    dat = ascii.read(file_tmp, format='no_header')
+    NR = dat['col1']
+    x = dat['col2']
+    fy00 = dat['col3']
+    ey00 = dat['col4']
+    dict_spec_obs = {'NR':NR, 'x':x, 'fy':fy00, 'ey':ey00}
+    MB.data['spec_obs'] = dict_spec_obs
+
+    # fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
+    fw = open(file_tmp,'w')#DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
     if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)
         for ii in range(len(ebb_d[:])):
@@ -883,10 +896,21 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             else:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
     fw.close()
+    if MB.f_dust:
+        dat = ascii.read(file_tmp, format='no_header')
+        nr_d = dat['col1']
+        x_d = dat['col2']
+        fy_d = dat['col3']
+        ey_d = dat['col4']
+        dict_spec_fir_obs = {'NR':nr_d, 'x':x_d, 'fy':fy_d, 'ey':ey_d}
+        MB.data['spec_fir_obs'] = dict_spec_fir_obs
 
     # BB phot
-    fw = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
-    fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_removed.cat', 'w')
+    fw = open(file_tmp,'w')#DIR_TMP + 'spec_obs_' + ID + '.cat', 'w')
+    # fw = open(DIR_TMP + 'bb_obs_' + ID + '.cat', 'w')
+    file_tmp2 = 'tmp_library2.txt'
+    fw_rem = open(file_tmp2, 'w')
+    # fw_rem = open(DIR_TMP + 'bb_obs_' + ID + '_removed.cat', 'w')
     for ii in range(len(ltmpbb[0,:])):
         if SFILT[ii] in SKIPFILT:# data point to be skiped;
             fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2., SFILT[ii]))
@@ -899,9 +923,29 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
     fw.close()
     fw_rem.close()
+    # register;
+    dat = ascii.read(file_tmp, format='no_header')
+    NRbb = dat['col1']
+    xbb  = dat['col2']
+    fybb = dat['col3']
+    eybb = dat['col4']
+    exbb = dat['col5']
+    dict_bb_obs = {'NR':NRbb, 'x':xbb, 'fy':fybb, 'ey':eybb, 'ex':exbb}
+    MB.data['bb_obs'] = dict_bb_obs
+    try:
+        dat = ascii.read(file_tmp2, format='no_header')
+        x_ex = dat['col2']
+        fy_ex = dat['col3']
+        ey_ex = dat['col4']
+        ex_ex = dat['col5']
+        dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
+        MB.data['bb_obs_removed'] = dict_bb_obs_removed
+    except:
+        pass
 
-    # Dust
-    fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
+    # Dust; Not sure where this is being used...
+    fw = open(file_tmp,'w')
+    # fw = open(DIR_TMP + 'bb_dust_obs_' + ID + '.cat', 'w')
     if MB.f_dust:
         for ii in range(len(ebb_d[:])):
             if ebb_d[ii]>ebblim:
@@ -909,8 +953,21 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             else:
                 fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii], DFWFILT[ii]/2., DFILT[ii]))
     fw.close()
+    if MB.f_dust:
+        dat = ascii.read(file_tmp, format='no_header')
+        nr_bb_d = dat['col1']
+        x_bb_d = dat['col2']
+        fy_bb_d = dat['col3']
+        ey_bb_d = dat['col4']
+        dict_bb_fir_obs = {'NR':nr_bb_d, 'x':x_bb_d, 'fy':fy_bb_d, 'ey':ey_bb_d}
+        MB.data['bb_fir_obs'] = dict_bb_fir_obs
 
     print('Done making templates at z=%.2f.\n'%zbest)
+    os.system('rm %s %s'%(file_tmp, file_tmp2))
+
+    # Loading template;
+    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    MB.af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
 
     return True
 
@@ -1198,7 +1255,6 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                 if ss == 0 and tt == 0 and zz == 0:
                     DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
                     wavetmp = wave*(1.+zbest)
-                    Lsun = 3.839 * 1e33 #erg s-1
 
                 if delwave>0:
                     fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin], kind='nearest', fill_value="extrapolate")
@@ -1217,7 +1273,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
                 spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp, m0set=MB.m0set)
 
-                spec_mul_nu[ss,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                spec_mul_nu[ss,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
                 spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                 ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
 
@@ -1292,7 +1348,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                             spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
                         spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
-                        spec_mul_neb_nu[zz,uu,:] *= Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                        spec_mul_neb_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
                         spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                         ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
 
@@ -1428,7 +1484,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         else:
             fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
 
-    fw.close()
+    fw.close()    
+
+
     fw = open(DIR_TMP + 'spec_dust_obs_' + ID + '.cat', 'w')
     if MB.f_dust:
         nbblast = len(ltmpbb[0,:])+len(lm)

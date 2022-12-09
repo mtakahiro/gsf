@@ -281,7 +281,6 @@ class Mainbody():
             self.band['%s_fwhm'%(self.filts[ii])] = np.max(fd[:,1][con]) - np.min(fd[:,1][con])       
 
         # Filter response curve directory, for RF colors.
-        #self.filts_rf = ['u','b','v','j','sz']
         self.filts_rf = '93,141,95,220,160'.split(',')
         self.band_rf = {}
         for ii in range(len(self.filts_rf)):
@@ -675,12 +674,12 @@ class Mainbody():
         ##############
         # Spectrum
         ##############
-        dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
-        NR = dat['col1']
-        x = dat['col2']
-        fy00 = dat['col3']
-        ey00 = dat['col4']
-
+        # dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
+        # NR = dat['col1']
+        # x = dat['col2']
+        # fy00 = dat['col3']
+        # ey00 = dat['col4']
+        NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
         con0 = (NR<1000)
         xx0 = x[con0]
         fy0 = fy00[con0] * Cz0
@@ -698,12 +697,13 @@ class Mainbody():
         # Broadband
         ##############
         try:
-            dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '.cat', format='no_header')
-            NRbb = dat['col1']
-            xbb  = dat['col2']
-            fybb = dat['col3']
-            eybb = dat['col4']
-            exbb = dat['col5']
+            # dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '.cat', format='no_header')
+            # NRbb = dat['col1']
+            # xbb  = dat['col2']
+            # fybb = dat['col3']
+            # eybb = dat['col4']
+            # exbb = dat['col5']
+            NRbb, xbb, fybb, eybb, exbb = self.data['bb_obs']['NR'], self.data['bb_obs']['x'], self.data['bb_obs']['fy'], self.data['bb_obs']['ey'], self.data['bb_obs']['ex']
         except: # if no BB;
             print('No BB data.')
             NRbb = np.asarray([])
@@ -740,11 +740,12 @@ class Mainbody():
 
         # Append data;
         if add_fir:
-            dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '.cat')
-            nr_d = dat_d['col1']
-            x_d = dat_d['col2']
-            fy_d = dat_d['col3']
-            ey_d = dat_d['col4']
+            # dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '.cat')
+            # nr_d = dat_d['col1']
+            # x_d = dat_d['col2']
+            # fy_d = dat_d['col3']
+            # ey_d = dat_d['col4']
+            nr_d, x_d, fy_d, ey_d = self.data['spec_dust_obs']['NR'], self.data['spec_dust_obs']['x'], self.data['spec_dust_obs']['fy'], self.data['spec_dust_obs']['ey']
 
             NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
@@ -1504,7 +1505,7 @@ class Mainbody():
         print('#################')
         print('Preparing library')
         print('#################\n')
-       # Load Spectral library;
+        # Load Spectral library;
         self.lib = self.fnc.open_spec_fits(fall=0)
         self.lib_all = self.fnc.open_spec_fits(fall=1, orig=True)
 
@@ -1525,7 +1526,6 @@ class Mainbody():
         self.nwalk_cz = int(self.inputs['NWALKZ'])
         self.ZEVOL = int(self.inputs['ZEVOL'])
         self.fzvis = int(self.inputs['ZVIS'])
-        #self.fneld = int(self.inputs['FNELD'])
         if self.f_nested:
             print('Nested sample is on. Nelder is used for time saving analysis.')
             self.fneld = 1 

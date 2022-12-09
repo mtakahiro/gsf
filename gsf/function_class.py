@@ -51,12 +51,12 @@ class Func:
         Load template in obs range.
         '''
         ID0 = self.MB.ID
-        tau0= self.MB.tau0 #[0.01,0.02,0.03]
+        tau0= self.MB.tau0
 
         from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
+        bfnc = self.MB.bfnc
 
         # ASDF;
         if fall == 0:
@@ -101,8 +101,8 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
+        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if fall == 0:
             app = ''
@@ -185,8 +185,8 @@ class Func:
         AA = self.AA
         bfnc = self.MB.bfnc
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
+        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
         hdu0 = self.MB.af['spec_full']
@@ -772,6 +772,7 @@ class Func_tau:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
+        DIR_TMP = self.DIR_TMP
 
         # ASDF;
         if fall == 0:
@@ -781,7 +782,6 @@ class Func_tau:
             app = 'all_'
             hdu0 = self.MB.af['spec_full']
 
-        DIR_TMP = self.DIR_TMP
         NZ = len(ZZ)
         NT = self.MB.ntau
         NA = self.MB.nage
@@ -818,8 +818,8 @@ class Func_tau:
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
+        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if fall == 0:
             app = ''
@@ -832,7 +832,7 @@ class Func_tau:
         nr = hdu0['colnum']
         xx = hdu0['wavelength']
         
-        lib  = np.zeros((len(nr), 2+len(self.Temp)), dtype='float')
+        lib = np.zeros((len(nr), 2+len(self.Temp)), dtype='float')
         lib[:,0] = nr[:]
         lib[:,1] = xx[:]
 
@@ -898,17 +898,17 @@ class Func_tau:
         But for weird template.
         '''
         from astropy.io import fits
-        tau0= self.tau0 #[0.01,0.02,0.03]
+        tau0= self.tau0
         ZZ = self.ZZ
         AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
+        bfnc = self.MB.bfnc
 
-        self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
+        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
+        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
         hdu0 = self.MB.af['spec_full']
-        DIR_TMP = self.DIR_TMP #'./templates/'
+        DIR_TMP = self.DIR_TMP
 
         pp = 0
         zz = nz
@@ -954,8 +954,8 @@ class Func_tau:
 
         b = nrd_yyd
         nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort     = nrd_yyd_sort[:,1]
-        xxd_sort     = nrd_yyd_sort[:,2]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
 

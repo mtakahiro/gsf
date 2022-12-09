@@ -481,14 +481,18 @@ def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
         # Equivalent to the following;
-        I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
-        I2  = simps(lamS*1.,lamS)        #Numerator
-        fnu = I1 #/I2                     #Average flux density
+        I1 = simps(spec*lamS*1.,lamS)
+        I2 = simps(lamS*1.,lamS)
+        fnu = I1
     return fnu
 
 
 def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
     '''
+    Purpose
+    -------
+    Get RF UV (or any wavelength) flux density.
+
     Parameters
     ----------
     lmtmp : 
@@ -498,15 +502,14 @@ def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
     
     Returns
     -------
-    Convolved flux density. Not integrated sum.
+    Flux density estimated over lmin:lmax. Not integrated sum.
     '''
     con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
-        # Equivalent to the following;
-        I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
-        I2  = simps(lamS*1.,lamS)                  #Numerator
-        fnu = I1/I2                               #Average flux density
+        I1 = simps(spec*lamS*1.,lamS)
+        I2 = simps(lamS*1.,lamS)
+        fnu = I1/I2
     else:
         fnu = None
     return fnu
