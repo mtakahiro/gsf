@@ -374,7 +374,7 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def get_total_flux(self, par, f_Alog=True, lib_all=True, pp=0, lib=None):
+    def get_total_flux(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
         '''
         Purpose
         -------
@@ -402,17 +402,18 @@ class Func:
                 Z = par['Z'+str(aa)]
                 NZ = self.MB.bfnc.Z2NZ(Z)
 
-            # Check limit;
-            if par['A'+str(aa)] < self.MB.Amin:
-                par['A'+str(aa)] = self.MB.Amin
-            if par['A'+str(aa)] > self.MB.Amax:
-                par['A'+str(aa)] = self.MB.Amax
-            # Z limit:
-            if aa == 0 or self.MB.ZEVOL == 1:
-                if par['Z%d'%aa] < self.MB.Zmin:
-                    par['Z%d'%aa] = self.MB.Zmin
-                if par['Z%d'%aa] > self.MB.Zmax:
-                    par['Z%d'%aa] = self.MB.Zmax
+            if f_check_limit:
+                # Check limit;
+                if par['A'+str(aa)] < self.MB.Amin:
+                    par['A'+str(aa)] = self.MB.Amin
+                if par['A'+str(aa)] > self.MB.Amax:
+                    par['A'+str(aa)] = self.MB.Amax
+                # Z limit:
+                if aa == 0 or self.MB.ZEVOL == 1:
+                    if par['Z%d'%aa] < self.MB.Zmin:
+                        par['Z%d'%aa] = self.MB.Zmin
+                    if par['Z%d'%aa] > self.MB.Zmax:
+                        par['Z%d'%aa] = self.MB.Zmax
 
             # Is A in logspace?
             if f_Alog:
@@ -422,8 +423,9 @@ class Func:
 
             coln = int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + aa)
 
-            mslist = self.MB.af['ML']['ML_'+str(NZ)][aa]
-            Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
+            if f_get_Mtot:
+                mslist = self.MB.af['ML']['ML_'+str(NZ)][aa]
+                Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
             if aa == 0:
                 nr = lib[:,0]
@@ -432,7 +434,10 @@ class Func:
             else:
                 yy += A00 * lib[:,coln]
 
-        return nr, xx, yy, Mtot
+        if f_get_Mtot:
+            return nr, xx, yy, Mtot
+        else:
+            return nr, xx, yy
 
 
     def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, lib=None):
@@ -500,7 +505,7 @@ class Func:
 
 
     def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False,
-        f_IGM=True, deltaz_lim=99):
+        f_IGM=True, deltaz_lim=0.1):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -533,24 +538,31 @@ class Func:
         if par['Av'] > self.MB.Avmax:
             par['Av'] = self.MB.Avmax
 
-        nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp)
-        self.MB.logMtmp = np.log10(Mtot)
+        nr, xx, yy = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, f_get_Mtot=False)
+        # self.MB.logMtmp = np.log10(Mtot)
 
         # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            if np.abs(zmc - self.MB.zgal) > deltaz_lim:
-                print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
-                # This takes too much time;
-                self.MB.zgal = zmc
-                if self.MB.SFH_FORM == -99:
-                    flag_suc = maketemp(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
-                else:
-                    flag_suc = maketemp_tau(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
-                # Load Spectral library;
-                self.lib = self.open_spec_fits(fall=0)
-                self.lib_all = self.open_spec_fits(fall=1, orig=True)
+            if np.abs(zmc - self.MB.zgal) > deltaz_lim and not self.MB.f_spec:
+                # print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
+
+                # @@@ This only work for BB only data set.
                 # Get total flux;
-                nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp)
+                if lib_all:
+                    nr_full, xx_full, yy_full = nr, xx, yy
+                else:
+                    nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True, pp=pp, f_get_Mtot=False) # Get full spectrum; OBSERVED wavelength range at z=MB.zgal;
+                
+                xx, yy = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
+
+                if False:
+                    import matplotlib.pyplot as plt
+                    plt.plot(xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, color='r')
+                    plt.scatter(ltmpbb, ftmpbb, color='r')
+                    plt.plot(xx_full, yy_full, color='b')
+                    plt.scatter(xx, yy, color='b')
+                    plt.show()
+                    hoge
                 xx_s = xx
                 yy_s = yy
             else:
