@@ -654,6 +654,26 @@ def savecpkl(data, cpklfile, verbose=True):
     f.close()
 
 
+def apply_dust(yy, xx, nr, Av, dust_model=0):
+	'''
+	xx : float array
+		RF Wavelength
+	'''
+	if dust_model == 0:
+		yyd, xxd, nrd = dust_calz(xx, yy, Av, nr)
+	elif dust_model == 1:
+		yyd, xxd, nrd = dust_mw(xx, yy, Av, nr)
+	elif dust_model == 2: # LMC
+		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+	elif dust_model == 3: # SMC
+		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+	elif dust_model == 4: # Kriek&Conroy with gamma=-0.2
+		yyd, xxd, nrd = dust_kc(xx, yy, Av, nr, Rv=4.05, gamma=-0.2)
+	else:
+		yyd, xxd, nrd = dust_calz(xx, yy, Av, nr)
+	return yyd, xxd, nrd
+
+
 def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
     '''
     For general purpose (Noll+09).

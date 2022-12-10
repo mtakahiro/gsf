@@ -169,7 +169,7 @@ class Func:
         return lib
 
 
-    def open_spec_fits_dir(self, nage:int, nz:int, kk, Av00:float, zgal:float, A00:float, f_IGM=True):
+    def open_spec_fits_dir(self, nage:int, nz:int, kk, Av:float, zgal:float, A00:float, f_IGM=True):
         '''
         Load template in obs range.
         But for weird template.
@@ -205,19 +205,7 @@ class Func:
         yy = flamtonu(xx, yy0, m0set=self.MB.m0set)
         lib[:,2] = yy[:]
 
-        if self.dust_model == 0: # Calzetti
-            yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
-        elif self.dust_model == 1: # MW
-            yyd, xxd, nrd = dust_mw(xx, yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx, yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx, yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx, yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            print('No valid entry. Dust model is set to Calzetti')
-            yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
 
         xxd *= (1.+zgal)
         nrd_yyd = np.zeros((len(nrd),3), dtype='float')
@@ -282,39 +270,26 @@ class Func:
         xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
         yy = lib[:, coln]
 
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zgal), yy, Av, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av, nr)
-
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
         xxd *= (1.+zgal)
 
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort = nrd_yyd_sort[:,1]
-        xxd_sort = nrd_yyd_sort[:,2]
+        if self.dust_model != 0:
+            # This may be needed when not calzetti model
+            nrd_yyd = np.zeros((len(nrd),3), dtype=float)
+            nrd_yyd[:,0] = nrd[:]
+            nrd_yyd[:,1] = yyd[:]
+            nrd_yyd[:,2] = xxd[:]
+            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+            nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
         if f_bb:
-            fil_cen, fil_flux = filconv_fast(self.MB, xxd_sort, Amp * yyd_sort)
-            return Amp * yyd_sort, xxd_sort, fil_flux, fil_cen
+            fil_cen, fil_flux = filconv_fast(self.MB, xxd, Amp * yyd)
+            return Amp * yyd, xxd, fil_flux, fil_cen
         else:
-            return Amp * yyd_sort, xxd_sort
+            return Amp * yyd, xxd
 
 
-    def tmp03(self, A00, Av00, nmodel, Z, zgal, lib):
+    def tmp03(self, A00, Av, nmodel, Z, zgal, lib):
         '''
         '''
         tau0= self.tau0 #[0.01,0.02,0.03]
@@ -334,19 +309,7 @@ class Func:
         xx  = lib[:,1] # This is OBSERVED wavelength range at z=zgal
         yy  = lib[:,coln]
 
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
-
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
 
         xxd *= (1.+zgal)
 
@@ -363,7 +326,7 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp03_neb(self, A00, Av00, logU, nmodel, Z, zgal, lib, f_apply_dust=True, EBVratio=2.27):
+    def tmp03_neb(self, A00, Av, logU, nmodel, Z, zgal, lib, f_apply_dust=True, EBVratio=2.27):
         '''
         EBVratio : float
             E(B-V)_neb / E(B-V)_st. 
@@ -378,7 +341,7 @@ class Func:
         NU = len(self.MB.logUs)
 
         # Dust attenuation to nebulae
-        Av00 *= EBVratio
+        Av *= EBVratio
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
         pp = int(pp0[0])
@@ -392,18 +355,7 @@ class Func:
         yy = lib[:,coln]
 
         if f_apply_dust:
-            if self.dust_model == 0:
-                yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
-            elif self.dust_model == 1:
-                yyd, xxd, nrd = dust_mw(xx/(1.+zgal), yy, Av00, nr)
-            elif self.dust_model == 2: # LMC
-                yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-            elif self.dust_model == 3: # SMC
-                yyd, xxd, nrd = dust_gen(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-            elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-                yyd, xxd, nrd = dust_kc(xx/(1.+zgal), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-            else:
-                yyd, xxd, nrd = dust_calz(xx/(1.+zgal), yy, Av00, nr)
+            yyd, xxd, nrd = apply_dust(yy, xx/(1+zgal), nr, Av, dust_model=self.dust_model)
         else:
             yyd, xxd, nrd = yy, xx, nr
 
@@ -422,44 +374,33 @@ class Func:
         return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False,
-        f_IGM=True):
+    def get_total_flux(self, par, f_Alog=True, lib_all=True, pp=0, lib=None):
         '''
-        Makes model template with a given param set.
-        Also dust attenuation.
+        Purpose
+        -------
+        get total flux for a given set of parameter.
 
         Parameters
         ----------
-        nprec : int
-            Precision when redshift is refined. 
+        par : library
+            contains parameters
+
+        Returns
+        -------
+        xx : 
+            OBSERVED wavelength range at z=MB.zgal
         '''
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
         Mtot:float = 0
-
-        if f_val:
-            par = par.params
-
-        if self.MB.fzmc == 1:
-            try:
-                zmc = par['zmc'].value
-            except:
-                zmc = self.MB.zgal
-        else:
-            zmc = self.MB.zgal
-
-        # AV limit;
-        if par['Av'] < self.MB.Avmin:
-            par['Av'] = self.MB.Avmin
-        if par['Av'] > self.MB.Avmax:
-            par['Av'] = self.MB.Avmax
-        Av00 = par['Av']
+        if lib == None:
+            if lib_all:
+                lib = self.MB.lib_all
+            else:
+                lib = self.MB.lib
 
         for aa in range(self.MB.npeak):
             if self.MB.ZEVOL==1 or aa == 0:
                 Z = par['Z'+str(aa)]
-                NZ = bfnc.Z2NZ(Z)
+                NZ = self.MB.bfnc.Z2NZ(Z)
 
             # Check limit;
             if par['A'+str(aa)] < self.MB.Amin:
@@ -479,71 +420,143 @@ class Func:
             else:
                 A00 = par['A'+str(aa)]
 
-            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + aa)
+            coln = int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + aa)
 
-            sedpar = self.MB.af['ML'] # For M/L
-            mslist = sedpar['ML_'+str(NZ)][aa]
+            mslist = self.MB.af['ML']['ML_'+str(NZ)][aa]
             Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
 
-            if lib_all:
-                if aa == 0:
-                    nr = self.MB.lib_all[:,0]
-                    xx = self.MB.lib_all[:,1] # This is OBSERVED wavelength range at z=zgal
-                    yy = A00 * self.MB.lib_all[:,coln]
-                else:
-                    yy += A00 * self.MB.lib_all[:,coln]
+            if aa == 0:
+                nr = lib[:,0]
+                xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+                yy = A00 * lib[:,coln]
             else:
-                if aa == 0:
-                    nr = self.MB.lib[:,0]
-                    xx = self.MB.lib[:,1] # This is OBSERVED wavelength range at z=zgal
-                    yy = A00 * self.MB.lib[:,coln]
-                else:
-                    yy += A00 * self.MB.lib[:,coln]
-        
+                yy += A00 * lib[:,coln]
+
+        return nr, xx, yy, Mtot
+
+
+    def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, lib=None):
+        '''
+        Purpose
+        -------
+        get total flux for a given set of parameter.
+
+        Parameters
+        ----------
+        par : library
+            contains parameters
+        '''
+        if lib == None:
+            if lib_all:
+                lib = self.MB.lib_neb_all
+            else:
+                lib = self.MB.lib_neb
+
+        aa = 0
+        if self.MB.ZEVOL==1 or aa == 0:
+            Z = par['Z'+str(aa)]
+            NZ = self.MB.bfnc.Z2NZ(Z)
+
+        try:
+            Aneb = par['Aneb']
+            logU = par['logU']
+            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
+        except: # This is exception for initial minimizing;
+            Aneb = -99
+            logU = self.MB.logUs[0]
+            nlogU = 0
+
+        # logU
+        NU = self.MB.nlogU
+
+        # Check limit;
+        if Aneb < self.MB.Amin:
+            Aneb = self.MB.Amin
+        if Aneb > self.MB.Amax:
+            Aneb = self.MB.Amax
+        # Z limit:
+        if aa == 0 or self.MB.ZEVOL == 1:
+            if par['Z%d'%aa] < self.MB.Zmin:
+                par['Z%d'%aa] = self.MB.Zmin
+            if par['Z%d'%aa] > self.MB.Zmax:
+                par['Z%d'%aa] = self.MB.Zmax
+
+        # Is A in logspace?
+        if f_Alog:
+            A00 = 10**Aneb
+        else:
+            A00 = Aneb
+
+        coln = int(2 + NZ*NU + nlogU)
+
+        if aa == 0:
+            nr = lib[:,0]
+            xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+            yy = A00 * lib[:,coln]
+        else:
+            yy += A00 * lib[:,coln]
+
+        return nr, xx, yy
+
+
+    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False,
+        f_IGM=True, deltaz_lim=99):
+        '''
+        Makes model template with a given param set.
+        Also dust attenuation.
+
+        Parameters
+        ----------
+        nprec : int
+            Precision when redshift is refined. 
+        deltaz_lim : float
+            limit in np.abs(zmc - self.MB.zgal).
+        '''
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = self.MB.bfnc
+
+        if f_val:
+            par = par.params
+
+        if self.MB.fzmc == 1:
+            try:
+                zmc = par['zmc'].value
+            except:
+                zmc = self.MB.zgal
+        else:
+            zmc = self.MB.zgal
+
+        # AV limit;
+        if par['Av'] < self.MB.Avmin:
+            par['Av'] = self.MB.Avmin
+        if par['Av'] > self.MB.Avmax:
+            par['Av'] = self.MB.Avmax
+
+        nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp)
         self.MB.logMtmp = np.log10(Mtot)
 
         # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            if True:
+            if np.abs(zmc - self.MB.zgal) > deltaz_lim:
+                print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
+                # This takes too much time;
+                self.MB.zgal = zmc
+                if self.MB.SFH_FORM == -99:
+                    flag_suc = maketemp(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
+                else:
+                    flag_suc = maketemp_tau(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
+                # Load Spectral library;
+                self.lib = self.open_spec_fits(fall=0)
+                self.lib_all = self.open_spec_fits(fall=1, orig=True)
+                # Get total flux;
+                nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp)
+                xx_s = xx
+                yy_s = yy
+            else:
                 fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
                 xx_s = xx / (1+self.MB.zgal) * (1+zmc)
                 yy_s = fint(xx_s)
-            else:
-                # This takes too much time;
-                # self.MB.zgal = zmc
-                # if self.MB.SFH_FORM == -99:
-                #     flag_suc = maketemp(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
-                # else:
-                #     flag_suc = maketemp_tau(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
-
-                # # Load Spectral library;
-                # self.lib = self.open_spec_fits(fall=0)
-                # self.lib_all = self.open_spec_fits(fall=1, orig=True)
-
-                # if self.MB.f_dust:
-                #     self.lib_dust = self.open_spec_dust_fits(fall=0)
-                #     self.lib_dust_all = self.open_spec_dust_fits(fall=1)
-                # if self.MB.fneb:
-                #     self.lib_neb = self.open_spec_neb_fits(fall=0)
-                #     self.lib_neb_all = self.open_spec_neb_fits(fall=1)
-
-                # if lib_all:
-                #     if aa == 0:
-                #         nr = self.MB.lib_all[:,0]
-                #         xx = self.MB.lib_all[:,1] # This is OBSERVED wavelength range at z=zgal
-                #         yy = A00 * self.MB.lib_all[:,coln]
-                #     else:
-                #         yy += A00 * self.MB.lib_all[:,coln]
-                # else:
-                #     if aa == 0:
-                #         nr = self.MB.lib[:,0]
-                #         xx = self.MB.lib[:,1] # This is OBSERVED wavelength range at z=zgal
-                #         yy = A00 * self.MB.lib[:,coln]
-                #     else:
-                #         yy += A00 * self.MB.lib[:,coln]
-
-                xx_s = xx
-                yy_s = yy
 
         else:
             xx_s = xx
@@ -552,18 +565,8 @@ class Func:
         xx = xx_s
         yy = yy_s
 
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        # Apply dust;
+        yyd, xxd, nrd = apply_dust(yy, xx/(1+zmc), nr, par['Av'], dust_model=self.dust_model)
 
         xxd *= (1.+zmc)
         if self.dust_model != 0:
@@ -616,63 +619,15 @@ class Func:
             par['Av'] = self.MB.Avmin
         if par['Av'] > self.MB.Avmax:
             par['Av'] = self.MB.Avmax
-        Av00 = par['Av']
+        Av = par['Av']
 
         # Dust attenuation to nebulae
-        Av00 *= EBVratio
+        Av *= EBVratio
 
-        aa = 0
-        if self.MB.ZEVOL==1 or aa == 0:
-            Z = par['Z'+str(aa)]
-            NZ = bfnc.Z2NZ(Z)
+        # Get total flux;
+        nr, xx, yy = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all)
 
-        try:
-            Aneb = par['Aneb']
-            logU = par['logU']
-            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
-        except: # This is exception for initial minimizing;
-            Aneb = -99
-            logU = self.MB.logUs[0]
-            nlogU = 0
-
-        # logU
-        NU = self.MB.nlogU
-
-        # Check limit;
-        if Aneb < self.MB.Amin:
-            Aneb = self.MB.Amin
-        if Aneb > self.MB.Amax:
-            Aneb = self.MB.Amax
-        # Z limit:
-        if aa == 0 or self.MB.ZEVOL == 1:
-            if par['Z%d'%aa] < self.MB.Zmin:
-                par['Z%d'%aa] = self.MB.Zmin
-            if par['Z%d'%aa] > self.MB.Zmax:
-                par['Z%d'%aa] = self.MB.Zmax
-
-        # Is A in logspace?
-        if f_Alog:
-            A00 = 10**Aneb
-        else:
-            A00 = Aneb
-
-        coln = int(2 + NZ*NU + nlogU)
-
-        if lib_all:
-            if aa == 0:
-                nr = self.MB.lib_neb_all[:,0]
-                xx = self.MB.lib_neb_all[:,1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib_neb_all[:,coln]
-            else:
-                yy += A00 * self.MB.lib_neb_all[:,coln]
-        else:
-            if aa == 0:
-                nr = self.MB.lib_neb[:, 0]
-                xx = self.MB.lib_neb[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib_neb[:,coln]
-            else:
-                yy += A00 * self.MB.lib_neb[:,coln]
-        
+        # Redshift refinement;
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
@@ -685,18 +640,7 @@ class Func:
         yy = yy_s
 
         if f_apply_dust:
-            if self.dust_model == 0:
-                yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-            elif self.dust_model == 1:
-                yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-            elif self.dust_model == 2: # LMC
-                yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-            elif self.dust_model == 3: # SMC
-                yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-            elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-                yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-            else:
-                yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+            yyd, xxd, nrd = apply_dust(yy, xx/(1+zmc), nr, Av, dust_model=self.dust_model)
             xxd *= (1.+zmc)
 
             if self.dust_model != 0:
@@ -840,8 +784,6 @@ class Func_tau:
         '''
         ID0 = self.MB.ID
         tau0= self.MB.tau0
-
-        from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc #Basic(ZZ)
@@ -882,8 +824,6 @@ class Func_tau:
         Loads template in obs range.
         '''
         ID0 = self.MB.ID
-
-        from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -920,19 +860,15 @@ class Func_tau:
         return lib
 
 
-    def open_spec_fits_dir(self, nage, nz, kk, Av00, zgal, A00):
+    def open_spec_fits_dir(self, nage, nz, kk, Av, zgal, A00):
         '''
         Loads template in obs range.
         But for weird template.
         '''
-        from astropy.io import fits
         tau0= self.tau0
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
-
-        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
         hdu0 = self.MB.af['spec_full']
@@ -960,32 +896,22 @@ class Func_tau:
         yy = flamtonu(xx, yy0, m0set=self.MB.m0set)
         lib[:,2] = yy[:]
 
-        if self.dust_model == 0: # Calzetti
-            yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
-        elif self.dust_model == 1: # MW
-            yyd, xxd, nrd = dust_mw(xx, yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx, yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx, yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx, yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            print('No valid entry. Dust model is set to Calzetti')
-            yyd, xxd, nrd = dust_calz(xx, yy, Av00, nr)
-
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
         xxd *= (1.+zgal)
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
 
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort = nrd_yyd_sort[:,1]
-        xxd_sort = nrd_yyd_sort[:,2]
+        if self.dust_model == 0:
+            return A00 * yyd, xxd
+        else:
+            nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+            nrd_yyd[:,0] = nrd[:]
+            nrd_yyd[:,1] = yyd[:]
+            nrd_yyd[:,2] = xxd[:]
 
-        return A00 * yyd_sort, xxd_sort
+            b = nrd_yyd
+            nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+            yyd_sort = nrd_yyd_sort[:,1]
+            xxd_sort = nrd_yyd_sort[:,2]
+            return A00 * yyd_sort, xxd_sort
 
 
     def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False, f_nrd=False):
@@ -1021,7 +947,7 @@ class Func_tau:
                 par['Av'] = self.MB.Avmin
             if par['Av'] > self.MB.Avmax:
                 par['Av'] = self.MB.Avmax
-        Av00 = par['Av']
+        Av = par['Av']
 
         for aa in range(self.MB.npeak):
             if self.MB.ZEVOL==1 or aa == 0:
@@ -1095,18 +1021,8 @@ class Func_tau:
         xx = xx_s
         yy = yy_s
 
-        if self.dust_model == 0:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 1:
-            yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-        elif self.dust_model == 2: # LMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-        elif self.dust_model == 3: # SMC
-            yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-        elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-            yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-        else:
-            yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zmc), nr, Av, dust_model=self.dust_model)
+
         xxd *= (1.+zmc)
 
         if self.dust_model == 0:
@@ -1164,7 +1080,7 @@ class Func_tau:
 
   
     def tmp04_neb(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
-        lib_all=False, f_nrd=False, f_apply_dust=True):
+        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -1179,6 +1095,12 @@ class Func_tau:
         bfnc = self.MB.bfnc
         Mtot = 0
         pp = 0
+
+        if lib == None:
+            if lib_all:
+                lib = self.MB.lib_all
+            else:
+                lib = self.MB.lib
 
         if f_val:
             par = par.params
@@ -1197,7 +1119,7 @@ class Func_tau:
                 par['Av'] = self.MB.Avmin
             if par['Av'] > self.MB.Avmax:
                 par['Av'] = self.MB.Avmax
-        Av00 = par['Av']
+        Av = par['Av']
 
         try:
             Aneb = par['Aneb']
@@ -1234,20 +1156,12 @@ class Func_tau:
             NZ = np.argmin(np.abs(self.MB.Zall-Z))
 
         coln = int(2 + NZ*NU + nlogU)
-        if lib_all:
-            if aa == 0:
-                nr = self.MB.lib_neb_all[:, 0]
-                xx = self.MB.lib_neb_all[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib_neb_all[:, coln]
-            else:
-                yy += A00 * self.MB.lib_neb_all[:, coln]
+        if aa == 0:
+            nr = lib[:, 0]
+            xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+            yy = A00 * lib[:, coln]
         else:
-            if aa == 0:
-                nr = self.MB.lib_neb[:, 0]
-                xx = self.MB.lib_neb[:, 1] # This is OBSERVED wavelength range at z=zgal
-                yy = A00 * self.MB.lib_neb[:, coln]
-            else:
-                yy += A00 * self.MB.lib_neb[:, coln]
+            yy += A00 * lib[:, coln]
         
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
@@ -1261,18 +1175,7 @@ class Func_tau:
         yy = yy_s
 
         if f_apply_dust:
-            if self.dust_model == 0:
-                yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
-            elif self.dust_model == 1:
-                yyd, xxd, nrd = dust_mw(xx/(1.+zmc), yy, Av00, nr)
-            elif self.dust_model == 2: # LMC
-                yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
-            elif self.dust_model == 3: # SMC
-                yyd, xxd, nrd = dust_gen(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
-            elif self.dust_model == 4: # Kriek&Conroy with gamma=-0.2
-                yyd, xxd, nrd = dust_kc(xx/(1.+zmc), yy, Av00, nr, Rv=4.05, gamma=-0.2)
-            else:
-                yyd, xxd, nrd = dust_calz(xx/(1.+zmc), yy, Av00, nr)
+            yyd, xxd, nrd = apply_dust(yy, xx/(1.+zmc), nr, Av, dust_model=self.dust_model)
             xxd *= (1.+zmc)
 
             nrd_yyd = np.zeros((len(nrd),3), dtype=float)

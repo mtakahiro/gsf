@@ -250,7 +250,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
             from .plot_sed import plot_sed_tau as plot_sed            
 
         if not skip_sfh:
-            plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=mmax,
+            plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax,
             dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
             f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED)
 

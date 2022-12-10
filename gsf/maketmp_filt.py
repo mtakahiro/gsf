@@ -1,4 +1,3 @@
-# The purpose of this code is to figure out Z and redshift (with 1-sig range).
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -12,7 +11,6 @@ from astropy.io import fits,ascii
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
 
-# Custom modules
 from .function import *
 from .function_igm import *
 

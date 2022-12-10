@@ -1,8 +1,7 @@
 import numpy as np
-from astropy.io import fits
 import matplotlib.pyplot as plt
 import os
-from astropy.io import ascii
+from astropy.io import ascii,fits
 
 from .function import get_ind
 
@@ -248,8 +247,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
 
 
-def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, \
-    Zsun=0.02):
+def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
     '''
     This is for the preparation of default template, with BPASS templates, at z=0.
     Should be run before SED fitting.
