@@ -50,6 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../fitting.html">Fitting process</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../prior.html">Prior</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../redshift_fitting.html">Redshift Fitting</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">gsf</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">gsf package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
@@ -751,8 +752,7 @@ Chabrier IMF, in default</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gsf.function_class.Func.get_template">
 <span class="sig-name descname"><span class="pre">get_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_Alog</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nprec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_nrd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_apply_dust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_IGM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deltaz_lim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_neb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">EBVratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2.27</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.get_template" title="Permalink to this definition"></a></dt>
-<dd><p>Makes model template for a nebular emission.
-This is only for nubular template, with len(A) = 1. Thus, aa=0 during the code.</p>
+<dd><p>Makes model template for a given parameter set, <code class="docutils literal notranslate"><span class="pre">par</span></code>.</p>
 <dl class="simple">
 <dt>nprec<span class="classifier">int</span></dt><dd><p>Precision when redshift is refined.</p>
 </dd>
@@ -1000,7 +1000,7 @@ Not for fitting, nor plotting.</p>
 <dt class="sig sig-object py" id="gsf.maketmp_filt.check_library">
 <span class="sig-prename descclassname"><span class="pre">gsf.maketmp_filt.</span></span><span class="sig-name descname"><span class="pre">check_library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">MB</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">af</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nround</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.maketmp_filt.check_library" title="Permalink to this definition"></a></dt>
 <dd><p>Check library if it has a consistency setup as input file.</p>
-<p>True is no problem.</p>
+<p>flag : bool</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1018,8 +1018,9 @@ Not for fitting, nor plotting.</p>
 <dt>phi<span class="classifier">float</span></dt><dd><p>Eq.34 of Draine &amp; Li 2007. (default: 0.055)
 ~0.055 g / (ergs/s)</p>
 </dd>
+<dt>DL<span class="classifier">float</span></dt><dd><p>in cm.</p>
+</dd>
 </dl>
-<p>DL : in cm.</p>
 <p>Interpolated dust emission in Fnu of m0=25.0. In units of Fnu/Msun</p>
 <p>umins = [‘0.10’, ‘0.15’, ‘0.20’, ‘0.30’, ‘0.40’, ‘0.50’, ‘0.70’, ‘0.80’, ‘1.00’, ‘1.20’,            ‘1.50’, ‘2.00’, ‘2.50’, ‘3.00’, ‘4.00’, ‘5.00’, ‘7.00’, ‘8.00’, ‘10.0’, ‘12.0’, ‘15.0’,            ‘20.0’, ‘25.0’]
 umaxs = [‘1e3’, ‘1e4’, ‘1e5’, ‘1e6’, ‘1e7’]</p>
