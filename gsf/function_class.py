@@ -48,15 +48,16 @@ class Func:
         self.f_af0 = False
 
 
-    def open_spec_fits(self, fall:int = 0, orig:bool = False):
+    def open_spec_fits(self, fall:int = 0, orig:bool = False, f_neb=False):
         '''
         Load template in obs range.
         '''
         ID0 = self.MB.ID
-        tau0= self.MB.tau0
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
+        tau0 = np.arange(0,1,1)
+        ntau0 = len(tau0)
 
         # ASDF;
         if fall == 0:
@@ -66,25 +67,44 @@ class Func:
             app = 'all_'
             hdu0 = self.MB.af['spec_full']
 
-        DIR_TMP = self.DIR_TMP
-        for pp in range(self.MB.ntau0):
-            for zz in range(len(ZZ)):
-                Z = ZZ[zz]
-                NZ = bfnc.Z2NZ(Z)
-                if zz == 0 and pp == 0:
-                    nr = hdu0['colnum']
-                    xx = hdu0['wavelength']
-                    lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float')
-                    lib[:,0] = nr[:]
-                    lib[:,1] = xx[:]
+        if not f_neb:
+            DIR_TMP = self.DIR_TMP
+            for pp in range(ntau0):
+                for zz in range(len(ZZ)):
+                    Z = ZZ[zz]
+                    NZ = bfnc.Z2NZ(Z)
+                    if zz == 0 and pp == 0:
+                        nr = hdu0['colnum']
+                        xx = hdu0['wavelength']
+                        lib = np.zeros((len(nr), 2+len(AA)*len(ZZ)*len(tau0)), dtype='float')
+                        lib[:,0] = nr[:]
+                        lib[:,1] = xx[:]
 
-                for aa in range(self.MB.npeak):
-                    coln = int(2+aa)
+                    for aa in range(self.MB.npeak):
+                        coln = int(2+aa)
+                        if orig:
+                            colname = 'fspec_orig_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+                        else:
+                            colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+                        colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
+                        lib[:,colnall] = hdu0[colname]
+        else:
+            NZ = len(ZZ)
+            NU = len(self.MB.logUs)
+            for zz,Z in enumerate(ZZ):
+                for uu,logU in enumerate(self.MB.logUs):
+                    if zz == 0 and uu == 0:
+                        nr = hdu0['colnum']
+                        xx = hdu0['wavelength']
+                        coln = int(2 + NZ * NU)
+                        lib = np.zeros((len(nr), coln), dtype=float)
+                        lib[:,0] = nr[:]
+                        lib[:,1] = xx[:]
                     if orig:
-                        colname = 'fspec_orig_' + str(zz) + '_' + str(aa) + '_' + str(pp)
+                        colname = 'fspec_orig_nebular_Z%d'%zz + '_logU%d'%uu
                     else:
-                        colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
-                    colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
+                        colname = 'fspec_nebular_Z%d'%zz + '_logU%d'%uu
+                    colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
                     lib[:,colnall] = hdu0[colname]
 
         return lib
@@ -128,6 +148,7 @@ class Func:
         return lib
 
 
+    """
     def open_spec_neb_fits(self, fall:int = 0, orig:bool = False):
         '''
         Loads template in obs range.
@@ -167,8 +188,9 @@ class Func:
                 lib[:,colnall] = hdu0[colname]
 
         return lib
+    """
 
-
+    """
     def open_spec_fits_dir(self, nage:int, nz:int, kk, Av:float, zgal:float, A00:float, f_IGM=True):
         '''
         Load template in obs range.
@@ -219,160 +241,7 @@ class Func:
         xxd_sort = nrd_yyd_sort[:,2]
 
         return A00 * yyd_sort, xxd_sort
-
-
-    def get_template(self, lib, Amp:float = 1.0, T:float = 1.0, Av:float = 0.0, Z:float = 0.0, zgal:float = 1.0, f_bb:bool = False, fneb=False):
-        '''
-        Gets an element template given a set of parameters.
-        Not necessarily the most efficient way, but easy to use.
-
-        Parameters:
-        -----------
-        lib : dict
-            library dictionary.
-        Amp : float
-            Amplitude of the target template. Note that each template has Lbol = 1e10Lsun.
-        T : float
-            Age, in Gyr.
-        Av : float
-            Dust attenuation, in mag.
-        Z : float
-            Metallicity, in log(Z/Zsun).
-        zgal : float
-            Redshift.
-        f_bb: bool
-            If calculate bb photometry for the spectrum requested.
-
-        Returns
-            flux : float array. Flux in Fnu. 
-            wavelength : float array. Wave in AA.
-            lcen, lflux : , if f_bb==True.
-
-        '''
-        bfnc = self.MB.bfnc
-        DIR_TMP = self.MB.DIR_TMP 
-        NZ  = bfnc.Z2NZ(Z)
-
-        pp0 = np.random.uniform(low=0, high=self.MB.ntau0, size=(1,))
-        pp  = int(pp0[0])
-        if pp>=self.MB.ntau0:
-            pp += -1
-
-        nmodel = np.argmin(np.abs(T-self.age[:]))
-        if T - self.age[nmodel] != 0:
-            print('T=%.2f is not found in age library. T=%.2f is used.'%(T,self.age[nmodel]))
-
-        if fneb:
-            coln = int(2 + pp*len(self.ZZ)*1 + NZ*1 + 0)
-        else:
-            coln = int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + nmodel)
-        nr = lib[:, 0]
-        xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-        yy = lib[:, coln]
-
-        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
-        xxd *= (1.+zgal)
-
-        if self.dust_model != 0:
-            # This may be needed when not calzetti model
-            nrd_yyd = np.zeros((len(nrd),3), dtype=float)
-            nrd_yyd[:,0] = nrd[:]
-            nrd_yyd[:,1] = yyd[:]
-            nrd_yyd[:,2] = xxd[:]
-            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-            nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
-
-        if f_bb:
-            fil_cen, fil_flux = filconv_fast(self.MB, xxd, Amp * yyd)
-            return Amp * yyd, xxd, fil_flux, fil_cen
-        else:
-            return Amp * yyd, xxd
-
-
-    def tmp03(self, A00, Av, nmodel, Z, zgal, lib):
-        '''
-        '''
-        tau0= self.tau0 #[0.01,0.02,0.03]
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
-        NZ  = bfnc.Z2NZ(Z)
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp  = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
-
-        coln= int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
-        nr  = lib[:,0]
-        xx  = lib[:,1] # This is OBSERVED wavelength range at z=zgal
-        yy  = lib[:,coln]
-
-        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
-
-        xxd *= (1.+zgal)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort = nrd_yyd_sort[:,1]
-        xxd_sort = nrd_yyd_sort[:,2]
-
-        return A00 * yyd_sort, xxd_sort
-
-
-    def tmp03_neb(self, A00, Av, logU, nmodel, Z, zgal, lib, f_apply_dust=True, EBVratio=2.27):
-        '''
-        EBVratio : float
-            E(B-V)_neb / E(B-V)_st. 
-            Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
-        '''
-        tau0 = self.tau0
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
-        DIR_TMP = self.MB.DIR_TMP
-        NZ = bfnc.Z2NZ(Z)
-        NU = len(self.MB.logUs)
-
-        # Dust attenuation to nebulae
-        Av *= EBVratio
-
-        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
-        pp = int(pp0[0])
-        if pp>=len(tau0):
-            pp += -1
-
-        nlogU = np.argmin(np.abs(self.MB.logUs - logU))
-        coln = int(2 + NZ*NU + nlogU)
-        nr = lib[:,0]
-        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
-        yy = lib[:,coln]
-
-        if f_apply_dust:
-            yyd, xxd, nrd = apply_dust(yy, xx/(1+zgal), nr, Av, dust_model=self.dust_model)
-        else:
-            yyd, xxd, nrd = yy, xx, nr
-
-        xxd *= (1.+zgal)
-
-        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-        nrd_yyd[:,0] = nrd[:]
-        nrd_yyd[:,1] = yyd[:]
-        nrd_yyd[:,2] = xxd[:]
-
-        b = nrd_yyd
-        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-        yyd_sort = nrd_yyd_sort[:,1]
-        xxd_sort = nrd_yyd_sort[:,2]
-
-        return A00 * yyd_sort, xxd_sort
-
+    """
 
     def get_total_flux(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
         '''
@@ -383,7 +252,7 @@ class Func:
         Parameters
         ----------
         par : library
-            contains parameters
+            contains parameters. Needs to include: ['Z','A']
 
         Returns
         -------
@@ -503,100 +372,104 @@ class Func:
 
         return nr, xx, yy
 
-
-    def tmp04(self, par, f_Alog:bool=True, nprec:int=1, pp:int = 0, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False,
-        f_IGM=True, deltaz_lim=0.1):
+    """
+    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib):
         '''
-        Makes model template with a given param set.
-        Also dust attenuation.
-
-        Parameters
-        ----------
-        nprec : int
-            Precision when redshift is refined. 
-        deltaz_lim : float
-            limit in np.abs(zmc - self.MB.zgal).
         '''
+        tau0= self.tau0
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
+        DIR_TMP = self.MB.DIR_TMP
+        NZ = bfnc.Z2NZ(Z)
 
-        if f_val:
-            par = par.params
+        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
+        pp = int(pp0[0])
+        if pp>=len(tau0):
+            pp += -1
 
-        if self.MB.fzmc == 1:
-            try:
-                zmc = par['zmc'].value
-            except:
-                zmc = self.MB.zgal
+        coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
+        nr = lib[:,0]
+        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        yy = lib[:,coln]
+
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
+
+        xxd *= (1.+zgal)
+
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+        nrd_yyd[:,0] = nrd[:]
+        nrd_yyd[:,1] = yyd[:]
+        nrd_yyd[:,2] = xxd[:]
+
+        b = nrd_yyd
+        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
+
+        return A00 * yyd_sort, xxd_sort
+    """
+
+    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, f_apply_dust=True, EBVratio=2.27):
+        '''
+        EBVratio : float
+            E(B-V)_neb / E(B-V)_st. 
+            Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
+
+        Notes
+        -----
+        This function is only used in plot_sed.py.
+        Common function for mebular and nonnebular temlates.
+        '''
+        tau0 = self.tau0
+        ZZ = self.ZZ
+        AA = self.AA
+        bfnc = self.MB.bfnc
+        DIR_TMP = self.MB.DIR_TMP
+        NZ = bfnc.Z2NZ(Z)
+
+        pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
+        pp = int(pp0[0])
+        if pp>=len(tau0):
+            pp += -1
+
+        if logU != None:
+            NU = len(self.MB.logUs)
+
+            # Dust attenuation to nebulae
+            Av *= EBVratio
+            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
+            coln = int(2 + NZ*NU + nlogU)
         else:
-            zmc = self.MB.zgal
+            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
 
-        # AV limit;
-        if par['Av'] < self.MB.Avmin:
-            par['Av'] = self.MB.Avmin
-        if par['Av'] > self.MB.Avmax:
-            par['Av'] = self.MB.Avmax
+        # 
+        nr = lib[:,0]
+        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        yy = lib[:,coln]
 
-        nr, xx, yy = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, f_get_Mtot=False)
-        # self.MB.logMtmp = np.log10(Mtot)
-
-        # @@@ Filter convolution may need to happpen here
-        if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            if np.abs(zmc - self.MB.zgal) > deltaz_lim and not self.MB.f_spec:
-                # print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
-
-                # @@@ This only work for BB only data set.
-                # Get total flux;
-                if lib_all:
-                    nr_full, xx_full, yy_full = nr, xx, yy
-                else:
-                    nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True, pp=pp, f_get_Mtot=False) # Get full spectrum; OBSERVED wavelength range at z=MB.zgal;
-                
-                xx, yy = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
-
-                if False:
-                    import matplotlib.pyplot as plt
-                    plt.plot(xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, color='r')
-                    plt.scatter(ltmpbb, ftmpbb, color='r')
-                    plt.plot(xx_full, yy_full, color='b')
-                    plt.scatter(xx, yy, color='b')
-                    plt.show()
-                    hoge
-                xx_s = xx
-                yy_s = yy
-            else:
-                fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-                xx_s = xx / (1+self.MB.zgal) * (1+zmc)
-                yy_s = fint(xx_s)
-
+        if f_apply_dust:
+            yyd, xxd, nrd = apply_dust(yy, xx/(1+zgal), nr, Av, dust_model=self.dust_model)
         else:
-            xx_s = xx
-            yy_s = yy
+            yyd, xxd, nrd = yy, xx, nr
 
-        xx = xx_s
-        yy = yy_s
+        xxd *= (1.+zgal)
 
-        # Apply dust;
-        yyd, xxd, nrd = apply_dust(yy, xx/(1+zmc), nr, par['Av'], dust_model=self.dust_model)
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+        nrd_yyd[:,0] = nrd[:]
+        nrd_yyd[:,1] = yyd[:]
+        nrd_yyd[:,2] = xxd[:]
 
-        xxd *= (1.+zmc)
-        if self.dust_model != 0:
-            # This may be needed when not calzetti model
-            nrd_yyd = np.zeros((len(nrd),3), dtype=float)
-            nrd_yyd[:,0] = nrd[:]
-            nrd_yyd[:,1] = yyd[:]
-            nrd_yyd[:,2] = xxd[:]
-            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-            nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+        b = nrd_yyd
+        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
 
-        if not f_nrd:
-            return yyd[:],xxd[:] 
-        else:
-            return nrd[:],yyd[:],xxd[:]
+        return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04_neb(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, f_apply_dust:bool=True, EBVratio:float=2.27):
+    def get_template(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, 
+        f_apply_dust:bool=True, f_IGM=True, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27):
         '''
         Makes model template for a nebular emission.
         This is only for nubular template, with len(A) = 1. Thus, aa=0 during the code.
@@ -610,6 +483,13 @@ class Func:
         EBVratio : float
             E(B-V)_neb / E(B-V)_st. 
             Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
+        f_neb : bool
+            Expect to explore nebular template or not.
+
+        Notes
+        -----
+        This function is only used in plot_sed.py.
+        Common function for mebular and nonnebular temlates.
         '''
         ZZ = self.ZZ
         AA = self.AA
@@ -633,17 +513,37 @@ class Func:
             par['Av'] = self.MB.Avmax
         Av = par['Av']
 
-        # Dust attenuation to nebulae
-        Av *= EBVratio
+        if f_neb:
+            # Dust attenuation to nebulae
+            Av *= EBVratio
 
-        # Get total flux;
-        nr, xx, yy = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all)
+        if f_neb:
+            # Get total flux;
+            nr, xx, yy = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all)
+        else:
+            nr, xx, yy = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all)
 
-        # Redshift refinement;
+        # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            yy_s = fint(xx_s)
+            if np.abs(zmc - self.MB.zgal) > deltaz_lim and not self.MB.f_spec:
+                # print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
+
+                # @@@ This only work for BB only data set.
+                # Get total flux;
+                if lib_all:
+                    nr_full, xx_full, yy_full = nr, xx, yy
+                else:
+                    if f_neb:
+                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True)
+                    else:
+                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True)
+
+                xx_s, yy_s = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
+            else:
+                fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+                xx_s = xx / (1+self.MB.zgal) * (1+zmc)
+                yy_s = fint(xx_s)
+
         else:
             xx_s = xx
             yy_s = yy
@@ -714,6 +614,76 @@ class Func:
 
         return yy_s, xx_s
 
+
+"""
+## Duplicated. To be deprecated.
+    def get_template(self, lib, Amp:float = 1.0, T:float = 1.0, Av:float = 0.0, Z:float = 0.0, zgal:float = 1.0, f_bb:bool = False, fneb=False):
+        '''
+        Gets an element template given a set of parameters.
+        Not necessarily the most efficient way, but easy to use.
+
+        Parameters:
+        -----------
+        lib : dict
+            library dictionary.
+        Amp : float
+            Amplitude of the target template. Note that each template has Lbol = 1e10Lsun.
+        T : float
+            Age, in Gyr.
+        Av : float
+            Dust attenuation, in mag.
+        Z : float
+            Metallicity, in log(Z/Zsun).
+        zgal : float
+            Redshift.
+        f_bb: bool
+            If calculate bb photometry for the spectrum requested.
+
+        Returns
+            flux : float array. Flux in Fnu. 
+            wavelength : float array. Wave in AA.
+            lcen, lflux : , if f_bb==True.
+
+        '''
+        bfnc = self.MB.bfnc
+        DIR_TMP = self.MB.DIR_TMP 
+        NZ  = bfnc.Z2NZ(Z)
+
+        pp0 = np.random.uniform(low=0, high=self.MB.ntau0, size=(1,))
+        pp  = int(pp0[0])
+        if pp>=self.MB.ntau0:
+            pp += -1
+
+        nmodel = np.argmin(np.abs(T-self.age[:]))
+        if T - self.age[nmodel] != 0:
+            print('T=%.2f is not found in age library. T=%.2f is used.'%(T,self.age[nmodel]))
+
+        if fneb:
+            coln = int(2 + pp*len(self.ZZ)*1 + NZ*1 + 0)
+        else:
+            coln = int(2 + pp*len(self.ZZ)*len(self.AA) + NZ*len(self.AA) + nmodel)
+        nr = lib[:, 0]
+        xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+        yy = lib[:, coln]
+
+        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
+        xxd *= (1.+zgal)
+
+        if self.dust_model != 0:
+            # This may be needed when not calzetti model
+            nrd_yyd = np.zeros((len(nrd),3), dtype=float)
+            nrd_yyd[:,0] = nrd[:]
+            nrd_yyd[:,1] = yyd[:]
+            nrd_yyd[:,2] = xxd[:]
+            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+            nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+
+        if f_bb:
+            fil_cen, fil_flux = filconv_fast(self.MB, xxd, Amp * yyd)
+            return Amp * yyd, xxd, fil_flux, fil_cen
+        else:
+            return Amp * yyd, xxd
+"""
 
 class Func_tau:
     '''
@@ -926,7 +896,7 @@ class Func_tau:
             return A00 * yyd_sort, xxd_sort
 
 
-    def tmp04(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False, f_nrd=False):
+    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False, f_nrd=False):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -1091,7 +1061,7 @@ class Func_tau:
         return yy_s, xx_s
 
   
-    def tmp04_neb(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
+    def get_template_neb(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
         lib_all=False, lib=None, f_nrd=False, f_apply_dust=True):
         '''
         Makes model template with a given param set.

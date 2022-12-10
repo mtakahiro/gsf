@@ -1500,8 +1500,8 @@ class Mainbody():
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
         if self.fneb:
-            self.lib_neb = self.fnc.open_spec_neb_fits(fall=0)
-            self.lib_neb_all = self.fnc.open_spec_neb_fits(fall=1)
+            self.lib_neb = self.fnc.open_spec_fits(fall=0, f_neb=True)
+            self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True)
 
         if add_fir == None:
             add_fir = self.f_dust
@@ -1661,7 +1661,7 @@ class Mainbody():
             Av_tmp = out.params['Av'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            nrd_tmp, fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True, f_nrd=True)
+            nrd_tmp, fm_tmp, xm_tmp = self.fnc.get_template(out, f_val=True, f_nrd=True, f_neb=False)
         else:
             csq = out.chisqr
             rcsq = out.redchi
@@ -2102,7 +2102,7 @@ class Mainbody():
             Av_tmp = out.params['Av'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
+            fm_tmp, xm_tmp = self.fnc.get_template(out, f_val=True)
 
             ########################
             # Check redshift

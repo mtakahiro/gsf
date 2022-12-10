@@ -385,8 +385,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
         MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
     if MB.fneb:
-        lib_neb = MB.fnc.open_spec_neb_fits(fall=0)
-        lib_neb_all = MB.fnc.open_spec_neb_fits(fall=1, orig=True)
+        lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
+        lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
 
     iimax = len(nage)-1
 
@@ -442,8 +442,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     for jj in range(len(age)):
         ii = int(len(nage) - jj - 1) # from old to young templates.
         if jj == 0:
-            y0, x0 = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0p, x0p = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+
             ysum = y0
             ysump = y0p
             nopt = len(ysump)
@@ -460,14 +461,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             if MB.fneb: 
                 # Only at one age pixel;
-                y0_r, x0_tmp = fnc.tmp03_neb(Aneb50, AAv[0], logU50, ii, Z50[ii], zbes, lib_neb_all)
-                y0p, x0p = fnc.tmp03_neb(Aneb50, AAv[0], logU50, ii, Z50[ii], zbes, lib_neb)
+                y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50)
+                y0p, x0p = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
         else:
-            y0_r, x0_tmp = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p = fnc.tmp03(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
+            y0p, x0p = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
             ysump[:nopt] += y0p
 
@@ -687,7 +688,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                     ZZ_tmp = MB.ZFIX
 
             if ss == MB.aamin[0]:
-                mod0_tmp, xm_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
+                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
                 if MB.fneb:
@@ -696,13 +697,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                         logU_tmp = MB.logUFIX
                     else:
                         logU_tmp = samples['logU'][nr]
-                    mod0_tmp, xm_tmp = fnc.tmp03_neb(Aneb_tmp, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
+                    mod0_tmp, xm_tmp = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp += mod0_tmp
                     # Make no emission line template;
-                    mod0_tmp_nl, xm_tmp_nl = fnc.tmp03_neb(0, Av_tmp, logU_tmp, ss, ZZ_tmp, zmc, lib_neb_all)
+                    mod0_tmp_nl, xm_tmp_nl = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp_nl += mod0_tmp_nl
             else:
-                mod0_tmp, xx_tmp = fnc.tmp03(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
+                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
 
@@ -3024,15 +3025,15 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0 = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
-                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
+                y0, x0 = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
+                y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
                 ysump = y0p #* 1e18
                 ysum = y0  #* 1e18
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
             else:
-                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
-                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
+                y0_r, x0_tmp = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
+                y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
                 ysump += y0p  #* 1e18
                 ysum += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
@@ -3456,15 +3457,15 @@ def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05),
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0, x0   = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump = y0p #* 1e18
                 ysum  = y0  #* 1e18
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
             else:
-                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p  = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0_r, x0_tmp = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p  = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:
@@ -3953,8 +3954,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             # SED
             flim = 0.05
             if ss == 0:
-                y0, x0   = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0, x0   = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump = y0p #* 1e18
                 ysum  = y0  #* 1e18
                 if AA_tmp/Asum > flim:
@@ -3965,8 +3966,8 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
                 ax1.fill_between(xx1, xx1*0, xx1*0+SF[ii], lw=1, facecolor=col[ii], zorder=1, label='', alpha=0.5)
                 #ax2.plot(age[ii], ZM[ii], marker='o', lw=1, color=col[ii], zorder=1, label='', alpha=0.5)
             else:
-                y0_r, x0_tmp = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p     = fnc.tmp03(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
+                y0_r, x0_tmp = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
+                y0p, x0p     = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
                 ysump += y0p  #* 1e18
                 ysum  += y0_r #* 1e18
                 if AA_tmp/Asum > flim:

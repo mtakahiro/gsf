@@ -18,19 +18,19 @@ class Post_nested:
 
     def residual(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
-        Input:
-        ======
+        Parameters
+        ----------
         out   : model as second output. For lnprob func.
         f_fir : Bool. If dust component is on or off.
 
-        Returns:
-        ========
+        Returns
+        -------
         residual of model and data.
 
         '''
 
         vals = pars #.valuesdict()
-        model, x1 = self.mb.fnc.tmp04(vals)
+        model, x1 = self.mb.fnc.get_template(vals)
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
@@ -78,19 +78,19 @@ class Post_nested:
 
     def residual_nest(self, pars, fy, ey, wht, f_fir=False, out=False):
         '''
-        Input:
-        ======
+        Parameters
+        ----------
         out   : model as second output. For lnprob func.
         f_fir : Bool. If dust component is on or off.
 
-        Returns:
-        ========
+        Returns
+        -------
         residual of model and data.
 
         '''
 
         vals = self.get_dict(pars)
-        model, x1 = self.mb.fnc.tmp04(vals)
+        model, x1 = self.mb.fnc.get_template(vals)
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
@@ -167,8 +167,8 @@ class Post_nested:
 
     def lnlike(self, pars, fy, ey, wht, f_fir, f_chind=True, SNlim=1.0, lnpreject=-np.inf):
         '''
-        Returns:
-        ========
+        Returns
+        -------
         log likelihood
 
         Note:
