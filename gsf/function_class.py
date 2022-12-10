@@ -2,10 +2,12 @@ import numpy as np
 import sys
 import scipy.interpolate as interpolate
 import asdf
+from astropy.io import fits
 
 from .function import *
 from .basic_func import Basic
 from .function_igm import dijkstra_igm_abs
+from .maketmp_filt import maketemp,maketemp_tau
 
 
 class Func:
@@ -52,8 +54,6 @@ class Func:
         '''
         ID0 = self.MB.ID
         tau0= self.MB.tau0
-
-        from astropy.io import fits
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -94,15 +94,11 @@ class Func:
         '''
         Loads dust template in obs range.
         '''
-        from astropy.io import fits
         ID0 = self.MB.ID
         tau0= self.MB.tau0
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
-
-        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         if fall == 0:
             app = ''
@@ -136,7 +132,6 @@ class Func:
         '''
         Loads template in obs range.
         '''
-        from astropy.io import fits
         ID0 = self.MB.ID
         ZZ = self.ZZ
         AA = self.AA
@@ -179,14 +174,10 @@ class Func:
         Load template in obs range.
         But for weird template.
         '''
-        from astropy.io import fits
         tau0= self.tau0
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
-
-        # self.MB.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '.asdf')
-        # self.MB.af0 = asdf.open(self.DIR_TMP + 'spec_all.asdf')
 
         app = 'all'
         hdu0 = self.MB.af['spec_full']
@@ -199,8 +190,8 @@ class Func:
         mshdu = self.MB.af0['ML']
         Ls = mshdu['Ls_%d'%nz] 
 
-        xx = hdu0['wavelength'] # at RF;
-        nr = np.arange(0,len(xx),1) #hdu0.data['colnum']
+        xx = hdu0['wavelength']
+        nr = np.arange(0,len(xx),1)
 
         lib = np.zeros((len(nr), 2+1), dtype='float')
         lib[:,0] = nr[:]
@@ -513,9 +504,47 @@ class Func:
 
         # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
-            yy_s = fint(xx_s)
+            if True:
+                fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+                xx_s = xx / (1+self.MB.zgal) * (1+zmc)
+                yy_s = fint(xx_s)
+            else:
+                # This takes too much time;
+                # self.MB.zgal = zmc
+                # if self.MB.SFH_FORM == -99:
+                #     flag_suc = maketemp(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
+                # else:
+                #     flag_suc = maketemp_tau(self.MB, tau_lim=self.MB.tau_lim, nthin=self.MB.nthin, delwave=self.MB.delwave)
+
+                # # Load Spectral library;
+                # self.lib = self.open_spec_fits(fall=0)
+                # self.lib_all = self.open_spec_fits(fall=1, orig=True)
+
+                # if self.MB.f_dust:
+                #     self.lib_dust = self.open_spec_dust_fits(fall=0)
+                #     self.lib_dust_all = self.open_spec_dust_fits(fall=1)
+                # if self.MB.fneb:
+                #     self.lib_neb = self.open_spec_neb_fits(fall=0)
+                #     self.lib_neb_all = self.open_spec_neb_fits(fall=1)
+
+                # if lib_all:
+                #     if aa == 0:
+                #         nr = self.MB.lib_all[:,0]
+                #         xx = self.MB.lib_all[:,1] # This is OBSERVED wavelength range at z=zgal
+                #         yy = A00 * self.MB.lib_all[:,coln]
+                #     else:
+                #         yy += A00 * self.MB.lib_all[:,coln]
+                # else:
+                #     if aa == 0:
+                #         nr = self.MB.lib[:,0]
+                #         xx = self.MB.lib[:,1] # This is OBSERVED wavelength range at z=zgal
+                #         yy = A00 * self.MB.lib[:,coln]
+                #     else:
+                #         yy += A00 * self.MB.lib[:,coln]
+
+                xx_s = xx
+                yy_s = yy
+
         else:
             xx_s = xx
             yy_s = yy
@@ -767,7 +796,6 @@ class Func_tau:
         '''
         Loads template in obs range.
         '''
-        from astropy.io import fits
         ID0 = self.MB.ID
         ZZ = self.ZZ
         AA = self.AA

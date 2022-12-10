@@ -129,6 +129,11 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     inputs = read_input(parfile)
 
     MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman, zman=zman)
+    
+    # Register some params;
+    MB.tau_lim = tau_lim
+    MB.nthin = nthin
+    MB.delwave = delwave
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
@@ -185,9 +190,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         # 1. Start making redshifted templates, at z=MB.zgal.
         #
         if MB.SFH_FORM == -99:
-            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
         else:
-            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
 
         #
         # 2. Main fitting part.
@@ -204,9 +209,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
 
             # Make temp at the new z
             if MB.SFH_FORM == -99:
-                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
             else:
-                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
 
             print('\n\n')
             print('Going into another round with updated templates and redshift.')

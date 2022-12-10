@@ -154,12 +154,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     ############
     # Get SN.
     ############
-    # file = DIR_TMP + 'spec_obs_' + ID0 + '.cat'
-    # fds  = np.loadtxt(file, comments='#')
-    # nrs  = fds[:,0]
-    # lams = fds[:,1]
-    # fsp  = fds[:,2]
-    # esp  = fds[:,3]
     nrs, lams, fsp, esp = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
 
     consp = (nrs<10000) & (lams/(1.+zrecom)>3600) & (lams/(1.+zrecom)<4200) & (esp>0)

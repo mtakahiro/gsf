@@ -86,7 +86,6 @@ class Mainbody():
             Conversion factor from pixel-to-arcsec
 
         '''
-
         # Then register;
         self.inputs = inputs
         self.c = c
@@ -290,7 +289,7 @@ class Mainbody():
 
         # Tau comparison?
         # -> Deprecated;
-        self.ftaucomp = 0
+        # self.ftaucomp = 0
 
         # Check if func model for SFH;
         try:
@@ -646,6 +645,7 @@ class Mainbody():
 
         print('\n')
 
+
     def get_lines(self, LW0):
         fLW = np.zeros(len(LW0), dtype='int')
         LW = LW0
@@ -654,6 +654,10 @@ class Mainbody():
 
     def read_data(self, Cz0:float, Cz1:float, Cz2:float, zgal:float, add_fir:bool=False, idman=None):
         '''
+        Purpose
+        -------
+        Read in observed data. Not model fluxes.
+
         Parameters
         ----------
         Cz0, Cz1 : float
@@ -674,11 +678,6 @@ class Mainbody():
         ##############
         # Spectrum
         ##############
-        # dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
-        # NR = dat['col1']
-        # x = dat['col2']
-        # fy00 = dat['col3']
-        # ey00 = dat['col4']
         NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
         con0 = (NR<1000)
         xx0 = x[con0]
@@ -697,12 +696,6 @@ class Mainbody():
         # Broadband
         ##############
         try:
-            # dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '.cat', format='no_header')
-            # NRbb = dat['col1']
-            # xbb  = dat['col2']
-            # fybb = dat['col3']
-            # eybb = dat['col4']
-            # exbb = dat['col5']
             NRbb, xbb, fybb, eybb, exbb = self.data['bb_obs']['NR'], self.data['bb_obs']['x'], self.data['bb_obs']['fy'], self.data['bb_obs']['ey'], self.data['bb_obs']['ex']
         except: # if no BB;
             print('No BB data.')
@@ -740,13 +733,7 @@ class Mainbody():
 
         # Append data;
         if add_fir:
-            # dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '.cat')
-            # nr_d = dat_d['col1']
-            # x_d = dat_d['col2']
-            # fy_d = dat_d['col3']
-            # ey_d = dat_d['col4']
             nr_d, x_d, fy_d, ey_d = self.data['spec_dust_obs']['NR'], self.data['spec_dust_obs']['x'], self.data['spec_dust_obs']['fy'], self.data['spec_dust_obs']['ey']
-
             NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
             ey = np.append(ey,ey_d)
@@ -1036,7 +1023,7 @@ class Mainbody():
                 fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), 
                 self.zgal, self.z_prior, self.p_prior,
                 NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
-                include_photometry=include_photometry_zfit
+                include_photometry=include_bb
                 )
 
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
@@ -1596,7 +1583,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_bb=True):
         '''
         Main module of this script.
 
@@ -1686,7 +1673,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=False)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
 
         #################################################
         # Gor for mcmc phase
@@ -2077,7 +2064,7 @@ class Mainbody():
                 print('\n\n')
                 return False
 
-
+    """
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False, Zini=None):
         '''
         Fits input data with a prepared template library, to get a chi-min result.
@@ -2121,10 +2108,11 @@ class Mainbody():
             # Check redshift
             ########################
             if self.fzvis:
-                flag_z = self.fit_redshift(xm_tmp, fm_tmp)
+                flag_z = self.fit_redshift(xm_tmp, fm_tmp, include_bb=include_bb)
 
             self.fzmc = 1
             return out,chidef,Zbest, xm_tmp, fm_tmp
         else:
             self.fzmc = 1
             return out,chidef,Zbest
+    """
