@@ -1491,6 +1491,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         vals['TAU'+str(aa)] = np.log10(TAU50[aa])
         vals['AGE'+str(aa)] = np.log10(AGE50[aa])
 
+    if MB.fneb:
+        logU50 = hdul[1].data['logU'][1]
+        Aneb50 = 10**hdul[1].data['Aneb'][1]
+
     aa = 0
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av50 = hdul[1].data['Av'+str(aa)][1]
@@ -1726,6 +1730,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         Temp = np.arange(DT0,DT1,dDT)
         MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
         MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
+    if MB.fneb:
+        lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
+        lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
 
     # FIR dust plot;
     if f_dust:
@@ -1790,6 +1797,13 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         ysump[:] += y0d_cut[:nopt]
         ysump = np.append(ysump,y0d_cut[nopt:])
         f_50_comp_dust = y0d * c / np.square(x0d) / d
+
+    if MB.fneb: 
+        # Only at one age pixel;
+        y0p, x0p = MB.fnc.get_template(vals, f_val=False, check_bound=False, f_neb=True)
+        y0_r, x0_tmp = MB.fnc.get_template(vals, f_val=False, check_bound=False, f_neb=True, lib_all=True)
+        ysum += y0_r
+        ysump[:nopt] += y0p
 
     # Plot each best fit:
     vals_each = vals.copy()
@@ -1990,6 +2004,20 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         mod0_tmp, xm_tmp = fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True)
         fm_tmp = mod0_tmp
+
+        if MB.fneb:
+            Aneb_tmp = 10**samples['Aneb'][nr]
+            if not MB.logUFIX == None:
+                logU_tmp = MB.logUFIX
+            else:
+                logU_tmp = samples['logU'][nr]
+            mod0_tmp, xm_tmp = fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True, f_neb=False)
+            # mod0_tmp, xm_tmp = fnc.get_template(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
+            fm_tmp += mod0_tmp
+            # # Make no emission line template;
+            # mod0_tmp_nl, xm_tmp_nl = fnc.get_template(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
+            # fm_tmp_nl += mod0_tmp_nl
+
 
         if False:
             # Each;

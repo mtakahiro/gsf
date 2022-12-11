@@ -397,7 +397,7 @@ class Func:
 
         # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            if np.abs(zmc - self.MB.zgal) > deltaz_lim and not self.MB.f_spec:
+            if np.abs(zmc - self.MB.zgal) > deltaz_lim:
                 # print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
 
                 # @@@ This only work for BB only data set.
@@ -411,20 +411,13 @@ class Func:
                         nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True)
 
                 xx_s, yy_s = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
-            elif np.abs(zmc - self.MB.zgal) > deltaz_lim and self.MB.f_spec:
-                if lib_all:
-                    nr_full, xx_full, yy_full = nr, xx, yy
-                else:
-                    if f_neb:
-                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True)
-                    else:
-                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True)
-                xx_bb, yy_bb = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
-                con_bb = (nr>=self.MB.NRbb_lim)
-                xx[con_bb] = xx_bb
-                yy[con_bb] = yy_bb
-                xx_s = xx
-                yy_s = yy
+                
+                if self.MB.f_spec:
+                    con_bb = (nr>=self.MB.NRbb_lim)
+                    xx[con_bb] = xx_s
+                    yy[con_bb] = yy_s
+                    xx_s = xx
+                    yy_s = yy
 
             else:
                 fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
@@ -534,49 +527,6 @@ class Func_tau:
         self.f_af = False
         self.f_af0 = False
 
-    """
-    def open_spec_fits(self, fall:int=0, orig:bool=False):
-        '''
-        Loads template in obs range.
-        '''
-        ID0 = self.MB.ID
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
-        DIR_TMP = self.DIR_TMP
-
-        # ASDF;
-        if fall == 0:
-            app = ''
-            hdu0 = self.MB.af['spec']
-        elif fall == 1:
-            app = 'all_'
-            hdu0 = self.MB.af['spec_full']
-
-        NZ = len(ZZ)
-        NT = self.MB.ntau
-        NA = self.MB.nage
-        for zz,Z in enumerate(ZZ):
-            for tt,TT in enumerate(self.MB.tau):                
-                for ss,TA in enumerate(self.MB.ageparam):
-                    if zz == 0 and tt == 0 and ss == 0:
-                        nr = hdu0['colnum']
-                        xx = hdu0['wavelength']
-                        coln = int(2 + NZ * NT * NA)
-                        lib = np.zeros((len(nr), coln), dtype=float)
-                        lib[:,0] = nr[:]
-                        lib[:,1] = xx[:]
-
-                    if orig:
-                        colname = 'fspec_orig_' + str(zz) + '_' + str(tt) + '_' + str(ss)
-                    else:
-                        colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
-                    colnall = int(2 + zz * NT * NA + tt * NA + ss) # 2 takes account of wavelength and AV columns.
-                    lib[:,colnall] = hdu0[colname]
-
-        return lib
-    """
-
 
     def open_spec_dust_fits(self, fall:int = 0):
         '''
@@ -678,61 +628,6 @@ class Func_tau:
         return lib
 
 
-    """
-    def open_spec_fits_dir(self, nage, nz, kk, Av, zgal, A00):
-        '''
-        Loads template in obs range.
-        But for weird template.
-        '''
-        tau0= self.tau0
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
-
-        app = 'all'
-        hdu0 = self.MB.af['spec_full']
-        DIR_TMP = self.DIR_TMP
-
-        pp = 0
-        zz = nz
-
-        # Luminosity
-        mshdu = self.MB.af0['ML']
-        Ls = mshdu['Ls_%d'%nz] 
-
-        xx = hdu0['wavelength'] # at RF;
-        nr = np.arange(0,len(xx),1) #hdu0.data['colnum']
-
-        lib = np.zeros((len(nr), 2+1), dtype='float')
-        lib[:,0] = nr[:]
-        lib[:,1] = xx[:]
-
-        aa = nage
-        coln = int(2 + aa)
-        colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
-
-        yy0 = hdu0[colname]/Ls[aa]
-        yy = flamtonu(xx, yy0, m0set=self.MB.m0set)
-        lib[:,2] = yy[:]
-
-        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zgal), nr, Av, dust_model=self.dust_model)
-        xxd *= (1.+zgal)
-
-        if self.dust_model == 0:
-            return A00 * yyd, xxd
-        else:
-            nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-            nrd_yyd[:,0] = nrd[:]
-            nrd_yyd[:,1] = yyd[:]
-            nrd_yyd[:,2] = xxd[:]
-
-            b = nrd_yyd
-            nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
-            yyd_sort = nrd_yyd_sort[:,1]
-            xxd_sort = nrd_yyd_sort[:,2]
-            return A00 * yyd_sort, xxd_sort
-    """
-
     def get_total_flux(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
         '''
         '''
@@ -816,10 +711,11 @@ class Func_tau:
         # logU
         NU = len(self.MB.logUs)
         # Check limit;
-        if Aneb < self.MB.Amin:
-            Aneb = self.MB.Amin
-        if Aneb > self.MB.Amax:
-            Aneb = self.MB.Amax
+        if f_check_limit:
+            if Aneb < self.MB.Amin:
+                Aneb = self.MB.Amin
+            if Aneb > self.MB.Amax:
+                Aneb = self.MB.Amax
 
         # Is A in logspace?
         if f_Alog:
@@ -851,83 +747,6 @@ class Func_tau:
         else:
             return nr, xx, yy
 
-    """
-    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False, f_nrd=False, 
-        f_neb=False, EBVratio:float=2.27):
-        '''
-        Makes model template with a given param set.
-        Also dust attenuation.
-
-        Parameters:
-        -----------
-        nprec : int
-            Precision when redshift is refined. 
-        '''
-        ZZ = self.ZZ
-        AA = self.AA 
-        bfnc = self.MB.bfnc
-        Mtot = 0
-        pp = 0
-
-        if f_val:
-            par = par.params
-
-        if self.MB.fzmc == 1:
-            try:
-                zmc = par['zmc'].value
-            except:
-                zmc = self.MB.zgal
-        else:
-            zmc = self.MB.zgal
-
-        if check_bound:
-            # AV limit;
-            if par['Av'] < self.MB.Avmin:
-                par['Av'] = self.MB.Avmin
-            if par['Av'] > self.MB.Avmax:
-                par['Av'] = self.MB.Avmax
-        Av = par['Av']
-
-        if f_neb:
-            nr, xx, yy, Mtot = get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=None, f_get_Mtot=True, f_check_limit=True)
-        else:
-            nr, xx, yy, Mtot = get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=None, f_get_Mtot=True, f_check_limit=True)
-
-        # Keep logM
-        self.MB.logMtmp = np.log10(Mtot)
-
-        # Redshift refinement;
-        if round(zmc,nprec) != round(self.MB.zgal,nprec): # Not sure how much this costs in time.
-            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            yy_s = fint(xx_s)
-        else:
-            xx_s = xx
-            yy_s = yy
-
-        xx = xx_s
-        yy = yy_s
-
-        yyd, xxd, nrd = apply_dust(yy, xx/(1.+zmc), nr, Av, dust_model=self.dust_model)
-
-        xxd *= (1.+zmc)
-
-        if self.dust_model == 0:
-            if not f_nrd:
-                return yyd,xxd
-            else:
-                return nrd,yyd,xxd
-        else:
-            nrd_yyd = np.zeros((len(nrd),3), dtype='float')
-            nrd_yyd[:,0] = nrd[:]
-            nrd_yyd[:,1] = yyd[:]
-            nrd_yyd[:,2] = xxd[:]
-            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
-            if not f_nrd:
-                return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
-            else:
-                return nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
-    """
 
     def tmp04_dust(self, par, nprec=1):
         '''
@@ -967,7 +786,7 @@ class Func_tau:
 
   
     def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
-        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_neb=False):
+        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_neb=False, deltaz_lim=0.1):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -1010,15 +829,40 @@ class Func_tau:
 
         if f_neb:
             # @@@ Not clear why f_check_limit cannot work
-            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=False)#, f_check_limit=True)
+            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
         else:
             # @@@ Not clear why f_check_limit cannot work
-            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=False)#, f_check_limit=True)
+            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
 
+        # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
-            xx_s = xx / (1+self.MB.zgal) * (1+zmc)
-            fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
-            yy_s = fint(xx_s)
+            if np.abs(zmc - self.MB.zgal) > deltaz_lim:
+                # print('!!! zmc (%.3f) is exploring too far from zgal (%.3f).'%(zmc, self.MB.zgal))
+
+                # @@@ This only work for BB only data set.
+                # Get total flux;
+                if lib_all:
+                    nr_full, xx_full, yy_full = nr, xx, yy
+                else:
+                    if f_neb:
+                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True, lib=lib)
+                    else:
+                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True, lib=lib)
+
+                xx_s, yy_s = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
+                
+                if self.MB.f_spec:
+                    con_bb = (nr>=self.MB.NRbb_lim)
+                    xx[con_bb] = xx_s
+                    yy[con_bb] = yy_s
+                    xx_s = xx
+                    yy_s = yy
+
+            else:
+                fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")
+                xx_s = xx / (1+self.MB.zgal) * (1+zmc)
+                yy_s = fint(xx_s)
+
         else:
             xx_s = xx
             yy_s = yy
@@ -1027,22 +871,25 @@ class Func_tau:
         yy = yy_s
 
         if f_apply_dust:
-            yyd, xxd, nrd = apply_dust(yy, xx/(1.+zmc), nr, Av, dust_model=self.dust_model)
+            yyd, xxd, nrd = apply_dust(yy, xx/(1+zmc), nr, Av, dust_model=self.dust_model)
             xxd *= (1.+zmc)
 
-            nrd_yyd = np.zeros((len(nrd),3), dtype=float)
-            nrd_yyd[:,0] = nrd[:]
-            nrd_yyd[:,1] = yyd[:]
-            nrd_yyd[:,2] = xxd[:]
-            nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+            if self.dust_model != 0:
+                nrd_yyd = np.zeros((len(nrd),3), dtype=float)
+                nrd_yyd[:,0] = nrd[:]
+                nrd_yyd[:,1] = yyd[:]
+                nrd_yyd[:,2] = xxd[:]
+                nrd_yyd_sort = nrd_yyd[nrd_yyd[:,0].argsort()]
+                nrd[:],yyd[:],xxd[:] = nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
 
             if not f_nrd:
-                return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+                return yyd[:],xxd[:]
             else:
-                return nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
+                return nrd[:],yyd[:],xxd[:]
 
         else:
             if not f_nrd:
                 return yy,xx
             else:
-                return nr, yy,xx
+                return nr,yy,xx
+
