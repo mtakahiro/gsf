@@ -199,6 +199,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
+                    tree.update({'age': MB.age})
+                    tree.update({'Z': MB.Zall})
                     if fneb:
                         tree.update({'logUMIN': MB.logUMIN})
                         tree.update({'logUMAX': MB.logUMAX})

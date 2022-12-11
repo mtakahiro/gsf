@@ -15,7 +15,7 @@ from .function import *
 from .function_igm import *
 
 
-def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
+def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel,
     DIR_DUST='./DL07spec/', phi=0.055, m0set=25.0):
     '''
     Parameters
@@ -23,8 +23,7 @@ def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel, \
     lambda_d : array
         Wavelength array, in AA.
     phi : float
-        Eq.34 of Draine & Li 2007. (default: 0.055)
-        ~0.055 g / (ergs/s)
+        Eq.34 of Draine & Li 2007. (default: 0.055g/(ergs/s))
     DL : float
         in cm.
 
@@ -97,14 +96,16 @@ def sim_spec(lmin, fin, sn):
     
     Parameters
     ----------
-    wave_obs :
-    wave_temp : 
-    flux_temp : 
-    sn_obs
-
+    sn : float array
+        
     Returns
     -------
-    frand, erand
+    frand : float array
+
+    erand :  float array
+
+
+    :func:`get_spectrum_draine`
     '''
 
     frand = fin * 0
@@ -120,14 +121,13 @@ def sim_spec(lmin, fin, sn):
 
 
 def check_library(MB, af, nround=3):
-    '''
-    Check library if it has a consistency setup as input file.
+    '''Check library if it has a consistency setup as input file.
 
     Returns
     -------
     flag : bool
+        
     '''
-
     # Z needs special care in z0 script, to avoid Zfix.
     if False:
         Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
@@ -141,6 +141,12 @@ def check_library(MB, af, nround=3):
     flag = True
     print('Checking the template library...')
     print('Speficied - Template')
+
+    # No. of age;
+    if len(af['ML']['ms_0']) != len(MB.age):
+        print('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
+        flag = False
+
     # Matallicity:
     for aa in range(len(Zall)):
         if Zall[aa] != af['Z%d'%(aa)]:
@@ -578,9 +584,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     Ls = np.zeros(Na, dtype=float)
                     tau = np.zeros(Na, dtype=float)
                     sfr = np.zeros(Na, dtype=float)
+                    Fuv = np.zeros(Na, dtype=float)
                     ms[:] = mshdu['ms_'+str(zz)][:] # [:] is necessary.
                     Ls[:] = mshdu['Ls_'+str(zz)][:]
-                    Fuv = np.zeros(Na, dtype=float)
 
                     for ss in range(Na):
                         wave = lm0

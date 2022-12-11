@@ -756,7 +756,7 @@ Chabrier IMF, in default</p>
 <dl class="simple">
 <dt>nprec<span class="classifier">int</span></dt><dd><p>Precision when redshift is refined.</p>
 </dd>
-<dt>f_apply_dust<span class="classifier">bool</span></dt><dd><p>Apply dust attenuation to nebular emission?</p>
+<dt>f_apply_dust<span class="classifier">bool</span></dt><dd><p>Apply dust attenuation to nebular emission.</p>
 </dd>
 <dt>EBVratio<span class="classifier">float</span></dt><dd><p>E(B-V)_neb / E(B-V)_st. 
 Useful table in <a class="reference external" href="https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf">https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf</a></p>
@@ -789,7 +789,7 @@ Common function for mebular and nonnebular temlates.</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>xx<span class="classifier"></span></dt><dd><p>OBSERVED wavelength range at z=MB.zgal</p>
+<dt>nr, xx, yy<span class="classifier">float arrays</span></dt><dd><p>xx is OBSERVED wavelength at z=MB.zgal</p>
 </dd>
 </dl>
 </dd></dl>
@@ -814,6 +814,13 @@ Common function for mebular and nonnebular temlates.</p>
 <dt class="sig sig-object py" id="gsf.function_class.Func.open_spec_fits">
 <span class="sig-name descname"><span class="pre">open_spec_fits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fall</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_neb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.function_class.Func.open_spec_fits" title="Permalink to this definition"></a></dt>
 <dd><p>Load template in obs range.</p>
+<dl>
+<dt>fall<span class="classifier">int</span></dt><dd><p>If 1, returns full spectra.</p>
+</dd>
+<dt>orig<span class="classifier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code></span></dt><dd><p>If True, returns the original spectra.</p>
+</dd>
+</dl>
+<p>float array</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1015,8 +1022,7 @@ Not for fitting, nor plotting.</p>
 <dd><dl class="simple">
 <dt>lambda_d<span class="classifier">array</span></dt><dd><p>Wavelength array, in AA.</p>
 </dd>
-<dt>phi<span class="classifier">float</span></dt><dd><p>Eq.34 of Draine &amp; Li 2007. (default: 0.055)
-~0.055 g / (ergs/s)</p>
+<dt>phi<span class="classifier">float</span></dt><dd><p>Eq.34 of Draine &amp; Li 2007. (default: 0.055g/(ergs/s))</p>
 </dd>
 <dt>DL<span class="classifier">float</span></dt><dd><p>in cm.</p>
 </dd>
@@ -1075,11 +1081,10 @@ Also, after v1.8, through this function library and data are register to the mai
 <dt class="sig sig-object py" id="gsf.maketmp_filt.sim_spec">
 <span class="sig-prename descclassname"><span class="pre">gsf.maketmp_filt.</span></span><span class="sig-name descname"><span class="pre">sim_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sn</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.maketmp_filt.sim_spec" title="Permalink to this definition"></a></dt>
 <dd><p>SIMULATION of SPECTRA.</p>
-<p>wave_obs :
-wave_temp : 
-flux_temp : 
-sn_obs</p>
-<p>frand, erand</p>
+<p>sn : float array</p>
+<p>frand : float array</p>
+<p>erand :  float array</p>
+<p><a class="reference internal" href="#gsf.maketmp_filt.get_spectrum_draine" title="gsf.maketmp_filt.get_spectrum_draine"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_spectrum_draine()</span></code></a></p>
 </dd></dl>
 
 </section>
