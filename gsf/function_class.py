@@ -534,7 +534,7 @@ class Func_tau:
         self.f_af = False
         self.f_af0 = False
 
-
+    """
     def open_spec_fits(self, fall:int=0, orig:bool=False):
         '''
         Loads template in obs range.
@@ -575,6 +575,7 @@ class Func_tau:
                     lib[:,colnall] = hdu0[colname]
 
         return lib
+    """
 
 
     def open_spec_dust_fits(self, fall:int = 0):
@@ -618,7 +619,7 @@ class Func_tau:
         return lib
 
 
-    def open_spec_neb_fits(self, fall=0, orig=False):
+    def open_spec_fits(self, fall=0, orig=False, f_neb=False):
         '''
         Loads template in obs range.
         '''
@@ -636,29 +637,48 @@ class Func_tau:
             hdu0 = self.MB.af['spec_full']
 
         DIR_TMP = self.DIR_TMP
-
         NZ = len(ZZ)
-        NU = len(self.MB.logUs)
-        for zz,Z in enumerate(ZZ):
-            for uu,logU in enumerate(self.MB.logUs):
-                if zz == 0 and uu == 0:
-                    nr = hdu0['colnum']
-                    xx = hdu0['wavelength']
-                    coln = int(2 + NZ * NU)
-                    lib = np.zeros((len(nr), coln), dtype=float)
-                    lib[:,0] = nr[:]
-                    lib[:,1] = xx[:]
 
-                if orig:
-                    colname = 'fspec_orig_nebular_Z%d'%zz + '_logU%d'%uu
-                else:
-                    colname = 'fspec_nebular_Z%d'%zz + '_logU%d'%uu
-                colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
-                lib[:,colnall] = hdu0[colname]
-
+        if f_neb:
+            NU = len(self.MB.logUs)
+            for zz,Z in enumerate(ZZ):
+                for uu,logU in enumerate(self.MB.logUs):
+                    if zz == 0 and uu == 0:
+                        nr = hdu0['colnum']
+                        xx = hdu0['wavelength']
+                        coln = int(2 + NZ * NU)
+                        lib = np.zeros((len(nr), coln), dtype=float)
+                        lib[:,0] = nr[:]
+                        lib[:,1] = xx[:]
+                    if orig:
+                        colname = 'fspec_orig_nebular_Z%d'%zz + '_logU%d'%uu
+                    else:
+                        colname = 'fspec_nebular_Z%d'%zz + '_logU%d'%uu
+                    colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
+                    lib[:,colnall] = hdu0[colname]
+        else:
+            NT = self.MB.ntau
+            NA = self.MB.nage
+            for zz,Z in enumerate(ZZ):
+                for tt,TT in enumerate(self.MB.tau):                
+                    for ss,TA in enumerate(self.MB.ageparam):
+                        if zz == 0 and tt == 0 and ss == 0:
+                            nr = hdu0['colnum']
+                            xx = hdu0['wavelength']
+                            coln = int(2 + NZ * NT * NA)
+                            lib = np.zeros((len(nr), coln), dtype=float)
+                            lib[:,0] = nr[:]
+                            lib[:,1] = xx[:]
+                        if orig:
+                            colname = 'fspec_orig_' + str(zz) + '_' + str(tt) + '_' + str(ss)
+                        else:
+                            colname = 'fspec_' + str(zz) + '_' + str(tt) + '_' + str(ss)
+                        colnall = int(2 + zz * NT * NA + tt * NA + ss) # 2 takes account of wavelength and AV columns.
+                        lib[:,colnall] = hdu0[colname]
         return lib
 
 
+    """
     def open_spec_fits_dir(self, nage, nz, kk, Av, zgal, A00):
         '''
         Loads template in obs range.
@@ -711,9 +731,129 @@ class Func_tau:
             yyd_sort = nrd_yyd_sort[:,1]
             xxd_sort = nrd_yyd_sort[:,2]
             return A00 * yyd_sort, xxd_sort
+    """
+
+    def get_total_flux(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
+        '''
+        '''
+        Mtot = 0
+        for aa in range(self.MB.npeak):
+            if self.MB.ZEVOL==1 or aa == 0:
+                if f_check_limit:
+                    # Z limit:
+                    if par['Z%d'%aa] < self.MB.Zmin:
+                        par['Z%d'%aa] = self.MB.Zmin
+                    if par['Z%d'%aa] > self.MB.Zmax:
+                        par['Z%d'%aa] = self.MB.Zmax
+                Z = par['Z%d'%aa]
+            else:
+                pass
+
+            if f_check_limit:
+                # A
+                if par['A'+str(aa)] < self.MB.Amin:
+                    par['A'+str(aa)] = self.MB.Amin
+                if par['A'+str(aa)] > self.MB.Amax:
+                    par['A'+str(aa)] = self.MB.Amax
+
+                if par['TAU'+str(aa)] < self.MB.taumin:
+                    par['TAU'+str(aa)] = self.MB.taumin
+                if par['TAU'+str(aa)] > self.MB.taumax:
+                    par['TAU'+str(aa)] = self.MB.taumax
+
+                if par['AGE'+str(aa)] < self.MB.agemin:
+                    par['AGE'+str(aa)] = self.MB.agemin
+                if par['AGE'+str(aa)] > self.MB.agemax:
+                    par['AGE'+str(aa)].value = self.MB.agemax
+
+            # Is A in logspace?
+            if f_Alog:
+                A00 = 10**par['A'+str(aa)]
+            else:
+                A00 = par['A'+str(aa)]
+
+            tau,age = par['TAU%d'%aa],par['AGE%d'%aa]
+
+            NZ, NT, NA = self.MB.bfnc.Z2NZ(Z,tau,age)
+            coln = int(2 + NZ*self.MB.ntau*self.MB.npeak + NT*self.MB.npeak + NA)
+            mslist = self.MB.af['ML']['ML_'+str(NZ)+'_'+str(NT)][NA]
+            Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
+
+            if lib_all:
+                if aa == 0:
+                    nr = self.MB.lib_all[:, 0]
+                    xx = self.MB.lib_all[:, 1] # This is OBSERVED wavelength range at z=zgal
+                    yy = A00 * self.MB.lib_all[:, coln]
+                else:
+                    yy += A00 * self.MB.lib_all[:, coln]
+            else:
+                if aa == 0:
+                    nr = self.MB.lib[:, 0]
+                    xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+                    yy = A00 * self.MB.lib[:, coln]
+                else:
+                    yy += A00 * self.MB.lib[:, coln]
+
+        if f_get_Mtot:
+            return nr, xx, yy, Mtot
+        else:
+            return nr, xx, yy
 
 
-    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False, f_nrd=False):
+    def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
+        '''
+        '''
+        Mtot = 0
+        try:
+            Aneb = par['Aneb']
+            logU = par['logU']
+            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
+        except: # This is exception for initial minimizing;
+            Aneb = -99
+            logU = self.MB.logUs[0]
+            nlogU = 0
+
+        # logU
+        NU = len(self.MB.logUs)
+        # Check limit;
+        if Aneb < self.MB.Amin:
+            Aneb = self.MB.Amin
+        if Aneb > self.MB.Amax:
+            Aneb = self.MB.Amax
+
+        # Is A in logspace?
+        if f_Alog:
+            A00 = 10**Aneb
+        else:
+            A00 = Aneb
+
+        aa = 0
+        if self.MB.ZEVOL==1 or aa == 0:
+            if f_check_limit:
+                # Z limit:
+                if par['Z%d'%aa] < self.MB.Zmin:
+                    par['Z%d'%aa] = self.MB.Zmin
+                if par['Z%d'%aa] > self.MB.Zmax:
+                    par['Z%d'%aa] = self.MB.Zmax
+            Z = par['Z%d'%aa]
+            NZ = np.argmin(np.abs(self.MB.Zall-Z))
+
+        coln = int(2 + NZ*NU + nlogU)
+        if aa == 0:
+            nr = lib[:, 0]
+            xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+            yy = A00 * lib[:, coln]
+        else:
+            yy += A00 * lib[:, coln]
+
+        if f_get_Mtot:
+            return nr, xx, yy, Mtot
+        else:
+            return nr, xx, yy
+
+    """
+    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, lib_all=False, f_nrd=False, 
+        f_neb=False, EBVratio:float=2.27):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -748,62 +888,10 @@ class Func_tau:
                 par['Av'] = self.MB.Avmax
         Av = par['Av']
 
-        for aa in range(self.MB.npeak):
-            if self.MB.ZEVOL==1 or aa == 0:
-                if check_bound:
-                    # Z limit:
-                    if par['Z%d'%aa] < self.MB.Zmin:
-                        par['Z%d'%aa] = self.MB.Zmin
-                    if par['Z%d'%aa] > self.MB.Zmax:
-                        par['Z%d'%aa] = self.MB.Zmax
-                Z = par['Z%d'%aa]
-            else:
-                pass
-
-            if check_bound:
-                # A
-                if par['A'+str(aa)] < self.MB.Amin:
-                    par['A'+str(aa)] = self.MB.Amin
-                if par['A'+str(aa)] > self.MB.Amax:
-                    par['A'+str(aa)] = self.MB.Amax
-
-                if par['TAU'+str(aa)] < self.MB.taumin:
-                    par['TAU'+str(aa)] = self.MB.taumin
-                if par['TAU'+str(aa)] > self.MB.taumax:
-                    par['TAU'+str(aa)] = self.MB.taumax
-
-                if par['AGE'+str(aa)] < self.MB.agemin:
-                    par['AGE'+str(aa)] = self.MB.agemin
-                if par['AGE'+str(aa)] > self.MB.agemax:
-                    par['AGE'+str(aa)] = self.MB.agemax
-
-            # Is A in logspace?
-            if f_Alog:
-                A00 = 10**par['A'+str(aa)]
-            else:
-                A00 = par['A'+str(aa)]
-
-            tau,age = par['TAU%d'%aa],par['AGE%d'%aa]
-
-            NZ, NT, NA = bfnc.Z2NZ(Z,tau,age)
-            coln = int(2 + NZ*self.MB.ntau*self.MB.npeak + NT*self.MB.npeak + NA)
-            mslist = self.MB.af['ML']['ML_'+str(NZ)+'_'+str(NT)][NA]
-            Mtot += 10**(par['A%d'%aa] + np.log10(mslist))
-
-            if lib_all:
-                if aa == 0:
-                    nr = self.MB.lib_all[:, 0]
-                    xx = self.MB.lib_all[:, 1] # This is OBSERVED wavelength range at z=zgal
-                    yy = A00 * self.MB.lib_all[:, coln]
-                else:
-                    yy += A00 * self.MB.lib_all[:, coln]
-            else:
-                if aa == 0:
-                    nr = self.MB.lib[:, 0]
-                    xx = self.MB.lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-                    yy = A00 * self.MB.lib[:, coln]
-                else:
-                    yy += A00 * self.MB.lib[:, coln]
+        if f_neb:
+            nr, xx, yy, Mtot = get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=None, f_get_Mtot=True, f_check_limit=True)
+        else:
+            nr, xx, yy, Mtot = get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=None, f_get_Mtot=True, f_check_limit=True)
 
         # Keep logM
         self.MB.logMtmp = np.log10(Mtot)
@@ -839,7 +927,7 @@ class Func_tau:
                 return nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
             else:
                 return nrd_yyd_sort[:,0],nrd_yyd_sort[:,1],nrd_yyd_sort[:,2]
-
+    """
 
     def tmp04_dust(self, par, nprec=1):
         '''
@@ -878,8 +966,8 @@ class Func_tau:
         return yy_s, xx_s
 
   
-    def get_template_neb(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
-        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True):
+    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
+        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_neb=False):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -920,48 +1008,13 @@ class Func_tau:
                 par['Av'] = self.MB.Avmax
         Av = par['Av']
 
-        try:
-            Aneb = par['Aneb']
-            logU = par['logU']
-            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
-        except: # This is exception for initial minimizing;
-            Aneb = -99
-            logU = self.MB.logUs[0]
-            nlogU = 0
-
-        # logU
-        NU = len(self.MB.logUs)
-        # Check limit;
-        if Aneb < self.MB.Amin:
-            Aneb = self.MB.Amin
-        if Aneb > self.MB.Amax:
-            Aneb = self.MB.Amax
-
-        # Is A in logspace?
-        if f_Alog:
-            A00 = 10**Aneb
+        if f_neb:
+            # @@@ Not clear why f_check_limit cannot work
+            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=False)#, f_check_limit=True)
         else:
-            A00 = Aneb
+            # @@@ Not clear why f_check_limit cannot work
+            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=False)#, f_check_limit=True)
 
-        aa = 0
-        if self.MB.ZEVOL==1 or aa == 0:
-            if check_bound:
-                # Z limit:
-                if par['Z%d'%aa] < self.MB.Zmin:
-                    par['Z%d'%aa] = self.MB.Zmin
-                if par['Z%d'%aa] > self.MB.Zmax:
-                    par['Z%d'%aa] = self.MB.Zmax
-            Z = par['Z%d'%aa]
-            NZ = np.argmin(np.abs(self.MB.Zall-Z))
-
-        coln = int(2 + NZ*NU + nlogU)
-        if aa == 0:
-            nr = lib[:, 0]
-            xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
-            yy = A00 * lib[:, coln]
-        else:
-            yy += A00 * lib[:, coln]
-        
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
             xx_s = xx / (1+self.MB.zgal) * (1+zmc)
             fint = interpolate.interp1d(xx, yy, kind='nearest', fill_value="extrapolate")

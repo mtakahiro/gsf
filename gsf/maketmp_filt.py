@@ -143,9 +143,15 @@ def check_library(MB, af, nround=3):
     print('Speficied - Template')
 
     # No. of age;
-    if len(af['ML']['ms_0']) != len(MB.age):
-        print('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
-        flag = False
+    if MB.SFH_FORM==-99:
+        if len(af['ML']['ms_0']) != len(MB.age):
+            print('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
+            flag = False
+    else:
+        # if len(af['ML']['ms_0_0']) != len(MB.age):
+        #     print('No of age pixels:', len(MB.age), len(af['ML']['ms_0_0']))
+        #     flag = False
+        flag = True
 
     # Matallicity:
     for aa in range(len(Zall)):
@@ -734,8 +740,175 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
     else:
         print('Tau model comes here;')
+        ####################################
+        # Start generating templates
+        ####################################
+        tau = MB.tau
+        age = MB.ageparam
+        Na = len(age)
+
+        for zz in range(len(Z)):
+            Zbest = Z[zz]
+            Na = len(age)
+            Ntmp = 1
+            age_univ= MB.cosmo.age(zbest).value
+
+            for tt in range(len(tau)): # tau
+                if zz == 0 and tt == 0:
+                    if delwave>0:
+                        lm0_orig = spechdu['wavelength'][::nthin]
+                        lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
+                    else:
+                        lm0 = spechdu['wavelength'][::nthin]
+                    if not lammax == None and not MB.f_dust:
+                        lm0 = lm0[(lm0 * (zbest+1) < lammax)]
+                    wave = lm0
+
+                lmbest = np.zeros((Ntmp, len(lm0)), dtype=float)
+                fbest = np.zeros((Ntmp, len(lm0)), dtype=float)
+                lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
+                fbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
+
+                spec_mul = np.zeros((Na, len(lm0)), dtype=float)
+                spec_mul_nu = np.zeros((Na, len(lm0)), dtype=float)
+                spec_mul_nu_conv = np.zeros((Na, len(lm0)), dtype=float)
+
+                ftmpbb = np.zeros((Na, len(SFILT)), dtype=float)
+                ltmpbb = np.zeros((Na, len(SFILT)), dtype=float)
+
+                ftmp_nu_int = np.zeros((Na, len(lm)), dtype=float)
+                spec_av_tmp = np.zeros((Na, len(lm)), dtype=float)
+
+                ms = np.zeros(Na, dtype=float)
+                Ls = np.zeros(Na, dtype=float)
+                ms[:] = mshdu['ms_'+str(zz)+'_'+str(tt)][:] # [:] is necessary.
+                Ls[:] = mshdu['Ls_'+str(zz)+'_'+str(tt)][:]
+                Fuv = np.zeros(Na, dtype=float)
+
+                for ss in range(Na):
+                    #print(ss,tt,zz)
+                    if ss == 0 and tt == 0 and zz == 0:
+                        DL = MB.cosmo.luminosity_distance(zbest).value * MB.Mpc_cm # Luminositydistance in cm
+                        wavetmp = wave*(1.+zbest)
+
+                    if delwave>0:
+                        fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin], kind='nearest', fill_value="extrapolate")
+                        spec_mul[ss] = fint(lm0)
+                    else:
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
+
+                    ##################
+                    # IGM attenuation.
+                    ##################
+                    if f_IGM:
+                        # spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                        spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                    else:
+                        spec_av_tmp = spec_mul[ss,:]
+
+                    spec_mul_nu[ss,:] = flamtonu(wave, spec_av_tmp, m0set=MB.m0set)
+
+                    spec_mul_nu[ss,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                    spec_mul_nu[ss,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                    ms[ss] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
+
+                    if len(lm)>0:
+                        try:
+                            spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss,:], LSF, boundary='extend')
+                        except:
+                            spec_mul_nu_conv[ss,:] = spec_mul_nu[ss,:]
+                            if zz==0 and ss==0:
+                                print('Kernel is too small. No convolution.')
+                    else:
+                        spec_mul_nu_conv[ss,:] = spec_mul_nu[ss,:]
+
+                    if MB.f_spec:
+                        #ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu_conv[ss,:])
+                        ftmp_nu_int[ss,:] = data_int(lm, wavetmp, spec_mul_nu[ss,:])
+                    
+                    # Register filter response;
+                    ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu[ss,:], DIR_FILT, MB=MB, f_regist=False)
 
 
+                    ##########################################
+                    # Writing out the templates to fits table.
+                    ##########################################
+                    if ss == 0 and tt == 0 and zz == 0:
+                        # First file
+                        nd1    = np.arange(0,len(lm),1)
+                        nd3    = np.arange(10000,10000+len(ltmpbb[ss,:]),1)
+                        nd_ap  = np.append(nd1,nd3)
+                        lm_ap  = np.append(lm, ltmpbb[ss,:])
+
+                        # ASDF
+                        tree_spec.update({'wavelength':lm_ap})
+                        tree_spec.update({'colnum':nd_ap})
+
+                        # Second file
+                        # ASDF
+                        nd = np.arange(0,len(wavetmp),1)
+                        tree_spec_full.update({'wavelength':wavetmp})
+                        tree_spec_full.update({'colnum':nd})
+
+                    # ASDF
+                    # ???
+                    spec_ap = np.append(ftmp_nu_int[ss,:], ftmpbb[ss,:])
+                    tree_spec.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_ap})
+                    tree_spec_full.update({'fspec_orig_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu[ss,:]})                
+                    #tree_spec_full.update({'fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss): spec_mul_nu_conv[ss,:]})
+
+                    # Nebular library;
+                    if fneb == 1 and MB.f_bpass==0 and ss==0 and tt==0:
+                        if zz==0:
+                            spec_mul_neb = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                            spec_mul_neb_nu = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                            spec_mul_neb_nu_conv = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
+                            ftmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                            ltmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
+                            ftmp_neb_nu_int = np.zeros((len(Z), len(MB.logUs), len(lm)), dtype=float)
+
+                        for uu in range(len(MB.logUs)):
+                            if delwave>0:
+                                fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                                spec_mul_neb[zz,uu,:] = fint(lm0)
+                            else:
+                                spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin]
+                            
+                            con_neb = (spec_mul_neb[zz,uu,:]<0)
+                            spec_mul_neb[zz,uu,:][con_neb] = 0
+                            
+                            if f_IGM:
+                                # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                                spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
+                                spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
+
+                            spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)
+                            spec_mul_neb_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                            spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                            ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+
+                            if MB.f_spec:
+                                ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
+
+                            if len(lm)>0:
+                                try:
+                                    spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
+                                except:
+                                    spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                            else:
+                                spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+
+                            tree_spec_full.update({'fspec_orig_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu[zz,uu,:]})
+                            tree_spec_full.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_mul_neb_nu_conv[zz,uu,:]})
+
+                            spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
+                            tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
+
+                #########################
+                # Summarize the ML
+                #########################
+                # ASDF
+                tree_ML.update({'ML_'+str(zz)+'_'+str(tt): ms})
 
     #########################
     # Summarize the templates

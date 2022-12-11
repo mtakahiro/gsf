@@ -1777,8 +1777,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     alp = .5
 
     # Get total templates
-    y0p, x0p = MB.fnc.tmp04(vals, f_val=False, check_bound=False)
-    y0, x0 = MB.fnc.tmp04(vals, f_val=False, check_bound=False, lib_all=True)
+    y0p, x0p = MB.fnc.get_template(vals, f_val=False, check_bound=False)
+    y0, x0 = MB.fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True)
 
     ysum = y0
     f_50_comp = y0[:] * c / np.square(x0) / d
@@ -1797,7 +1797,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         vals_each['A%d'%aa] = -99
     for aa in range(len(age)):
         vals_each['A%d'%aa] = vals['A%d'%aa]
-        y0tmp, x0tmp = MB.fnc.tmp04(vals_each, f_val=False, check_bound=False, lib_all=True)
+        y0tmp, x0tmp = MB.fnc.get_template(vals_each, f_val=False, check_bound=False, lib_all=True)
         if aa == 0:
             y0keep = y0tmp
         else:
@@ -1988,7 +1988,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
                     ZZtmp = MB.ZFIX
                 vals['Z%d'%ss] = ZZtmp
 
-        mod0_tmp, xm_tmp = fnc.tmp04(vals, f_val=False, check_bound=False, lib_all=True)
+        mod0_tmp, xm_tmp = fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True)
         fm_tmp = mod0_tmp
 
         if False:
