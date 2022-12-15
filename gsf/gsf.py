@@ -8,7 +8,7 @@ import asdf
 
 # From gsf
 from .fitting import Mainbody
-from .maketmp_filt import maketemp #,maketemp_tau
+from .maketmp_filt import maketemp,maketemp_tau
 from .function_class import Func,Func_tau
 from .basic_func import Basic,Basic_tau
 
@@ -44,24 +44,25 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
     #
     # 0. Make basic templates
     #
-    if fplt == 0:
+    if fplt == 0 or fplt == 1:
         #
         # 0. Make basic templates
         #
-        lammax = 40000 * (1.+MB.zgal) # AA
-        if MB.f_dust:
-            lammax = 2000000 * (1.+MB.zgal) # AA
+        if fplt==0:
+            lammax = 40000 * (1.+MB.zgal) # AA
+            if MB.f_dust:
+                lammax = 2000000 * (1.+MB.zgal) # AA
 
-        if MB.SFH_FORM == -99:
-            if MB.f_bpass == 1:
-                from .maketmp_z0 import make_tmp_z0_bpass
-                make_tmp_z0_bpass(MB, lammax=lammax)
+            if MB.SFH_FORM == -99:
+                if MB.f_bpass == 1:
+                    from .maketmp_z0 import make_tmp_z0_bpass
+                    make_tmp_z0_bpass(MB, lammax=lammax)
+                else:
+                    from .maketmp_z0 import make_tmp_z0
+                    make_tmp_z0(MB, lammax=lammax)
             else:
-                from .maketmp_z0 import make_tmp_z0
-                make_tmp_z0(MB, lammax=lammax)
-        else:
-            from .maketmp_z0_tau import make_tmp_z0
-            make_tmp_z0(MB, lammax=lammax)            
+                from .maketmp_z0_tau import make_tmp_z0
+                make_tmp_z0(MB, lammax=lammax)            
 
     #
     # 1. Start making redshifted templates.
@@ -73,8 +74,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
         if MB.SFH_FORM == -99:
             maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
         else:
-            maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-            # maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
@@ -152,24 +152,25 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     # Make templates based on input redsfift.
     #
     flag_suc = True
-    if fplt == 0:
+    if fplt == 0 or fplt == 1:
         #
         # 0. Make basic templates
         #
-        lammax = 40000 * (1.+MB.zgal) # AA
-        if MB.f_dust:
-            lammax = 2000000 * (1.+MB.zgal) # AA
+        if fplt==0:
+            lammax = 40000 * (1.+MB.zgal) # AA
+            if MB.f_dust:
+                lammax = 2000000 * (1.+MB.zgal) # AA
 
-        if MB.SFH_FORM == -99:
-            if MB.f_bpass == 1:
-                from .maketmp_z0 import make_tmp_z0_bpass
-                make_tmp_z0_bpass(MB, lammax=lammax)
+            if MB.SFH_FORM == -99:
+                if MB.f_bpass == 1:
+                    from .maketmp_z0 import make_tmp_z0_bpass
+                    make_tmp_z0_bpass(MB, lammax=lammax)
+                else:
+                    from .maketmp_z0 import make_tmp_z0
+                    make_tmp_z0(MB, lammax=lammax)
             else:
-                from .maketmp_z0 import make_tmp_z0
-                make_tmp_z0(MB, lammax=lammax)
-        else:
-            from .maketmp_z0_tau import make_tmp_z0
-            make_tmp_z0(MB, lammax=lammax)            
+                from .maketmp_z0_tau import make_tmp_z0
+                make_tmp_z0(MB, lammax=lammax)            
 
     if not flag_suc:
         sys.exit()
@@ -191,8 +192,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         if MB.SFH_FORM == -99:
             flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
         else:
-            # flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
-            flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
+            flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
 
         #
         # 2. Main fitting part.
@@ -240,7 +240,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
             if MB.SFH_FORM == -99:
                 flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
             else:
-                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
 
         if MB.SFH_FORM == -99:
             from .plot_sfh import plot_sfh
@@ -271,16 +271,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     '''
 
     if fplt == 6:
-        # Use the final redshift;
-        from astropy.io import fits
-        hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
-        MB.zgal = hd_sum['ZMC']
-        
-        if MB.SFH_FORM == -99:
-            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-        else:
-            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-
         if MB.SFH_FORM == -99:
             from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
             plot_corner_physparam_summary(MB)
