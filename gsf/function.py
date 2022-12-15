@@ -489,16 +489,13 @@ def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
 
 
 def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
-    '''
-    Purpose
-    -------
-    Get RF UV (or any wavelength) flux density.
+    '''Get RF UV (or any wavelength) flux density.
 
     Parameters
     ----------
-    lmtmp : 
+    lmtmp : float array
         Rest-frame wavelength, in AA.
-    ftmp : 
+    ftmp : float array
         Fnu
     
     Returns
@@ -548,12 +545,12 @@ def fnutonu(fnu, m0set=25.0, m0input=-48.6):
     return fnu_new
 
 
-def flamtonu(lam, flam, m0set=25.0):
+def flamtonu(lam, flam, m0set=25.0, m0=-48.6):
     '''
     Converts from Flam to Fnu, with mag zeropoint of m0set.
     
     '''
-    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    Ctmp = lam**2/c * 10**((m0set-m0)/2.5) #/ delx_org
     fnu  = flam * Ctmp
     return fnu
 
