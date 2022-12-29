@@ -10,6 +10,7 @@ import asdf
 from astropy.io import fits,ascii
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
+import astropy.units as u
 
 from .function import *
 from .function_igm import *
@@ -189,14 +190,19 @@ def check_library(MB, af, nround=3):
     return flag
 
 
-def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
+def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
+    sig_temp_def=50.):
     '''
     Gets Morphology params, and returns LSF
+
+    Parameters
+    ----------
+    lm : float array
+
     '''
     Amp = 0
     f_morp = False
     if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
-        f_morp = True
         try:
             mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
             fm = ascii.read(DIR_EXTR + mor_file)
@@ -206,6 +212,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
                 alp = fm['alp']
             else:
                 alp = 0
+            f_morp = True
         except Exception:
             print('Error in reading morphology params.')
             print('No morphology convolution.')
@@ -221,12 +228,16 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
         sig_temp = float(inputs['SIG_TEMP'])
         print('Template is set to %.1f km/s.'%(sig_temp))
     except:
-        sig_temp = 50.
+        sig_temp = sig_temp_def
         print('Template resolution is unknown.')
         print('Set to %.1f km/s.'%(sig_temp))
 
-    iixlam = np.argmin(np.abs(lm-4000)) # Around 4000 AA
-    dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
+    # @@@ Below assumes a constant R over wavelength range;
+    iixlam = np.argmin(np.abs(lm-wave_repr)) # Around 4000 AA
+    if iixlam == len(lm)-1:
+        dellam = lm[iixlam] - lm[iixlam-1] # AA/pix
+    else:
+        dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
     R_temp = c / (sig_temp*1e3*1e10)
     sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
     sig_inst = 0 #65 #km/s for Manga
@@ -403,44 +414,60 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # Get ascii data.
     #
     MB.f_spec = False
-    try:
-        spec_files = inputs['SPEC_FILE']
-        spec_files = [x.strip() for x in spec_files.split(',')]
+    if True:#try:
+        spec_files = [x.strip() for x in inputs['SPEC_FILE'].split(',')]
         ninp0 = np.zeros(len(spec_files), dtype='int')
+
+        # THIS PART IS JUST TO GET THE TOTAL ARRAY NUMBER;
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp = fd0[:,0]
-                fobs0 = fd0[:,1]
-                eobs0 = fd0[:,2]
-                ninp0[ff] = len(lm0tmp)
+                if spec_file.split('.')[-1] == 'asdf':
+                    id_asdf = int(spec_file.split('_')[2])
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
+                    lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom)
+                    ninp0[ff] = len(lm0tmp)
+                else:
+                    fd0 = np.loadtxt(os.path.joing(DIR_EXTR, spec_file), comments='#')
+                    lm0tmp = fd0[:,0]
+                    ninp0[ff] = len(lm0tmp)
             except Exception:
                 print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
                 pass
-        # Constructing arrays.
+
+        # Then, Constructing arrays.
         lm = np.zeros(np.sum(ninp0[:]),dtype=float)
         fobs = np.zeros(np.sum(ninp0[:]),dtype=float)
         eobs = np.zeros(np.sum(ninp0[:]),dtype=float)
         fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
-                fobs0 = fd0[:,1]
-                eobs0 = fd0[:,2]
+                if spec_file.split('.')[-1] == 'asdf':
+                    id_asdf = int(spec_file.split('_')[2])
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
+                    lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom).value
+                    fobs0 = fd0[id_asdf]['flux'].value
+                    eobs0 = np.sqrt(fd0[id_asdf]['fluxvar']).value
+                else:
+                    fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                    lm0tmp = fd0[:,0]
+                    fobs0 = fd0[:,1]
+                    eobs0 = fd0[:,2]
+
                 for ii1 in range(ninp0[ff]):
                     if ff==0:
                         ii = ii1
                     else:
                         ii = ii1 + np.sum(ninp0[:ff])
                     fgrs[ii] = ff
-                    lm[ii]   = lm0tmp[ii1]
+                    lm[ii] = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
                 MB.f_spec = True
+
             except Exception:
+                print('No spec data is registered.')
                 pass
-    except:
+    else:#except:
         print('No spec file is provided.')
         pass
 
@@ -989,7 +1016,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             else:
                 if tt == 0:
                     from astropy.modeling import models
-                    from astropy import units as u
                     print('Dust emission based on Modified Blackbody')
                     '''
                     # from Eq.3 of Bianchi 13
@@ -1056,18 +1082,17 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
     ##########################################
-    # For observation.
-    # Write out for the Multi-component fitting.
+    # For data;
     ##########################################
     if True:
         MB.data = {}
         file_tmp = 'tmp_library_%s.txt'%MB.ID
         file_tmp2 = 'tmp_library2%s.txt'%MB.ID
-        fw = open(file_tmp,'w')#
+        fw = open(file_tmp,'w')
         fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
         for ii in range(len(lm)):
             g_offset = 1000 * fgrs[ii]
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
+            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu and not np.isnan(fobs[ii]):
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
             else:
                 fw.write('%d %.5f 0 1000\n'%(ii+g_offset, lm[ii]))
@@ -1075,7 +1100,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         for ii in range(len(ltmpbb[0,:])):
             if SFILT[ii] in SKIPFILT:# data point to be skiped;
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
-            elif  ebb[ii]>ebblim:
+            elif ebb[ii]>ebblim:
                 fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
             else:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))

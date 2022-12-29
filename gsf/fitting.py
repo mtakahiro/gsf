@@ -66,8 +66,14 @@ class Mainbody():
 
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
         cosmo=None, idman=None, zman=None, NRbb_lim=10000):
+        '''
+        Parameters
+        ----------
+        NRbb_lim : int
+            BB data is associated with ids greater than this number.
+        '''
         self.update_input(inputs, idman=idman, zman=zman)
-        self.NRbb_lim = NRbb_lim # BB data is associated with ids greater than this number.
+        self.NRbb_lim = NRbb_lim
 
 
     def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,
