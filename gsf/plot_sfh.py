@@ -18,7 +18,7 @@ from .basic_func import Basic
 from .function_igm import *
 
 
-def plot_sfh(MB, f_comp=0, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
+def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
     f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=True):
     '''

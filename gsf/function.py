@@ -5,6 +5,7 @@ from scipy.integrate import simps
 import pickle as cPickle
 import os
 import scipy.interpolate as interpolate
+from scipy.interpolate import interp1d
 import logging
 
 ################
@@ -481,32 +482,32 @@ def get_Fint(lmtmp, ftmp, lmin=1400, lmax=1500):
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
         # Equivalent to the following;
-        I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
-        I2  = simps(lamS*1.,lamS)        #Numerator
-        fnu = I1 #/I2                     #Average flux density
+        I1 = simps(spec*lamS*1.,lamS)
+        I2 = simps(lamS*1.,lamS)
+        fnu = I1
     return fnu
 
 
 def get_Fuv(lmtmp, ftmp, lmin=1400, lmax=1500):
-    '''
+    '''Get RF UV (or any wavelength) flux density.
+
     Parameters
     ----------
-    lmtmp : 
+    lmtmp : float array
         Rest-frame wavelength, in AA.
-    ftmp : 
+    ftmp : float array
         Fnu
     
     Returns
     -------
-    Convolved flux density. Not integrated sum.
+    Flux density estimated over lmin:lmax. Not integrated sum.
     '''
     con = (lmtmp>lmin) & (lmtmp<lmax) & (ftmp>0)
     if len(lmtmp[con])>0:
         lamS,spec = lmtmp[con], ftmp[con] # Two columns with wavelength and flux density
-        # Equivalent to the following;
-        I1  = simps(spec*lamS*1.,lamS)   #Denominator for Fnu
-        I2  = simps(lamS*1.,lamS)                  #Numerator
-        fnu = I1/I2                               #Average flux density
+        I1 = simps(spec*lamS*1.,lamS)
+        I2 = simps(lamS*1.,lamS)
+        fnu = I1/I2
     else:
         fnu = None
     return fnu
@@ -544,12 +545,12 @@ def fnutonu(fnu, m0set=25.0, m0input=-48.6):
     return fnu_new
 
 
-def flamtonu(lam, flam, m0set=25.0):
+def flamtonu(lam, flam, m0set=25.0, m0=-48.6):
     '''
     Converts from Flam to Fnu, with mag zeropoint of m0set.
     
     '''
-    Ctmp = lam**2/c * 10**((48.6+m0set)/2.5) #/ delx_org
+    Ctmp = lam**2/c * 10**((m0set-m0)/2.5) #/ delx_org
     fnu  = flam * Ctmp
     return fnu
 
@@ -649,6 +650,26 @@ def savecpkl(data, cpklfile, verbose=True):
     f = open(cpklfile,'wb')
     cPickle.dump(data, f, 2)
     f.close()
+
+
+def apply_dust(yy, xx, nr, Av, dust_model=0):
+	'''
+	xx : float array
+		RF Wavelength
+	'''
+	if dust_model == 0:
+		yyd, xxd, nrd = dust_calz(xx, yy, Av, nr)
+	elif dust_model == 1:
+		yyd, xxd, nrd = dust_mw(xx, yy, Av, nr)
+	elif dust_model == 2: # LMC
+		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
+	elif dust_model == 3: # SMC
+		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+	elif dust_model == 4: # Kriek&Conroy with gamma=-0.2
+		yyd, xxd, nrd = dust_kc(xx, yy, Av, nr, Rv=4.05, gamma=-0.2)
+	else:
+		yyd, xxd, nrd = dust_calz(xx, yy, Av, nr)
+	return yyd, xxd, nrd
 
 
 def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
@@ -1084,30 +1105,33 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     '''
     Parameters
     ----------
-    f0 : 
+    f0 : float array
         Flux for spectrum, in fnu
-    l0 : 
+    l0 : float array
         Wavelength for spectrum, in AA (that matches filter response curve's.)
-    f_regist : 
-        If True, read filter response curve.
+    f_regist : bool
+        If True, read filter response curves and register those to MB.
     '''
     if MB==None:
         f_regist = True
     if f_regist:
         lfil_lib = {}
         ffil_lib = {}
-        
-    fnu = np.zeros(len(band0), dtype='float')
-    lcen = np.zeros(len(band0), dtype='float')
-    if fw == True:
-        fwhm = np.zeros(len(band0), dtype='float')
 
+    fnu = np.zeros_like(band0, dtype=float)
+    lcen = np.zeros_like(band0, dtype=float)
+    if fw:
+        fwhm = np.zeros_like(band0, dtype=float)
+    
     for ii in range(len(band0)):
         if not f_regist:
             try:
                 lfil = MB.lfil_lib['%s'%str(band0[ii])]
                 ffil = MB.ffil_lib['%s'%str(band0[ii])]
-                if fw == True:
+                lmin = MB.lfil_lib['%s_lmin'%str(band0[ii])]
+                lmax = MB.lfil_lib['%s_lmax'%str(band0[ii])]
+                lcen[ii] = MB.lfil_lib['%s_lcen'%str(band0[ii])]
+                if fw:
                     fwhm = MB.filt_fwhm
             except:
                 f_regist = True
@@ -1119,35 +1143,42 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
             lfil = fd[:,1]
             ffil = fd[:,2]
             ffil /= np.max(ffil)
-            if fw == True:
+            lmin = np.min(lfil)
+            lmax = np.max(lfil)
+
+            if fw:
                 ffil_cum = np.cumsum(ffil)
                 ffil_cum/= ffil_cum.max()
                 con = (ffil_cum>0.05) & (ffil_cum<0.95)
-                fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])       
+                fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
+
+            con = (l0>lmin) & (l0<lmax)
+            delw = np.nanmin(np.diff(l0))
+            if delw > np.nanmin(np.diff(ffil)):
+                lfil_new = np.arange(lmin,lmax,delw)
+                fint = interpolate.interp1d(lfil, ffil, kind='nearest', fill_value="extrapolate")
+                ffil = fint(lfil_new)
+                lfil = lfil_new
 
             lfil_lib['%s'%str(band0[ii])] = lfil
             ffil_lib['%s'%str(band0[ii])] = ffil
 
-        lmin  = np.min(lfil)
-        lmax  = np.max(lfil)
-        imin  = 0
-        imax  = 0
+            lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
+            lfil_lib['%s_lmin'%str(band0[ii])] = lmin
+            lfil_lib['%s_lmax'%str(band0[ii])] = lmax
+            lfil_lib['%s_lcen'%str(band0[ii])] = lcen[ii]
 
         con = (l0>lmin) & (l0<lmax) #& (f0>0)
-        lcen[ii]  = np.sum(lfil*ffil)/np.sum(ffil)
         if len(l0[con])>1:
-            lamS,spec = l0[con], f0[con] # Two columns with wavelength and flux density
-            lamF,filt = lfil, ffil # Two columns with wavelength and response in the range [0,1]
-            fint = interpolate.interp1d(lamF, filt, kind='nearest', fill_value="extrapolate")
-            filt_int = fint(lamS)
-            wht = 1.
+            fint = interp1d(lfil, ffil, kind='nearest', fill_value="extrapolate")
+            filt_int = fint(l0[con])
 
             # This does not work sometimes;
-            delS = lamS[1]-lamS[0]
-            I1 = np.sum(spec/lamS**2*c*filt_int*lamS*delS)   #Denominator for Fnu
-            I2 = np.sum(filt_int/lamS*delS)                  #Numerator
+            #delS = l0[con][1]-l0[con][0]
+            I1 = np.sum(f0[con]/l0[con]**2*c*filt_int*l0[con])
+            I2 = np.sum(filt_int/l0[con])
             if I2>0:
-                fnu[ii] = I1/I2/c         #Average flux density
+                fnu[ii] = I1/I2/c
             else:
                 fnu[ii] = 0
         else:
@@ -1156,13 +1187,113 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     if MB != None and f_regist:
         MB.lfil_lib = lfil_lib
         MB.ffil_lib = ffil_lib
-        if fw == True:
+        if fw:
             MB.filt_fwhm = fwhm
         
     if fw:
         return lcen, fnu, fwhm
     else:
         return lcen, fnu
+
+
+"""
+def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
+    '''
+    This one does not improve much.
+    
+    Parameters
+    ----------
+    f0 : float array
+        Flux for spectrum, in fnu
+    l0 : float array
+        Wavelength for spectrum, in AA (that matches filter response curve's.)
+    f_regist : bool
+        If True, read filter response curves and register those to MB.
+    '''
+    if MB==None:
+        f_regist = True
+    if f_regist:
+        lfil_lib = {}
+        ffil_lib = {}
+
+    if fw:
+        fwhm = np.zeros_like(band0, dtype=float)
+
+    if not f_regist:
+        try:
+            ffil_lib = MB.ffil_lib
+            if fw:
+                fwhm = MB.filt_fwhm
+        except:
+            f_regist = True
+            ffil_lib = {}
+            # lfils = np.zeros_like(band0, dtype=float)
+            # ffils = np.zeros_like(band0, dtype=float)
+            # lmins = np.zeros_like(band0, dtype=float)
+            # lmaxs = np.zeros_like(band0, dtype=float)
+
+    if f_regist:
+        lcen = np.zeros_like(band0, dtype=float)
+        for ii in range(len(band0)):
+            ffil_lib['%s'%band0[ii]] = {}
+            
+            fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
+            lfil = fd[:,1]
+            ffil = fd[:,2]
+            ffil /= np.max(ffil)
+            lmin = np.min(lfil)
+            lmax = np.max(lfil)
+
+            if fw:
+                ffil_cum = np.cumsum(ffil)
+                ffil_cum/= ffil_cum.max()
+                con = (ffil_cum>0.05) & (ffil_cum<0.95)
+                fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
+
+            con = (l0>lmin) & (l0<lmax)
+            delw = np.nanmin(np.diff(l0))
+            if delw > np.nanmin(np.diff(ffil)):
+                lfil_new = np.arange(lmin,lmax,delw)
+                fint = interpolate.interp1d(lfil, ffil, kind='nearest', fill_value="extrapolate")
+                ffil = fint(lfil_new)
+                lfil = lfil_new
+
+            ffil_lib['%s'%band0[ii]]['lfil'] = lfil
+            ffil_lib['%s'%band0[ii]]['ffil'] = ffil
+            ffil_lib['%s'%band0[ii]]['lmin'] = lmin
+            ffil_lib['%s'%band0[ii]]['lmax'] = lmax
+            lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
+        
+        ffil_lib['lcen'] = lcen
+
+    fnu = np.zeros_like(band0, dtype=float)
+    for ii in range(len(band0)):
+        con = (l0>ffil_lib['%s'%band0[ii]]['lmin']) & (l0<ffil_lib['%s'%band0[ii]]['lmax']) #& (f0>0)
+
+        if len(l0[con])>1:
+            fint = interp1d(ffil_lib['%s'%band0[ii]]['lfil'], ffil_lib['%s'%band0[ii]]['ffil'], kind='nearest', fill_value="extrapolate")
+            filt_int = fint(l0[con])
+
+            # This does not work sometimes;
+            I1 = np.sum(f0[con]/l0[con]**2*c*filt_int*l0[con])
+            I2 = np.sum(filt_int/l0[con])
+            if I2>0:
+                fnu[ii] = I1/I2/c
+            else:
+                fnu[ii] = 0
+        else:
+            fnu[ii] = 0
+
+    if MB != None and f_regist:
+        MB.ffil_lib = ffil_lib
+        if fw:
+            MB.filt_fwhm = fwhm
+        
+    if fw:
+        return ffil_lib['lcen'], fnu, fwhm
+    else:
+        return ffil_lib['lcen'], fnu
+"""
 
 
 def fil_fwhm(band0, DIR):

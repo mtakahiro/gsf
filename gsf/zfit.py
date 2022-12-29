@@ -90,8 +90,6 @@ def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, inclu
 def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
     nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000, include_photometry=True):
     '''
-    Purpose
-    -------
     Fit observed flux with a template to get redshift probability.
 
     Parameters
@@ -162,6 +160,8 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
 
 def get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp, file_zprob, rms_lim=1e4):
     '''
+    Parameters
+    ----------
     zz_prob : float array
         redshift array for fit.
     fy_cz, ey_cz, x_cz : 

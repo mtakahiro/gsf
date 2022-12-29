@@ -150,6 +150,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }
+                    tree.update({'age': MB.age})
+                    tree.update({'tau': MB.tau})
+                    tree.update({'Z': MB.Zall})
                     if fneb == 1:
                         tree.update({'logUMIN': MB.logUMIN})
                         tree.update({'logUMAX': MB.logUMAX})
@@ -167,7 +170,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
             tree_ML.update({'ms_'+str(zz)+'_'+str(ss): ms})
             tree_ML.update({'Ls_'+str(zz)+'_'+str(ss): Ls})
             tree_ML.update({'frac_mass_survive_'+str(zz)+'_'+str(ss): mlost})
-
 
     # Write;
     for aa in range(len(tau)):

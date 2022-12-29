@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search &mdash; gsf 1.4 documentation</title>
+  <title>Redshift Fitting &mdash; gsf 1.4 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
-    
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -18,10 +18,10 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="gsf" href="auto/modules.html" />
+    <link rel="prev" title="Prior" href="prior.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -32,7 +32,7 @@
             <a href="index.html" class="icon icon-home"> gsf
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -40,7 +40,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installing gsf</a></li>
 <li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
@@ -50,7 +50,7 @@
 <li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
 <li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
-<li class="toctree-l1"><a class="reference internal" href="redshift_fitting.html">Redshift Fitting</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Redshift Fitting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
 </ul>
 
@@ -68,8 +68,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Search</li>
+      <li>Redshift Fitting</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/redshift_fitting.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -77,22 +78,32 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <section id="redshift-fitting">
+<span id="id1"></span><h1>Redshift Fitting<a class="headerlink" href="#redshift-fitting" title="Permalink to this headline"></a></h1>
+<p>While gsf is now able to search the redshift grid during the fiting process,
+it was not originally designed to efficiently estimate the posterior for redshift.
+Users can turn this redshift fitting functionality by turning <code class="docutils literal notranslate"><span class="pre">F_ZMC</span></code> to 1,
+with <code class="docutils literal notranslate"><span class="pre">ZMCMIN</span></code> and <code class="docutils literal notranslate"><span class="pre">ZMCMAX</span></code> properly specified too, in the input configuration file.</p>
+<p>To minimize the disk space usage, gsf generates templates only at <code class="docutils literal notranslate"><span class="pre">ZMC</span></code> specified in the input file.
+How it works with redshift search is, during the fitting process, when gsf detects a large shift
+(specifically, larger than the limiting value specified by <code class="docutils literal notranslate"><span class="pre">deltaz_lim</span></code> in <cite>function_class</cite>) in redshift from <code class="docutils literal notranslate"><span class="pre">ZMC</span></code>,
+gsf calls the filter convolution function (<cite>function.filconv</cite>) to recalculate the model broadband flux for the given model,
+to better reflect the current place of each walker in the parameter space. <code class="docutils literal notranslate"><span class="pre">ZMC</span></code> is also replaced to this new redshift at
+this point. When the shift is small, gsf interpolates the model fluxes for the given set of filters
+after applying the shift to wavelength.</p>
+<p>This extra step allows more accurate parameter search for gsf with redshift as a variable, but significantly slows down the computing speed, by a factor up to 10.
+This overhead is primarily caused by the number of data points in the model templates and filter curves.
+To minimize the computation time, users may want to consder using sparse templates, by using <code class="docutils literal notranslate"><span class="pre">--delwave</span></code> argument (delta wave, in Aungstrome) when they run run_gsf.py
+script, or by directly passing the same parameter to <cite>maketemp</cite> function.</p>
+</section>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="prior.html" class="btn btn-neutral float-left" title="Prior" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="auto/modules.html" class="btn btn-neutral float-right" title="gsf" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 
@@ -114,14 +125,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-  <script>
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script id="searchindexloader"></script>
-   
-
+  </script> 
 
 </body>
 </html>

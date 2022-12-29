@@ -148,7 +148,7 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 
 	ytmp_abs = ytmp * np.exp(-tau)
 
-	return ytmp_abs
+	return ytmp_abs, x_HI
 
 
 def madau_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216.):

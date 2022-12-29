@@ -38,7 +38,7 @@ class Post:
         else:
             vals = pars.valuesdict()
 
-        model, x1 = self.mb.fnc.tmp04(vals)
+        model, x1 = self.mb.fnc.get_template(vals)
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
@@ -52,7 +52,7 @@ class Post:
 
         if self.mb.fneb:
             n_optir = self.mb.n_optir
-            model_neb, x1_neb = self.mb.fnc.tmp04_neb(vals)
+            model_neb, x1_neb = self.mb.fnc.get_template(vals, f_neb=True)
             model[:n_optir] += model_neb
 
         if self.mb.ferr:

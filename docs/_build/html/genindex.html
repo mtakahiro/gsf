@@ -47,6 +47,7 @@
 <li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
 <li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
+<li class="toctree-l1"><a class="reference internal" href="redshift_fitting.html">Redshift Fitting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
 </ul>
 
@@ -88,7 +89,6 @@
  | <a href="#M"><strong>M</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
- | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
@@ -108,6 +108,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.minimizer.Minimizer.ampgo">ampgo() (gsf.minimizer.Minimizer method)</a>
+</li>
+      <li><a href="auto/gsf.html#gsf.function.apply_dust">apply_dust() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.minimizer.asteval_with_uncertainties">asteval_with_uncertainties() (in module gsf.minimizer)</a>
 </li>
@@ -161,14 +163,18 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.function.data_int">data_int() (in module gsf.function)</a>
 </li>
+      <li><a href="auto/gsf.html#gsf.function.delta">delta() (in module gsf.function)</a>
+</li>
       <li><a href="auto/gsf.html#gsf.function.detect_line">detect_line() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.function.detect_line_man">detect_line_man() (in module gsf.function)</a>
 </li>
-      <li><a href="auto/gsf.html#gsf.minimizer.Minimizer.dual_annealing">dual_annealing() (gsf.minimizer.Minimizer method)</a>
+      <li><a href="auto/gsf.html#gsf.function_igm.dijkstra_igm_abs">dijkstra_igm_abs() (in module gsf.function_igm)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="auto/gsf.html#gsf.minimizer.Minimizer.dual_annealing">dual_annealing() (gsf.minimizer.Minimizer method)</a>
+</li>
       <li><a href="auto/gsf.html#gsf.function.dust_calz">dust_calz() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.function.dust_gen">dust_gen() (in module gsf.function)</a>
@@ -242,12 +248,16 @@
       <li><a href="auto/gsf.html#gsf.function.gauss">gauss() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.function.get_chi2">get_chi2() (in module gsf.function)</a>
+
+      <ul>
+        <li><a href="auto/gsf.html#gsf.zfit.get_chi2">(in module gsf.zfit)</a>
 </li>
+      </ul></li>
       <li><a href="auto/gsf.html#gsf.function_igm.get_column">get_column() (in module gsf.function_igm)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.posterior_nested.Post_nested.get_dict">get_dict() (gsf.posterior_nested.Post_nested method)</a>
 </li>
-      <li><a href="auto/gsf.html#gsf.function.get_filt">get_filt() (in module gsf.function)</a>
+      <li><a href="auto/gsf.html#gsf.function_igm.get_dtdz">get_dtdz() (in module gsf.function_igm)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.function.get_Fint">get_Fint() (in module gsf.function)</a>
 </li>
@@ -275,6 +285,8 @@
 </li>
       <li><a href="auto/gsf.html#gsf.writing.get_param">get_param() (in module gsf.writing)</a>
 </li>
+      <li><a href="auto/gsf.html#gsf.posterior_flexible.Post.get_sfh_prior">get_sfh_prior() (gsf.posterior_flexible.Post method)</a>
+</li>
       <li><a href="auto/gsf.html#gsf.function.get_SFMS">get_SFMS() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.fitting.Mainbody.get_shuffle">get_shuffle() (gsf.fitting.Mainbody method)</a>
@@ -284,6 +296,30 @@
       <li><a href="auto/gsf.html#gsf.maketmp_filt.get_spectrum_draine">get_spectrum_draine() (in module gsf.maketmp_filt)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.function_class.Func.get_template">get_template() (gsf.function_class.Func method)</a>
+
+      <ul>
+        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.get_template">(gsf.function_class.Func_tau method)</a>
+</li>
+      </ul></li>
+      <li><a href="auto/gsf.html#gsf.function_class.Func.get_template_single">get_template_single() (gsf.function_class.Func method)</a>
+</li>
+      <li><a href="auto/gsf.html#gsf.function_class.Func.get_total_flux">get_total_flux() (gsf.function_class.Func method)</a>
+
+      <ul>
+        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.get_total_flux">(gsf.function_class.Func_tau method)</a>
+</li>
+      </ul></li>
+      <li><a href="auto/gsf.html#gsf.function_class.Func.get_total_flux_neb">get_total_flux_neb() (gsf.function_class.Func method)</a>
+
+      <ul>
+        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.get_total_flux_neb">(gsf.function_class.Func_tau method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="auto/gsf.html#gsf.function.get_uvbeta">get_uvbeta() (in module gsf.function)</a>
+</li>
+      <li><a href="auto/gsf.html#gsf.function_igm.get_XI">get_XI() (in module gsf.function_igm)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.fitting.Mainbody.get_zdist">get_zdist() (gsf.fitting.Mainbody method)</a>
 </li>
@@ -294,8 +330,6 @@
         <li><a href="auto/gsf.html#module-gsf">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     gsf.basic_func
 
@@ -410,6 +444,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.posterior_nested.Post_nested.lnprob">lnprob() (gsf.posterior_nested.Post_nested method)</a>
 </li>
+      <li><a href="auto/gsf.html#gsf.zfit.lnprob_cz">lnprob_cz() (in module gsf.zfit)</a>
+</li>
       <li><a href="auto/gsf.html#gsf.posterior_flexible.Post.lnprob_emcee">lnprob_emcee() (gsf.posterior_flexible.Post method)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.function.loadcpkl">loadcpkl() (in module gsf.function)</a>
@@ -437,6 +473,8 @@
       <li><a href="auto/gsf.html#gsf.maketmp_filt.maketemp">maketemp() (in module gsf.maketmp_filt)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.maketmp_filt.maketemp_tau">maketemp_tau() (in module gsf.maketmp_filt)</a>
+</li>
+      <li><a href="auto/gsf.html#gsf.function_igm.masongronke_igm_abs">masongronke_igm_abs() (in module gsf.function_igm)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.minimizer.Minimizer.minimize">minimize() (gsf.minimizer.Minimizer method)</a>
 
@@ -501,24 +539,12 @@
         <li><a href="auto/gsf.html#gsf.function_class.Func_tau.open_spec_dust_fits">(gsf.function_class.Func_tau method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.function_class.Func.open_spec_fits">open_spec_fits() (gsf.function_class.Func method)</a>
 
       <ul>
         <li><a href="auto/gsf.html#gsf.function_class.Func_tau.open_spec_fits">(gsf.function_class.Func_tau method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="auto/gsf.html#gsf.function_class.Func.open_spec_fits_dir">open_spec_fits_dir() (gsf.function_class.Func method)</a>
-
-      <ul>
-        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.open_spec_fits_dir">(gsf.function_class.Func_tau method)</a>
-</li>
-      </ul></li>
-      <li><a href="auto/gsf.html#gsf.function_class.Func.open_spec_neb_fits">open_spec_neb_fits() (gsf.function_class.Func method)</a>
-
-      <ul>
-        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.open_spec_neb_fits">(gsf.function_class.Func_tau method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -548,14 +574,6 @@
   </ul></td>
 </tr></table>
 
-<h2 id="Q">Q</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="auto/gsf.html#gsf.fitting.Mainbody.quick_fit">quick_fit() (gsf.fitting.Mainbody method)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -579,6 +597,8 @@
       </ul></li>
       <li><a href="auto/gsf.html#gsf.posterior_nested.Post_nested.residual_nest">residual_nest() (gsf.posterior_nested.Post_nested method)</a>
 </li>
+      <li><a href="auto/gsf.html#gsf.zfit.residual_z">residual_z() (in module gsf.zfit)</a>
+</li>
       <li><a href="auto/gsf.html#gsf.gsf.run_gsf_all">run_gsf_all() (in module gsf.gsf)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.gsf.run_gsf_template">run_gsf_template() (in module gsf.gsf)</a>
@@ -601,10 +621,10 @@
 </li>
       <li><a href="auto/gsf.html#gsf.function.SFH_cons">SFH_cons() (in module gsf.function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.function.SFH_dec">SFH_dec() (in module gsf.function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.function.SFH_del">SFH_del() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.minimizer.Minimizer.shgo">shgo() (gsf.minimizer.Minimizer method)</a>
@@ -612,6 +632,8 @@
       <li><a href="auto/gsf.html#gsf.minimizer.MinimizerResult.show_candidates">show_candidates() (gsf.minimizer.MinimizerResult method)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.maketmp_filt.sim_spec">sim_spec() (in module gsf.maketmp_filt)</a>
+</li>
+      <li><a href="auto/gsf.html#gsf.function.str2bool">str2bool() (in module gsf.function)</a>
 </li>
       <li><a href="auto/gsf.html#gsf.posterior_flexible.Post.swap_pars">swap_pars() (gsf.posterior_flexible.Post method)</a>
 </li>
@@ -623,28 +645,10 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="auto/gsf.html#gsf.function_class.Func.tmp03">tmp03() (gsf.function_class.Func method)</a>
-</li>
-      <li><a href="auto/gsf.html#gsf.function_class.Func.tmp03_neb">tmp03_neb() (gsf.function_class.Func method)</a>
-</li>
-      <li><a href="auto/gsf.html#gsf.function_class.Func.tmp04">tmp04() (gsf.function_class.Func method)</a>
-
-      <ul>
-        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.tmp04">(gsf.function_class.Func_tau method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="auto/gsf.html#gsf.function_class.Func.tmp04_dust">tmp04_dust() (gsf.function_class.Func method)</a>
 
       <ul>
         <li><a href="auto/gsf.html#gsf.function_class.Func_tau.tmp04_dust">(gsf.function_class.Func_tau method)</a>
-</li>
-      </ul></li>
-      <li><a href="auto/gsf.html#gsf.function_class.Func.tmp04_neb">tmp04_neb() (gsf.function_class.Func method)</a>
-
-      <ul>
-        <li><a href="auto/gsf.html#gsf.function_class.Func_tau.tmp04_neb">(gsf.function_class.Func_tau method)</a>
 </li>
       </ul></li>
   </ul></td>

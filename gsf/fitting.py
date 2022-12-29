@@ -64,11 +64,13 @@ class Mainbody():
         or the width to the next age bin.
     '''
 
-    def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None, idman=None, zman=None):
+    def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
+        cosmo=None, idman=None, zman=None, NRbb_lim=10000):
         self.update_input(inputs, idman=idman, zman=zman)
+        self.NRbb_lim = NRbb_lim # BB data is associated with ids greater than this number.
 
 
-    def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None, \
+    def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,
                     idman=None, zman=None, sigz:float=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
@@ -86,7 +88,6 @@ class Mainbody():
             Conversion factor from pixel-to-arcsec
 
         '''
-
         # Then register;
         self.inputs = inputs
         self.c = c
@@ -281,7 +282,6 @@ class Mainbody():
             self.band['%s_fwhm'%(self.filts[ii])] = np.max(fd[:,1][con]) - np.min(fd[:,1][con])       
 
         # Filter response curve directory, for RF colors.
-        #self.filts_rf = ['u','b','v','j','sz']
         self.filts_rf = '93,141,95,220,160'.split(',')
         self.band_rf = {}
         for ii in range(len(self.filts_rf)):
@@ -291,7 +291,7 @@ class Mainbody():
 
         # Tau comparison?
         # -> Deprecated;
-        self.ftaucomp = 0
+        # self.ftaucomp = 0
 
         # Check if func model for SFH;
         try:
@@ -647,7 +647,10 @@ class Mainbody():
 
         print('\n')
 
+
     def get_lines(self, LW0):
+        '''
+        '''
         fLW = np.zeros(len(LW0), dtype='int')
         LW = LW0
         return LW, fLW
@@ -655,6 +658,8 @@ class Mainbody():
 
     def read_data(self, Cz0:float, Cz1:float, Cz2:float, zgal:float, add_fir:bool=False, idman=None):
         '''
+        Read in observed data. Not model fluxes.
+
         Parameters
         ----------
         Cz0, Cz1 : float
@@ -675,12 +680,7 @@ class Mainbody():
         ##############
         # Spectrum
         ##############
-        dat = ascii.read(self.DIR_TMP + 'spec_obs_' + self.ID + '.cat', format='no_header')
-        NR = dat['col1']
-        x = dat['col2']
-        fy00 = dat['col3']
-        ey00 = dat['col4']
-
+        NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
         con0 = (NR<1000)
         xx0 = x[con0]
         fy0 = fy00[con0] * Cz0
@@ -698,12 +698,7 @@ class Mainbody():
         # Broadband
         ##############
         try:
-            dat = ascii.read(self.DIR_TMP + 'bb_obs_' + self.ID + '.cat', format='no_header')
-            NRbb = dat['col1']
-            xbb  = dat['col2']
-            fybb = dat['col3']
-            eybb = dat['col4']
-            exbb = dat['col5']
+            NRbb, xbb, fybb, eybb, exbb = self.data['bb_obs']['NR'], self.data['bb_obs']['x'], self.data['bb_obs']['fy'], self.data['bb_obs']['ey'], self.data['bb_obs']['ex']
         except: # if no BB;
             print('No BB data.')
             NRbb = np.asarray([])
@@ -740,12 +735,7 @@ class Mainbody():
 
         # Append data;
         if add_fir:
-            dat_d = ascii.read(self.DIR_TMP + 'spec_dust_obs_' + self.ID + '.cat')
-            nr_d = dat_d['col1']
-            x_d = dat_d['col2']
-            fy_d = dat_d['col3']
-            ey_d = dat_d['col4']
-
+            nr_d, x_d, fy_d, ey_d = self.data['spec_dust_obs']['NR'], self.data['spec_dust_obs']['x'], self.data['spec_dust_obs']['fy'], self.data['spec_dust_obs']['ey']
             NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
             ey = np.append(ey,ey_d)
@@ -895,8 +885,6 @@ class Mainbody():
         zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
         f_norm=True, f_lambda=False, zmax=20, include_bb=False, f_exclude_negative=False):
         '''
-        Purpose
-        -------
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
         When spectrun is provided, this does redshift fit, but **by using the SED model guessed from the BB photometry**.
@@ -1035,7 +1023,7 @@ class Mainbody():
                 fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), 
                 self.zgal, self.z_prior, self.p_prior,
                 NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
-                include_photometry=include_photometry_zfit
+                include_photometry=include_bb
                 )
 
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
@@ -1209,8 +1197,6 @@ class Mainbody():
 
     def get_zdist(self, f_interact=False, f_ascii=True):
         '''
-        Purpose
-        -------
         Saves a plot of z-distribution.
 
         Parameters
@@ -1504,7 +1490,7 @@ class Mainbody():
         print('#################')
         print('Preparing library')
         print('#################\n')
-       # Load Spectral library;
+        # Load Spectral library;
         self.lib = self.fnc.open_spec_fits(fall=0)
         self.lib_all = self.fnc.open_spec_fits(fall=1, orig=True)
 
@@ -1512,8 +1498,8 @@ class Mainbody():
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
             self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
         if self.fneb:
-            self.lib_neb = self.fnc.open_spec_neb_fits(fall=0)
-            self.lib_neb_all = self.fnc.open_spec_neb_fits(fall=1)
+            self.lib_neb = self.fnc.open_spec_fits(fall=0, f_neb=True)
+            self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True)
 
         if add_fir == None:
             add_fir = self.f_dust
@@ -1525,7 +1511,6 @@ class Mainbody():
         self.nwalk_cz = int(self.inputs['NWALKZ'])
         self.ZEVOL = int(self.inputs['ZEVOL'])
         self.fzvis = int(self.inputs['ZVIS'])
-        #self.fneld = int(self.inputs['FNELD'])
         if self.f_nested:
             print('Nested sample is on. Nelder is used for time saving analysis.')
             self.fneld = 1 
@@ -1596,7 +1581,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_bb=True):
         '''
         Main module of this script.
 
@@ -1674,7 +1659,7 @@ class Mainbody():
             Av_tmp = out.params['Av'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            nrd_tmp, fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True, f_nrd=True)
+            nrd_tmp, fm_tmp, xm_tmp = self.fnc.get_template(out, f_val=True, f_nrd=True, f_neb=False)
         else:
             csq = out.chisqr
             rcsq = out.redchi
@@ -1686,7 +1671,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=False)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
 
         #################################################
         # Gor for mcmc phase
@@ -2076,55 +2061,3 @@ class Mainbody():
                 print('Terminating process.')
                 print('\n\n')
                 return False
-
-
-    def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, f_get_templates=False, Zini=None):
-        '''
-        Fits input data with a prepared template library, to get a chi-min result.
-
-        Parameters:
-        -----------
-        Zini : array
-            Array for initial values for metallicity.
-
-        Returns
-        -------
-        out, chidef, Zbest, xm_tmp, fm_tmp (if f_get_templates is set True).
-        '''
-        from .posterior_flexible import Post
-        print('#########')
-        print('Quick fit')
-        print('#########\n')
-
-        # Call likelihood/prior/posterior function;
-        class_post = Post(self)
-
-        # Prepare library, data, etc.
-        self.prepare_class()
-
-        # Initial Z:
-        if Zini == None:
-            Zini = self.Zall
-
-        # Temporarily disable zmc;
-        self.fzmc = 0
-        out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
-            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
-
-        if f_get_templates:
-            Av_tmp = out.params['Av'].value
-            AA_tmp = np.zeros(len(self.age), dtype='float')
-            ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
-
-            ########################
-            # Check redshift
-            ########################
-            if self.fzvis:
-                flag_z = self.fit_redshift(xm_tmp, fm_tmp)
-
-            self.fzmc = 1
-            return out,chidef,Zbest, xm_tmp, fm_tmp
-        else:
-            self.fzmc = 1
-            return out,chidef,Zbest

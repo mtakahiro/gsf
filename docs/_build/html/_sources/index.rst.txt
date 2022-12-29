@@ -19,6 +19,7 @@ gsf's documentation
    fitting.rst
    output.rst
    prior.rst
+   redshift_fitting.rst
 
    auto/modules
 

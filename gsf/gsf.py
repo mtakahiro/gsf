@@ -78,7 +78,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
-    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    # MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
 
     '''
     #
@@ -129,6 +129,11 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     inputs = read_input(parfile)
 
     MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman, zman=zman)
+    
+    # Register some params;
+    MB.tau_lim = tau_lim
+    MB.nthin = nthin
+    MB.delwave = delwave
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
@@ -167,32 +172,34 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
                 from .maketmp_z0_tau import make_tmp_z0
                 make_tmp_z0(MB, lammax=lammax)            
 
-        #
-        # 1. Start making redshifted templates.
-        #
-        if MB.SFH_FORM == -99:
-            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-        else:
-            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-
     if not flag_suc:
         sys.exit()
 
     # Read temp from asdf;
     # Template must be registered before fplt>=2.
-    try:
-        aftmp = MB.af
-    except:
-        MB.af = asdf.open(os.path.join(MB.DIR_TMP, 'spec_all_' + MB.ID + '.asdf'))
+    # try:
+    #     aftmp = MB.af
+    # except:
+    #     MB.af = asdf.open(os.path.join(MB.DIR_TMP, 'spec_all_' + MB.ID + '.asdf'))
 
     if fplt <= 2:
+        MB.zprev = MB.zgal 
+        MB.ndim_keep = MB.ndim
+
+        #
+        # 1. Start making redshifted templates, at z=MB.zgal.
+        #
+        if MB.SFH_FORM == -99:
+            flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
+        else:
+            flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
+
         #
         # 2. Main fitting part.
         #
-        MB.zprev = MB.zgal 
-        MB.ndim_keep = MB.ndim
         flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
             f_prior_sfh=f_prior_sfh, norder_sfh_prior=norder_sfh_prior)
+
         while (flag_suc and flag_suc!=2):
 
             MB.ndim = MB.ndim_keep
@@ -202,9 +209,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
 
             # Make temp at the new z
             if MB.SFH_FORM == -99:
-                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
             else:
-                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
 
             print('\n\n')
             print('Going into another round with updated templates and redshift.')
@@ -221,6 +228,20 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         sys.exit()
 
     if fplt <= 3 and flag_suc:
+
+        if True: #fplt >= 3: # If main fitting has not been done;
+            # make redshifted templates and register data;
+            
+            # Use the final redshift;
+            from astropy.io import fits
+            hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
+            MB.zgal = hd_sum['ZMC']
+            
+            if MB.SFH_FORM == -99:
+                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            else:
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+
         if MB.SFH_FORM == -99:
             from .plot_sfh import plot_sfh
             from .plot_sed import plot_sed            
@@ -229,7 +250,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
             from .plot_sed import plot_sed_tau as plot_sed            
 
         if not skip_sfh:
-            plot_sfh(MB, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, mmax=mmax,
+            plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax,
             dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
             f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED)
 
