@@ -896,7 +896,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     # Register filter response;
                     ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu[ss,:], DIR_FILT, MB=MB, f_regist=False)
 
-
                     ##########################################
                     # Writing out the templates to fits table.
                     ##########################################
@@ -1139,6 +1138,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 else:
                     fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
         fw.close()
+        
         if MB.f_dust:
             dat = ascii.read(file_tmp, format='no_header')
             nr_d = dat['col1']

@@ -902,9 +902,17 @@ class Mainbody():
             data_model_sort = data_model[data_model[:, 0].argsort()]            
             #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
 
-            plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='') # Model based on input z.
-            plt.plot(data_model_sort[:,0], data_model_sort[:,2],'.b', linestyle='-', linewidth=0.5, label='Obs.') # Observation
-            plt.errorbar(data_model_sort[:,0], data_model_sort[:,2], yerr=data_model_sort[:,3], color='b', capsize=0, linewidth=0.5) # Observation
+            # Model based on input z.
+            plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='')
+            # Observation
+            # spec;
+            con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
+            plt.plot(self.dict['x'][con], self.dict['fy'][con], '.b', linestyle='-', linewidth=0.5, label='Obs.')
+            plt.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='b', capsize=0, linewidth=0.5)
+            # bb;
+            con = (self.dict['NR']>=self.NRbb_lim)
+            plt.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=5, marker='o', 
+                color='orange', capsize=0, linewidth=0.5, ls='None')
 
             # Write prob distribution;
             if True:
@@ -940,7 +948,6 @@ class Mainbody():
             print('Recommended redshift, Cz0, Cz1, and Cz2, %.5f %.5f %.5f %.5f, with chi2/nu=%.3f'%(zrecom, Czrec0, Czrec1, Czrec2, fitc_cz[1]))
             print('\n\n')
             fit_label = 'Proposed model'
-            #self.fitc_cz = fitc_cz[1]
 
         else:
             print('fzvis is set to False. z fit not happening.')
@@ -990,7 +997,6 @@ class Mainbody():
             data_model_new = np.zeros((len(x_cz),4),'float')
             data_model_new[:,0] = x_cz
             data_model_new[:,1] = fm_s
-            # data_model_new_sort = np.sort(data_model_new, axis=0)
             data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
 
             plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
@@ -1016,7 +1022,6 @@ class Mainbody():
             data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
                 data_obsbb[:,2] = fm_tmp
-            #data_obsbb_sort = np.sort(data_obsbb, axis=0)
             data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
             
             if len(fm_tmp) == len(self.dict['xbb']): # BB only;
@@ -1024,7 +1029,6 @@ class Mainbody():
             else:
                 model_spec = np.zeros((len(fm_tmp),2), 'float')
                 model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
-                #model_spec_sort = np.sort(model_spec, axis=0)
                 model_spec_sort = model_spec[model_spec[:, 0].argsort()]
                 plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
@@ -1475,7 +1479,7 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_bb=True):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_bb=False):
         '''
         Main module of this script.
 
