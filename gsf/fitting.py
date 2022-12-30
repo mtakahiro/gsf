@@ -42,7 +42,7 @@ LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 
 LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW), dtype='int')
 
-NRbb_lim = 10000 # BB data is associated with ids greater than this number.
+# NRbb_lim = 10000 # BB data is associated with ids greater than this number.
 
 class Mainbody():
     '''
@@ -687,18 +687,20 @@ class Mainbody():
         # Spectrum
         ##############
         NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
-        con0 = (NR<1000)
-        xx0 = x[con0]
-        fy0 = fy00[con0] * Cz0
-        ey0 = ey00[con0] * Cz0
-        con1 = (NR>=1000) & (NR<2000)
-        xx1 = x[con1]
-        fy1 = fy00[con1] * Cz1
-        ey1 = ey00[con1] * Cz1
-        con2 = (NR>=2000) & (NR<NRbb_lim)
-        xx2 = x[con2]
-        fy2 = fy00[con2] * Cz2
-        ey2 = ey00[con2] * Cz2
+        data_len = self.data['meta']['data_len']
+
+        Cs = [Cz0, Cz1, Cz2]
+        xx02 = []
+        fy02 = []
+        ey02 = []
+        for ii in range(len(data_len)):
+            if ii == 0:
+                con0 = (NR<data_len[ii])
+            else:
+                con0 = (NR>=np.sum(data_len[:ii])) & (NR<np.sum(data_len[:ii+1]))
+            xx02 = np.append(xx02, x[con0])
+            fy02 = np.append(fy02, fy00[con0] * Cs[ii])
+            ey02 = np.append(ey02, ey00[con0] * Cs[ii])
 
         ##############
         # Broadband
@@ -708,7 +710,7 @@ class Mainbody():
         except: # if no BB;
             print('No BB data.')
             NRbb = np.asarray([])
-            xbb  = np.asarray([])
+            xbb = np.asarray([])
             fybb = np.asarray([])
             eybb = np.asarray([])
             exbb = np.asarray([])
@@ -718,14 +720,6 @@ class Mainbody():
         ex_bb = exbb[con_bb]
         fy_bb = fybb[con_bb]
         ey_bb = eybb[con_bb]
-
-        xx01 = np.append(xx0,xx1)
-        fy01 = np.append(fy0,fy1)
-        ey01 = np.append(ey0,ey1)
-
-        xx02 = np.append(xx01,xx2)
-        fy02 = np.append(fy01,fy2)
-        ey02 = np.append(ey01,ey2)
 
         xx = np.append(xx02,xx_bb)
         fy = np.append(fy02,fy_bb)
@@ -779,112 +773,6 @@ class Mainbody():
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx_bb, 'exbb':ex_bb, 'fybb':fy_bb, 'eybb':ey_bb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
-
-
-    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml:float=0.01, zlimu:float=6.0, delzz:float=0.01, lines:bool=False, prior=None, method:str='powell'):
-        '''
-        This module explores the redshift space to find the best redshift and probability distribution.
-
-        Parameters
-        ----------
-        dict : dictionary
-            Dictionary that includes input data.
-
-        xm_tmp : numpy.array
-            Wavelength array, common for fm_tmp below, at z=0. Should be in [len(wavelength)].
-        fm_tmp : numpy.array
-            Fluxes for various templates. Should be in a shape of [ n * len(wavelength)], 
-            where n is the number templates.
-        zliml : float
-            Lowest redshift for fitting range.
-        zlimu : float
-            Highest redshift for fitting range.
-        prior : numpy.array
-            Prior used for the redshift determination. E.g., Eazy z-probability.
-        method : str
-            Method for minimization. The option must be taken from lmfit. Powell is more accurate. Nelder is faster.
-
-        Returns
-        -------
-        zspace : numpy.array 
-            Array for redshift grid.
-        chi2s : numpy.array
-            Array of chi2 values corresponding to zspace.
-        '''
-
-        zspace = np.arange(zliml,zlimu,delzz)
-        chi2s  = np.zeros((len(zspace),2), 'float')
-        if prior == None:
-            prior = zspace[:] * 0 + 1.0
-
-        # Observed data points;
-        NR = dict['NR']
-        con0 = (NR<1000)
-        fy0 = dict['fy'][con0] #* Cz0s
-        ey0 = dict['ey'][con0] #* Cz0s
-        x0  = dict['x'][con0]
-        con1 = (NR>=1000) & (NR<10000)
-        fy1 = dict['fy'][con1] #* Cz1s
-        ey1 = dict['ey'][con1] #* Cz1s
-        x1  = dict['x'][con1]
-        con2 = (NR>=10000) # BB
-        fy2 = dict['fy'][con2]
-        ey2 = dict['ey'][con2]
-        x2 = dict['x'][con2]
-
-        fy01 = np.append(fy0,fy1)
-        fcon = np.append(fy01,fy2)
-        ey01 = np.append(ey0,ey1)
-        eycon = np.append(ey01,ey2)
-        x01 = np.append(x0,x1)
-        xobs = np.append(x01,x2)
-
-        wht = 1./np.square(eycon)
-        wht2 = wht
-
-        # Set parameters;
-        fit_par_cz = Parameters()
-        for nn in range(len(fm_tmp[:,0])):
-            fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
-
-        def residual_z(pars,z):
-            '''
-            '''
-            vals = pars.valuesdict()
-            xm_s = xm_tmp * (1+z)
-            fm_s = np.zeros(len(xm_tmp),'float')
-
-            for nn in range(len(fm_tmp[:,0])):
-                fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
-
-            fint = interpolate.interp1d(xm_s, fm_s, kind='nearest', fill_value="extrapolate")
-            #fm_int = np.interp(xobs, xm_s, fm_s)
-            fm_int = fint(xobs)
-
-            if fcon is None:
-                print('Data is none')
-                return fm_int
-            else:
-                return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
-
-        # Start redshift search;
-        for zz in range(len(zspace)):
-            # Best fit
-            out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
-            keys = fit_report(out_cz).split('\n')
-
-            csq = out_cz.chisqr
-            rcsq = out_cz.redchi
-            fitc_cz = [csq, rcsq]
-
-            #return fitc_cz
-            chi2s[zz,0] = csq
-            chi2s[zz,1] = rcsq
-
-        self.zspace = zspace
-        self.chi2s = chi2s
-
-        return zspace, chi2s
 
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
@@ -946,7 +834,7 @@ class Mainbody():
         if include_bb:
             con_cz = ()#(sn>snlim)
         else:
-            con_cz = (self.dict['NR']<NRbb_lim) #& (sn>snlim)
+            con_cz = (self.dict['NR']<self.NRbb_lim) #& (sn>snlim)
 
         if f_exclude_negative:
             con_cz &= (sn>snlim)
@@ -1028,7 +916,7 @@ class Mainbody():
             res_cz, fitc_cz = check_redshift(
                 fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), 
                 self.zgal, self.z_prior, self.p_prior,
-                NR_cz, zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
+                NR_cz, self.data['meta']['data_len'], zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
                 include_photometry=include_bb
                 )
 

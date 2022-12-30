@@ -414,7 +414,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # Get ascii data.
     #
     MB.f_spec = False
-    if True:#try:
+    data_meta = {'data_len':[],'data_origin':[],'data_index':[]}
+
+    try:
         spec_files = [x.strip() for x in inputs['SPEC_FILE'].split(',')]
         ninp0 = np.zeros(len(spec_files), dtype='int')
 
@@ -438,9 +440,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         lm = np.zeros(np.sum(ninp0[:]),dtype=float)
         fobs = np.zeros(np.sum(ninp0[:]),dtype=float)
         eobs = np.zeros(np.sum(ninp0[:]),dtype=float)
-        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype=int) # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
-            try:
+            if True:#try:
                 if spec_file.split('.')[-1] == 'asdf':
                     id_asdf = int(spec_file.split('_')[2])
                     fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
@@ -462,14 +464,24 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     lm[ii] = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
-                MB.f_spec = True
 
-            except Exception:
+                MB.f_spec = True
+                data_meta['data_len'] = np.append(data_meta['data_len'], len(lm0tmp))
+                data_meta['data_origin'] = np.append(data_meta['data_origin'], '%s'%spec_file)
+                data_meta['data_index'] = np.append(data_meta['data_index'], '%d'%ff)
+
+            else:#except Exception:
                 print('No spec data is registered.')
                 pass
-    else:#except:
+    except:
         print('No spec file is provided.')
         pass
+
+    if ncolbb < np.sum(data_meta['data_len']):
+        print('ncolbb is updated')
+        ncolbb = np.sum(data_meta['data_len'])
+        MB.NRbb_lim = ncolbb
+    data_meta['data_len'] = np.asarray(data_meta['data_len'])
 
     #############################
     # READ BB photometry from CAT_BB:
@@ -1086,12 +1098,15 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     ##########################################
     if True:
         MB.data = {}
+        MB.data['meta'] = data_meta
+
+        # The following files are just temporary.
         file_tmp = 'tmp_library_%s.txt'%MB.ID
         file_tmp2 = 'tmp_library2%s.txt'%MB.ID
         fw = open(file_tmp,'w')
         fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
         for ii in range(len(lm)):
-            g_offset = 1000 * fgrs[ii]
+            g_offset = 0 #1000 * fgrs[ii]
             if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu and not np.isnan(fobs[ii]):
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
             else:
