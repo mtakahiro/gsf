@@ -320,11 +320,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tau0 = MB.tau0
 
     delz = 1.0
-    wid_z = MB.zmcmax - MB.zmcmin
-    nz = int(wid_z/delz)
-    if nz%2 == 0:
-        nz += 1
-    MB.zbests = np.linspace(MB.zgal - wid_z/2., MB.zgal + wid_z/2., nz)
+    # wid_z = MB.zmcmax - MB.zmcmin
+    # nz = int(wid_z/delz)
+    # if nz%2 == 0:
+    #     nz += 1
+    # MB.zbests = np.linspace(MB.zgal - wid_z/2., MB.zgal + wid_z/2., nz)
     MB.zbests = np.arange(MB.zgal, MB.zgal + 0.01, delz)
 
     try:
@@ -429,11 +429,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom)
                     ninp0[ff] = len(lm0tmp)
                 else:
-                    fd0 = np.loadtxt(os.path.joing(DIR_EXTR, spec_file), comments='#')
+                    fd0 = np.loadtxt(os.path.join(DIR_EXTR, spec_file), comments='#')
                     lm0tmp = fd0[:,0]
                     ninp0[ff] = len(lm0tmp)
             except Exception:
-                print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
+                print('File, %s, cannot be open.'%(os.path.join(DIR_EXTR, spec_file)))
                 pass
 
         # Then, Constructing arrays.
@@ -450,7 +450,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     fobs0 = fd0[id_asdf]['flux'].value
                     eobs0 = np.sqrt(fd0[id_asdf]['fluxvar']).value
                 else:
-                    fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
+                    fd0 = np.loadtxt(os.path.join(DIR_EXTR, spec_file), comments='#')
                     lm0tmp = fd0[:,0]
                     fobs0 = fd0[:,1]
                     eobs0 = fd0[:,2]

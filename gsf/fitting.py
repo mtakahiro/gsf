@@ -776,7 +776,7 @@ class Mainbody():
 
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
-        zlimu=None, snlim=0, priors=None, f_bb_zfit=True, f_line_check=False, 
+        zlimu=None, snlim=0, priors=None, f_line_check=False, 
         f_norm=True, f_lambda=False, zmax=20, include_bb=False, f_exclude_negative=False):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
@@ -1959,3 +1959,167 @@ class Mainbody():
                 print('Terminating process.')
                 print('\n\n')
                 return False
+
+
+    def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, 
+        f_get_templates=False, Zini=None, include_bb=True):
+        '''Fits input data with a prepared template library, to get a chi-min result. 
+        This function is being used in an example notebook.
+
+        Parameters:
+        -----------
+        Zini : array
+            Array for initial values for metallicity.
+
+        Returns
+        -------
+        out, chidef, Zbest, xm_tmp, fm_tmp (if f_get_templates is set True).
+        '''
+        from .posterior_flexible import Post
+        print('#########')
+        print('Quick fit')
+        print('#########\n')
+
+        # Call likelihood/prior/posterior function;
+        class_post = Post(self)
+
+        # Prepare library, data, etc.
+        self.prepare_class()
+
+        # Initial Z:
+        if Zini == None:
+            Zini = self.Zall
+
+        # Temporarily disable zmc;
+        self.fzmc = 0
+        out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+
+        if f_get_templates:
+            Av_tmp = out.params['Av'].value
+            AA_tmp = np.zeros(len(self.age), dtype='float')
+            ZZ_tmp = np.zeros(len(self.age), dtype='float')
+            # fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
+            fm_tmp, xm_tmp = self.fnc.get_template(out, f_val=True, f_nrd=False, f_neb=False)
+
+            ########################
+            # Check redshift
+            ########################
+            if self.fzvis:
+                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
+
+            self.fzmc = 1
+            return out,chidef,Zbest, xm_tmp, fm_tmp
+        else:
+            self.fzmc = 1
+            return out,chidef,Zbest
+
+
+    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
+        '''
+        This module explores the redshift space to find the best redshift and probability distribution.
+
+        Parameters
+        ----------
+        dict : dictionary
+            Dictionary that includes input data.
+
+        xm_tmp : numpy.array
+            Wavelength array, common for fm_tmp below, at z=0. Should be in [len(wavelength)].
+        fm_tmp : numpy.array
+            Fluxes for various templates. Should be in a shape of [ n * len(wavelength)], 
+            where n is the number templates.
+        zliml : float
+            Lowest redshift for fitting range.
+        zlimu : float
+            Highest redshift for fitting range.
+        prior : numpy.array
+            Prior used for the redshift determination. E.g., Eazy z-probability.
+        method : str
+            Method for minimization. The option must be taken from lmfit. Powell is more accurate. Nelder is faster.
+
+        Returns
+        -------
+        zspace : numpy.array 
+            Array for redshift grid.
+        chi2s : numpy.array
+            Array of chi2 values corresponding to zspace.
+        '''
+        import scipy.interpolate as interpolate
+
+        zspace = np.arange(zliml,zlimu,delzz)
+        chi2s = np.zeros((len(zspace),2), 'float')
+        if prior == None:
+            prior = zspace[:] * 0 + 1.0
+
+        data_len = self.data['meta']['data_len']
+
+        NR = dict['NR']
+        con0 = (NR<data_len[0])
+        x0 = dict['x'][con0]
+        fy0 = dict['fy'][con0]
+        ey0 = dict['ey'][con0]
+        con1 = (NR>=data_len[0]) & (NR<data_len[1]+data_len[0])
+        x1 = dict['x'][con1]
+        fy1 = dict['fy'][con1]
+        ey1 = dict['ey'][con1]
+        con2 = (NR>=data_len[1]+data_len[0]) & (NR<self.NRbb_lim)
+        x2 = dict['x'][con2]
+        fy2 = dict['fy'][con2]
+        ey2 = dict['ey'][con2]
+
+        fy01 = np.append(fy0,fy1)
+        fcon = np.append(fy01,fy2)
+        ey01 = np.append(ey0,ey1)
+        eycon = np.append(ey01,ey2)
+        x01 = np.append(x0,x1)
+        xobs = np.append(x01,x2)
+
+        wht = 1./np.square(eycon)
+        #if lines:
+        #    wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
+        #else:
+        wht2 = wht
+
+        # Set parameters;
+        fit_par_cz = Parameters()
+        for nn in range(len(fm_tmp[:,0])):
+            fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
+
+        def residual_z(pars,z):
+            vals  = pars.valuesdict()
+
+            xm_s = xm_tmp * (1+z)
+            fm_s = np.zeros(len(xm_tmp),'float')
+
+            for nn in range(len(fm_tmp[:,0])):
+                fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
+
+            fint = interpolate.interp1d(xm_s, fm_s, kind='nearest', fill_value="extrapolate")
+            #fm_int = np.interp(xobs, xm_s, fm_s)
+            fm_int = fint(xobs)
+
+            if fcon is None:
+                print('Data is none')
+                return fm_int
+            else:
+                return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
+
+        # Start redshift search;
+        for zz in range(len(zspace)):
+            # Best fit
+            out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
+            keys = fit_report(out_cz).split('\n')
+
+            csq  = out_cz.chisqr
+            rcsq = out_cz.redchi
+            fitc_cz = [csq, rcsq]
+
+            #return fitc_cz
+            chi2s[zz,0] = csq
+            chi2s[zz,1] = rcsq
+
+        self.zspace = zspace
+        self.chi2s = chi2s
+
+        return zspace, chi2s

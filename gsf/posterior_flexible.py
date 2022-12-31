@@ -256,7 +256,7 @@ class Post:
             nzz = np.argmin(np.abs(zprior-vals['zmc']))
             # For something unacceptable;
             if nzz<0 or prior[nzz]<=0:
-                print('z Posterior unacceptable.')
+                # print('z Posterior unacceptable.')
                 return lnpreject
             else:
                 respr += np_log(prior[nzz])
