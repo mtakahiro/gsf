@@ -214,14 +214,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     xg0  = x[con0]
     fg0  = fy[con0]
     eg0  = ey[con0]
-    con1 = (NR>=data_len[0]) & (NR<data_len[1])
+    con1 = (NR>=data_len[0]) & (NR<data_len[1]+data_len[0])
     xg1  = x[con1]
     fg1  = fy[con1]
     eg1  = ey[con1]
-    con2 = (NR>=data_len[1]) & (NR<MB.NRbb_lim)
+    con2 = (NR>=data_len[1]+data_len[0]) & (NR<MB.NRbb_lim)
     xg2  = x[con2]
     fg2  = fy[con2]
     eg2  = ey[con2]
+    con_spec = (NR<MB.NRbb_lim)
+    wave_spec_max = np.max(x[con_spec])
 
     if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
@@ -610,10 +612,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Zoom in Line regions
     ##########################
     if f_grsm:
-        conspec = (NR<10000) #& (fy/ey>1)
         ax2t.errorbar(xg2, fg2 * c/np.square(xg2)/d, yerr=eg2 * c/np.square(xg2)/d, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
         ax2t.errorbar(xg1, fg1 * c/np.square(xg1)/d, yerr=eg1 * c/np.square(xg1)/d, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
-        ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+        ax2t.errorbar(xg0, fg0 * c/np.square(xg0)/d, yerr=eg0 * c/np.square(xg0)/d, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
         xgrism = np.concatenate([xg0,xg1,xg2])
         fgrism = np.concatenate([fg0,fg1,fg2])
@@ -899,8 +900,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     col_dia = 'blue'
     if MB.f_dust:
         ALLFILT = np.append(SFILT,DFILT)
-        #for ii in range(len(x1_tot)):
-        #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d)
         lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
         lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
         lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
@@ -1244,7 +1243,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ax1.xaxis.labelpad = -3
 
     if f_grsm:
-        if np.max(xg0)<23000: # E.g. WFC3, NIRISS grisms
+        if wave_spec_max<23000:
+            # E.g. WFC3, NIRISS grisms
             conlim = (x0>10000) & (x0<25000)
             xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
             ax2t.set_xlabel('')
@@ -1263,7 +1263,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 ax2t.set_xticks([8000, 10000, 12000, 14000, 16000])
                 ax2t.set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
         else:
-            conlim = (x0>10000) & (x0<54000) # NIRSPEC spectrum;
+            # NIRSPEC spectrum;
+            conlim = (x0>10000) & (x0<54000) 
             xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
             ax2t.set_xlabel('')
             ax2t.set_xlim(xgmin, xgmax)
@@ -2796,11 +2797,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     xg0  = x[con0]
     fg0  = fy[con0]
     eg0  = ey[con0]
-    con1 = (NR>=data_len[0]) & (NR<data_len[1])
+    con1 = (NR>=data_len[0]) & (NR<data_len[1]+data_len[0])
     xg1  = x[con1]
     fg1  = fy[con1]
     eg1  = ey[con1]
-    con2 = (NR>=data_len[1]) & (NR<MB.NRbb_lim)
+    con2 = (NR>=data_len[1]+data_len[0]) & (NR<MB.NRbb_lim)
     xg2  = x[con2]
     fg2  = fy[con2]
     eg2  = ey[con2]
