@@ -204,20 +204,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     else:
         MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
-    NR   = MB.dict['NR']
-    x    = MB.dict['x']
-    fy   = MB.dict['fy']
-    ey   = MB.dict['ey']
-    
-    con0 = (NR<1000)
+    NR = MB.dict['NR']
+    x = MB.dict['x']
+    fy = MB.dict['fy']
+    ey = MB.dict['ey']
+    data_len = MB.data['meta']['data_len']
+
+    con0 = (NR<data_len[0])
     xg0  = x[con0]
     fg0  = fy[con0]
     eg0  = ey[con0]
-    con1 = (NR>=1000) & (NR<2000)
+    con1 = (NR>=data_len[0]) & (NR<data_len[1])
     xg1  = x[con1]
     fg1  = fy[con1]
     eg1  = ey[con1]
-    con2 = (NR>=1000) & (NR<NRbb_lim)
+    con2 = (NR>=data_len[1]) & (NR<MB.NRbb_lim)
     xg2  = x[con2]
     fg2  = fy[con2]
     eg2  = ey[con2]
@@ -2657,7 +2658,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
-    scale=1e-19, NRbb_lim=10000):
+    scale=1e-19, NRbb_lim=10000, save_pcl=True):
     '''
     Purpose
     -------
@@ -2676,9 +2677,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     nage = MB.nage 
     fnc  = MB.fnc 
     bfnc = MB.bfnc 
-    ID   = MB.ID
-    Z    = MB.Zall
-    age  = MB.age
+    ID = MB.ID
+    Z = MB.Zall
+    age = MB.age
     c = MB.c
 
     tau0 = MB.tau0 
@@ -2757,7 +2758,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     dim    = lbdim + plotdim + trdim
     sclfig = 0.7
 
-
     # Format the figure.
     fig, axes = plt.subplots(K, K, figsize=(dim*sclfig*2, dim*sclfig))
     # Format the figure.
@@ -2786,29 +2786,29 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     snbb = fybb/eybb
 
     # Get spec data points;
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
-    NR  = dat[:,0]
-    x   = dat[:,1]
-    fy00 = dat[:,2]
-    ey00 = dat[:,3]
+    NR = MB.dict['NR']
+    x = MB.dict['x']
+    fy = MB.dict['fy']
+    ey = MB.dict['ey']
+    data_len = MB.data['meta']['data_len']
 
-    con0 = (NR<1000) #& (fy/ey>SNlim)
+    con0 = (NR<data_len[0])
     xg0  = x[con0]
-    fg0  = fy00[con0] * Cz0
-    eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
+    fg0  = fy[con0]
+    eg0  = ey[con0]
+    con1 = (NR>=data_len[0]) & (NR<data_len[1])
     xg1  = x[con1]
-    fg1  = fy00[con1] * Cz1
-    eg1  = ey00[con1] * Cz1
-    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
+    fg1  = fy[con1]
+    eg1  = ey[con1]
+    con2 = (NR>=data_len[1]) & (NR<MB.NRbb_lim)
     xg2  = x[con2]
-    fg2  = fy00[con2] * Cz2
-    eg2  = ey00[con2] * Cz2
-
-    con_bb = (NR>=NRbb_lim)
-    xg_bb = x[con_bb]
-    fg_bb = fy00[con_bb]
-    eg_bb = ey00[con_bb]
+    fg2  = fy[con2]
+    eg2  = ey[con2]
+    
+    con_bb = (NR>=MB.NRbb_lim)#& (fy/ey>SNlim)
+    xg_bb  = x[con_bb]
+    fg_bb  = fy[con_bb]
+    eg_bb  = ey[con_bb]
 
     fy01 = np.append(fg0,fg1)
     ey01 = np.append(eg0,eg1)
@@ -2908,7 +2908,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             if delT[aa] < tau_lim:
                 # This is because fsps has the minimum tau = tau_lim
                 delT[aa] = tau_lim
-
 
     delT[:]  *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
@@ -3109,6 +3108,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         else:
             NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
+        # This should happen at the last kk;
         if kk == mmax-1:
             # Histogram
             for i, x in enumerate(Par):
@@ -3125,9 +3125,10 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                     ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
                     ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
 
-                    ax.text(np.percentile(NPAR[i],16), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],16)), fontsize=9)
-                    ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
-                    ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
+                    # percentile values?
+                    # ax.text(np.percentile(NPAR[i],16), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],16)), fontsize=9)
+                    # ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
+                    # ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
                 except:
                     print('Failed at i,x=',i,x)
 
@@ -3137,6 +3138,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                     ax.set_xlabel('%s'%(Par[i]), fontsize=12)
                 if i < K-1:
                     ax.set_xticklabels([])
+
+            # save pck;
+            if save_pcl:
+                if MB.fzmc == 1:
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
+                else:
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
+                cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.cpkl')
+                savecpkl({'chain':NPAR_LIB,
+                            'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
+                            cpklname) # Already burn in
 
         # Scatter and contour
         for i, x in enumerate(Par):
@@ -3185,9 +3197,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                     if i < K-1:
                         ax.set_xticklabels([])
 
-
         if kk%10 == 0 and out_ind == 1:
-            fname = MB.DIR_OUT +  + '%d.png' % kk
+            fname = os.path.join(MB.DIR_OUT, '%d.png' % kk)
             print('Saving frame', fname)
             plt.savefig(fname, dpi=200)
             files.append(fname)
@@ -3250,338 +3261,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         ax0.plot(xx, xx * 0, linestyle='--', lw=0.5, color='k')
 
     plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
-
-
-def plot_corner_physparam_cumulative_frame(ID, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
-    tau0=[0.1,0.2,0.3], fig=None, dust_model=0, out_ind=0, snlimbb=1.0, DIR_OUT='./', NRbb_lim=10000):
-    '''
-    Creat "cumulative" png for gif image.
-    
-    If you like to creat temporal png for gif image.
-
-    Parameters
-    ----------
-    snlimbb : float
-        SN limit to show flux or up lim in SED.
-    '''
-    col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
-    nage = np.arange(0,len(age),1)
-    fnc  = Func(ID, PA, Zall, age, dust_model=dust_model) # Set up the number of Age/ZZ
-    bfnc = Basic(Zall)
-
-    ###########################
-    # Open result file
-    ###########################
-    # Open ascii file and stock to array.
-    lib     = fnc.open_spec_fits(ID, PA, fall=0)
-    lib_all = fnc.open_spec_fits(ID, PA, fall=1)
-
-    file = 'summary_' + ID + '.fits'
-    hdul = fits.open(file) # open a FITS file
-
-    # Redshift MC
-    zp50  = hdul[1].data['zmc'][1]
-    zp16  = hdul[1].data['zmc'][0]
-    zp84  = hdul[1].data['zmc'][2]
-
-    M50 = hdul[1].data['ms'][1]
-    M16 = hdul[1].data['ms'][0]
-    M84 = hdul[1].data['ms'][2]
-    print('Total stellar mass is %.2e'%(M50))
-
-    A50 = np.zeros(len(age), dtype='float')
-    A16 = np.zeros(len(age), dtype='float')
-    A84 = np.zeros(len(age), dtype='float')
-    for aa in range(len(age)):
-        A50[aa] = hdul[1].data['A'+str(aa)][1]
-        A16[aa] = hdul[1].data['A'+str(aa)][0]
-        A84[aa] = hdul[1].data['A'+str(aa)][2]
-
-    Asum  = np.sum(A50)
-    aa   = 0
-    Av50 = hdul[1].data['Av'+str(aa)][1]
-    Av16 = hdul[1].data['Av'+str(aa)][0]
-    Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float')
-    Z16 = np.zeros(len(age), dtype='float')
-    Z84 = np.zeros(len(age), dtype='float')
-    NZbest = np.zeros(len(age), dtype='int')
-    for aa in range(len(age)):
-        Z50[aa] = hdul[1].data['Z'+str(aa)][1]
-        Z16[aa] = hdul[1].data['Z'+str(aa)][0]
-        Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        NZbest[aa]= bfnc.Z2NZ(Z50[aa])
-
-
-    ZZ50 = np.sum(Z50*A50)/np.sum(A50)  # Light weighted Z.
-    chi   = hdul[1].data['chi'][0]
-    chin  = hdul[1].data['chi'][1]
-    fitc  = chin
-    Cz0   = hdul[0].header['Cz0']
-    Cz1   = hdul[0].header['Cz1']
-    Cz2   = hdul[0].header['Cz2']
-    zbes  = hdul[0].header['z']
-    zscl = (1.+zbes)
-
-    # Repeat no.
-    nplot = 1000
-    #DIR_OUT = '/astro/udfcen3/Takahiro/sedfitter/corner/' + ID + '_corner/'
-    try:
-        os.makedirs(DIR_OUT)
-    except:
-        pass
-
-    # plot Configuration
-    K = 4 # No of params.
-    Par = ['$\log M_*/M_\odot$', '$\log T$/Gyr', '$A_V$/mag', '$\log Z / Z_\odot$']
-    factor = 2.0           # size of one side of one panel
-    lbdim = 0.5 * factor   # size of left/bottom margin
-    trdim = 0.2 * factor   # size of top/right margin
-    whspace = 0.02         # w/hspace size
-    plotdim = factor * K + factor * (K - 1.) * whspace
-    dim = lbdim + plotdim + trdim
-    sclfig = 0.7
-
-    # Create a new figure if one wasn't provided.
-    if fig is None:
-        fig, axes = plt.subplots(K, K, figsize=(dim*sclfig, dim*sclfig))
-    else:
-        try:
-            axes = np.array(fig.axes).reshape((K, K))
-        except:
-            raise ValueError("Provided figure has {0} axes, but data has "
-                             "dimensions K={1}".format(len(fig.axes), K))
-    # Format the figure.
-    lb = lbdim / dim
-    tr = (lbdim + plotdim) / dim
-    fig.subplots_adjust(left=lb* 1.06, bottom=lb*.9, right=tr, top=tr*.99,
-                        wspace=whspace, hspace=whspace)
-
-    # For spec plot
-    ax0 = fig.add_axes([0.62,0.61,0.37,0.33])
-
-    ###############################
-    # Data taken from
-    ###############################
-    DIR_TMP = './templates/'
-    dat = np.loadtxt(DIR_TMP + 'spec_obs_' + ID + '.cat', comments='#')
-    NR = dat[:, 0]
-    x  = dat[:, 1]
-    fy00 = dat[:, 2]
-    ey00 = dat[:, 3]
-
-    con0 = (NR<1000) #& (fy/ey>SNlim)
-    xg0  = x[con0]
-    fg0  = fy00[con0] * Cz0
-    eg0  = ey00[con0] * Cz0
-    con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
-    xg1  = x[con1]
-    fg1  = fy00[con1] * Cz1
-    eg1  = ey00[con1] * Cz1
-    con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
-    xg2  = x[con2]
-    fg2  = fy00[con2] * Cz2
-    eg2  = ey00[con2] * Cz2
-
-    con_bb = (NR>=NRbb_lim)#& (fy/ey>SNlim)
-    xg_bb  = x[con_bb]
-    fg_bb  = fy00[con_bb]
-    eg_bb  = ey00[con_bb]
-
-    fy01 = np.append(fg0,fg1)
-    ey01 = np.append(eg0,eg1)
-    fy02 = np.append(fy01,fg2)
-    ey02 = np.append(ey01,eg2)
-
-    fy = np.append(fy02,fg_bb)
-    ey = np.append(ey02,eg_bb)
-    wht=1./np.square(ey)
-
-    dat = np.loadtxt(DIR_TMP + 'bb_obs_' + ID + '.cat', comments='#')
-    NRbb = dat[:,0]
-    xbb  = dat[:,1]
-    fybb = dat[:,2]
-    eybb = dat[:,3]
-    exbb = dat[:,4]
-    snbb = fybb/eybb
-
-    conspec = (NR<NRbb_lim) #& (fy/ey>1)
-    #ax0.plot(xg0, fg0 * c / np.square(xg0) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')
-    #ax0.plot(xg1, fg1 * c / np.square(xg1) / d, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='#DF4E00', label='')
-    conbb = (fybb/eybb>snlimbb)
-    ax0.errorbar(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, yerr=eybb[conbb]*c/np.square(xbb[conbb])/d, color='k', linestyle='', linewidth=0.5, zorder=4)
-    ax0.plot(xbb[conbb], fybb[conbb] * c / np.square(xbb[conbb]) / d, '.r', ms=10, linestyle='', linewidth=0, zorder=4)
-
-    conbbe = (fybb/eybb<snlimbb)
-    ax0.plot(xbb[conbbe], eybb[conbbe] * c / np.square(xbb[conbbe]) / d, 'vr', ms=10, linestyle='', linewidth=0, zorder=4)
-
-    ymax = np.max(fybb[conbb] * c / np.square(xbb[conbb]) / d) * 1.10
-    ax0.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=14)
-    ax0.set_ylabel('Flux ($\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)', fontsize=13)
-    ax0.set_xlim(2200, 88000)
-    #ax1.set_xlim(12500, 16000)
-    ax0.set_xscale('log')
-    ax0.set_ylim(-0.05, ymax)
-
-    DIR_TMP = './templates/'
-    ####################
-    # MCMC corner plot.
-    ####################
-    file = 'chain_' + ID + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(os.path.join('./'+file))
-
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        samples = data['chain'][:]
-    except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-
-    f0     = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
-    sedpar = f0[1]
-
-    import matplotlib
-    import matplotlib.cm as cm
-    getcmap   = matplotlib.cm.get_cmap('jet')
-    nc        = np.arange(0, nmc, 1)
-    col = getcmap((nc-0)/(nmc-0))
-
-    #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float')
-    lmtmp= np.zeros(nplot, dtype='float')
-    Avtmp= np.zeros(nplot, dtype='float')
-    Ztmp = np.zeros(nplot, dtype='float')
-    Ttmp = np.zeros(nplot, dtype='float')
-    ACtmp= np.zeros(nplot, dtype='float')
-
-    files = [] # For movie
-    for kk in range(0,nplot,1):
-
-        #nr = kk # np.random.randint(len(samples))
-        nr = np.random.randint(len(samples))
-        Avtmp[kk] = samples['Av'][nr]
-        #Asum = 0
-        #for ss in range(len(age)):
-        #Asum += np.sum(samples['A'+str(ss)][nr])
-        II0   = nage #[0,1,2,3] # Number for templates
-        for ss in range(len(age)):
-            ii = int(len(II0) - ss - 1) # from old to young templates.
-            AA_tmp = samples['A'+str(ii)][nr]
-            try:
-                ZZ_tmp = samples['Z'+str(ii)][nr]
-            except:
-                ZZ_tmp = samples['Z0'][nr]
-            nZtmp      = bfnc.Z2NZ(ZZ_tmp)
-            mslist     = sedpar.data['ML_'+str(nZtmp)][ii]
-            lmtmp[kk] += AA_tmp * mslist
-            Ztmp[kk]  += (10 ** ZZ_tmp) * AA_tmp * mslist
-            Ttmp[kk]  += age[ii] * AA_tmp * mslist
-            ACtmp[kk] += AA_tmp * mslist
-
-            # SED
-            flim = 0.05
-            if ss == 0:
-                y0, x0   = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
-                ysump = y0p #* 1e18
-                ysum  = y0  #* 1e18
-                if AA_tmp/Asum > flim:
-                    ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
-            else:
-                y0_r, x0_tmp = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all, tau0=tau0)
-                y0p, x0p  = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib, tau0=tau0)
-                ysump += y0p  #* 1e18
-                ysum  += y0_r #* 1e18
-                if AA_tmp/Asum > flim:
-                    ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=0.1, color=col[ii], zorder=-1, label='', alpha=0.1)
-        # Total
-        ax0.plot(x0, ysum * c/ np.square(x0) / d, '-', lw=0.1, color='gray', zorder=-1, label='', alpha=0.1)
-        ax0.set_xlim(2200, 88000)
-        ax0.set_xscale('log')
-        ax0.set_ylim(0., ymax)
-
-        # Convert into log
-        Ztmp[kk] /= ACtmp[kk]
-        Ttmp[kk] /= ACtmp[kk]
-        Ntmp[kk]  = kk
-
-        lmtmp[kk] = np.log10(lmtmp[kk])
-        Ztmp[kk]  = np.log10(Ztmp[kk])
-        Ttmp[kk]  = np.log10(Ttmp[kk])
-
-
-        NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
-        NPARmin = [np.log10(M16)-0.1, -0.4, Av16-0.1, -0.5]
-        NPARmax = [np.log10(M84)+0.1, 0.5, Av84+0.1, 0.5]
-
-        #for kk in range(0,nplot,1):
-        if kk == nplot-1:
-            # Histogram
-            for i, x in enumerate(Par):
-                ax = axes[i, i]
-                x1min, x1max = NPARmin[i], NPARmax[i]
-                nbin = 50
-                binwidth1 = (x1max-x1min)/nbin
-                bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
-                ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
-                ax.set_xlim(x1min, x1max)
-                ax.set_yticklabels([])
-                if i == K-1:
-                    ax.set_xlabel('%s'%(Par[i]), fontsize=12)
-                if i < K-1:
-                    ax.set_xticklabels([])
-
-        # Scatter and contour
-        for i, x in enumerate(Par):
-            for j, y in enumerate(Par):
-                if i > j:
-                    ax = axes[i, j]
-                    ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='o', alpha=0.01)
-                    ax.set_xlabel('%s'%(Par[j]), fontsize=12)
-
-                    x1min, x1max = NPARmin[j], NPARmax[j]
-                    y1min, y1max = NPARmin[i], NPARmax[i]
-                    ax.set_xlim(x1min, x1max)
-                    ax.set_ylim(y1min, y1max)
-
-                    if j==0:
-                        ax.set_ylabel('%s'%(Par[i]), fontsize=12)
-                    if j>0:
-                        ax.set_yticklabels([])
-                    if i<K-1:
-                        ax.set_xticklabels([])
-
-                if i < j:
-                    ax = axes[i, j]
-                    ax.set_xticklabels([])
-                    ax.set_yticklabels([])
-                    ax.set_frame_on(False)
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-
-                if i == j:
-                    ax = axes[i, j]
-                    ax.set_yticklabels([])
-                    if i == K-1:
-                        ax.set_xlabel('%s'%(Par[i]), fontsize=12)
-                    if i < K-1:
-                        ax.set_xticklabels([])
-
-
-        if kk%10 == 0 and out_ind == 1:
-            fname = DIR_OUT + '%d.png' % kk
-            print('Saving frame', fname)
-            plt.savefig(fname, dpi=200)
-            files.append(fname)
-
-        #plt.savefig(DIR_OUT + '%d.pdf'%(kk))
-
-    plt.savefig(DIR_OUT + 'param_' + ID + '_corner.png', dpi=200)
-    plt.close()
 
 
 def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
