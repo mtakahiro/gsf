@@ -271,6 +271,16 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     '''
 
     if fplt == 6:
+        # Use the final redshift;
+        from astropy.io import fits
+        hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
+        MB.zgal = hd_sum['ZMC']
+        
+        if MB.SFH_FORM == -99:
+            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+        else:
+            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+
         if MB.SFH_FORM == -99:
             from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
             plot_corner_physparam_summary(MB)

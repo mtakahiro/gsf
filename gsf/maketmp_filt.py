@@ -414,7 +414,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # Get ascii data.
     #
     MB.f_spec = False
-    data_meta = {'data_len':[],'data_origin':[],'data_index':[]}
+    data_meta = {'data_len':np.zeros(3,int),'data_origin':[],'data_index':[]}
 
     try:
         spec_files = [x.strip() for x in inputs['SPEC_FILE'].split(',')]
@@ -466,7 +466,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     eobs[ii] = eobs0[ii1]
 
                 MB.f_spec = True
-                data_meta['data_len'] = np.append(data_meta['data_len'], len(lm0tmp))
+                # data_meta['data_len'] = np.append(data_meta['data_len'], len(lm0tmp))
+                data_meta['data_len'][ff] = len(lm0tmp)
                 data_meta['data_origin'] = np.append(data_meta['data_origin'], '%s'%spec_file)
                 data_meta['data_index'] = np.append(data_meta['data_index'], '%d'%ff)
 
