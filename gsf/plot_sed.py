@@ -223,10 +223,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     fg2  = fy[con2]
     eg2  = ey[con2]
     con_spec = (NR<MB.NRbb_lim)
-    wave_spec_max = np.max(x[con_spec])
 
     if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
         f_grsm = True
+        wave_spec_max = np.max(x[con_spec])
     else:
         f_grsm = False
 
