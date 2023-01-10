@@ -16,7 +16,8 @@ import timeit
 start = timeit.default_timer()
 
 
-def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave=10):
+def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave=10,
+    f_IGM=True):
     '''
     Purpose
     -------
@@ -44,7 +45,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
     #
     # 0. Make basic templates
     #
-    if fplt == 0 or fplt == 1:
+    if fplt == 0 or fplt == 1 or fplt == 2:
         #
         # 0. Make basic templates
         #
@@ -72,9 +73,9 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
         # 1. Start making redshifted templates.
         #
         if MB.SFH_FORM == -99:
-            maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
 
     # Read temp from asdf;
     # This has to happend after fplt==1 and before fplt>=2.
