@@ -726,7 +726,7 @@ class Mainbody():
         ey = np.append(ey02,ey_bb)
 
         wht = 1./np.square(ey)
-        con_wht = (ey<0)
+        con_wht = (ey<=0)
         wht[con_wht] = 0
 
         # For now...

@@ -285,7 +285,6 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0,
                 fit_params['Z'+str(aa)].value = ZZ
 
         f_fir = False
-
         out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), 
             method=fit_name, kws={'f_only_spec':f_only_spec})
             

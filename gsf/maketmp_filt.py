@@ -1105,6 +1105,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         file_tmp2 = 'tmp_library2%s.txt'%MB.ID
         fw = open(file_tmp,'w')
         fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
+
+        # this is for spec;
         for ii in range(len(lm)):
             g_offset = 0 #1000 * fgrs[ii]
             if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu and not np.isnan(fobs[ii]):
@@ -1164,6 +1166,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
         fw.close()
         fw_rem.close()
+
         # register;
         dat = ascii.read(file_tmp, format='no_header')
         NRbb = dat['col1']
@@ -1183,6 +1186,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
             MB.data['bb_obs_removed'] = dict_bb_obs_removed
         except:
+            print('Some unknown error in maketmp_filt...')
             pass
 
         # Dust; Not sure where this is being used...
