@@ -7,6 +7,7 @@ import os
 import scipy.interpolate as interpolate
 from scipy.interpolate import interp1d
 import logging
+from colorama import Fore, Back, Style
 
 ################
 # Line library
@@ -16,6 +17,24 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
+
+def print_err(msg, exit=False):
+    '''
+    '''
+    print(Fore.RED)
+    print('$$$ ================= $$$')
+    print('$$$ gsf error message $$$')
+    print(Fore.RED)
+    print(msg)
+    print(Fore.RED)
+    print('$$$ ================= $$$')
+    print(Style.RESET_ALL)
+
+    if exit:
+        print(Fore.CYAN)
+        print('Exiting.')
+        print(Style.RESET_ALL)
+        sys.exit()
 
 def str2bool(v):
     '''

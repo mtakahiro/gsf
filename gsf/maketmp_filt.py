@@ -330,6 +330,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     try:
         af = MB.af0
     except:
+        if not os.path.exists(os.path.join(DIR_TMP, 'spec_all.asdf')):
+            msg = 'The z=0 template is missing in %s directory.\nCheck your configuration file (`DIR_TEMP`) or run with flag=0.'%(DIR_TMP)
+            print_err(msg, exit=True)
         af = asdf.open(os.path.join(DIR_TMP, 'spec_all.asdf'))
         MB.af0 = af
 
