@@ -1245,7 +1245,7 @@ class Mainbody():
                 self.Amin = float(self.inputs['AMIN'])
                 self.Amax = float(self.inputs['AMAX'])
             except:
-                self.Amin = -5
+                self.Amin = -10
                 self.Amax = 10
             self.Aini = -1
         else:
