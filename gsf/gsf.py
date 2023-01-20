@@ -176,17 +176,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     if not flag_suc:
         sys.exit()
 
-    # Read temp from asdf;
-    # Template must be registered before fplt>=2.
-    # try:
-    #     aftmp = MB.af
-    # except:
-    #     MB.af = asdf.open(os.path.join(MB.DIR_TMP, 'spec_all_' + MB.ID + '.asdf'))
-
     if fplt <= 2:
         MB.zprev = MB.zgal 
         MB.ndim_keep = MB.ndim
-
         #
         # 1. Start making redshifted templates, at z=MB.zgal.
         #
@@ -194,6 +186,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
             flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
         else:
             flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
+
+        if not flag_suc:
+            return False
 
         #
         # 2. Main fitting part.
@@ -230,18 +225,18 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
 
     if fplt <= 3 and flag_suc:
 
-        if True: #fplt >= 3: # If main fitting has not been done;
-            # make redshifted templates and register data;
-            
-            # Use the final redshift;
-            from astropy.io import fits
-            hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
-            MB.zgal = hd_sum['ZMC']
-            
-            if MB.SFH_FORM == -99:
-                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-            else:
-                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+        # Use the final redshift;
+        from astropy.io import fits
+        hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
+        MB.zgal = hd_sum['ZMC']
+        
+        if MB.SFH_FORM == -99:
+            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+        else:
+            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+
+        if not flag_suc:
+            return False
 
         if MB.SFH_FORM == -99:
             from .plot_sfh import plot_sfh
