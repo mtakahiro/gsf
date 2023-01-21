@@ -174,7 +174,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
                 delT[aa] = tau_lim
             else:
                 delT[aa] = delTu[aa] + delTl[aa]
-    else: # This is only true when CSP...
+    else: 
+        # @@@ Note: This is only true when CSP...?
         for aa in range(len(age)):
             if aa == 0:
                 delTl[aa] = age[aa]
@@ -329,16 +330,13 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             Zrand = np.random.uniform(-eZ[aa],eZ[aa])
             f_m_sur = sedpar0['frac_mass_survive_%d'%nZtmp][aa]
 
-            if True:# Age limit here?
-                # quantity in log scale;
-                AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
-                AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
-                SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # / ml
-                ZM[aa, mm] = ZZtmp[aa] + Zrand
-                ZMM[aa, mm]= ZZtmp[aa] + AAtmp[aa] + np.log10(mslist[aa]) + Zrand
-                ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
-            if SF[aa, mm] < -10:
-                SF[aa, mm] = np.nan
+            # quantity in log scale;
+            AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
+            AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
+            SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # / ml
+            ZM[aa, mm] = ZZtmp[aa] + Zrand
+            ZMM[aa, mm]= ZZtmp[aa] + AAtmp[aa] + np.log10(mslist[aa]) + Zrand
+            ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
 
             # SFR from SED. This will be converted in log later;
             if age[aa]<=tset_SFR_SED:

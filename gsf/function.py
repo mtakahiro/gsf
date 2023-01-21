@@ -8,6 +8,7 @@ import scipy.interpolate as interpolate
 from scipy.interpolate import interp1d
 import logging
 from colorama import Fore, Back, Style
+from datetime import datetime
 
 ################
 # Line library
@@ -18,16 +19,24 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
 
-def print_err(msg, exit=False):
+def print_err(msg, exit=False, details=None):
     '''
     '''
+    now = datetime.now()
     print(Fore.RED)
-    print('$$$ ================= $$$')
-    print('$$$ gsf error message $$$')
+    print('$$$ =================== $$$')
+    print('$$$  gsf error message  $$$')
+    print('%s'%now)
+    if not details == None:
+        # @@@ This does not work??
+        exc_type, exc_obj, exc_tb = details
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+
+    print('$$$ =================== $$$')
     print(Fore.RED)
     print(msg)
     print(Fore.RED)
-    print('$$$ ================= $$$')
     print(Style.RESET_ALL)
 
     if exit:

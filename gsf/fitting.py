@@ -21,7 +21,7 @@ from astropy.io import fits,ascii
 import corner
 
 # import from custom codes
-from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq
+from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err
 from .zfit import check_redshift,get_chi2
 from .writing import get_param
 from .function_class import Func
@@ -1382,6 +1382,15 @@ class Mainbody():
         return fit_params
 
 
+    def check_mainbody(self):
+        '''
+        To check any issues with the input params.
+        '''
+        if len(self.age) != len(set(self.age)):
+            msg = 'Input age has duplications. Check `AGE`.'
+            print_err(msg, exit=True, details=None)
+        
+
     def prepare_class(self, add_fir=None):
         '''
         '''
@@ -1516,6 +1525,9 @@ class Mainbody():
 
         # Prepare library, data, etc.
         self.prepare_class()
+
+        # Check Main Body;
+        self.check_mainbody()
 
         print('########################')
         print('### Fitting Function ###')

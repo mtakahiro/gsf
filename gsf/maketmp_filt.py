@@ -149,9 +149,6 @@ def check_library(MB, af, nround=3):
             print('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
             flag = False
     else:
-        # if len(af['ML']['ms_0_0']) != len(MB.age):
-        #     print('No of age pixels:', len(MB.age), len(af['ML']['ms_0_0']))
-        #     flag = False
         flag = True
 
     # Matallicity:
@@ -1105,7 +1102,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
         # The following files are just temporary.
         file_tmp = 'tmp_library_%s.txt'%MB.ID
-        file_tmp2 = 'tmp_library2%s.txt'%MB.ID
+        file_tmp2 = 'tmp_library2_%s.txt'%MB.ID
         fw = open(file_tmp,'w')
         fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
 
@@ -1179,7 +1176,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         exbb = dat['col5']
         dict_bb_obs = {'NR':NRbb, 'x':xbb, 'fy':fybb, 'ey':eybb, 'ex':exbb}
         MB.data['bb_obs'] = dict_bb_obs
-        try:
+        if len(SKIPFILT)>0:#try:
             dat = ascii.read(file_tmp2, format='no_header')
             NR_ex = dat['col1']
             x_ex = dat['col2']
@@ -1188,9 +1185,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             ex_ex = dat['col5']
             dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
             MB.data['bb_obs_removed'] = dict_bb_obs_removed
-        except:
-            print('Some unknown error in maketmp_filt...')
-            pass
+        # else:
+        #     MB.data['bb_obs_removed'] = {}
+        # else:#except:
+        #     print('Some unknown error in maketmp_filt...')
+        #     pass
 
         # Dust; Not sure where this is being used...
         fw = open(file_tmp,'w')
