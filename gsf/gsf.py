@@ -82,9 +82,11 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
 
 
 def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, 
-    f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, skip_sfh=False, f_fancyplot=False, 
-    skip_zhist=False, tau_lim=0.001, tset_SFR_SED=0.1, f_shuffle=False, amp_shuffle=1e-2, Zini=None, 
-    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True, f_prior_sfh=False, norder_sfh_prior=3):
+    f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, f_prior_sfh=False, norder_sfh_prior=3, 
+    f_shuffle=False, amp_shuffle=1e-2, Zini=None, tau_lim=0.001,
+    skip_sfh=False, f_fancyplot=False, skip_zhist=False, f_sfh_yaxis_force=True, tset_SFR_SED=0.1, 
+    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True
+    ):
     '''
     Purpose
     -------
@@ -221,33 +223,25 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
         if not skip_sfh:
             plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax,
             dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
-            f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED)
+            f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
+            tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=figpdf, save_sed=save_sed, mmax=mmax,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
         f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
 
-    '''
-    if fplt == 4:
-        from .plot_sfh import get_evolv
-        get_evolv(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP)
-
-
-    if fplt == 5:
-        from .plot_sfh import plot_evolv
-        plot_evolv(MB, MB.ID, MB.PA, MB.Zall, MB.age, f_comp=MB.ftaucomp, fil_path=MB.DIR_FILT, inputs=MB.inputs, dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, nmc=10)
-    '''
 
     if fplt == 6:
         # Use the final redshift;
         hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
         MB.zgal = hd_sum['ZMC']
         
-        if MB.SFH_FORM == -99:
-            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-        else:
-            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+        if not MB.ztemplate:
+            if MB.SFH_FORM == -99:
+                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            else:
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
 
         if MB.SFH_FORM == -99:
             from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary

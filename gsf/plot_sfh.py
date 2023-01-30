@@ -20,7 +20,7 @@ from .function_igm import *
 
 def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_axis_force=True):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_sfh_yaxis_force=True):
     '''
     Purpose
     -------
@@ -118,10 +118,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     chinu= hdul[1].data['chi']
 
     try:
-        RA   = hdul[0].header['RA']
-        DEC  = hdul[0].header['DEC']
+        RA = hdul[0].header['RA']
+        DEC = hdul[0].header['DEC']
     except:
-        RA  = 0
+        RA = 0
         DEC = 0
     try:
         SN = hdul[0].header['SN']
@@ -154,7 +154,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
 
-    Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
+    Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
 
     delT  = np.zeros(len(age),dtype=float)
@@ -522,7 +522,13 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     #############
     # For redshift
     if zbes<4:
-        if zbes<2:
+        if zbes<0.5:
+            zred  = [zbes, 1, 5]
+            zredl = ['$z_\mathrm{obs.}$', 1, 5]
+        elif zbes<1:
+            zred  = [zbes, 2, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2, 6]
+        elif zbes<2:
             zred  = [zbes, 2, 3, 6]
             zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
         elif zbes<2.5:
@@ -557,14 +563,12 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         lsfrl = np.min(SFp[:,2])+0.1
 
     if f_log_sfh:
-        if f_axis_force:
+        if f_sfh_yaxis_force:
             ax1.set_ylim(lsfrl, lsfru)
         ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-        #ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     else:
         ax1.set_ylim(0, 10**lsfru)
         ax1.set_ylabel('$\dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-        #ax1.plot(Tzz, Tzz*0+10**lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     if Txmax < np.max(age):
         Txmax = np.max(age)
@@ -573,10 +577,13 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     ax2.set_ylabel('$\log M_*/M_\odot$', fontsize=12)
     ax2.set_xlim(Txmin, Txmax)
-    if f_axis_force:
+    if f_sfh_yaxis_force:
         ax2.set_ylim(y2min, y2max)
+    else:
+        y2min, y2max = ax2.get_ylim()[0], ax2.get_ylim()[1]
+
     ax2.set_xscale('log')
-    ax2.text(np.min(age*1.05), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+    ax2.text(Txmin + 0.0002 * np.log10(Txmax/Txmin), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
         %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
 
     #
@@ -743,7 +750,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         ax4.set_ylim(y3min, y3max)
         ax4.set_xscale('log')
 
-        if f_axis_force:
+        if f_sfh_yaxis_force:
             Zticks = np.arange(MB.Zall.min(), MB.Zall.max()+delZZl, delZl)
             ax4.set_yticks(Zticks)
             Zlabels = []

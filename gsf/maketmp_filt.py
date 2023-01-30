@@ -211,12 +211,12 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
                 alp = 0
             f_morp = True
         except Exception:
-            print('Error in reading morphology params.')
-            print('No morphology convolution.')
+            msg = 'Error in reading morphology params.\nNo morphology convolution.'
+            print_err(msg, exit=False)
             pass
     else:
-        print('MORP Keywords does not match.')
-        print('No morphology convolution.')
+        msg = 'MORP Keywords does not match.\nNo morphology convolution.'
+        print_err(msg, exit=False)
 
     ############################
     # Template convolution;
@@ -259,8 +259,8 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
             print('Template convolution with Gaussian.')
             print('params is sigma;',sigma)
         else:
-            print('Something is wrong with the convolution file. Exiting.')
-            return False
+            msg = 'Something is wrong with the convolution file. Exiting.'
+            print_err(msg, exit=True)
 
     else: # For slit spectroscopy. To be updated...
         print('Templates convolution (intrinsic velocity).')
@@ -317,11 +317,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tau0 = MB.tau0
 
     delz = 1.0
-    # wid_z = MB.zmcmax - MB.zmcmin
-    # nz = int(wid_z/delz)
-    # if nz%2 == 0:
-    #     nz += 1
-    # MB.zbests = np.linspace(MB.zgal - wid_z/2., MB.zgal + wid_z/2., nz)
     MB.zbests = np.arange(MB.zgal, MB.zgal + 0.01, delz)
 
     try:
@@ -339,8 +334,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # Consistency check:
     flag = check_library(MB, af)
     if not flag:
-        print('\n!!!\nThere is inconsistency in z0 library and input file. Exiting.\n!!!\n')
-        sys.exit()
+        msg = 'There is inconsistency in z0 library and input file. Exiting.'
+        print_err(msg, exit=True)
 
     # ASDF Big tree;
     # Create header;
@@ -379,11 +374,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print(','.join(MB.filts))
         print('')
     except:
-        print('########################')
-        print('Filter is not detected!!')
-        print('Make sure your \nfilter directory is correct.')
-        print('########################')
-        sys.exit()
+        msg = 'Filter is not detected!!\nMake sure your filter directory is correct.'
+        print_err(msg, exit=True)
 
     try:
         SKIPFILT = inputs['SKIPFILT']
@@ -466,7 +458,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     eobs[ii] = eobs0[ii1]
 
                 MB.f_spec = True
-                # data_meta['data_len'] = np.append(data_meta['data_len'], len(lm0tmp))
                 data_meta['data_len'][ff] = len(lm0tmp)
                 data_meta['data_origin'] = np.append(data_meta['data_origin'], '%s'%spec_file)
                 data_meta['data_index'] = np.append(data_meta['data_index'], '%d'%ff)
@@ -499,24 +490,22 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         ii0 = np.where(id0[:]==MB.ID)
         try:
             if len(ii0[0]) == 0:
-                print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID))
-                return False
+                msg = 'Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID)
+                print_err(msg, exit=True)
             id = fd0[key_id][ii0]
         except:
-            print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID))
-            print(fd0)
-            return False
+            msg = 'Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID)
+            print_err(msg, exit=True)
 
         fbb = np.zeros(len(SFILT), dtype=float)
         ebb = np.zeros(len(SFILT), dtype=float)
-
         for ii in range(len(SFILT)):
             try:
                 fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
                 ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
             except:
-                print('Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii]))
-                return False
+                msg = 'Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii])
+                print_err(msg, exit=True)
 
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         unit = 'nu'
@@ -567,8 +556,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             try:
                 id = fd0[key_id][ii0]
             except:
-                print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID))
-                return False
+                msg = 'Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID)
+                print_err(msg, exit=True)
         except:
             return False
             
