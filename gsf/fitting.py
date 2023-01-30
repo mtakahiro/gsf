@@ -74,6 +74,7 @@ class Mainbody():
         '''
         self.update_input(inputs, idman=idman, zman=zman)
         self.NRbb_lim = NRbb_lim
+        self.ztemplate = False
 
 
     def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,

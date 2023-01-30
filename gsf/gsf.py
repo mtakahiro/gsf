@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os.path
 import string
 from astropy.cosmology import WMAP9 as cosmo
+from astropy.io import fits
 import asdf
 
 # From gsf
@@ -76,33 +77,6 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
             maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
         else:
             maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
-
-    # Read temp from asdf;
-    # This has to happend after fplt==1 and before fplt>=2.
-    # MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-
-    '''
-    #
-    # 2. Load templates
-    #
-    MB.lib = MB.fnc.open_spec_fits(MB, fall=0)
-    MB.lib_all = MB.fnc.open_spec_fits(MB, fall=1)
-    if MB.f_dust:
-        MB.lib_dust = MB.fnc.open_spec_dust_fits(MB, fall=0)
-        MB.lib_dust_all = MB.fnc.open_spec_dust_fits(MB, fall=1)
-    '''
-
-    # How to get SED?
-    if False:
-        import matplotlib.pyplot as plt
-        for T in MB.age[:1]:
-            y0, x0 = MB.fnc.get_template(MB.lib_all, Amp=1.0, T=T, Av=0.0, Z=-1.0, zgal=MB.zgal)
-            plt.plot(x0/(1.+MB.zgal),y0,linestyle='-',lw=1.0, label='$T=%.2f$\n$z=%.2f$'%(T,MB.zgal))
-            plt.xlim(600,20000)
-            plt.xlabel('Rest frame wavelength')
-            plt.xscale('log')
-        plt.legend(loc=0)
-        plt.show()
 
     return MB
 
@@ -226,17 +200,16 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     if fplt <= 3 and flag_suc:
 
         # Use the final redshift;
-        from astropy.io import fits
         hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
         MB.zgal = hd_sum['ZMC']
-        
-        if MB.SFH_FORM == -99:
-            flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
-        else:
-            flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
 
-        if not flag_suc:
-            return False
+        if not MB.ztemplate:
+            if MB.SFH_FORM == -99:
+                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            else:
+                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+            if not flag_suc:
+                return False
 
         if MB.SFH_FORM == -99:
             from .plot_sfh import plot_sfh
@@ -268,7 +241,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
 
     if fplt == 6:
         # Use the final redshift;
-        from astropy.io import fits
         hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
         MB.zgal = hd_sum['ZMC']
         

@@ -1088,10 +1088,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print('dust updated.')
 
     # Save;
+    file_asdf = os.path.join(DIR_TMP, 'spec_all_' + MB.ID + '.asdf')
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all_' + MB.ID + '.asdf', all_array_compression='zlib')
+    af.write_to(file_asdf, all_array_compression='zlib')
     # Loading the redshifted template;
-    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    MB.af = asdf.open(file_asdf)
+    # Remove file?
+    os.system('rm %s'%file_asdf)
 
     ##########################################
     # For data;
@@ -1212,6 +1215,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print('Done making templates at z=%.2f.\n'%zbest)
         os.system('rm %s %s'%(file_tmp, file_tmp2))
 
+    MB.ztemplate = True
     return True
 
 

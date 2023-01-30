@@ -143,7 +143,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             SN = 1
 
     Asum = 0
-    A50 = np.arange(len(age), dtype='float')
+    A50 = np.arange(len(age), dtype=float)
     for aa in range(len(A50)):
         A50[aa] = 10**hdul[1].data['A'+str(aa)][1]
         Asum += A50[aa]
@@ -157,9 +157,9 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
     Tuni0 = (Tuni - age[:])
 
-    delT  = np.zeros(len(age),dtype='float')
-    delTl = np.zeros(len(age),dtype='float')
-    delTu = np.zeros(len(age),dtype='float')
+    delT  = np.zeros(len(age),dtype=float)
+    delTl = np.zeros(len(age),dtype=float)
+    delTu = np.zeros(len(age),dtype=float)
 
     if len(age) == 1:
         for aa in range(len(age)):
@@ -227,18 +227,18 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ######################
     # Mass-to-Light ratio.
     ######################
-    AM = np.zeros((len(age), mmax), dtype='float') # Mass in each bin.
-    AC = np.zeros((len(age), mmax), dtype='float') -99 # Cumulative mass in each bin.
-    AL = np.zeros((len(age), mmax), dtype='float') # Cumulative light in each bin.
-    ZM = np.zeros((len(age), mmax), dtype='float') # Z.
-    ZC = np.zeros((len(age), mmax), dtype='float') -99 # Cumulative Z.
-    ZL = np.zeros((len(age), mmax), dtype='float') -99 # Light weighted cumulative Z.
-    TC = np.zeros((len(age), mmax), dtype='float') # Mass weighted T.
-    TL = np.zeros((len(age), mmax), dtype='float') # Light weighted T.
-    ZMM= np.zeros((len(age), mmax), dtype='float') # Mass weighted Z.
-    ZML= np.zeros((len(age), mmax), dtype='float') # Light weighted Z.
-    SF = np.zeros((len(age), mmax), dtype='float') # SFR
-    Av = np.zeros(mmax, dtype='float') # SFR
+    AM = np.zeros((len(age), mmax), dtype=float) # Mass in each bin.
+    AC = np.zeros((len(age), mmax), dtype=float) -99 # Cumulative mass in each bin.
+    AL = np.zeros((len(age), mmax), dtype=float) # Cumulative light in each bin.
+    ZM = np.zeros((len(age), mmax), dtype=float) # Z.
+    ZC = np.zeros((len(age), mmax), dtype=float) -99 # Cumulative Z.
+    ZL = np.zeros((len(age), mmax), dtype=float) -99 # Light weighted cumulative Z.
+    TC = np.zeros((len(age), mmax), dtype=float) # Mass weighted T.
+    TL = np.zeros((len(age), mmax), dtype=float) # Light weighted T.
+    ZMM= np.zeros((len(age), mmax), dtype=float) # Mass weighted Z.
+    ZML= np.zeros((len(age), mmax), dtype=float) # Light weighted Z.
+    SF = np.zeros((len(age), mmax), dtype=float) # SFR
+    Av = np.zeros(mmax, dtype=float) # SFR
 
 
     # ##############################
@@ -281,17 +281,17 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     # Get SED based SFR
     #####################
     f_SFRSED_plot = False
-    SFR_SED = np.zeros(mmax,dtype='float')
+    SFR_SED = np.zeros(mmax,dtype=float)
 
     # ASDF;
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
 
-    AAtmp = np.zeros(len(age), dtype='float')
-    ZZtmp = np.zeros(len(age), dtype='float')
-    mslist= np.zeros(len(age), dtype='float')
+    AAtmp = np.zeros(len(age), dtype=float)
+    ZZtmp = np.zeros(len(age), dtype=float)
+    mslist= np.zeros(len(age), dtype=float)
 
     for mm in range(mmax):
         delt_tot = 0
@@ -400,12 +400,12 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     #############
     # Plot
     #############
-    AMp = np.zeros((len(age),3), dtype='float')
-    ACp = np.zeros((len(age),3), dtype='float')
-    ZMp = np.zeros((len(age),3), dtype='float')
-    ZCp = np.zeros((len(age),3), dtype='float')
-    ZLp = np.zeros((len(age),3), dtype='float')
-    SFp = np.zeros((len(age),3), dtype='float')
+    AMp = np.zeros((len(age),3), dtype=float)
+    ACp = np.zeros((len(age),3), dtype=float)
+    ZMp = np.zeros((len(age),3), dtype=float)
+    ZCp = np.zeros((len(age),3), dtype=float)
+    ZLp = np.zeros((len(age),3), dtype=float)
+    SFp = np.zeros((len(age),3), dtype=float)
     for aa in range(len(age)):
        AMp[aa,:] = np.nanpercentile(AM[aa,:], [16,50,84])
        ACp[aa,:] = np.nanpercentile(AC[aa,:], [16,50,84])
@@ -421,7 +421,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
 
     ###################
-    msize = np.zeros(len(age), dtype='float')
+    msize = np.zeros(len(age), dtype=float)
     for aa in range(len(age)):
         if A50[aa]/Asum>flim: # if >1%
             msize[aa] = 200 * A50[aa]/Asum
@@ -544,7 +544,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         zred  = [zbes, 20]
         zredl = ['$z_\mathrm{obs.}$', 20]
 
-    Tzz = np.zeros(len(zred), dtype='float')
+    Tzz = np.zeros(len(zred), dtype=float)
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
         if Tzz[zz] < Txmin:
@@ -814,8 +814,8 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
         in Msun
 
     '''
-    yy = np.zeros(len(tt), dtype='float') 
-    yyms = np.zeros(len(tt), dtype='float')
+    yy = np.zeros(len(tt), dtype=float) 
+    yyms = np.zeros(len(tt), dtype=float)
     con = (tt<=t0)
     if sfh == 1:
         yy[con] = np.exp((tt[con]-t0)/tau0)
@@ -966,7 +966,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             SN = 1
 
     Asum = 0
-    A50 = np.arange(len(age), dtype='float')
+    A50 = np.arange(len(age), dtype=float)
     for aa in range(len(A50)):
         A50[aa] = 10**hdul[1].data['A'+str(aa)][1]
         Asum += A50[aa]
@@ -980,9 +980,9 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
     Tuni0 = (Tuni - age[:])
 
-    delT  = np.zeros(len(age),dtype='float')
-    delTl = np.zeros(len(age),dtype='float')
-    delTu = np.zeros(len(age),dtype='float')
+    delT  = np.zeros(len(age),dtype=float)
+    delTl = np.zeros(len(age),dtype=float)
+    delTu = np.zeros(len(age),dtype=float)
 
     if len(age) == 1:
     #if tau0[0] < 0: # SSP;
@@ -1048,18 +1048,18 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ######################
     # Mass-to-Light ratio.
     ######################
-    AM = np.zeros((len(age), mmax), dtype='float') # Mass in each bin.
-    AC = np.zeros((len(age), mmax), dtype='float') -99 # Cumulative mass in each bin.
-    AL = np.zeros((len(age), mmax), dtype='float') # Cumulative light in each bin.
-    ZM = np.zeros((len(age), mmax), dtype='float') # Z.
-    ZC = np.zeros((len(age), mmax), dtype='float') -99 # Cumulative Z.
-    ZL = np.zeros((len(age), mmax), dtype='float') -99 # Light weighted cumulative Z.
-    TC = np.zeros((len(age), mmax), dtype='float') # Mass weighted T.
-    TL = np.zeros((len(age), mmax), dtype='float') # Light weighted T.
-    ZMM = np.zeros((len(age), mmax), dtype='float') # Mass weighted Z.
-    ZML= np.zeros((len(age), mmax), dtype='float') # Light weighted Z.
-    SF = np.zeros((len(age), mmax), dtype='float') # SFR
-    Av = np.zeros(mmax, dtype='float') # SFR
+    AM = np.zeros((len(age), mmax), dtype=float) # Mass in each bin.
+    AC = np.zeros((len(age), mmax), dtype=float) -99 # Cumulative mass in each bin.
+    AL = np.zeros((len(age), mmax), dtype=float) # Cumulative light in each bin.
+    ZM = np.zeros((len(age), mmax), dtype=float) # Z.
+    ZC = np.zeros((len(age), mmax), dtype=float) -99 # Cumulative Z.
+    ZL = np.zeros((len(age), mmax), dtype=float) -99 # Light weighted cumulative Z.
+    TC = np.zeros((len(age), mmax), dtype=float) # Mass weighted T.
+    TL = np.zeros((len(age), mmax), dtype=float) # Light weighted T.
+    ZMM = np.zeros((len(age), mmax), dtype=float) # Mass weighted Z.
+    ZML= np.zeros((len(age), mmax), dtype=float) # Light weighted Z.
+    SF = np.zeros((len(age), mmax), dtype=float) # SFR
+    Av = np.zeros(mmax, dtype=float) # SFR
 
 
     # ##############################
@@ -1074,7 +1074,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Get SED based SFR
     #####################
     f_SFRSED_plot = False
-    SFR_SED = np.zeros(mmax,dtype='float')
+    SFR_SED = np.zeros(mmax,dtype=float)
 
     # ASDF;
     af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
@@ -1084,15 +1084,15 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     ttmin = 0.001
     tt = np.arange(ttmin,Tuni+0.5,ttmin/10)
-    xSF = np.zeros((len(tt), mmax), dtype='float') # SFR
-    ySF = np.zeros((len(tt), mmax), dtype='float') # SFR
-    yMS = np.zeros((len(tt), mmax), dtype='float') # MFR
-    ySF_each = np.zeros((MB.npeak, len(tt), mmax), dtype='float') # SFR
-    yMS_each = np.zeros((MB.npeak, len(tt), mmax), dtype='float') # MFR
+    xSF = np.zeros((len(tt), mmax), dtype=float) # SFR
+    ySF = np.zeros((len(tt), mmax), dtype=float) # SFR
+    yMS = np.zeros((len(tt), mmax), dtype=float) # MFR
+    ySF_each = np.zeros((MB.npeak, len(tt), mmax), dtype=float) # SFR
+    yMS_each = np.zeros((MB.npeak, len(tt), mmax), dtype=float) # MFR
 
-    ZZmc = np.zeros((MB.npeak, mmax), dtype='float') 
-    TTmc = np.zeros((MB.npeak, mmax), dtype='float') 
-    TAmc = np.zeros((MB.npeak, mmax), dtype='float') 
+    ZZmc = np.zeros((MB.npeak, mmax), dtype=float) 
+    TTmc = np.zeros((MB.npeak, mmax), dtype=float) 
+    TAmc = np.zeros((MB.npeak, mmax), dtype=float) 
 
     if Txmin > np.min(tt):
         Txmin = np.min(tt) * 0.8
@@ -1150,11 +1150,11 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     #############
     # Plot
     #############
-    xSFp = np.zeros((len(tt),3), dtype='float')
-    ySFp = np.zeros((len(tt),3), dtype='float')
-    yMSp = np.zeros((len(tt),3), dtype='float')
-    ySFp_each = np.zeros((MB.npeak, len(tt), 3), dtype='float')
-    yMSp_each = np.zeros((MB.npeak, len(tt), 3), dtype='float')
+    xSFp = np.zeros((len(tt),3), dtype=float)
+    ySFp = np.zeros((len(tt),3), dtype=float)
+    yMSp = np.zeros((len(tt),3), dtype=float)
+    ySFp_each = np.zeros((MB.npeak, len(tt), 3), dtype=float)
+    yMSp_each = np.zeros((MB.npeak, len(tt), 3), dtype=float)
     for ii in range(len(tt)):
         xSFp[ii,:] = np.percentile(xSF[ii,:], [16,50,84])
         ySFp[ii,:] = np.percentile(ySF[ii,:], [16,50,84])
@@ -1170,19 +1170,19 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax1.plot(xSFp[:,1], np.log10(ySFp[:,1]), linestyle='-', color='k', alpha=1., zorder=-1, lw=0.5)
     ax2.plot(xSFp[:,1], np.log10(yMSp[:,1]), linestyle='-', color='k', alpha=1., zorder=-1, lw=0.5)
 
-    ACp = np.zeros((len(tt),3),'float')
-    SFp = np.zeros((len(tt),3),'float')
+    ACp = np.zeros((len(tt),3),float)
+    SFp = np.zeros((len(tt),3),float)
     ACp[:] = np.log10(yMSp[:,:])
     SFp[:] = np.log10(ySFp[:,:])
 
     SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
 
     ###################
-    msize = np.zeros(len(age), dtype='float')
+    msize = np.zeros(len(age), dtype=float)
     # Metal
-    ZCp = np.zeros((MB.npeak,3),'float')
-    TCp = np.zeros((MB.npeak,3),'float')
-    TTp = np.zeros((MB.npeak,3),'float')
+    ZCp = np.zeros((MB.npeak,3),float)
+    TCp = np.zeros((MB.npeak,3),float)
+    TTp = np.zeros((MB.npeak,3),float)
     for aa in range(len(age)):
         if A50[aa]/Asum>flim: # if >1%
             msize[aa] = 200 * A50[aa]/Asum
@@ -1267,7 +1267,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         zred  = [zbes, 20]
         zredl = ['$z_\mathrm{obs.}$', 20]
 
-    Tzz = np.zeros(len(zred), dtype='float')
+    Tzz = np.zeros(len(zred), dtype=float)
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value)
         if Tzz[zz] < Txmin:
@@ -1544,7 +1544,7 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
 
 
     Asum = 0
-    A50 = np.arange(len(age), dtype='float')
+    A50 = np.arange(len(age), dtype=float)
     for aa in range(len(A50)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         Asum += A50[aa]
@@ -1558,9 +1558,9 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
 
-    delT  = np.zeros(len(age),dtype='float')
-    delTl = np.zeros(len(age),dtype='float')
-    delTu = np.zeros(len(age),dtype='float')
+    delT  = np.zeros(len(age),dtype=float)
+    delTl = np.zeros(len(age),dtype=float)
+    delTu = np.zeros(len(age),dtype=float)
     for aa in range(len(age)):
         if aa == 0:
             delTl[aa] = age[aa]
@@ -1606,18 +1606,18 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     ######################
     # Mass-to-Light ratio.
     ######################
-    AM = np.zeros((len(age), mmax), dtype='float') # Mass in each bin.
-    AC = np.zeros((len(age), mmax), dtype='float') # Cumulative mass in each bin.
-    AL = np.zeros((len(age), mmax), dtype='float') # Cumulative light in each bin.
-    ZM = np.zeros((len(age), mmax), dtype='float') # Z.
-    ZC = np.zeros((len(age), mmax), dtype='float') # Cumulative Z.
-    ZL = np.zeros((len(age), mmax), dtype='float') # Light weighted cumulative Z.
-    TC = np.zeros((len(age), mmax), dtype='float') # Mass weighted T.
-    TL = np.zeros((len(age), mmax), dtype='float') # Light weighted T.
-    ZMM= np.zeros((len(age), mmax), dtype='float') # Mass weighted Z.
-    ZML= np.zeros((len(age), mmax), dtype='float') # Light weighted Z.
-    SF = np.zeros((len(age), mmax), dtype='float') # SFR
-    Av = np.zeros(mmax, dtype='float') # SFR
+    AM = np.zeros((len(age), mmax), dtype=float) # Mass in each bin.
+    AC = np.zeros((len(age), mmax), dtype=float) # Cumulative mass in each bin.
+    AL = np.zeros((len(age), mmax), dtype=float) # Cumulative light in each bin.
+    ZM = np.zeros((len(age), mmax), dtype=float) # Z.
+    ZC = np.zeros((len(age), mmax), dtype=float) # Cumulative Z.
+    ZL = np.zeros((len(age), mmax), dtype=float) # Light weighted cumulative Z.
+    TC = np.zeros((len(age), mmax), dtype=float) # Mass weighted T.
+    TL = np.zeros((len(age), mmax), dtype=float) # Light weighted T.
+    ZMM= np.zeros((len(age), mmax), dtype=float) # Mass weighted Z.
+    ZML= np.zeros((len(age), mmax), dtype=float) # Light weighted Z.
+    SF = np.zeros((len(age), mmax), dtype=float) # SFR
+    Av = np.zeros(mmax, dtype=float) # SFR
 
     # ##############################
     # Add simulated scatter in quad
@@ -1655,9 +1655,9 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     mm = 0
     for mm in range(mmax):
         mtmp  = np.random.randint(len(samples))# + Nburn
-        AAtmp = np.zeros(len(age), dtype='float')
-        ZZtmp = np.zeros(len(age), dtype='float')
-        mslist= np.zeros(len(age), dtype='float')
+        AAtmp = np.zeros(len(age), dtype=float)
+        ZZtmp = np.zeros(len(age), dtype=float)
+        mslist= np.zeros(len(age), dtype=float)
 
         Av_tmp = samples['Av'][mtmp]
 
@@ -1718,11 +1718,11 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     #############
     # Plot
     #############
-    AMp = np.zeros((len(age),3), dtype='float')
-    ACp = np.zeros((len(age),3), dtype='float')
-    ZMp = np.zeros((len(age),3), dtype='float')
-    ZCp = np.zeros((len(age),3), dtype='float')
-    SFp = np.zeros((len(age),3), dtype='float')
+    AMp = np.zeros((len(age),3), dtype=float)
+    ACp = np.zeros((len(age),3), dtype=float)
+    ZMp = np.zeros((len(age),3), dtype=float)
+    ZCp = np.zeros((len(age),3), dtype=float)
+    SFp = np.zeros((len(age),3), dtype=float)
     for aa in range(len(age)):
        AMp[aa,:] = np.percentile(AM[aa,:], [16,50,84])
        ACp[aa,:] = np.percentile(AC[aa,:], [16,50,84])
@@ -1731,7 +1731,7 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
        SFp[aa,:] = np.percentile(SF[aa,:], [16,50,84])
 
     ###################
-    msize = np.zeros(len(age), dtype='float')
+    msize = np.zeros(len(age), dtype=float)
     for aa in range(len(age)):
         if A50[aa]/Asum>flim: # if >1%
             msize[aa] = 150 * A50[aa]/Asum
@@ -1766,7 +1766,7 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     for ss in range(len(t_get)):
         wave0, flux0 = sp.get_spectrum(tage=t_get[ss], peraa=True)
         if ss == 0:
-            spec_mul_nu_conv = np.zeros((len(t_get),len(wave0)),dtype='float')
+            spec_mul_nu_conv = np.zeros((len(t_get),len(wave0)),dtype=float)
 
         print('Template %d is processed.'%(ss))
         wavetmp  = wave0*(1.+zbes)
@@ -1885,7 +1885,7 @@ def plot_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
             SN = 1
 
     Asum = 0
-    A50 = np.arange(len(age), dtype='float')
+    A50 = np.arange(len(age), dtype=float)
     for aa in range(len(A50)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         Asum += A50[aa]
