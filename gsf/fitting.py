@@ -63,22 +63,21 @@ class Mainbody():
         Otherwise, it would be either minimum value (=0.01; if one age bin), 
         or the width to the next age bin.
     '''
-
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
-        cosmo=None, idman=None, zman=None, NRbb_lim=10000):
+        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000):
         '''
         Parameters
         ----------
         NRbb_lim : int
             BB data is associated with ids greater than this number.
         '''
-        self.update_input(inputs, idman=idman, zman=zman)
+        self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
         self.NRbb_lim = NRbb_lim
         self.ztemplate = False
 
 
     def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,
-                    idman=None, zman=None, sigz:float=5.0):
+                    idman:str=None, zman=None, zman_min=None, zman_max=None, sigz:float=5.0):
         '''
         The purpose of this module is to register/update the parameter attributes in `Mainbody`
         by visiting the configuration file.
@@ -134,13 +133,17 @@ class Mainbody():
 
         if zman != None:
             self.zgal = zman
-            self.zmcmin = None
-            self.zmcmax = None
+            self.zmcmin = zman_min
+            self.zmcmax = zman_max
         else:
             try:
                 self.zgal = float(inputs['ZMC'])
             except:
-                iix = np.where(self.fd_cat['id'] == self.ID)
+                ids_cat = self.fd_cat['id'].astype('str')
+                iix = np.where(ids_cat.value == self.ID)
+                if len(iix[0]) == 0:
+                    msg = 'id `%s` cannot be found in the catalog, `%s`'%(self.ID,self.CAT_BB)
+                    print_err(msg, exit=True)
                 self.zgal = float(self.fd_cat['redshift'][iix])
 
             try:
@@ -425,6 +428,9 @@ class Mainbody():
             except:
                 print('BPASS_DIR is not found. Using default.')
                 self.BPASS_DIR = '/astro/udfcen3/Takahiro/BPASS/'
+                if not os.path.exists(self.BPASS_DIR):
+                    msg = 'BPASS directory, %s, not found.'%self.BPASS_DIR
+                    print_err(msg, exit=True)
 
             self.BPASS_ver = 'v2.2.1'
             self.Zsun = 0.020
@@ -1856,10 +1862,9 @@ class Mainbody():
                 # Inserting result from res0 into res structure;
                 res = get_res(flatchain, var_names, params_value, res)
                 res.bic = -99
-
             else:
-                print('Sampling is not specified. Failed. Exiting.')
-                return False
+                msg = 'Sampling is not specified. Failed. Exiting.'
+                print_err(msg, exit=True)
 
             stop_mc  = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc

@@ -81,8 +81,10 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=None, f_label=True, f_symbol=True, 
-    f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, f_prior_sfh=False, norder_sfh_prior=3, 
+def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None, 
+    zman=None, zman_min=None, zman_max=None, f_label=True, f_symbol=True, 
+    f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, 
+    f_prior_sfh=False, norder_sfh_prior=3, 
     f_shuffle=False, amp_shuffle=1e-2, Zini=None, tau_lim=0.001,
     skip_sfh=False, f_fancyplot=False, skip_zhist=False, f_sfh_yaxis_force=True, tset_SFR_SED=0.1, 
     nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True
@@ -104,8 +106,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman=None, zman=No
     ######################
     from .function import read_input
     inputs = read_input(parfile)
-
-    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, cosmo=cosmo, idman=idman, zman=zman)
+    MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, 
+                cosmo=cosmo, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
     
     # Register some params;
     MB.tau_lim = tau_lim

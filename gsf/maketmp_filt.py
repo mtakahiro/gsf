@@ -636,33 +636,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         else:
                             spec_mul[ss,:] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin] # Lsun/A
 
-                        """
-                        ###################
-                        # Check xi_ion
-                        ###################
-                        h = 6.626e-34 # J s
-                        # 1 J = 1e7 erg
-                        h *= 1e7 # erg s
-                        nu = c / wave # A/s / A = 1/s
-                        # con_lyc = (wave[:-1]<912.0) & (wave[:-1]>228.0)
-                        # nph = spec_mul[ss,:] / (h * nu) # Lsun/A / (erg s * 1/s)
-                        # nph *= MB.Lsun # 1/A
-                        # delwave_array = np.diff(wave)
-                        # nph_Lyc = np.nansum(nph[:-1][con_lyc]*delwave_array[con_lyc])
-                        con_lyc = (wave[:]<912.0) & (wave[:]>228.0)
-                        nph = spec_mul[ss,:] / (h * nu) # Lsun/s/A / (erg s * 1/s) = Lsun/s / A / erg
-                        nph *= MB.Lsun # 1/s/A
-                        nph_Lyc = np.nansum(nph[:][con_lyc]) # 1/s
-
-                        # UV Flux density;
-                        fnu = flamtonu(wave, spec_mul[ss,:], m0set=MB.m0set) * MB.Lsun # erg/A
-                         #/ (4. * np.pi * DL10**2) # fnu, in erg/s/cm2/Hz.
-                        Fuv = get_Fuv(wave, fnu, lmin=1250, lmax=1650) # erg/A
-                        # MUV = -2.5 * np.log10(Fuv) + MB.m0set 
-                        Luv = Fuv * (1650-1250) # erg
-                        xi_ion = nph_Lyc / Luv # 1/s / (erg)
-                        """
-
                         ###################
                         # IGM attenuation.
                         ###################
@@ -699,7 +672,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             try:
                                 spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                             except:
-                                #print('Error. No convolution is happening...')
                                 spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
                                 if zz==0 and ss==0:
                                     print('Kernel is too small. No convolution.')
@@ -1177,11 +1149,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             ex_ex = dat['col5']
             dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
             MB.data['bb_obs_removed'] = dict_bb_obs_removed
-        # else:
-        #     MB.data['bb_obs_removed'] = {}
-        # else:#except:
-        #     print('Some unknown error in maketmp_filt...')
-        #     pass
 
         # Dust; Not sure where this is being used...
         fw = open(file_tmp,'w')
