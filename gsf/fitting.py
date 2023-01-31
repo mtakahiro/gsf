@@ -18,6 +18,10 @@ from scipy.stats import norm
 import scipy.interpolate as interpolate
 from astropy.io import fits,ascii
 import corner
+import emcee
+import zeus
+import pandas as pd
+import asdf
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err
@@ -25,6 +29,7 @@ from .zfit import check_redshift,get_chi2
 from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
+from .posterior_flexible import Post
 
 ############################
 py_v = (sys.version_info[0])
@@ -41,7 +46,6 @@ LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 
 LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW), dtype='int')
 
-# NRbb_lim = 10000 # BB data is associated with ids greater than this number.
 
 class Mainbody():
     '''
@@ -298,10 +302,6 @@ class Mainbody():
             self.band_rf['%s_lam'%(self.filts_rf[ii])] = fd[:,1]
             self.band_rf['%s_res'%(self.filts_rf[ii])] = fd[:,2] / np.max(fd[:,2])
 
-        # Tau comparison?
-        # -> Deprecated;
-        # self.ftaucomp = 0
-
         # Check if func model for SFH;
         try:
             self.SFH_FORM = int(inputs['SFH_FORM'])
@@ -473,9 +473,9 @@ class Mainbody():
             try:
                 self.Avmin = float(inputs['AVMIN'])
                 self.Avmax = float(inputs['AVMAX'])
-                if Avmin == Avmax:
+                if self.Avmin == self.Avmax:
                     self.nAV = 0
-                    self.AVFIX = Avmin
+                    self.AVFIX = self.Avmin
                     self.has_AVFIX = True
                 else:
                     self.nAV = 1
@@ -850,9 +850,9 @@ class Mainbody():
         x_cz = self.dict['x'][con_cz] # Observed range
         NR_cz = self.dict['NR'][con_cz]
 
-        # kind='cubic' causes an error if len(xm_tmp)<=3;
         fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(x_cz)
+        del fint
 
         #
         # If Eazy result exists;
@@ -997,9 +997,7 @@ class Mainbody():
 
         # Visual inspection;
         if self.fzvis==1:
-            #
             # Ask interactively;
-            #
             data_model_new = np.zeros((len(x_cz),4),'float')
             data_model_new[:,0] = x_cz
             data_model_new[:,1] = fm_s
@@ -1073,6 +1071,7 @@ class Mainbody():
             print('Error is %.3f per cent.'%(eC2sigma*100))
             print('##############################################################\n')
             plt.show()
+            plt.close()
 
             flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1, Cz2, and chi2/nu, %.5f %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
                 (self.zgal, self.Cz0, self.Cz1, self.Cz2, self.fitc_cz_prev))
@@ -1113,7 +1112,7 @@ class Mainbody():
             fig = plt.figure(figsize=(6.5,2.5))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
-            n, nbins, patches = ax1.hist(self.res_cz.flatchain['z'], bins=200, density=True, color='gray', label='')
+            n, nbins, _ = ax1.hist(self.res_cz.flatchain['z'], bins=200, density=True, color='gray', label='')
 
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
@@ -1152,11 +1151,9 @@ class Mainbody():
 
             if f_interact:
                 fig.savefig(file_out, dpi=300)
-                # return fig, ax1
             else:
                 plt.savefig(file_out, dpi=300)
                 plt.close()
-                # return True
         except:
             print('z-distribution figure is not generated.')
             pass
@@ -1517,15 +1514,6 @@ class Mainbody():
         f_plot_chain : book
             Plot MC sample chain.
         '''
-        import emcee
-        import zeus
-        try:
-            import multiprocess
-        except:
-            import multiprocessing as multiprocess
-
-        from .posterior_flexible import Post
-
         # Call likelihood/prior/posterior function;
         class_post = Post(self)
 
@@ -1572,10 +1560,7 @@ class Mainbody():
             print('#####################################')
             print('\n\n')
 
-            Av_tmp = out.params['Av'].value
-            AA_tmp = np.zeros(len(self.age), dtype='float')
-            ZZ_tmp = np.zeros(len(self.age), dtype='float')
-            nrd_tmp, fm_tmp, xm_tmp = self.fnc.get_template(out, f_val=True, f_nrd=True, f_neb=False)
+            _, fm_tmp, xm_tmp = self.fnc.get_template(out, f_val=True, f_nrd=True, f_neb=False)
         else:
             csq = out.chisqr
             rcsq = out.redchi
@@ -1740,7 +1725,7 @@ class Mainbody():
 
                 # Plot for chain.
                 if f_plot_chain:
-                    fig, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
+                    _, axes = plt.subplots(self.ndim, figsize=(10, 7), sharex=True)
                     samples = sampler.get_chain()
                     labels = []
                     for key in out.params.valuesdict():
@@ -1761,6 +1746,9 @@ class Mainbody():
                         axes.set_xlabel("step number")
                     plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
                     plt.close()
+                    # For memory optimization;
+                    del samples, axes
+
 
                 # Similar for nested;
                 # Dummy just to get structures;
@@ -1785,7 +1773,6 @@ class Mainbody():
                         params_value[key] = np.median(flat_samples[nburn:,ii])
                         ii += 1
 
-                import pandas as pd
                 flatchain = pd.DataFrame(data=flat_samples[nburn:,:], columns=var_names)
 
                 class get_res:
@@ -1847,7 +1834,6 @@ class Mainbody():
                         params_value[key] = np.median(res0.samples[nburn:,ii])
                         ii += 1
 
-                import pandas as pd
                 flatchain = pd.DataFrame(data=res0.samples[nburn:,:], columns=var_names)
 
                 class get_res:
@@ -1886,7 +1872,6 @@ class Mainbody():
                               'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
                              savepath+cpklname) # Already burn in
             else:
-                import asdf
                 cpklname = 'chain_' + self.ID + '_corner.asdf'
                 tree = {'chain':flatchain.to_dict(), 'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim}
                 af = asdf.AsdfFile(tree)
@@ -1929,7 +1914,6 @@ class Mainbody():
             get_param(self, res, fitc, tcalc=tcalc, burnin=burnin)
 
             return 2 # Cannot set to 1, to distinguish from retuen True
-
 
         elif flag_z == 'm':
             zrecom = raw_input('What is your manual input for redshift? [%.3f] '%(self.zgal))
@@ -2072,8 +2056,6 @@ class Mainbody():
         chi2s : numpy.array
             Array of chi2 values corresponding to zspace.
         '''
-        import scipy.interpolate as interpolate
-
         zspace = np.arange(zliml,zlimu,delzz)
         chi2s = np.zeros((len(zspace),2), 'float')
         if prior == None:

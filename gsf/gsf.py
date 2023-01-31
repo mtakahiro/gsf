@@ -12,6 +12,7 @@ from .fitting import Mainbody
 from .maketmp_filt import maketemp,maketemp_tau
 from .function_class import Func,Func_tau
 from .basic_func import Basic,Basic_tau
+from .function import read_input
 
 import timeit
 start = timeit.default_timer()
@@ -81,7 +82,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
     return MB
 
 
-def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None, 
+def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, idman:str=None, 
     zman=None, zman_min=None, zman_max=None, f_label=True, f_symbol=True, 
     f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, 
     f_prior_sfh=False, norder_sfh_prior=3, 
@@ -104,7 +105,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None,
     ######################
     # Read from Input file
     ######################
-    from .function import read_input
     inputs = read_input(parfile)
     MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, 
                 cosmo=cosmo, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
@@ -171,7 +171,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None,
         #
         # 2. Main fitting part.
         #
-        flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
+        flag_suc = MB.main(cornerplot=cornerplot, f_plot_chain=f_plot_chain, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
             f_prior_sfh=f_prior_sfh, norder_sfh_prior=norder_sfh_prior)
 
         while (flag_suc and flag_suc!=2):
@@ -191,7 +191,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None,
             print('Going into another round with updated templates and redshift.')
             print('\n\n')
 
-            flag_suc = MB.main(cornerplot=cornerplot, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
+            flag_suc = MB.main(cornerplot=cornerplot, f_plot_chain=f_plot_chain, f_shuffle=f_shuffle, amp_shuffle=amp_shuffle, Zini=Zini, 
                 f_prior_sfh=f_prior_sfh, norder_sfh_prior=norder_sfh_prior)
 
         # Total calculation time
@@ -233,7 +233,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
         f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
 
-
     if fplt == 6:
         # Use the final redshift;
         hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
@@ -251,6 +250,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_Alog=True, idman:str=None,
         else:
             #from .plot_sed_logA import plot_corner_physparam_summary_tau as plot_corner_physparam_summary
             print('One for Tau model is TBD...')
+
+    return MB
 
 
 if __name__ == "__main__":
