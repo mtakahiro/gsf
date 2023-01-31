@@ -440,13 +440,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # This is for UVJ color time evolution.
     #
     Asum = np.sum(A50[:])
-    alp = .5
-
     for jj in range(len(age)):
         ii = int(len(nage) - jj - 1) # from old to young templates.
         if jj == 0:
             y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
 
             ysum = y0
             ysump = y0p
@@ -465,13 +463,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             if MB.fneb: 
                 # Only at one age pixel;
                 y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50)
-                y0p, x0p = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50)
+                y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
         else:
             y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, x0p = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
             ysump[:nopt] += y0p
 
@@ -494,7 +492,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
             lmrest_wid = x0_wid/(1.+zbes)
             band0 = ['u','v','j']
-            lmconv,fconv = filconv(band0, lmrest_wid, ysum_wid, fil_path) # f0 in fnu
+            _,fconv = filconv(band0, lmrest_wid, ysum_wid, fil_path) # f0 in fnu
             fu_t = fconv[0]
             fv_t = fconv[1]
             fj_t = fconv[2]
@@ -509,9 +507,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
     ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
-
-    xboxl = 17000
-    xboxu = 28000
 
     ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
     ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
@@ -690,7 +685,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 AA_tmp = 0
                 pass
             try:
-                Ztest = samples['Z'+str(len(age)-1)][nr]
                 ZZ_tmp = samples['Z'+str(ss)][nr]
             except:
                 try:
@@ -711,7 +705,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                     mod0_tmp, xm_tmp = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp += mod0_tmp
                     # Make no emission line template;
-                    mod0_tmp_nl, xm_tmp_nl = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp_nl += mod0_tmp_nl
             else:
                 mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
@@ -774,7 +768,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         Lir[kk] = 0
 
         # Get UVJ Color;
-        lmconv,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)))
+        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)))
         UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
@@ -849,20 +843,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     elif f_fill:
         print('f_fancyplot is False. f_fill is set to False.')
 
-    #########################
     # Calculate non-det chi2
     # based on Sawick12
-    #########################
-    def func_tmp(xint,eobs,fmodel):
-        int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
-        return int_tmp
-
     if f_chind:
         conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
     else:
         conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
 
-    #chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
     try:
         logf = hdul[1].data['logf'][1]
         ey_revised = np.sqrt(ey**2+ ysump**2 * np.exp(logf)**2)
@@ -903,9 +890,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fin_chi2 = -99
     print('Final chi2/nu      : %.2f'%(fin_chi2))
 
-    #
     # plot BB model from best template (blue squares)
-    #
     col_dia = 'blue'
     if MB.f_dust:
         ALLFILT = np.append(SFILT,DFILT)

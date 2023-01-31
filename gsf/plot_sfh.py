@@ -101,21 +101,16 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ax1t = ax1.twiny()
     ax2t = ax2.twiny()
 
-    ##################
-    # Fitting Results
-    ##################
-    SNlim = 3 # avobe which SN line is shown.
-
     ###########################
     # Open result file
     ###########################
     file = MB.DIR_OUT + 'summary_' + ID + '.fits'
-    hdul = fits.open(file) # open a FITS file
+    hdul = fits.open(file)
     try:
         zbes = hdul[0].header['zmc']
     except:
         zbes = hdul[0].header['z']
-    chinu= hdul[1].data['chi']
+    chinu = hdul[1].data['chi']
 
     try:
         RA = hdul[0].header['RA']
@@ -152,7 +147,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     # For cosmology
     ####################
     DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
-    Cons = (4.*np.pi*DL**2/(1.+zbes))
 
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
@@ -473,7 +467,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
-        print('Failed to call rejuvenation module.')
+        if verbose:
+            print('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
@@ -525,7 +520,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             if msize[aa]>0:
                 ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
                 ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=2)
-
 
     #############
     # Axis
