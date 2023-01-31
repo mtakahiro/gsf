@@ -9,7 +9,6 @@ import sys
 import matplotlib.pyplot as plt
 from lmfit import Model, Parameters, minimize, fit_report#, Minimizer
 from numpy import log10
-import pickle as cPickle
 import os.path
 import random
 import string
@@ -1761,6 +1760,7 @@ class Mainbody():
                     else:
                         axes.set_xlabel("step number")
                     plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
+                    plt.close()
 
                 # Similar for nested;
                 # Dummy just to get structures;
@@ -1878,10 +1878,20 @@ class Mainbody():
             burnin = int(self.nmc/2)
             #burnin   = 0 # Since already burnt in.
             savepath = self.DIR_OUT
-            cpklname = 'chain_' + self.ID + '_corner.cpkl'
-            savecpkl({'chain':flatchain,
-                          'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
-                         savepath+cpklname) # Already burn in
+
+            use_pickl = False
+            if use_pickl:
+                cpklname = 'chain_' + self.ID + '_corner.cpkl'
+                savecpkl({'chain':flatchain,
+                              'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
+                             savepath+cpklname) # Already burn in
+            else:
+                import asdf
+                cpklname = 'chain_' + self.ID + '_corner.asdf'
+                tree = {'chain':flatchain.to_dict(), 'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim}
+                af = asdf.AsdfFile(tree)
+                af.write_to(savepath+cpklname, all_array_compression='zlib')
+
             stop_mc = timeit.default_timer()
             tcalc_mc = stop_mc - start_mc
             if verbose:
@@ -1899,25 +1909,24 @@ class Mainbody():
                 val_truth = []
                 for par in var_names:
                     val_truth.append(params_value[par])
+                
                 fig1 = corner.corner(flatchain, labels=var_names, \
                 label_kwargs={'fontsize':16}, quantiles=quantiles, show_titles=False, \
                 title_kwargs={"fontsize": 14}, \
                 truths=val_truth, \
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=levels, truth_color='gray', color='#4682b4')
+
                 fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_corner.png')
                 self.cornerplot_fig = fig1
 
             # Analyze MCMC results.
             # Write to file.
-            stop  = timeit.default_timer()
+            stop = timeit.default_timer()
             tcalc = stop - start
 
             # Then writing;
-            start_mc = timeit.default_timer()
             get_param(self, res, fitc, tcalc=tcalc, burnin=burnin)
-            stop_mc = timeit.default_timer()
-            tcalc_mc = stop_mc - start_mc
 
             return 2 # Cannot set to 1, to distinguish from retuen True
 

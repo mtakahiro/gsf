@@ -209,19 +209,29 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     # Load Pickle
     ##############################
     samplepath = MB.DIR_OUT 
-    pfile = 'chain_' + ID + '_corner.cpkl'
 
     niter = 0
-    data = loadcpkl(os.path.join(samplepath+'/'+pfile))
+    use_pickl = False
+    if use_pickl:
+        pfile = 'chain_' + ID + '_corner.cpkl'
+        data = loadcpkl(os.path.join(samplepath+'/'+pfile))
+    else:
+        pfile = 'chain_' + ID + '_corner.asdf'
+        data = asdf.open(os.path.join(samplepath+'/'+pfile))
+
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
         nmc    = data['niter']
         nwalk  = data['nwalkers']
         Nburn  = burnin
-        samples = data['chain'][:]
+        if use_pickl:
+            samples = data['chain'][:]
+        else:
+            samples = data['chain']
     except:
-        print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+        msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
+        print_err(msg, exit=False)
         return -1
 
     ######################
@@ -795,6 +805,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     # Save
     fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+    fig.clear()
+    plt.close()
 
 
 def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
@@ -1462,6 +1474,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     # Save
     fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+    fig.clear()
+    plt.close()
 
 
 def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \

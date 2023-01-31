@@ -628,20 +628,29 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     # From MCMC chain
     #
-    file = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(file)
+    samplepath = MB.DIR_OUT
+    use_pickl = False
+    if use_pickl:
+        pfile = 'chain_' + ID + '_corner.cpkl'
+        data = loadcpkl(os.path.join(samplepath+'/'+pfile))
+    else:
+        pfile = 'chain_' + ID + '_corner.asdf'
+        data = asdf.open(os.path.join(samplepath+'/'+pfile))
+
     try:
         ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
         nmc    = data['niter']
         nwalk  = data['nwalkers']
-        Nburn  = burnin #*20
-        res    = data['chain'][:]
+        Nburn  = burnin
+        if use_pickl:
+            samples = data['chain'][:]
+        else:
+            samples = data['chain']
     except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
-
-    samples = res
+        msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
+        print_err(msg, exit=False)
+        return -1
 
     # Saved template;
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
@@ -1357,6 +1366,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+
+    fig.clear()
+    plt.close()
 
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
@@ -2625,6 +2637,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     else:
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
+    fig.clear()
+    plt.close()
+
 
 def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=[]):
     '''
@@ -2842,19 +2857,29 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     ####################
     # MCMC corner plot.
     ####################
-    file  = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
-    niter = 0
-    data  = loadcpkl(file)
+    use_pickl = False
+    samplepath = MB.DIR_OUT
+    if use_pickl:
+        pfile = 'chain_' + ID + '_corner.cpkl'
+        data = loadcpkl(os.path.join(samplepath+'/'+pfile))
+    else:
+        pfile = 'chain_' + ID + '_corner.asdf'
+        data = asdf.open(os.path.join(samplepath+'/'+pfile))
 
     try:
-        ndim = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
-        nmc = data['niter']
-        nwalk = data['nwalkers']
-        Nburn = burnin
-        samples = data['chain'][:]
+        nmc    = data['niter']
+        nwalk  = data['nwalkers']
+        Nburn  = burnin
+        if use_pickl:
+            samples = data['chain'][:]
+        else:
+            samples = data['chain']
     except:
-        if verbose: print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+        msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
+        print_err(msg, exit=False)
+        return -1
 
     af = MB.af
     sedpar = af['ML']
