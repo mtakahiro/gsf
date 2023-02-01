@@ -7,6 +7,8 @@ import os
 import scipy.interpolate as interpolate
 from scipy.interpolate import interp1d
 import logging
+from colorama import Fore, Back, Style
+from datetime import datetime
 
 ################
 # Line library
@@ -16,6 +18,32 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
+
+def print_err(msg, exit=False, details=None):
+    '''
+    '''
+    now = datetime.now()
+    print(Fore.RED)
+    print('$$$ =================== $$$')
+    print('$$$  gsf error message  $$$')
+    print('%s'%now)
+    if not details == None:
+        # @@@ This does not work??
+        exc_type, exc_obj, exc_tb = details
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+
+    print('$$$ =================== $$$')
+    print(Fore.RED)
+    print(msg)
+    print(Fore.RED)
+    print(Style.RESET_ALL)
+
+    if exit:
+        print(Fore.CYAN)
+        print('Exiting.')
+        print(Style.RESET_ALL)
+        sys.exit()
 
 def str2bool(v):
     '''
@@ -285,7 +313,6 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0,
                 fit_params['Z'+str(aa)].value = ZZ
 
         f_fir = False
-
         out_tmp = minimize(residual, fit_params, args=(fy, ey, wht, f_fir), 
             method=fit_name, kws={'f_only_spec':f_only_spec})
             

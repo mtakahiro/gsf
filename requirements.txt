@@ -1,5 +1,6 @@
 asdf
 astropy
+colorama
 corner
 emcee
 lmfit

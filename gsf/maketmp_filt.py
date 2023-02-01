@@ -10,6 +10,7 @@ import asdf
 from astropy.io import fits,ascii
 from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
+import astropy.units as u
 
 from .function import *
 from .function_igm import *
@@ -148,9 +149,6 @@ def check_library(MB, af, nround=3):
             print('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
             flag = False
     else:
-        # if len(af['ML']['ms_0_0']) != len(MB.age):
-        #     print('No of age pixels:', len(MB.age), len(af['ML']['ms_0_0']))
-        #     flag = False
         flag = True
 
     # Matallicity:
@@ -189,14 +187,19 @@ def check_library(MB, af, nround=3):
     return flag
 
 
-def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
+def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
+    sig_temp_def=50.):
     '''
     Gets Morphology params, and returns LSF
+
+    Parameters
+    ----------
+    lm : float array
+
     '''
     Amp = 0
     f_morp = False
     if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
-        f_morp = True
         try:
             mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
             fm = ascii.read(DIR_EXTR + mor_file)
@@ -206,13 +209,14 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
                 alp = fm['alp']
             else:
                 alp = 0
+            f_morp = True
         except Exception:
-            print('Error in reading morphology params.')
-            print('No morphology convolution.')
+            msg = 'Error in reading morphology params.\nNo morphology convolution.'
+            print_err(msg, exit=False)
             pass
     else:
-        print('MORP Keywords does not match.')
-        print('No morphology convolution.')
+        msg = 'MORP Keywords does not match.\nNo morphology convolution.'
+        print_err(msg, exit=False)
 
     ############################
     # Template convolution;
@@ -221,12 +225,16 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
         sig_temp = float(inputs['SIG_TEMP'])
         print('Template is set to %.1f km/s.'%(sig_temp))
     except:
-        sig_temp = 50.
+        sig_temp = sig_temp_def
         print('Template resolution is unknown.')
         print('Set to %.1f km/s.'%(sig_temp))
 
-    iixlam = np.argmin(np.abs(lm-4000)) # Around 4000 AA
-    dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
+    # @@@ Below assumes a constant R over wavelength range;
+    iixlam = np.argmin(np.abs(lm-wave_repr)) # Around 4000 AA
+    if iixlam == len(lm)-1:
+        dellam = lm[iixlam] - lm[iixlam-1] # AA/pix
+    else:
+        dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
     R_temp = c / (sig_temp*1e3*1e10)
     sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
     sig_inst = 0 #65 #km/s for Manga
@@ -251,8 +259,8 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, c=3e18):
             print('Template convolution with Gaussian.')
             print('params is sigma;',sigma)
         else:
-            print('Something is wrong with the convolution file. Exiting.')
-            return False
+            msg = 'Something is wrong with the convolution file. Exiting.'
+            print_err(msg, exit=True)
 
     else: # For slit spectroscopy. To be updated...
         print('Templates convolution (intrinsic velocity).')
@@ -309,16 +317,14 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tau0 = MB.tau0
 
     delz = 1.0
-    wid_z = MB.zmcmax - MB.zmcmin
-    nz = int(wid_z/delz)
-    if nz%2 == 0:
-        nz += 1
-    MB.zbests = np.linspace(MB.zgal - wid_z/2., MB.zgal + wid_z/2., nz)
     MB.zbests = np.arange(MB.zgal, MB.zgal + 0.01, delz)
 
     try:
         af = MB.af0
     except:
+        if not os.path.exists(os.path.join(DIR_TMP, 'spec_all.asdf')):
+            msg = 'The z=0 template is missing in %s directory.\nCheck your configuration file (`DIR_TEMP`) or run with flag=0.'%(DIR_TMP)
+            print_err(msg, exit=True)
         af = asdf.open(os.path.join(DIR_TMP, 'spec_all.asdf'))
         MB.af0 = af
 
@@ -328,8 +334,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # Consistency check:
     flag = check_library(MB, af)
     if not flag:
-        print('\n!!!\nThere is inconsistency in z0 library and input file. Exiting.\n!!!\n')
-        sys.exit()
+        msg = 'There is inconsistency in z0 library and input file. Exiting.'
+        print_err(msg, exit=True)
 
     # ASDF Big tree;
     # Create header;
@@ -368,11 +374,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print(','.join(MB.filts))
         print('')
     except:
-        print('########################')
-        print('Filter is not detected!!')
-        print('Make sure your \nfilter directory is correct.')
-        print('########################')
-        sys.exit()
+        msg = 'Filter is not detected!!\nMake sure your filter directory is correct.'
+        print_err(msg, exit=True)
 
     try:
         SKIPFILT = inputs['SKIPFILT']
@@ -403,46 +406,74 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     # Get ascii data.
     #
     MB.f_spec = False
+    data_meta = {'data_len':np.zeros(3,int),'data_origin':[],'data_index':[]}
+
     try:
-        spec_files = inputs['SPEC_FILE']
-        spec_files = [x.strip() for x in spec_files.split(',')]
+        spec_files = [x.strip() for x in inputs['SPEC_FILE'].split(',')]
         ninp0 = np.zeros(len(spec_files), dtype='int')
+
+        # THIS PART IS JUST TO GET THE TOTAL ARRAY NUMBER;
         for ff, spec_file in enumerate(spec_files):
             try:
-                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp = fd0[:,0]
-                fobs0 = fd0[:,1]
-                eobs0 = fd0[:,2]
-                ninp0[ff] = len(lm0tmp)
+                if spec_file.split('.')[-1] == 'asdf':
+                    id_asdf = int(spec_file.split('_')[2])
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
+                    lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom)
+                    ninp0[ff] = len(lm0tmp)
+                else:
+                    fd0 = np.loadtxt(os.path.join(DIR_EXTR, spec_file), comments='#')
+                    lm0tmp = fd0[:,0]
+                    ninp0[ff] = len(lm0tmp)
             except Exception:
-                print('File, %s/%s, cannot be open.'%(DIR_EXTR,spec_file))
+                print('File, %s, cannot be open.'%(os.path.join(DIR_EXTR, spec_file)))
                 pass
-        # Constructing arrays.
+
+        # Then, Constructing arrays.
         lm = np.zeros(np.sum(ninp0[:]),dtype=float)
         fobs = np.zeros(np.sum(ninp0[:]),dtype=float)
         eobs = np.zeros(np.sum(ninp0[:]),dtype=float)
-        fgrs = np.zeros(np.sum(ninp0[:]),dtype='int')  # FLAG for each grism.
+        fgrs = np.zeros(np.sum(ninp0[:]),dtype=int) # FLAG for each grism.
         for ff, spec_file in enumerate(spec_files):
-            try:
-                fd0 = np.loadtxt(DIR_EXTR + spec_file, comments='#')
-                lm0tmp= fd0[:,0]
-                fobs0 = fd0[:,1]
-                eobs0 = fd0[:,2]
+            if True:#try:
+                if spec_file.split('.')[-1] == 'asdf':
+                    id_asdf = int(spec_file.split('_')[2])
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
+                    lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom).value
+                    fobs0 = fd0[id_asdf]['flux'].value
+                    eobs0 = np.sqrt(fd0[id_asdf]['fluxvar']).value
+                else:
+                    fd0 = np.loadtxt(os.path.join(DIR_EXTR, spec_file), comments='#')
+                    lm0tmp = fd0[:,0]
+                    fobs0 = fd0[:,1]
+                    eobs0 = fd0[:,2]
+
                 for ii1 in range(ninp0[ff]):
                     if ff==0:
                         ii = ii1
                     else:
                         ii = ii1 + np.sum(ninp0[:ff])
                     fgrs[ii] = ff
-                    lm[ii]   = lm0tmp[ii1]
+                    lm[ii] = lm0tmp[ii1]
                     fobs[ii] = fobs0[ii1]
                     eobs[ii] = eobs0[ii1]
+
                 MB.f_spec = True
-            except Exception:
+                data_meta['data_len'][ff] = len(lm0tmp)
+                data_meta['data_origin'] = np.append(data_meta['data_origin'], '%s'%spec_file)
+                data_meta['data_index'] = np.append(data_meta['data_index'], '%d'%ff)
+
+            else:#except Exception:
+                print('No spec data is registered.')
                 pass
     except:
         print('No spec file is provided.')
         pass
+
+    if ncolbb < np.sum(data_meta['data_len']):
+        print('ncolbb is updated')
+        ncolbb = np.sum(data_meta['data_len'])
+        MB.NRbb_lim = ncolbb
+    data_meta['data_len'] = np.asarray(data_meta['data_len'])
 
     #############################
     # READ BB photometry from CAT_BB:
@@ -459,24 +490,22 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         ii0 = np.where(id0[:]==MB.ID)
         try:
             if len(ii0[0]) == 0:
-                print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID))
-                return False
+                msg = 'Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID)
+                print_err(msg, exit=True)
             id = fd0[key_id][ii0]
         except:
-            print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID))
-            print(fd0)
-            return False
+            msg = 'Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID)
+            print_err(msg, exit=True)
 
         fbb = np.zeros(len(SFILT), dtype=float)
         ebb = np.zeros(len(SFILT), dtype=float)
-
         for ii in range(len(SFILT)):
             try:
                 fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
                 ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
             except:
-                print('Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii]))
-                return False
+                msg = 'Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii])
+                print_err(msg, exit=True)
 
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         unit = 'nu'
@@ -527,8 +556,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             try:
                 id = fd0[key_id][ii0]
             except:
-                print('Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID))
-                return False
+                msg = 'Could not find the column for [ID: %s] in the input BB catalog! Exiting.'%(MB.ID)
+                print_err(msg, exit=True)
         except:
             return False
             
@@ -607,33 +636,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         else:
                             spec_mul[ss,:] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin] # Lsun/A
 
-                        """
-                        ###################
-                        # Check xi_ion
-                        ###################
-                        h = 6.626e-34 # J s
-                        # 1 J = 1e7 erg
-                        h *= 1e7 # erg s
-                        nu = c / wave # A/s / A = 1/s
-                        # con_lyc = (wave[:-1]<912.0) & (wave[:-1]>228.0)
-                        # nph = spec_mul[ss,:] / (h * nu) # Lsun/A / (erg s * 1/s)
-                        # nph *= MB.Lsun # 1/A
-                        # delwave_array = np.diff(wave)
-                        # nph_Lyc = np.nansum(nph[:-1][con_lyc]*delwave_array[con_lyc])
-                        con_lyc = (wave[:]<912.0) & (wave[:]>228.0)
-                        nph = spec_mul[ss,:] / (h * nu) # Lsun/s/A / (erg s * 1/s) = Lsun/s / A / erg
-                        nph *= MB.Lsun # 1/s/A
-                        nph_Lyc = np.nansum(nph[:][con_lyc]) # 1/s
-
-                        # UV Flux density;
-                        fnu = flamtonu(wave, spec_mul[ss,:], m0set=MB.m0set) * MB.Lsun # erg/A
-                         #/ (4. * np.pi * DL10**2) # fnu, in erg/s/cm2/Hz.
-                        Fuv = get_Fuv(wave, fnu, lmin=1250, lmax=1650) # erg/A
-                        # MUV = -2.5 * np.log10(Fuv) + MB.m0set 
-                        Luv = Fuv * (1650-1250) # erg
-                        xi_ion = nph_Lyc / Luv # 1/s / (erg)
-                        """
-
                         ###################
                         # IGM attenuation.
                         ###################
@@ -670,7 +672,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             try:
                                 spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
                             except:
-                                #print('Error. No convolution is happening...')
                                 spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
                                 if zz==0 and ss==0:
                                     print('Kernel is too small. No convolution.')
@@ -857,7 +858,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     # Register filter response;
                     ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu[ss,:], DIR_FILT, MB=MB, f_regist=False)
 
-
                     ##########################################
                     # Writing out the templates to fits table.
                     ##########################################
@@ -989,7 +989,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             else:
                 if tt == 0:
                     from astropy.modeling import models
-                    from astropy import units as u
                     print('Dust emission based on Modified Blackbody')
                     '''
                     # from Eq.3 of Bianchi 13
@@ -1050,24 +1049,31 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print('dust updated.')
 
     # Save;
+    file_asdf = os.path.join(DIR_TMP, 'spec_all_' + MB.ID + '.asdf')
     af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + 'spec_all_' + MB.ID + '.asdf', all_array_compression='zlib')
+    af.write_to(file_asdf, all_array_compression='zlib')
     # Loading the redshifted template;
-    MB.af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    MB.af = asdf.open(file_asdf)
+    # Remove file?
+    os.system('rm %s'%file_asdf)
 
     ##########################################
-    # For observation.
-    # Write out for the Multi-component fitting.
+    # For data;
     ##########################################
     if True:
         MB.data = {}
+        MB.data['meta'] = data_meta
+
+        # The following files are just temporary.
         file_tmp = 'tmp_library_%s.txt'%MB.ID
-        file_tmp2 = 'tmp_library2%s.txt'%MB.ID
-        fw = open(file_tmp,'w')#
+        file_tmp2 = 'tmp_library2_%s.txt'%MB.ID
+        fw = open(file_tmp,'w')
         fw.write('# BB data (>%d) in this file are not used in fitting.\n'%(ncolbb))
+
+        # this is for spec;
         for ii in range(len(lm)):
-            g_offset = 1000 * fgrs[ii]
-            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu:
+            g_offset = 0 #1000 * fgrs[ii]
+            if lm[ii]/(1.+zbest) > lamliml and lm[ii]/(1.+zbest) < lamlimu and not np.isnan(fobs[ii]):
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+g_offset, lm[ii], fobs[ii], eobs[ii]))
             else:
                 fw.write('%d %.5f 0 1000\n'%(ii+g_offset, lm[ii]))
@@ -1075,7 +1081,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         for ii in range(len(ltmpbb[0,:])):
             if SFILT[ii] in SKIPFILT:# data point to be skiped;
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii]))
-            elif  ebb[ii]>ebblim:
+            elif ebb[ii]>ebblim:
                 fw.write('%d %.5f 0 1000\n'%(ii+ncolbb, ltmpbb[0,ii]))
             else:
                 fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii]))
@@ -1099,6 +1105,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 else:
                     fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
         fw.close()
+        
         if MB.f_dust:
             dat = ascii.read(file_tmp, format='no_header')
             nr_d = dat['col1']
@@ -1123,6 +1130,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
         fw.close()
         fw_rem.close()
+
         # register;
         dat = ascii.read(file_tmp, format='no_header')
         NRbb = dat['col1']
@@ -1132,7 +1140,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         exbb = dat['col5']
         dict_bb_obs = {'NR':NRbb, 'x':xbb, 'fy':fybb, 'ey':eybb, 'ex':exbb}
         MB.data['bb_obs'] = dict_bb_obs
-        try:
+        if len(SKIPFILT)>0:#try:
             dat = ascii.read(file_tmp2, format='no_header')
             NR_ex = dat['col1']
             x_ex = dat['col2']
@@ -1141,8 +1149,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             ex_ex = dat['col5']
             dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
             MB.data['bb_obs_removed'] = dict_bb_obs_removed
-        except:
-            pass
 
         # Dust; Not sure where this is being used...
         fw = open(file_tmp,'w')
@@ -1165,6 +1171,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print('Done making templates at z=%.2f.\n'%zbest)
         os.system('rm %s %s'%(file_tmp, file_tmp2))
 
+    MB.ztemplate = True
     return True
 
 

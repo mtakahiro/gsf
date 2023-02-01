@@ -30,7 +30,7 @@ def lnprob_cz(pars, zprior, prior, zliml, zlimu, args, kwargs):
         return -0.5 * np.sum(resid)
 
 
-def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, include_photometry=True, f_line_check=False):
+def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, data_len, NRbb_lim=10000, include_photometry=True, f_line_check=False):
     '''
     '''
     vals = pars.valuesdict()
@@ -45,24 +45,20 @@ def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, inclu
     # fint = interpolate.interp1d(xm_s, fm_tmp, kind='linear', fill_value="extrapolate")
     fm_s = fint(xobs)
 
-    con0 = (NR<1000)
-    fy0  = fobs[con0] * Cz0s
-    ey0  = eobs[con0] * Cz0s
-    con1 = (NR>=1000) & (NR<2000)
-    fy1  = fobs[con1] * Cz1s
-    ey1  = eobs[con1] * Cz1s
-    con2 = (NR>=2000) & (NR<NRbb_lim)
-    fy2  = fobs[con2] * Cz2s
-    ey2  = eobs[con2] * Cz2s
+    Cs = [Cz0s, Cz1s, Cz2s]
+    fy02 = []
+    ey02 = []
+    for ii in range(len(data_len)):
+        if ii == 0:
+            con0 = (NR<data_len[ii])
+        else:
+            con0 = (NR>=np.sum(data_len[:ii])) & (NR<np.sum(data_len[:ii+1]))
+        fy02 = np.append(fy02, fobs[con0] * Cs[ii])
+        ey02 = np.append(ey02, eobs[con0] * Cs[ii])
+
     con_bb = (NR>=NRbb_lim) # BB
-    fy_bb  = fobs[con_bb]
-    ey_bb  = eobs[con_bb]
-
-    fy01 = np.append(fy0,fy1)
-    ey01 = np.append(ey0,ey1)
-    fy02 = np.append(fy01,fy2)
-    ey02 = np.append(ey01,ey2)
-
+    fy_bb = fobs[con_bb]
+    ey_bb = eobs[con_bb]
     if include_photometry and len(fy_bb)>0:
         fcon = np.append(fy02,fy_bb)
         eycon = np.append(ey02,ey_bb)
@@ -87,7 +83,7 @@ def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, NRbb_lim=10000, inclu
         return (fm_s - fcon) * np.sqrt(wht2) # i.e. residual/sigma
 
 
-def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, zliml, zlimu, \
+def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, data_len, zliml, zlimu, \
     nmc_cz=100, nwalk_cz=10, nthin=5, f_line_check=False, f_vary=True, NRbb_lim=10000, include_photometry=True):
     '''
     Fit observed flux with a template to get redshift probability.
@@ -137,7 +133,7 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, z
     fit_par_cz.add('Cz2', value=1, min=0.5, max=1.5)
 
     # Get Best fit
-    args_res = (xm_tmp, fm_tmp, xobs, fobs, eobs, NR)
+    args_res = (xm_tmp, fm_tmp, xobs, fobs, eobs, NR, data_len)
     kwargs_res = {'include_photometry':include_photometry, 'f_line_check':f_line_check, 'NRbb_lim':NRbb_lim}
 
     out_cz  = minimize(residual_z, fit_par_cz, args=args_res, method='nelder')
