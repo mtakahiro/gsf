@@ -148,6 +148,9 @@ class Mainbody():
                     msg = 'id `%s` cannot be found in the catalog, `%s`'%(self.ID,self.CAT_BB)
                     print_err(msg, exit=True)
                 self.zgal = float(self.fd_cat['redshift'][iix])
+                if self.zgal < 0:
+                    msg = '%s has negative redshift, %.2f'%(self.ID, self.zgal)
+                    print_err(msg, exit=True)
 
             try:
                 self.zmcmin = float(inputs['ZMCMIN'])
