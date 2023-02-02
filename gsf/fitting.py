@@ -74,9 +74,13 @@ class Mainbody():
         NRbb_lim : int
             BB data is associated with ids greater than this number.
         '''
-        self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
+        flag_input = self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
         self.NRbb_lim = NRbb_lim
         self.ztemplate = False
+        if not flag_input:
+            self.flag_class = False
+        else:
+            self.flag_class = True
 
 
     def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,
@@ -148,9 +152,11 @@ class Mainbody():
                     msg = 'id `%s` cannot be found in the catalog, `%s`'%(self.ID,self.CAT_BB)
                     print_err(msg, exit=True)
                 self.zgal = float(self.fd_cat['redshift'][iix])
-                if self.zgal < 0:
-                    msg = '%s has negative redshift, %.2f'%(self.ID, self.zgal)
-                    print_err(msg, exit=True)
+
+            if self.zgal < 0:
+                msg = '%s has negative redshift, %.2f'%(self.ID, self.zgal)
+                print_err(msg, exit=False)
+                return False
 
             try:
                 self.zmcmin = float(inputs['ZMCMIN'])
@@ -661,6 +667,7 @@ class Mainbody():
         #     self.f_prior_sfh = False
 
         print('\n')
+        return True
 
 
     def get_lines(self, LW0):

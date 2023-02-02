@@ -109,6 +109,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
     MB = Mainbody(inputs, c=3e18, Mpc_cm=3.08568025e+24, m0set=25.0, pixelscale=0.06, 
                 cosmo=cosmo, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
     
+    if not MB.flag_class:
+        return False
+
     # Register some params;
     MB.tau_lim = tau_lim
     MB.nthin = nthin
