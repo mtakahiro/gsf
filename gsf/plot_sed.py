@@ -2842,11 +2842,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     ####################
     # MCMC corner plot.
     ####################
-    use_pickl = False
+    use_pickl = False#True#
     samplepath = MB.DIR_OUT
     if use_pickl:
-        msg = 'cpkl will be deprecated from gsf. Rerun your fit with the latest version, so your sampler will be saved in asdf.'
-        print_err(msg)
         pfile = 'chain_' + ID + '_corner.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     else:
@@ -2867,6 +2865,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
         print_err(msg, exit=False)
         return -1
+
+    # Get chain length..
+    for key in samples.keys():
+        nshape_sample = len(samples[key])
+        break
 
     af = MB.af
     sedpar = af['ML']
@@ -2922,7 +2925,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                 # This is because fsps has the minimum tau = tau_lim
                 delT[aa] = tau_lim
 
-    delT[:]  *= 1e9 # Gyr to yr
+    delT[:] *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
 
@@ -3032,7 +3035,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
 
 
     for kk in range(0,mmax,1):
-        nr = np.random.randint(len(samples))
+
+        nr = np.random.randint(nshape_sample)
+        
         try:
             Avtmp[kk] = samples['Av'][nr]
         except:
@@ -3050,7 +3055,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             ii = int(len(II0) - ss - 1) # from old to young templates.
             
             try:
-                AA_tmp = 10**samples['A'+str(ii)][nr]
+                AA_tmp = 10**(samples['A'+str(ii)][nr])
             except:
                 AA_tmp = 0
                 pass
@@ -3068,7 +3073,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             lmtmp[kk] += AA_tmp * mslist
             Ztmp[kk] += (10 ** ZZ_tmp) * AA_tmp * mslist
             Ttmp[kk] += age[ii] * AA_tmp * mslist
+
             ACtmp[kk] += AA_tmp * mslist
+
             if MB.fzmc == 1:
                 redshifttmp[kk] = samples['zmc'][nr]
 
@@ -3076,7 +3083,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             SF[ii] = AA_tmp * mslist / delT[ii]
             ZM[ii] = ZZ_tmp
             ZMM[ii] = (10 ** ZZ_tmp) * AA_tmp * mslist
-
 
             # SED
             flim = 0.05
@@ -3094,7 +3100,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                 ysum += y0_r
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
-        
+
         for ss in range(len(age)):
             ii = ss # from old to young templates.
             AC = np.sum(AM[ss:])
