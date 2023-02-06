@@ -193,8 +193,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             if delTu[aa]<0:
                 delTu[aa] = 1e3
 
-    con_delt = (delT<=0)
-    delT[con_delt] = 1e10
+    mask_age = (delT<=0) # For those age_template > age_universe
+    delT[mask_age] = np.inf
     delT[:] *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
@@ -699,6 +699,11 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         tree_sfh['T_LW_%d'%percs[ii]] = '%.3f'%(10**TLW[ii]) * u.Gyr
     for ii in range(len(percs)):
         tree_sfh['AV_%d'%percs[ii]] = '%.3f'%Avtmp[ii]*u.mag
+
+    # Mask values when age>age_uni;
+    arrays = [SFp[:,0],SFp[:,1],SFp[:,2],ACp[:,0],ACp[:,1],ACp[:,2],ZCp[:,0],ZCp[:,1],ZCp[:,2]]
+    for arr in arrays:
+        arr[mask_age] = np.nan
 
     tree_sfh['sfh'].update({'time': age * u.Gyr})
     tree_sfh['sfh'].update({'time_l': (age[:]-delTl[:]/1e9) * u.Gyr})

@@ -2845,6 +2845,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     use_pickl = False
     samplepath = MB.DIR_OUT
     if use_pickl:
+        msg = 'cpkl will be deprecated from gsf. Rerun your fit with the latest version, so your sampler will be saved in asdf.'
+        print_err(msg)
         pfile = 'chain_' + ID + '_corner.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     else:
@@ -2852,7 +2854,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         data = asdf.open(os.path.join(samplepath+'/'+pfile))
 
     try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        ndim   = data['ndim'] # By default, use ndim and burnin values contained in the cpkl file, if present.
         burnin = data['burnin']
         nmc    = data['niter']
         nwalk  = data['nwalkers']
@@ -2874,17 +2876,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     col = getcmap((nc-0)/(nmc-0))
 
     Ntmp = np.zeros(mmax, dtype='float')
-    lmtmp= np.zeros(mmax, dtype='float')
-    Avtmp= np.zeros(mmax, dtype='float')
+    lmtmp = np.zeros(mmax, dtype='float')
+    Avtmp = np.zeros(mmax, dtype='float')
     Ztmp = np.zeros(mmax, dtype='float')
     Ttmp = np.zeros(mmax, dtype='float')
-    ACtmp= np.zeros(mmax, dtype='float')
+    ACtmp = np.zeros(mmax, dtype='float')
     redshifttmp = np.zeros(mmax, dtype='float')
 
     # Time bin
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
-    delT  = np.zeros(len(age),dtype='float')
+    delT = np.zeros(len(age),dtype='float')
     delTl = np.zeros(len(age),dtype='float')
     delTu = np.zeros(len(age),dtype='float')
 
@@ -2896,25 +2898,25 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                 tau_ssp = tau_lim
             delTl[aa] = tau_ssp/2
             delTu[aa] = tau_ssp/2
-            delT[aa]  = delTu[aa] + delTl[aa]
+            delT[aa] = delTu[aa] + delTl[aa]
     else:
         for aa in range(len(age)):
             if aa == 0:
                 delTl[aa] = age[aa]
                 delTu[aa] = (age[aa+1]-age[aa])/2.
-                delT[aa]  = delTu[aa] + delTl[aa]
+                delT[aa] = delTu[aa] + delTl[aa]
             elif Tuni < age[aa]:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = 10.
-                delT[aa]  = delTu[aa] + delTl[aa]
+                delT[aa] = delTu[aa] + delTl[aa]
             elif aa == len(age)-1:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = Tuni - age[aa]
-                delT[aa]  = delTu[aa] + delTl[aa]
+                delT[aa] = delTu[aa] + delTl[aa]
             else:
                 delTl[aa] = (age[aa]-age[aa-1])/2.
                 delTu[aa] = (age[aa+1]-age[aa])/2.
-                delT[aa]  = delTu[aa] + delTl[aa]
+                delT[aa] = delTu[aa] + delTl[aa]
 
             if delT[aa] < tau_lim:
                 # This is because fsps has the minimum tau = tau_lim
@@ -2945,14 +2947,24 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             ZZ_tmp16 = Z16[0]
             ZZ_tmp84 = Z84[0]
         
-        try:
-            AA_tmp = 10**np.max(samples['A'+str(ii)][:])
-            AA_tmp84 = 10**np.percentile(samples['A'+str(ii)][:],95)
-            AA_tmp16 = 10**np.percentile(samples['A'+str(ii)][:],5)
-        except:
-            AA_tmp = 0
-            AA_tmp84 = 0
-            AA_tmp16 = 0
+        if use_pickl:
+            try:
+                AA_tmp = 10**np.nanmax(samples['A'+str(ii)][:])
+                AA_tmp84 = 10**np.nanpercentile(samples['A'+str(ii)][:],95)
+                AA_tmp16 = 10**np.nanpercentile(samples['A'+str(ii)][:],5)
+            except:
+                AA_tmp = 0
+                AA_tmp84 = 0
+                AA_tmp16 = 0
+        else:
+            try:
+                AA_tmp = 10**np.nanmax(list(samples['A'+str(ii)].values()))
+                AA_tmp84 = 10**np.nanpercentile(list(samples['A'+str(ii)].values()),95)
+                AA_tmp16 = 10**np.nanpercentile(list(samples['A'+str(ii)].values()),5)
+            except:
+                AA_tmp = 0
+                AA_tmp84 = 0
+                AA_tmp16 = 0
 
         nZtmp = bfnc.Z2NZ(ZZ_tmp)
         mslist = sedpar['ML_'+str(nZtmp)][ii]
@@ -2974,8 +2986,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
 
     delM = np.log10(M84) - np.log10(M16)
     if MB.fzmc == 1:
-        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.percentile(samples['zmc'],1)-0.1]
-        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.percentile(samples['zmc'],99)+0.1]
+        if use_pickl:
+            NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
+        else:
+            NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
     else:
         NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
         NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
@@ -3030,6 +3046,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         II0 = nage
 
         for ss in range(len(age)):
+
             ii = int(len(II0) - ss - 1) # from old to young templates.
             
             try:
@@ -3037,7 +3054,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             except:
                 AA_tmp = 0
                 pass
-
+                
             try:
                 ZZ_tmp = samples['Z'+str(ii)][nr]
             except:
@@ -3058,25 +3075,26 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
             AM[ii] = AA_tmp * mslist
             SF[ii] = AA_tmp * mslist / delT[ii]
             ZM[ii] = ZZ_tmp
-            ZMM[ii]= (10 ** ZZ_tmp) * AA_tmp * mslist
+            ZMM[ii] = (10 ** ZZ_tmp) * AA_tmp * mslist
+
 
             # SED
             flim = 0.05
             if ss == 0:
                 y0, x0 = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
                 y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
-                ysump = y0p #* 1e18
-                ysum = y0  #* 1e18
+                ysump = y0p
+                ysum = y0
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0 * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
             else:
                 y0_r, x0_tmp = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib_all)
                 y0p, x0p = fnc.get_template_single(AA_tmp, Avtmp[kk], ii, ZZ_tmp, zbes, lib)
-                ysump += y0p  #* 1e18
-                ysum += y0_r #* 1e18
+                ysump += y0p
+                ysum += y0_r
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0_r * c/ np.square(x0) / d, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
-
+        
         for ss in range(len(age)):
             ii = ss # from old to young templates.
             AC = np.sum(AM[ss:])
@@ -3163,7 +3181,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
 
         # Scatter and contour
         for i, x in enumerate(Par):
-            for j, y in enumerate(Par):
+            for j, _ in enumerate(Par):
                 if i > j:
                     ax = axes[i, j]
                     ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='.', alpha=0.01)
