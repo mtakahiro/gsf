@@ -84,11 +84,12 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
 
 def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, idman:str=None, 
     zman=None, zman_min=None, zman_max=None, f_label=True, f_symbol=True, 
-    f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax=300, 
+    f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax_sfh=300, 
     f_prior_sfh=False, norder_sfh_prior=3, 
     f_shuffle=False, amp_shuffle=1e-2, Zini=None, tau_lim=0.001,
     skip_sfh=False, f_fancyplot=False, skip_zhist=False, f_sfh_yaxis_force=True, tset_SFR_SED=0.1, 
-    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True
+    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True,
+    mmax_param:int=1000
     ):
     '''
     Purpose
@@ -226,13 +227,13 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             from .plot_sed import plot_sed_tau as plot_sed            
 
         if not skip_sfh:
-            plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax,
+            plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax_sfh,
             dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
             f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
             tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
-        figpdf=figpdf, save_sed=save_sed, mmax=mmax,
+        figpdf=figpdf, save_sed=save_sed, mmax=mmax_sfh,
         dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
         f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
 
@@ -249,7 +250,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
 
         if MB.SFH_FORM == -99:
             from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
-            plot_corner_physparam_summary(MB)
+            plot_corner_physparam_summary(MB, mmax=mmax_param)
         else:
             #from .plot_sed_logA import plot_corner_physparam_summary_tau as plot_corner_physparam_summary
             print('One for Tau model is TBD...')

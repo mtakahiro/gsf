@@ -2658,7 +2658,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
     return ax
 
 
-def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
+def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:int=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
     scale=1e-19, NRbb_lim=10000, save_pcl=True):
     '''
     Purpose
@@ -2669,7 +2669,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     -----
     Tau model not supported.
     '''
-
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
     import matplotlib
     import matplotlib.cm as cm
@@ -2878,20 +2877,20 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
     nc = np.arange(0, nmc, 1)
     col = getcmap((nc-0)/(nmc-0))
 
-    Ntmp = np.zeros(mmax, dtype='float')
-    lmtmp = np.zeros(mmax, dtype='float')
-    Avtmp = np.zeros(mmax, dtype='float')
-    Ztmp = np.zeros(mmax, dtype='float')
-    Ttmp = np.zeros(mmax, dtype='float')
-    ACtmp = np.zeros(mmax, dtype='float')
-    redshifttmp = np.zeros(mmax, dtype='float')
+    Ntmp = np.zeros(mmax, dtype=float)
+    lmtmp = np.zeros(mmax, dtype=float)
+    Avtmp = np.zeros(mmax, dtype=float)
+    Ztmp = np.zeros(mmax, dtype=float)
+    Ttmp = np.zeros(mmax, dtype=float)
+    ACtmp = np.zeros(mmax, dtype=float)
+    redshifttmp = np.zeros(mmax, dtype=float)
 
     # Time bin
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
-    delT = np.zeros(len(age),dtype='float')
-    delTl = np.zeros(len(age),dtype='float')
-    delTu = np.zeros(len(age),dtype='float')
+    delT = np.zeros(len(age),dtype=float)
+    delTl = np.zeros(len(age),dtype=float)
+    delTu = np.zeros(len(age),dtype=float)
 
     if len(age) == 1:
         for aa in range(len(age)):
@@ -3016,7 +3015,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         zred  = [zbes, 12]
         zredl = ['$z$', 12]
 
-    Tzz = np.zeros(len(zred), dtype='float')
+    Tzz = np.zeros(len(zred), dtype=float)
     for zz in range(len(zred)):
         Tzz[zz] = (Tuni - MB.cosmo.age(zred[zz]).value) #/ cc.Gyr_s
         if Tzz[zz] < TMIN:
@@ -3043,11 +3042,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
         except:
             Avtmp[kk] = MB.AVFIX
 
-        ZMM = np.zeros((len(age)), dtype='float') # Mass weighted Z.
-        ZM = np.zeros((len(age)), dtype='float') # Light weighted T.
-        ZC = np.zeros((len(age)), dtype='float') # Light weighted T.
-        SF = np.zeros((len(age)), dtype='float') # SFR
-        AM = np.zeros((len(age)), dtype='float') # Light weighted T.
+        ZMM = np.zeros((len(age)), dtype=float) # Mass weighted Z.
+        ZM = np.zeros((len(age)), dtype=float) # Light weighted T.
+        ZC = np.zeros((len(age)), dtype=float) # Light weighted T.
+        SF = np.zeros((len(age)), dtype=float) # SFR
+        AM = np.zeros((len(age)), dtype=float) # Light weighted T.
         II0 = nage
 
         for ss in range(len(age)):
@@ -3180,10 +3179,19 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax=10
                     NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
                 else:
                     NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
-                cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.cpkl')
-                savecpkl({'chain':NPAR_LIB,
-                            'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
-                            cpklname) # Already burn in
+
+                use_pickl = False
+                if use_pickl:
+                    cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.cpkl')
+                    savecpkl({'chain':NPAR_LIB,
+                                'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
+                                cpklname) # Already burn in
+                else:
+                    cpklname = MB.DIR_OUT, 'chain_' + MB.ID + '_phys.asdf'
+                    tree = {'chain':NPAR_LIB, 'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim}
+                    af = asdf.AsdfFile(tree)
+                    af.write_to(cpklname, all_array_compression='zlib')
+
 
         # Scatter and contour
         for i, x in enumerate(Par):
@@ -3343,8 +3351,8 @@ def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
                 eyys = np.array([p3 for p1,p2,p3,p4 in xyzip])
                 yy2s = np.array([p4 for p1,p2,p3,p4 in xyzip])
 
-                flux = np.zeros(len(xxs), dtype='float')
-                efl  = np.zeros(len(xxs), dtype='float')
+                flux = np.zeros(len(xxs), dtype=float)
+                efl  = np.zeros(len(xxs), dtype=float)
                 for ff in range(len(xxs)):
                     flux[ff] = yy2s[ff]/np.square(xxs[ff]) * c/d
                     efl[ff]  = np.square(eyys[ff]/np.square(xxs[ff]) * c/d)
@@ -3437,9 +3445,9 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     M84 = hdul[1].data['ms'][2]
     print('Total stellar mass is %.2e'%(M50))
 
-    A50 = np.zeros(len(age), dtype='float')
-    A16 = np.zeros(len(age), dtype='float')
-    A84 = np.zeros(len(age), dtype='float')
+    A50 = np.zeros(len(age), dtype=float)
+    A16 = np.zeros(len(age), dtype=float)
+    A84 = np.zeros(len(age), dtype=float)
     for aa in range(len(age)):
         A50[aa] = hdul[1].data['A'+str(aa)][1]
         A16[aa] = hdul[1].data['A'+str(aa)][0]
@@ -3450,9 +3458,9 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     Av50 = hdul[1].data['Av'+str(aa)][1]
     Av16 = hdul[1].data['Av'+str(aa)][0]
     Av84 = hdul[1].data['Av'+str(aa)][2]
-    Z50 = np.zeros(len(age), dtype='float')
-    Z16 = np.zeros(len(age), dtype='float')
-    Z84 = np.zeros(len(age), dtype='float')
+    Z50 = np.zeros(len(age), dtype=float)
+    Z16 = np.zeros(len(age), dtype=float)
+    Z84 = np.zeros(len(age), dtype=float)
     NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -3561,21 +3569,21 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
     col = getcmap((nc-0)/(nmc-0))
 
     #for kk in range(0,nmc,1):
-    Ntmp = np.zeros(nplot, dtype='float')
-    lmtmp= np.zeros(nplot, dtype='float')
-    Avtmp= np.zeros(nplot, dtype='float')
-    Ztmp = np.zeros(nplot, dtype='float')
-    Ttmp = np.zeros(nplot, dtype='float')
-    ACtmp= np.zeros(nplot, dtype='float')
+    Ntmp = np.zeros(nplot, dtype=float)
+    lmtmp= np.zeros(nplot, dtype=float)
+    Avtmp= np.zeros(nplot, dtype=float)
+    Ztmp = np.zeros(nplot, dtype=float)
+    Ttmp = np.zeros(nplot, dtype=float)
+    ACtmp= np.zeros(nplot, dtype=float)
 
 
     # Time bin
     Txmax = 4 # Max x value
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
-    delT  = np.zeros(len(age),dtype='float')
-    delTl = np.zeros(len(age),dtype='float')
-    delTu = np.zeros(len(age),dtype='float')
+    delT  = np.zeros(len(age),dtype=float)
+    delTl = np.zeros(len(age),dtype=float)
+    delTu = np.zeros(len(age),dtype=float)
     for aa in range(len(age)):
         if aa == 0:
             delTl[aa] = age[aa]
@@ -3665,11 +3673,11 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
         #Asum = 0
         #for ss in range(len(age)):
         #Asum += np.sum(samples['A'+str(ss)][nr])
-        ZMM = np.zeros((len(age)), dtype='float') # Mass weighted Z.
-        ZM  = np.zeros((len(age)), dtype='float') # Light weighted T.
-        ZC  = np.zeros((len(age)), dtype='float') # Light weighted T.
-        SF  = np.zeros((len(age)), dtype='float') # SFR
-        AM  = np.zeros((len(age)), dtype='float') # Light weighted T.
+        ZMM = np.zeros((len(age)), dtype=float) # Mass weighted Z.
+        ZM  = np.zeros((len(age)), dtype=float) # Light weighted T.
+        ZC  = np.zeros((len(age)), dtype=float) # Light weighted T.
+        SF  = np.zeros((len(age)), dtype=float) # SFR
+        AM  = np.zeros((len(age)), dtype=float) # Light weighted T.
 
 
         II0   = nage #[0,1,2,3] # Number for templates
@@ -3770,7 +3778,7 @@ def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0
             zred  = [zbes, 6]
             zredl = ['$z$', 6]
 
-        Tzz   = np.zeros(len(zred), dtype='float')
+        Tzz   = np.zeros(len(zred), dtype=float)
         for zz in range(len(zred)):
             Tzz[zz] = (Tuni - MB.cosmo.age(zbes).value)
             if Tzz[zz] < 0.01:
