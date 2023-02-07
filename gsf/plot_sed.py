@@ -3187,7 +3187,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                                 'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
                                 cpklname) # Already burn in
                 else:
-                    cpklname = MB.DIR_OUT, 'chain_' + MB.ID + '_phys.asdf'
+                    cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.asdf')
                     tree = {'chain':NPAR_LIB, 'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim}
                     af = asdf.AsdfFile(tree)
                     af.write_to(cpklname, all_array_compression='zlib')
