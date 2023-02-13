@@ -306,7 +306,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Determine scale here;
     if scale == None:
         conbb_hs = (fybb/eybb > SNlim)
-        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d))) / 10
+        if len(fybb[conbb_hs])>0:
+            scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d))) / 10
+        else:
+            scale = 1e-19
+            print('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
     d = MB.d * scale
 
     #######################################
