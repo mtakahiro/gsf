@@ -348,7 +348,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
         # Upperlim;
         sigma = 1.0
-        leng = np.max(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d) * 0.05 #0.2
+        if len(fybb[conbb_hs]):
+            leng = np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) / d) * 0.05 #0.2
+        else:
+            leng = None
         conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
         
         for ii in range(len(xbb)):
@@ -510,16 +513,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     # Main result
     #############
     conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
+    if len(fybb[conbb_ymax]):
+        ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
+    else:
+        ymax = None
 
     ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
     ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
 
     x1max = 100000
-    if x1max < np.max(xbb):
-        x1max = np.max(xbb) * 1.5
-    if x1min > np.min(xbb[conbb_ymax]):
-        x1min = np.min(xbb[conbb_ymax]) / 1.5
+    if x1max < np.nanmax(xbb):
+        x1max = np.nanmax(xbb) * 1.5
+    if x1min > np.nanmin(xbb[conbb_ymax]):
+        x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
 
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
