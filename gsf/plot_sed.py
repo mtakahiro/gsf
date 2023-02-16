@@ -524,8 +524,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     x1max = 100000
     if x1max < np.nanmax(xbb):
         x1max = np.nanmax(xbb) * 1.5
-    if x1min > np.nanmin(xbb[conbb_ymax]):
-        x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+    if len(fybb[conbb_ymax]):
+        if x1min > np.nanmin(xbb[conbb_ymax]):
+            x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
 
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
@@ -765,12 +766,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             x1_tot = xm_tmp
             ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) / d
             ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) / d
-
-        #
-        # Grism plot + Fuv flux + LIR.
-        #
-        #if f_grsm:
-            #ax2t.plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
 
         # Get FUV flux density;
         Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
