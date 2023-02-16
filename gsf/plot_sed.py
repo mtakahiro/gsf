@@ -516,7 +516,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     if len(fybb[conbb_ymax]):
         ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d) * 1.6
     else:
-        ymax = None
+        ymax = np.nanmax(fybb*c/np.square(xbb)/d) * 1.6
 
     ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
     ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
