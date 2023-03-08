@@ -206,6 +206,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     niter = 0
     use_pickl = False
+    use_pickl = True
     if use_pickl:
         pfile = 'chain_' + ID + '_corner.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))

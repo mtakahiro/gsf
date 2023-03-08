@@ -636,6 +636,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     #
     samplepath = MB.DIR_OUT
     use_pickl = False
+    use_pickl = True
     if use_pickl:
         pfile = 'chain_' + ID + '_corner.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))

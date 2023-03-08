@@ -1876,6 +1876,7 @@ class Mainbody():
             savepath = self.DIR_OUT
 
             use_pickl = False
+            use_pickl = True
             if use_pickl:
                 cpklname = 'chain_' + self.ID + '_corner.cpkl'
                 savecpkl({'chain':flatchain,
