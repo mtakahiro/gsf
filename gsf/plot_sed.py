@@ -7,13 +7,16 @@ import matplotlib.pyplot as plt
 from numpy import log10
 from scipy.integrate import simps
 from astropy.io import fits
+from astropy.convolution import convolve
+
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as ticker
 
-from .function import *
+from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv
 from .function_class import Func
 from .basic_func import Basic
 import corner
+from .maketmp_filt import get_LSF
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
@@ -804,8 +807,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # For grism;
     if f_grsm:
-        from astropy.convolution import convolve
-        from .maketmp_filt import get_LSF
         LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
         try:
             spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
@@ -1157,7 +1158,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         }
         tree_spec['model'] = {}
         tree_spec['obs'] = {}
-        Cnu_to_Jy = 10**((m0set-23.9)) # to microJy.
+        # Cnu_to_Jy = 10**((m0set-23.9))
+        Cnu_to_Jy = 10**((23.9-m0set)) # to microJy. So the final output SED library has uJy.
 
         # BB;
         tree_spec['model'].update({'wave_bb': lbb * u.AA})
@@ -1165,10 +1167,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
         tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
         # full spectrum;
+        # ytmp50 : scale * flambda
         tree_spec['model'].update({'wave': x1_tot * u.AA})
-        tree_spec['model'].update({'fnu_16': ytmp16 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
-        tree_spec['model'].update({'fnu_50': ytmp50 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
-        tree_spec['model'].update({'fnu_84': ytmp84 / (c / np.square(x1_tot[:]) / d) * Cnu_to_Jy * u.uJy})
+        
+        # Get fnu in uJy;
+        fnu_16 = flamtonu(x1_tot, ytmp16*scale,  m0set=23.9, m0=-48.6) * u.uJy
+        fnu_50 = flamtonu(x1_tot, ytmp50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+        fnu_84 = flamtonu(x1_tot, ytmp84*scale,  m0set=23.9, m0=-48.6) * u.uJy
+
+        tree_spec['model'].update({'fnu_16': fnu_16})
+        tree_spec['model'].update({'fnu_50': fnu_50})
+        tree_spec['model'].update({'fnu_84': fnu_84})
 
         # EW;
         try:
@@ -1191,11 +1200,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         # Stellar
         tree_spec['model'].update({'wave_stel': x0 * u.AA})
         for aa in range(len(age)):
-            tree_spec['model'].update({'fnu_stel_%d'%aa: f_50_comp[aa,:] / (c / np.square(x0[:]) / d) * Cnu_to_Jy * u.uJy})
+            fnu_tmp = flamtonu(x0, f_50_comp[aa,:]*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_stel_%d'%aa: fnu_tmp})
         if MB.f_dust:
             # dust
             tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
-            tree_spec['model'].update({'fnu_dust': ytmp_dust50 / (c / np.square(x1_dust[:]) / d) * Cnu_to_Jy * u.uJy})
+            fnu_tmp = flamtonu(x1_dust, ytmp_dust50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_dust': fnu_tmp})
 
         # Obs BB
         tree_spec['obs'].update({'wave_bb': xbb * u.AA})
