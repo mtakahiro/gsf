@@ -582,7 +582,7 @@ def flamtonu(lam, flam, m0set=25.0, m0=-48.6):
     
     '''
     Ctmp = lam**2/c * 10**((m0set-m0)/2.5) #/ delx_org
-    fnu  = flam * Ctmp
+    fnu = flam * Ctmp
     return fnu
 
 
