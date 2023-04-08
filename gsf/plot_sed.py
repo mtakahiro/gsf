@@ -11,23 +11,23 @@ from astropy.convolution import convolve
 
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as ticker
+# import matplotlib
 
-from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+# from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+# from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+# from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
-import matplotlib
 import scipy.integrate as integrate
 import scipy.special as special
 import os.path
 from astropy.io import ascii
 import time
 
+import corner
 from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv
 from .function_class import Func
 from .basic_func import Basic
-import corner
 from .maketmp_filt import get_LSF
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
@@ -3320,12 +3320,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         return fig
 
 
-def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
+def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, ldw = 7, DIR_OUT='./'):
     '''
+    TBD
     '''
     dlw = R_grs * dw # Can affect the SFR.
-    ldw = 7
-
+    
     ###################################
     # To add lines in the plot,
     # ,manually edit the following file
@@ -3430,8 +3430,7 @@ def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
     tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
     '''
-    If you like to
-    Creat temporal png for gif image.
+    Creat temporal png, for gif image.
     '''
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 

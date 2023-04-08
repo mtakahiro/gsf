@@ -68,13 +68,14 @@ class Mainbody():
         or the width to the next age bin.
     '''
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
-        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000):
+        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False):
         '''
         Parameters
         ----------
         NRbb_lim : int
             BB data is associated with ids greater than this number.
         '''
+        self.verbose = verbose
         flag_input = self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
         self.NRbb_lim = NRbb_lim
         self.ztemplate = False
@@ -129,7 +130,7 @@ class Mainbody():
             self.ID = idman
         else:
             self.ID = inputs['ID']
-        print('\nFitting : %s\n'%self.ID)
+        print('\nFitting target: %s\n'%self.ID)
 
         # Read catalog;
         try:
@@ -198,15 +199,15 @@ class Mainbody():
             except:
                 self.f_Mdyn = False
 
-        print('f_Mdyn is set to %s\n'%self.f_Mdyn)
-        
+        if self.verbose:
+            print('f_Mdyn is set to %s\n'%self.f_Mdyn)
         #self.f_Mdyn = True
         #self.logMdyn = 11.1
         #self.elogMdyn = 0.1
-
         #if self.f_Mdyn:
         #    # If Mdyn is included.
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
         except:
@@ -241,11 +242,18 @@ class Mainbody():
                 self.fneb = True
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
-                    self.logUMAX = float(inputs['logUMAX'])
-                    self.DELlogU = float(inputs['DELlogU'])
                 except:
                     self.logUMIN = -2.5
+                try:
+                    self.logUMAX = float(inputs['logUMAX'])
+                except:
                     self.logUMAX = -2.0
+                try:
+                    self.DELlogU = float(inputs['DELlogU'])
+                    if self.DELlogU<0.1:
+                        print_err('`DELlogU` cannot have value smaller than 0.1. Exiting.')
+                        sys.exit()
+                except:
                     self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
                 self.nlogU = len(self.logUs)
@@ -266,7 +274,8 @@ class Mainbody():
                 self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
         except:
-            print('No nebular added.')
+            self.verbose
+            print_err('Some error in nebular setup; No nebular added.')
             self.fneb = False
             self.logUMIN = -2.5
             self.logUMAX = -2.0
@@ -412,9 +421,13 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
             self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
-            print('\n##########################')
-            print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+
+            if self.verbose:
+                print('\n##########################')
+                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+
             self.has_ZFIX = True
+
         except:
             self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
             self.delZ = float(inputs['DELZ'])
@@ -495,15 +508,18 @@ class Mainbody():
                 self.Avmax = 4.0
 
         # Z evolution;
-        print('\n#############################')
+        if self.verbose:
+            print('\n#############################')
         if self.SFH_FORM == -99:
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.ndim = int(self.npeak * 2 + self.nAV) # age, Z, and Av.
-                print('Metallicity evolution is on')
+                if self.verbose:
+                    print('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
-                print('Metallicity evolution is off')
+                if self.verbose:
+                    print('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -517,10 +533,12 @@ class Mainbody():
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.nZ = self.npeak
-                print('Metallicity evolution is on')
+                if self.verbose:
+                    print('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
-                print('Metallicity evolution is off')
+                if self.verbose:
+                    print('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -531,12 +549,14 @@ class Mainbody():
                         self.nZ = 1
                     
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
-        print('#############################\n')
+        if self.verbose:
+            print('#############################\n')
 
         # Redshift
         self.ndim += self.fzmc
-        print('\n##########################')
-        print('No. of params are : %d'%(self.ndim))
+        if self.verbose:
+            print('\n##########################')
+            print('No. of params are : %d'%(self.ndim))
 
         # Line
         try:
@@ -564,7 +584,9 @@ class Mainbody():
         except:
             self.dust_model = 0
             self.dust_model_name = 'Calz'
-        print('Dust attenuation is set to %s\n'%self.dust_model_name)
+
+        if self.verbose:
+            print('Dust attenuation is set to %s\n'%self.dust_model_name)
 
         # If FIR data;
         try:
@@ -705,6 +727,10 @@ class Mainbody():
         ##############
         NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
         data_len = self.data['meta']['data_len']
+        if len(NR)>0:
+            self.has_spectrum = True
+        else:
+            self.has_spectrum = False
 
         Cs = [Cz0, Cz1, Cz2]
         xx02 = []
@@ -724,6 +750,7 @@ class Mainbody():
         ##############
         try:
             NRbb, xbb, fybb, eybb, exbb = self.data['bb_obs']['NR'], self.data['bb_obs']['x'], self.data['bb_obs']['fy'], self.data['bb_obs']['ey'], self.data['bb_obs']['ex']
+            self.has_photometry = True
         except: # if no BB;
             print('No BB data.')
             NRbb = np.asarray([])
@@ -731,6 +758,7 @@ class Mainbody():
             fybb = np.asarray([])
             eybb = np.asarray([])
             exbb = np.asarray([])
+            self.has_photometry = False
 
         con_bb = ()
         xx_bb = xbb[con_bb]
@@ -800,7 +828,7 @@ class Mainbody():
 
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, #zliml=0.01, zlimu=None, 
                      snlim=0, priors=None, f_line_check=False, fzvis=False,
-                     f_norm=True, f_lambda=False, zmax=20, include_bb=False, 
+                     f_norm=True, f_lambda=False, zmax=20, include_photometry=False, 
                      f_exclude_negative=False, return_figure=False):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
@@ -822,7 +850,7 @@ class Mainbody():
             Minimum redshift uncertainty.
         snlim : float
             SN limit for data points. Those below the number will be cut from the fit.
-        include_bb : bool
+        include_photometry : bool
             Turn this True if Redshift fitting is requred for only BB data.
         f_line_check : bool
             If True, line masking.
@@ -857,7 +885,7 @@ class Mainbody():
         sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        if include_bb:
+        if include_photometry:
             con_cz = ()#(sn>snlim)
         else:
             con_cz = (self.dict['NR']<self.NRbb_lim) #& (sn>snlim)
@@ -923,7 +951,7 @@ class Mainbody():
         # fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
         ax1 = fig.add_subplot(111)
 
-        if (include_bb | len(fy_cz)>0):# and fzvis:# and 
+        if (include_photometry | len(fy_cz)>0):# and fzvis:# and 
             data_model = np.zeros((len(x_cz),4),'float')
             data_model[:,0] = x_cz
             data_model[:,1] = fm_s
@@ -955,8 +983,10 @@ class Mainbody():
             res_cz, fitc_cz = check_redshift(
                 fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), 
                 self.zgal, self.z_prior, self.p_prior,
-                NR_cz, self.data['meta']['data_len'], zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
-                include_photometry=include_bb
+                NR_cz, self.data['meta']['data_len'], 
+                zliml, zlimu, 
+                self.nmc_cz, self.nwalk_cz, 
+                include_photometry=include_photometry
                 )
 
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
@@ -1129,7 +1159,7 @@ class Mainbody():
         return flag_z
 
 
-    def get_zdist(self, f_interact=False, f_ascii=True):
+    def get_zdist(self, f_interact=False, f_ascii=True, return_figure=False):
         '''
         Saves a plot of z-distribution.
 
@@ -1138,11 +1168,11 @@ class Mainbody():
         f_interact : bool
             If true, this module returns figure ax.
         '''
-
         try:
-            fig = plt.figure(figsize=(6.5,2.5))
+            fig = plt.figure(figsize=(6.5,4))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
+            ax1 = fig.add_subplot(211)
+            ax2 = fig.add_subplot(212)
             n, nbins, _ = ax1.hist(self.res_cz.flatchain['z'], bins=200, density=True, color='gray', label='')
 
             yy = np.arange(0,np.max(n),1)
@@ -1176,39 +1206,34 @@ class Mainbody():
             ax1.set_xlim(zp_min,zp_max)
             ax1.legend(loc=0)
             
-            # Save:
-            file_out = self.DIR_OUT + 'zmc_' + self.ID + '.png'
-            print('Figure is saved in %s'%file_out)
+            # # Save:
+            # file_out = self.DIR_OUT + 'zmc_' + self.ID + '.png'
+            # print('Figure is saved in %s'%file_out)
 
-            if f_interact:
-                fig.savefig(file_out, dpi=300)
-            else:
-                plt.savefig(file_out, dpi=300)
-                plt.close()
+            # if f_interact or return_figure:
+            #     fig.savefig(file_out, dpi=300)
+            # else:
+            #     plt.savefig(file_out, dpi=300)
+            #     plt.close()
         except:
             print('z-distribution figure is not generated.')
             pass
 
-
         if os.path.exists(self.file_zprob):
             # Also, make zprob;
-            fig = plt.figure(figsize=(6.5,2.5))
-            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
-
             fd = ascii.read(self.file_zprob)
             z = fd['z']
             pz = fd['p(z)']
             pz /= pz.max()
 
             # prob:
-            ax1.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
+            ax2.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
 
             # Label:
-            ax1.set_xlabel('Redshift')
-            ax1.set_ylabel('$p(z)$')
+            ax2.set_xlabel('Redshift')
+            ax2.set_ylabel('$p(z)$')
             file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
-            if f_interact:
+            if f_interact or return_figure:
                 fig.savefig(file_out, dpi=300)
             else:
                 plt.savefig(file_out, dpi=300)
@@ -1526,7 +1551,8 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_bb=True):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_photometry=True
+            ):
         '''
         Main module of this script.
 
@@ -1548,7 +1574,7 @@ class Mainbody():
             Check convergence at every certain number.
         f_plot_chain : book
             Plot MC sample chain.
-        '''
+        '''        
         # Call likelihood/prior/posterior function;
         class_post = Post(self)
 
@@ -1607,7 +1633,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb, fzvis=self.fzvis)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_photometry=include_photometry, fzvis=self.fzvis)
 
         #################################################
         # Gor for mcmc phase
@@ -2009,7 +2035,7 @@ class Mainbody():
 
 
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, 
-        f_get_templates=False, Zini=None, include_bb=True):
+        f_get_templates=False, Zini=None, include_photometry=True):
         '''Fits input data with a prepared template library, to get a chi-min result. 
         This function is being used in an example notebook.
 
@@ -2052,7 +2078,7 @@ class Mainbody():
             # Check redshift
             ########################
             if self.fzvis:
-                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb, fzvis=self.fzvis)
+                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_photometry=include_photometry, fzvis=self.fzvis)
 
             self.fzmc = 1
             return out,chidef,Zbest, xm_tmp, fm_tmp
@@ -2062,7 +2088,7 @@ class Mainbody():
 
 
     def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, 
-                        lines=False, prior=None, method='powell', include_bb=False):
+                        lines=False, prior=None, method='powell', include_photometry=False, f_plot=True):
         '''
         This module explores the redshift space to find the best redshift and probability distribution.
 
@@ -2108,7 +2134,7 @@ class Mainbody():
         x1 = dict['x'][con1]
         fy1 = dict['fy'][con1]
         ey1 = dict['ey'][con1]
-        if include_bb:
+        if include_photometry:
             con2 = (NR>=data_len[1]+data_len[0])
         else:
             con2 = (NR>=data_len[1]+data_len[0]) & (NR<self.NRbb_lim)
@@ -2167,4 +2193,51 @@ class Mainbody():
         self.zspace = zspace
         self.chi2s = chi2s
 
+        if f_plot:
+            plt.close()
+            fig = plt.figure(figsize=(5,5))
+            ax1 = fig.add_subplot(111)
+            ax1.plot(zspace,chi2s[:,1])
+            ax1.set_ylabel('Reduced-$\chi^2$',fontsize=18)
+            ax1.set_xlabel('$z$',fontsize=18)
+            ax1.set_title('Redshift Fitting Result')
+            plt.savefig(os.path.join(self.DIR_OUT, 'zchi_%s.png'%self.ID), dpi=200)
+
         return zspace, chi2s
+
+
+    def plot_fit_result(self, out):
+        '''
+        out : class object
+            From minimizer.
+        '''
+        mb = self
+        # Read data with the current best-fit Cs.
+        dict = mb.read_data(mb.Cz0, mb.Cz1, mb.Cz2, mb.zgal)
+
+        plt.close()
+        fig = plt.figure(figsize=(5,5))
+        ax1 = fig.add_subplot(111)
+
+        # Generate the best-fit model;
+        flux_all, wave_all = mb.fnc.get_template(out, f_val=True, lib_all=True)
+
+        # Template
+        ax1.errorbar(wave_all, flux_all, ls='-', color='b', zorder=0, label='Fit')
+
+        # plot;
+        if self.has_photometry:
+            ax1.scatter(dict['xbb'], dict['fybb'], marker='o', c='orange', edgecolor='k', s=150, zorder=2, alpha=1, label='Broadband')
+
+        if self.has_spectrum:
+            ax1.errorbar(dict['x'], dict['fy'], yerr=dict['ey'], ls='', color='gray', zorder=1, alpha=0.3)
+            ax1.scatter(dict['x'], dict['fy'], marker='o', color='r',edgecolor='r', s=10, zorder=1, alpha=1, label='Spectrum')
+
+        ax1.set_xlim(3000,30000)
+        ax1.set_xscale('log')
+
+        ax1.legend(loc=2)
+        ax1.set_xlabel('Wavelength [$\mathrm{\AA}$]')
+        ax1.set_ylabel('Flux$_\\nu$ (arb.)')
+        return fig
+    
