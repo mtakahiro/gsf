@@ -20,7 +20,8 @@ from .function_igm import *
 
 def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_sfh_yaxis_force=True):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
+    return_figure=False):
     '''
     Purpose
     -------
@@ -37,7 +38,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     tset_SFR_SED : float
         in Gyr. Time scale over which SFR estimate is averaged.
     '''
-    if f_silence:
+    if f_silence and not return_figure:
         import matplotlib
         matplotlib.use("Agg")
 
@@ -805,6 +806,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     # Save
     fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+
+    if return_figure:
+        return fig
+
     fig.clear()
     plt.close()
 
@@ -861,7 +866,7 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
 
 def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1, return_figure=False):
     '''
     Purpose
     -------
@@ -1474,6 +1479,10 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     # Save
     fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+
+    if return_figure:
+        return fig
+
     fig.clear()
     plt.close()
 

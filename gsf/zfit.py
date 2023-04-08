@@ -169,8 +169,10 @@ def get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp, file_zprob, rms_lim=1e
     '''
     mask = (ey_cz<rms_lim)
     prob_cz = np.zeros(len(zz_prob), float)
+ 
     fw = open(file_zprob, 'w')
     fw.write('# z p(z)\n')
+ 
     for ii in range(len(zz_prob)):
         z = zz_prob[ii]
         xm_s = xm_tmp * (1+z)
@@ -178,7 +180,6 @@ def get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp, file_zprob, rms_lim=1e
         fm_s = fint(x_cz)
 
         wht = 1./np.square(ey_cz)
-        # print(np.nansum((fm_s - fy_cz)**2 * (wht)))
         lnprob_cz = -0.5 * np.nansum( np.square((fm_s - fy_cz)[mask] * np.sqrt(wht[mask])) ) # i.e. (residual/sigma)^2
         prob_cz[ii] = np.exp(lnprob_cz)
         fw.write('%.3f %.3e\n'%(z,prob_cz[ii]))

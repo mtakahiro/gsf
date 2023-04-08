@@ -2,11 +2,12 @@
 This includes the main part of gsf.
 
 Original copyright:
-   Copyright (c) 2021 Takahiro Morishita, STScI
+   Copyright (c) 2023 Takahiro Morishita, IPAC
 """
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from lmfit import Model, Parameters, minimize, fit_report#, Minimizer
 from numpy import log10
 import os.path
@@ -789,11 +790,18 @@ class Mainbody():
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx_bb, 'exbb':ex_bb, 'fybb':fy_bb, 'eybb':ey_bb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
+    
+
+    def plot_data(self,):
+        '''
+        '''
+        return None
 
 
-    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
-        zlimu=None, snlim=0, priors=None, f_line_check=False, 
-        f_norm=True, f_lambda=False, zmax=20, include_bb=False, f_exclude_negative=False):
+    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, #zliml=0.01, zlimu=None, 
+                     snlim=0, priors=None, f_line_check=False, fzvis=False,
+                     f_norm=True, f_lambda=False, zmax=20, include_bb=False, 
+                     f_exclude_negative=False, return_figure=False):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
@@ -822,6 +830,8 @@ class Mainbody():
             Dictionary that contains z (redshift grid) and chi2 (chi-square).
         f_exclude_negative : bool
             Exclude negative fluxes in spectrum.
+        return_figure : bool
+            This only works for notebook
 
         Notes
         -----
@@ -906,9 +916,14 @@ class Mainbody():
         if len(self.dict['fy'][con_cz])==0:
             return 'y'
 
-        if self.fzvis==1 and (include_bb | len(fy_cz)>0):
-            import matplotlib as mpl
-            mpl.use('TkAgg')
+        # Figure;
+        # mpl.use('TkAgg')
+        plt.close()
+        fig = plt.figure(figsize=(8,2.8))
+        # fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
+        ax1 = fig.add_subplot(111)
+
+        if (include_bb | len(fy_cz)>0):# and fzvis:# and 
             data_model = np.zeros((len(x_cz),4),'float')
             data_model[:,0] = x_cz
             data_model[:,1] = fm_s
@@ -919,20 +934,20 @@ class Mainbody():
             #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
 
             # Model based on input z.
-            plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='')
-            # Observation
+            ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='')
+
+            # Observed data;
             # spec;
             con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
-            plt.plot(self.dict['x'][con], self.dict['fy'][con], '.b', linestyle='-', linewidth=0.5, label='Obs.')
-            plt.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='b', capsize=0, linewidth=0.5)
+            ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.b', linestyle='-', linewidth=0.5, label='Obs.')
+            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='b', capsize=0, linewidth=0.5)
             # bb;
             con = (self.dict['NR']>=self.NRbb_lim)
-            plt.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=5, marker='o', 
+            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=5, marker='o', 
                 color='orange', capsize=0, linewidth=0.5, ls='None')
 
             # Write prob distribution;
-            if True:
-                get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
+            get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
 
             print('############################')
             print('Start MCMC for redshift fit')
@@ -1006,86 +1021,90 @@ class Mainbody():
         con_line = (wht3==0)
 
         # Visual inspection;
-        if self.fzvis==1:
-            # Ask interactively;
-            data_model_new = np.zeros((len(x_cz),4),'float')
-            data_model_new[:,0] = x_cz
-            data_model_new[:,1] = fm_s
-            data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
+        data_model_new = np.zeros((len(x_cz),4),'float')
+        data_model_new[:,0] = x_cz
+        data_model_new[:,1] = fm_s
+        data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
 
-            plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
-            plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
+        ax1.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, 
+                 label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
+        ax1.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
 
-            # Plot lines for reference
-            for ll in range(len(LW)):
-                try:
-                    conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
-                    yline = np.max(ypoly[conpoly])
-                    yy = np.arange(yline/1.02, yline*1.1)
-                    xxpre = yy * 0 + LW[ll] * (1.+self.zgal)
-                    xx = yy * 0 + LW[ll] * (1.+zrecom)
-                    plt.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
-                    plt.text(LW[ll] * (1.+self.zgal), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
-                    plt.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
-                    plt.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
-                except:
-                    pass
-
-            # Plot data
-            data_obsbb = np.zeros((len(self.dict['xbb']),3), 'float')
-            data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
-            if len(fm_tmp) == len(self.dict['xbb']): # BB only;
-                data_obsbb[:,2] = fm_tmp
-            data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
-            
-            if len(fm_tmp) == len(self.dict['xbb']): # BB only;
-                plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
-            else:
-                model_spec = np.zeros((len(fm_tmp),2), 'float')
-                model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
-                model_spec_sort = model_spec[model_spec[:, 0].argsort()]
-                plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
-
+        # Plot lines for reference
+        for ll in range(len(LW)):
             try:
-                xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
-            except:
-                xmin, xmax = 2000,10000
-
-            try:
-                plt.ylim(0,yline*1.1)
+                conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
+                yline = np.max(ypoly[conpoly])
+                yy = np.arange(yline/1.02, yline*1.1)
+                xxpre = yy * 0 + LW[ll] * (1.+self.zgal)
+                xx = yy * 0 + LW[ll] * (1.+zrecom)
+                ax1.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
+                ax1.text(LW[ll] * (1.+self.zgal), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
+                ax1.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
+                ax1.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
             except:
                 pass
 
-            plt.xlim(xmin,xmax)
-            plt.xlabel('Wavelength ($\mathrm{\AA}$)')
-            plt.ylabel('$F_\\nu$ (arb.)')
-            plt.legend(loc=0)
+        # Plot data
+        data_obsbb = np.zeros((len(self.dict['xbb']),3), 'float')
+        data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
+        if len(fm_tmp) == len(self.dict['xbb']): # BB only;
+            data_obsbb[:,2] = fm_tmp
+        data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
+        
+        if len(fm_tmp) == len(self.dict['xbb']): # BB only;
+            ax1.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+        else:
+            model_spec = np.zeros((len(fm_tmp),2), 'float')
+            model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
+            model_spec_sort = model_spec[model_spec[:, 0].argsort()]
+            ax1.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
 
-            zzsigma = ((z_cz[2] - z_cz[0])/2.)/self.zgal
-            zsigma = np.abs(self.zgal-zrecom) / (self.zgal)
-            C0sigma = np.abs(Czrec0-self.Cz0)/self.Cz0
-            eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
-            C1sigma = np.abs(Czrec1-self.Cz1)/self.Cz1
-            eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
-            C2sigma = np.abs(Czrec2-self.Cz2)/self.Cz2
-            eC2sigma = ((scl_cz2[2]-scl_cz2[0])/2.)/self.Cz2
+        try:
+            xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
+        except:
+            xmin, xmax = 2000,10000
 
-            print('\n##############################################################')
-            print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
-            print('Error is %.3f per cent.'%(zzsigma*100))
-            print('Input Cz0 is %.3f per cent agreement.'%((1.-C0sigma)*100))
-            print('Error is %.3f per cent.'%(eC0sigma*100))
-            print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
-            print('Error is %.3f per cent.'%(eC1sigma*100))
-            print('Input Cz2 is %.3f per cent agreement.'%((1.-C2sigma)*100))
-            print('Error is %.3f per cent.'%(eC2sigma*100))
-            print('##############################################################\n')
+        try:
+            plt.ylim(0,yline*1.1)
+        except:
+            pass
+
+        ax1.set_xlim(xmin,xmax)
+        ax1.set_xlabel('Wavelength ($\mathrm{\AA}$)')
+        ax1.set_ylabel('$F_\\nu$ (arb.)')
+        ax1.legend(loc=0)
+
+        zzsigma = ((z_cz[2] - z_cz[0])/2.)/self.zgal
+        zsigma = np.abs(self.zgal-zrecom) / (self.zgal)
+        C0sigma = np.abs(Czrec0-self.Cz0)/self.Cz0
+        eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
+        C1sigma = np.abs(Czrec1-self.Cz1)/self.Cz1
+        eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
+        C2sigma = np.abs(Czrec2-self.Cz2)/self.Cz2
+        eC2sigma = ((scl_cz2[2]-scl_cz2[0])/2.)/self.Cz2
+
+        print('\n##############################################################')
+        print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
+        print('Error is %.3f per cent.'%(zzsigma*100))
+        print('Input Cz0 is %.3f per cent agreement.'%((1.-C0sigma)*100))
+        print('Error is %.3f per cent.'%(eC0sigma*100))
+        print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
+        print('Error is %.3f per cent.'%(eC1sigma*100))
+        print('Input Cz2 is %.3f per cent agreement.'%((1.-C2sigma)*100))
+        print('Error is %.3f per cent.'%(eC2sigma*100))
+        print('##############################################################\n')
+
+        if fzvis==1:
+            # Ask interactively;
             plt.show()
             plt.close()
-
             flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1, Cz2, and chi2/nu, %.5f %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
                 (self.zgal, self.Cz0, self.Cz1, self.Cz2, self.fitc_cz_prev))
         else:
+            if not return_figure:
+                plt.close()
+            self.fig_zfit = fig
             flag_z = 'y'
 
         try:
@@ -1105,6 +1124,8 @@ class Mainbody():
         self.res_cz = res_cz
         self.fitc_cz_prev = fitc_cz[1]
 
+        if return_figure:
+            return fig
         return flag_z
 
 
@@ -1430,7 +1451,11 @@ class Mainbody():
         self.nmc_cz = int(self.inputs['NMCZ'])
         self.nwalk_cz = int(self.inputs['NWALKZ'])
         self.ZEVOL = int(self.inputs['ZEVOL'])
-        self.fzvis = int(self.inputs['ZVIS'])
+        nzvis = int(self.inputs['ZVIS'])
+        if nzvis == 1:
+            self.fzvis = True
+        else:
+            self.fzvis = False
         if self.f_nested:
             print('Nested sample is on. Nelder is used for time saving analysis.')
             self.fneld = 1 
@@ -1441,7 +1466,7 @@ class Mainbody():
             self.ntemp = 1
 
         try:
-            if int(inputs['DISP']) == 1:
+            if int(self.inputs['DISP']) == 1:
                 self.f_disp = True
             else:
                 self.f_disp = False
@@ -1582,7 +1607,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb, fzvis=self.fzvis)
 
         #################################################
         # Gor for mcmc phase
@@ -1997,7 +2022,6 @@ class Mainbody():
         -------
         out, chidef, Zbest, xm_tmp, fm_tmp (if f_get_templates is set True).
         '''
-        from .posterior_flexible import Post
         print('#########')
         print('Quick fit')
         print('#########\n')
@@ -2028,7 +2052,7 @@ class Mainbody():
             # Check redshift
             ########################
             if self.fzvis:
-                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
+                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb, fzvis=self.fzvis)
 
             self.fzmc = 1
             return out,chidef,Zbest, xm_tmp, fm_tmp
@@ -2037,7 +2061,8 @@ class Mainbody():
             return out,chidef,Zbest
 
 
-    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
+    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, 
+                        lines=False, prior=None, method='powell', include_bb=False):
         '''
         This module explores the redshift space to find the best redshift and probability distribution.
 
@@ -2068,7 +2093,7 @@ class Mainbody():
             Array of chi2 values corresponding to zspace.
         '''
         zspace = np.arange(zliml,zlimu,delzz)
-        chi2s = np.zeros((len(zspace),2), 'float')
+        chi2s = np.zeros((len(zspace),2), float)
         if prior == None:
             prior = zspace[:] * 0 + 1.0
 
@@ -2083,7 +2108,10 @@ class Mainbody():
         x1 = dict['x'][con1]
         fy1 = dict['fy'][con1]
         ey1 = dict['ey'][con1]
-        con2 = (NR>=data_len[1]+data_len[0]) & (NR<self.NRbb_lim)
+        if include_bb:
+            con2 = (NR>=data_len[1]+data_len[0])
+        else:
+            con2 = (NR>=data_len[1]+data_len[0]) & (NR<self.NRbb_lim)
         x2 = dict['x'][con2]
         fy2 = dict['fy'][con2]
         ey2 = dict['ey'][con2]
@@ -2094,7 +2122,6 @@ class Mainbody():
         eycon = np.append(ey01,ey2)
         x01 = np.append(x0,x1)
         xobs = np.append(x01,x2)
-
         wht = 1./np.square(eycon)
         #if lines:
         #    wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
@@ -2108,9 +2135,8 @@ class Mainbody():
 
         def residual_z(pars,z):
             vals  = pars.valuesdict()
-
             xm_s = xm_tmp * (1+z)
-            fm_s = np.zeros(len(xm_tmp),'float')
+            fm_s = np.zeros(len(xm_tmp),float)
 
             for nn in range(len(fm_tmp[:,0])):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
@@ -2135,7 +2161,6 @@ class Mainbody():
             rcsq = out_cz.redchi
             fitc_cz = [csq, rcsq]
 
-            #return fitc_cz
             chi2s[zz,0] = csq
             chi2s[zz,1] = rcsq
 
