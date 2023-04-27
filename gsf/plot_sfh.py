@@ -804,14 +804,16 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ax1t.set_xlim(Txmin, Txmax)
     ax2t.set_xlim(Txmin, Txmax)
 
+    if return_figure:
+        return tree_sfh, fig
+
     # Save
     fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
 
-    if return_figure:
-        return fig
+    return tree_sfh
 
-    fig.clear()
-    plt.close()
+    # fig.clear()
+    # plt.close()
 
 
 def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
