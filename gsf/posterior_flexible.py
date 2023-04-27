@@ -20,7 +20,7 @@ class Post:
 
 
     def residual(self, pars, fy:float, ey:float, wht:float, f_fir:bool, out:bool=False, 
-        f_val:bool=False, f_penlize:bool=True, f_only_spec:bool=False):
+        f_val:bool=False, f_penlize:bool=True, f_only_spec:bool=False, verbose=False):
         '''
         Parameters
         ----------
@@ -77,7 +77,8 @@ class Post:
         sig[con_res_r] = wht[con_res_r] * 0 + np.inf
 
         if fy is None:
-            print('Data is none')
+            if verbose:
+                print('Data is none')
             resid = model
         else:
             resid = (model - fy) / np.sqrt(sig)
@@ -136,7 +137,7 @@ class Post:
 
     def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
         lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None,
-        f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3):
+        f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3, verbose=False):
         '''
         Parameters
         ----------
@@ -209,11 +210,13 @@ class Post:
         if f_scale:
             if self.scale == 1:
                 self.scale = np.abs(lnlike) * 0.001
-                print('scale is set to',self.scale)
+                if verbose:
+                    print('scale is set to',self.scale)
             lnlike += self.scale
 
         if np.isinf(np.abs(lnlike)):
-            print('Error in lnlike')
+            if verbose:
+                print('Error in lnlike')
             return lnpreject
 
         # If no prior, return log likeligood.
@@ -267,7 +270,7 @@ class Post:
 
         lnposterior = lnlike + respr
         if not np.isfinite(lnposterior):
-            print('Posterior unacceptable.')
+            # print('Posterior unacceptable.')
             return lnpreject
 
         return lnposterior

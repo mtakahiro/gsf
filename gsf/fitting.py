@@ -962,17 +962,19 @@ class Mainbody():
             #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
 
             # Model based on input z.
-            ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='')
+            # ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'b', linestyle='--', linewidth=0.5, label='')
 
             # Observed data;
             # spec;
             con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
-            ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.b', linestyle='-', linewidth=0.5, label='Obs.')
-            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='b', capsize=0, linewidth=0.5)
+            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
+            ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
             # bb;
             con = (self.dict['NR']>=self.NRbb_lim)
-            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=5, marker='o', 
-                color='orange', capsize=0, linewidth=0.5, ls='None')
+            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
+                color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
+            ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
+                color='orange', edgecolor='k', label='Observed photometry', zorder=4)
 
             # Write prob distribution;
             get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
@@ -1056,11 +1058,11 @@ class Mainbody():
         data_model_new[:,1] = fm_s
         data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
 
-        ax1.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, 
-                 label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
-        ax1.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
+        ax1.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'lightgreen', linestyle='--', linewidth=1, 
+                 label='%s ($z=%.5f$)'%(fit_label,zrecom), zorder=3) # Model based on recomended z.
+        ax1.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3., zorder=5)
 
-        # Plot lines for reference
+        # Plot lines for referenc
         for ll in range(len(LW)):
             try:
                 conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
@@ -1083,12 +1085,13 @@ class Mainbody():
         data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
         
         if len(fm_tmp) == len(self.dict['xbb']): # BB only;
-            ax1.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+            ax1.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='b', zorder=2, label='Current model ($z=%.5f$)'%(self.zgal))
         else:
             model_spec = np.zeros((len(fm_tmp),2), 'float')
             model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
             model_spec_sort = model_spec[model_spec[:, 0].argsort()]
-            ax1.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
+            # ax1.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='b', ms=1, linestyle='-', linewidth=0.5, zorder=2)
+            ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'b', linestyle='-', linewidth=3.0, zorder=2, label='Current model ($z=%.5f$)'%(self.zgal))
 
         try:
             xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
@@ -2195,7 +2198,7 @@ class Mainbody():
 
         if f_plot:
             plt.close()
-            fig = plt.figure(figsize=(5,5))
+            fig = plt.figure(figsize=(5,2.5))
             ax1 = fig.add_subplot(111)
             ax1.plot(zspace,chi2s[:,1])
             ax1.set_ylabel('Reduced-$\chi^2$',fontsize=18)
@@ -2216,22 +2219,22 @@ class Mainbody():
         dict = mb.read_data(mb.Cz0, mb.Cz1, mb.Cz2, mb.zgal)
 
         plt.close()
-        fig = plt.figure(figsize=(5,5))
+        fig = plt.figure(figsize=(8,2.8))
         ax1 = fig.add_subplot(111)
 
         # Generate the best-fit model;
         flux_all, wave_all = mb.fnc.get_template(out, f_val=True, lib_all=True)
 
         # Template
-        ax1.errorbar(wave_all, flux_all, ls='-', color='b', zorder=0, label='Fit')
+        ax1.errorbar(wave_all, flux_all, ls='-', color='b', zorder=0, label='Best-fit model')
 
         # plot;
         if self.has_photometry:
-            ax1.scatter(dict['xbb'], dict['fybb'], marker='o', c='orange', edgecolor='k', s=150, zorder=2, alpha=1, label='Broadband')
+            ax1.scatter(dict['xbb'], dict['fybb'], marker='o', c='orange', edgecolor='k', s=150, zorder=2, alpha=1, label='Observed photometry')
 
         if self.has_spectrum:
             ax1.errorbar(dict['x'], dict['fy'], yerr=dict['ey'], ls='', color='gray', zorder=1, alpha=0.3)
-            ax1.scatter(dict['x'], dict['fy'], marker='o', color='r',edgecolor='r', s=10, zorder=1, alpha=1, label='Spectrum')
+            ax1.scatter(dict['x'], dict['fy'], marker='o', color='r',edgecolor='r', s=10, zorder=1, alpha=1, label='Observed spectrum')
 
         ax1.set_xlim(3000,30000)
         ax1.set_xscale('log')
