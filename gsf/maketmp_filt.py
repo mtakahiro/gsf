@@ -273,7 +273,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
     lists_morp = ['moffat', 'gauss', 'jwst-prism']
     Amp = 0
     f_morp = False
-    if not inputs['MORP'] in lists_morp:
+    if inputs['MORP'] in lists_morp:
         try:
             mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
             fm = ascii.read(DIR_EXTR + mor_file)
