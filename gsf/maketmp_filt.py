@@ -229,7 +229,7 @@ def smooth_template_diff(waves, fluxes, Rs, Rs_template, f_diff_conv=False):
             # smoothed = ndimage.gaussian_filter(fluxes_tmp, smoothing_sigma)
             xMof = np.arange(-5, 5.1, .1) # dimension must be even.
             Amp = 1.
-            LSF = gauss(xMof, Amp, smoothing_sigma / delta_wvl)
+            LSF = gauss(xMof, Amp, smoothing_sigma)
 
             # find indices that include pixel's wavelength and interpolate to find
             # smoothed flux
@@ -248,7 +248,7 @@ def smooth_template_diff(waves, fluxes, Rs, Rs_template, f_diff_conv=False):
         # fluxes_conv = ndimage.gaussian_filter(fluxes, smoothing_sigma)
         xMof = np.arange(-5, 5.1, .1) # dimension must be even.
         Amp = 1.
-        LSF = gauss(xMof, Amp, smoothing_sigma/delta_wvl)
+        LSF = gauss(xMof, Amp, smoothing_sigma)
         fluxes_conv = convolve(fluxes, LSF, boundary='extend')
         # print('smoothing_sigma is %.2f'%smoothing_sigma)
 
@@ -270,10 +270,10 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
     LSF
 
     '''
+    lists_morp = ['moffat', 'gauss', 'jwst-prism']
     Amp = 0
     f_morp = False
-    f_prism = False
-    if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
+    if not inputs['MORP'] in lists_morp:
         try:
             mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
             fm = ascii.read(DIR_EXTR + mor_file)
@@ -678,28 +678,29 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     #################
     # Get morphology;
     #################
-    f_prism = False
-    file_res = None
+    MB.f_prism = False
+    MB.file_res = None
+    MB.f_diff_conv = False
+
     if MB.f_spec:
         LSF = get_LSF(inputs, DIR_EXTR, MB.ID, lm)
     else:
         LSF = []
     try:
         if inputs['MORP'] == 'jwst-prism':
-            file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
-            if os.path.exists(file_res):
-                f_prism = True
+            MB.file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
+            if os.path.exists(MB.file_res):
+                MB.f_prism = True
                 LSF = []
     except:
-        f_prism = False
+        MB.f_prism = False
         pass
 
-    if f_prism:
-        f_diff_conv = False
+    if MB.f_prism:
         try:
             n_diff_conv = int(inputs['DIFF_CONV'])
             if n_diff_conv == 1:
-                f_diff_conv = True
+                MB.f_diff_conv = True
                 print('Differential template convolution is requested - this may take a while.')
         except:
             pass
@@ -797,7 +798,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         # Convolution has to come after this?
                         if MB.f_spec:
                             spec_mul_nu_conv[ss,:] = convolve_templates(wavetmp, spec_mul_nu[ss], LSF, boundary='extend', 
-                                                                        f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
+                                                                        f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
                         else:
                             spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
@@ -867,7 +868,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                                 if MB.f_spec:
                                     spec_mul_neb_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend', 
-                                                                                f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
+                                                                                f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
                                 else:
                                     spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
 
@@ -1040,7 +1041,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                             if MB.f_spec:
                                 spec_mul_neb_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend', 
-                                                                            f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
+                                                                            f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
                             else:
                                 spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
 
@@ -1531,20 +1532,20 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         LSF = []
     try:
         if inputs['MORP'] == 'jwst-prism':
-            file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
-            if os.path.exists(file_res):
-                f_prism = True
+            MB.file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
+            if os.path.exists(MB.file_res):
+                MB.f_prism = True
                 LSF = []
     except:
-        f_prism = False
+        MB.f_prism = False
         pass
 
-    if f_prism:
-        f_diff_conv = False
+    if MB.f_prism:
+        MB.f_diff_conv = False
         try:
             n_diff_conv = int(inputs['DIFF_CONV'])
             if n_diff_conv == 1:
-                f_diff_conv = True
+                MB.f_diff_conv = True
                 print('Differential template convolution is requested - this may take a while.')
         except:
             pass
@@ -1697,7 +1698,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
 
                         if MB.f_spec:
                             spec_mul_neb_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend', 
-                                                                        f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
+                                                                        f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
                         else:
                             spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
 

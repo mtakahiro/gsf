@@ -806,7 +806,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # For grism;
     if f_grsm:
-        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
+        LSF = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
         try:
             spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
             spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')

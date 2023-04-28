@@ -2091,10 +2091,10 @@ class Mainbody():
                 flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_photometry=include_photometry, fzvis=self.fzvis)
 
             self.fzmc = 1
-            return out,chidef,Zbest, xm_tmp, fm_tmp
+            return out, chidef, Zbest, xm_tmp, fm_tmp
         else:
             self.fzmc = 1
-            return out,chidef,Zbest
+            return out, chidef, Zbest
 
 
     def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, 
@@ -2216,7 +2216,7 @@ class Mainbody():
         return zspace, chi2s
 
 
-    def plot_fit_result(self, out):
+    def plot_fit_result(self, out, xmin=2000, xmax=80000):
         '''
         out : class object
             From minimizer.
@@ -2243,7 +2243,7 @@ class Mainbody():
             ax1.errorbar(dict['x'], dict['fy'], yerr=dict['ey'], ls='', color='gray', zorder=1, alpha=0.3)
             ax1.scatter(dict['x'], dict['fy'], marker='o', color='r',edgecolor='r', s=10, zorder=1, alpha=1, label='Observed spectrum')
 
-        ax1.set_xlim(3000,30000)
+        ax1.set_xlim(xmin, xmax)
         ax1.set_xscale('log')
 
         ax1.legend(loc=2)
