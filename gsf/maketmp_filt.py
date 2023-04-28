@@ -224,20 +224,33 @@ def smooth_template_diff(waves, fluxes, Rs, Rs_template, f_diff_conv=False):
 
             # Smooth template to match roman resolution
             smoothing_sigma = sigma_inst / sigma_template
-            fluxes_tmp[nw] = fluxes[nw]
-            smoothed = ndimage.gaussian_filter(fluxes_tmp, smoothing_sigma)
+
+            # @@@ This part could be shortcut;
+            # smoothed = ndimage.gaussian_filter(fluxes_tmp, smoothing_sigma)
+            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+            Amp = 1.
+            LSF = gauss(xMof, Amp, smoothing_sigma / delta_wvl)
 
             # find indices that include pixel's wavelength and interpolate to find
             # smoothed flux
+            fluxes_tmp[nw] = fluxes[nw]
+            smoothed = convolve(fluxes_tmp, LSF, boundary='extend')
             fluxes_conv[:] += smoothed[:]
 
     else:
+        delta_wvl = np.nanmedian(np.diff(waves))
+
         sigma_inst = c/(Rs[:]*2.355)
         sigma_template = c/(Rs_template[:]*2.355)
 
         # Smooth template to match roman resolution
-        smoothing_sigma = np.median(sigma_inst / sigma_template)
-        fluxes_conv = ndimage.gaussian_filter(fluxes, smoothing_sigma)
+        smoothing_sigma = np.nanmedian(sigma_inst / sigma_template)
+        # fluxes_conv = ndimage.gaussian_filter(fluxes, smoothing_sigma)
+        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+        Amp = 1.
+        LSF = gauss(xMof, Amp, smoothing_sigma/delta_wvl)
+        fluxes_conv = convolve(fluxes, LSF, boundary='extend')
+        # print('smoothing_sigma is %.2f'%smoothing_sigma)
 
     return fluxes_conv
 
