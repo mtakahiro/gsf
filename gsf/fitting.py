@@ -299,7 +299,7 @@ class Mainbody():
             self.DIR_OUT = './'
 
         # Filter response curve directory, if bb catalog is provided.
-        self.DIR_FILT = inputs['DIR_FILT']
+        self.DIR_FILT = os.path.join(self.config_path, 'filter/')
         try:
             self.filts = inputs['FILTER']
             self.filts = [x.strip() for x in self.filts.split(',')]
