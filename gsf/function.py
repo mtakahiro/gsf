@@ -45,6 +45,7 @@ def print_err(msg, exit=False, details=None):
         print(Style.RESET_ALL)
         sys.exit()
 
+
 def str2bool(v):
     '''
     '''

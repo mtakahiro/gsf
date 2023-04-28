@@ -187,18 +187,79 @@ def check_library(MB, af, nround=3):
     return flag
 
 
-def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
-    sig_temp_def=50.):
+def smooth_template_diff(waves, fluxes, Rs, Rs_template, f_diff_conv=False):
+    '''from Gina's code
+    Parameters
+    ----------
+    wave, flux, Rs: arrays
+        All have the same size.
+    sigma_template : float
+        Sigma of the template spectrum, in km/s
+
+    Notes
+    -----
+    fsps templates have a resolution of ~2.5A FWHM from 3750AA - 7200AA restframe, and much lower (R~200 or so, but not actually well defined) outside this range. 
     '''
-    Gets Morphology params, and returns LSF
+    from scipy import ndimage
+    c_light = 299792.458 # speed of light in km/s
+
+    fluxes_conv = np.zeros(len(fluxes), float)
+
+    if f_diff_conv:
+
+        fluxes_tmp = np.zeros(len(fluxes), float)
+        for nw,wave in enumerate(waves):
+            fluxes_tmp[:] = 0
+
+            # Find resolution for roman pixel
+            if nw == 0:
+                delta_wvl = waves[nw+1] - waves[nw]
+            else:
+                delta_wvl = waves[nw] - waves[nw-1]
+
+            sigma_inst = c/(Rs[nw]*2.355)
+
+            # FWHM_gal = 1e4*np.sqrt(0.97*1.89)/R_median
+            sigma_template = c/(Rs_template[nw]*2.355)
+
+            # Smooth template to match roman resolution
+            smoothing_sigma = sigma_inst / sigma_template
+            fluxes_tmp[nw] = fluxes[nw]
+            smoothed = ndimage.gaussian_filter(fluxes_tmp, smoothing_sigma)
+
+            # find indices that include pixel's wavelength and interpolate to find
+            # smoothed flux
+            fluxes_conv[:] += smoothed[:]
+
+    else:
+        sigma_inst = c/(Rs[:]*2.355)
+        sigma_template = c/(Rs_template[:]*2.355)
+
+        # Smooth template to match roman resolution
+        smoothing_sigma = np.median(sigma_inst / sigma_template)
+        fluxes_conv = ndimage.gaussian_filter(fluxes, smoothing_sigma)
+
+    return fluxes_conv
+
+        
+def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
+    sig_temp_def=50., redshift=None):
+    '''
+    Load Morphology params, and returns LSF
 
     Parameters
     ----------
     lm : float array
+        wavelength array for the observed spectrum, in AA.
+
+    Returns
+    -------
+    LSF
 
     '''
     Amp = 0
     f_morp = False
+    f_prism = False
     if inputs['MORP'] == 'moffat' or inputs['MORP'] == 'gauss':
         try:
             mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
@@ -220,6 +281,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
 
     ############################
     # Template convolution;
+    # fsps templates have a resolution of ~2.5A FWHM from 3750AA - 7200AA restframe, and much lower (R~200 or so, but not actually well defined) outside this range. 
     ############################
     try:
         sig_temp = float(inputs['SIG_TEMP'])
@@ -261,6 +323,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
         else:
             msg = 'Something is wrong with the convolution file. Exiting.'
             print_err(msg, exit=True)
+            LSF = []
 
     else: # For slit spectroscopy. To be updated...
         print('Templates convolution (intrinsic velocity).')
@@ -276,14 +339,44 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
                 sig_conv = 0
         except:
             vdisp = 0.
-            print('Templates are not convolved.')
+            # print('Templates are not convolved.')
             sig_conv = 0 #np.sqrt(sig_temp_pix**2)
             pass
         xMof = np.arange(-5, 5.1, .1) # dimension must be even.
         Amp = 1.
         LSF = gauss(xMof, Amp, sig_conv)
 
-    return LSF, lm
+    return LSF
+
+
+def convolve_templates(wave, spec, LSF, boundary='extend', f_prism=False, file_res=None, redshift=None, f_diff_conv=False):
+    '''
+    file_res : str
+        From the official jdocs.
+    '''
+    if len(LSF) > 1:
+        spec_conv = convolve(spec, LSF, boundary='extend')
+
+    elif f_prism:
+        fd_res = fits.open(file_res)[1].data
+        R_res = fd_res['R']
+        wave_res = fd_res['WAVELENGTH'] # in um;
+        wave_res *= 1e4
+        fint = interpolate.interp1d(wave_res, R_res, kind='nearest', fill_value="extrapolate")
+        Rs_res_interp = fint(wave)
+        Rs_template = np.zeros(len(wave),float) + 200 # Assuming R=200;
+        if redshift != None:
+            mask_hr = np.where((wave/(1+redshift) > 3750) & ((wave/(1+redshift) < 7200)))
+            Rs_template[mask_hr] = wave[mask_hr] / 2.5
+        else:
+            mask_hr = None
+        # Smooth;
+        spec_conv = smooth_template_diff(wave, spec, Rs_res_interp, Rs_template, f_diff_conv=f_diff_conv)
+
+    else:
+        spec_conv = spec
+
+    return spec_conv
 
 
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
@@ -572,10 +665,31 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     #################
     # Get morphology;
     #################
+    f_prism = False
+    file_res = None
     if MB.f_spec:
-        LSF, lm = get_LSF(inputs, DIR_EXTR, MB.ID, lm)
+        LSF = get_LSF(inputs, DIR_EXTR, MB.ID, lm)
     else:
-        lm = []
+        LSF = []
+    try:
+        if inputs['MORP'] == 'jwst-prism':
+            file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
+            if os.path.exists(file_res):
+                f_prism = True
+                LSF = []
+    except:
+        f_prism = False
+        pass
+
+    if f_prism:
+        f_diff_conv = False
+        try:
+            n_diff_conv = int(inputs['DIFF_CONV'])
+            if n_diff_conv == 1:
+                f_diff_conv = True
+                print('Differential template convolution is requested - this may take a while.')
+        except:
+            pass
 
     if MB.SFH_FORM == -99:
         ####################################
@@ -668,13 +782,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         ltmpbb[ss,:], ftmpbb[ss,:] = filconv(SFILT, wavetmp, spec_mul_nu[ss,:], DIR_FILT, MB=MB, f_regist=False)
 
                         # Convolution has to come after this?
-                        if len(lm)>0:
-                            try:
-                                spec_mul_nu_conv[ss,:] = convolve(spec_mul_nu[ss], LSF, boundary='extend')
-                            except:
-                                spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
-                                if zz==0 and ss==0:
-                                    print('Kernel is too small. No convolution.')
+                        if MB.f_spec:
+                            spec_mul_nu_conv[ss,:] = convolve_templates(wavetmp, spec_mul_nu[ss], LSF, boundary='extend', 
+                                                                        f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
                         else:
                             spec_mul_nu_conv[ss,:] = spec_mul_nu[ss]
 
@@ -742,11 +852,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 if MB.f_spec:
                                     ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
 
-                                if len(lm)>0:
-                                    try:
-                                        spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
-                                    except:
-                                        spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                                if MB.f_spec:
+                                    spec_mul_neb_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                                f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
                                 else:
                                     spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
 
@@ -756,7 +864,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                                 spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
                                 tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
-
 
                     #########################
                     # Summarize the ML
@@ -768,10 +875,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         tree_SFR.update({'SFR_'+str(zz): sfr})
 
     else:
-        print('Tau model comes here;')
         ####################################
         # Start generating templates
         ####################################
+        print('Tau model comes here;')
         tau = MB.tau
         age = MB.ageparam
         Na = len(age)
@@ -918,11 +1025,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             if MB.f_spec:
                                 ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
 
-                            if len(lm)>0:
-                                try:
-                                    spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
-                                except:
-                                    spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                            if MB.f_spec:
+                                spec_mul_neb_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                            f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
                             else:
                                 spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
 
@@ -1408,9 +1513,28 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     Amp = 0
     f_morp = False
     if MB.f_spec:
-        LSF, lm = get_LSF(inputs, DIR_EXTR, ID, lm)
+        LSF = get_LSF(inputs, DIR_EXTR, ID, lm)
     else:
-        lm = []
+        LSF = []
+    try:
+        if inputs['MORP'] == 'jwst-prism':
+            file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
+            if os.path.exists(file_res):
+                f_prism = True
+                LSF = []
+    except:
+        f_prism = False
+        pass
+
+    if f_prism:
+        f_diff_conv = False
+        try:
+            n_diff_conv = int(inputs['DIFF_CONV'])
+            if n_diff_conv == 1:
+                f_diff_conv = True
+                print('Differential template convolution is requested - this may take a while.')
+        except:
+            pass
 
     ####################################
     # Start generating templates
@@ -1558,11 +1682,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
                         if MB.f_spec:
                             ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
 
-                        if len(lm)>0:
-                            try:
-                                spec_mul_neb_nu_conv[zz,uu,:] = convolve(spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend')
-                            except:
-                                spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
+                        if MB.f_spec:
+                            spec_mul_neb_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_neb_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                        f_prism=f_prism, file_res=file_res, redshift=zbest, f_diff_conv=f_diff_conv)
                         else:
                             spec_mul_neb_nu_conv[zz,uu,:] = spec_mul_neb_nu[zz,uu,:]
 

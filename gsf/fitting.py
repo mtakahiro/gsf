@@ -112,6 +112,13 @@ class Mainbody():
         self.sigz = sigz
         self.fitc_cz_prev = None
 
+        # Set config path;
+        try:
+            self.config_path = self.inputs['CONFIG']
+        except:
+            self.config_path = os.path.expandvars('$HOME/GitHub/gsf/config/')
+            print('CONFIG not found in the input file; Guessing to %s'%self.config_path)
+
         # Magzp;
         try:
             self.m0set = float(inputs['MAGZP'])
