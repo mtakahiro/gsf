@@ -11,9 +11,27 @@ gsf
 version 1.7 and after
 
 - SED fitting code used in `Morishita et al. (2018) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__. 
-- The main purpose is to explore galaxy properties with flexible-form star formation histories.
-- This code utilizes fsps and BPASS templates; fsps templates are generated within the code by using python-fsps.
+- This code utilizes fsps or BPASS templates; fsps templates are generated within the code by using python-fsps.
 - This code was originally designed for HST grism data; now it can be used for a geranal purpose (e.g., broadband photometry, JWST prism).
+
+
+Why do you need gsf?
+~~~~~~~~~~~~~~~~~~~~~
+
+The strength of gsf lies in its flexibility to model the galaxy spectrum by adopting a flexible approach to the galaxy's star formation history 
+and metallicity enrichment history. This flexibility is a huge advantage and allows the user to explore a wide range of galaxy properties, 
+including nebular emission and redshift (although the latter is not recommended due to the significant CPU cost).
+
+However, this flexibility comes at the expense of increased parameters, which could lead to a situation where the final results are 
+significantly unconstrained. Therefore, it is advised that users have a sufficient number of data points spread across wide wavelength range, 
+rest-UV-to-NIR, or high-S/N spectrum where continuum features are visible.
+
+For users without a sufficient number of data points, gsf can still offer SED fit at a reduced number of parameters, for example, 
+fixed ranges of age, dust attenuation, metallicity, etc. Therefore, users are recommended to understand the advantage of gsf 
+over other SED fitting tools. For example, if the user is interested in quickly getting reasonable inference on stellar masses of many galaxies 
+from a survey, FAST (Kriek09) offers excellent affordability. On the other hand, gsf can offer the user to explore a wider parameter range
+ (and potentially *maximize* the uncertainty range) of galaxy properties that could have been underestimated with the simplified 
+ configuration assumed in general SED fitting tools.
 
 
 ========================================================================================
