@@ -140,7 +140,7 @@ def check_library(MB, af, nround=3):
         Zall = MB.Zall
     
     flag = True
-    print('Checking the template library...')
+    MB.logger.info('Checking the template library...')
     print('Speficied - Template')
 
     # No. of age;
