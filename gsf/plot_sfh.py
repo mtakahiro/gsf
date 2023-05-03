@@ -477,10 +477,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     if f_SFMS:
         if f_log_sfh:
             ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2)
-            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
+            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2, label='SFMS')
         else:
             ax1.fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3, zorder=-2)
-            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
+            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2, label='SFMS')
 
     #
     # Mass in each bin
@@ -591,6 +591,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ax2.set_xscale('log')
     ax2.text(Txmin + 0.0002 * np.log10(Txmax/Txmin), y2min + 0.07*(y2max-y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
         %(ID, zbes, ACp[0,1], ZCp[0,1], np.nanmedian(TC[0,:]), Avtmp[1]), fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
+
 
     #
     # Brief Summary
@@ -803,6 +804,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     # This has to come after set_xticks;
     ax1t.set_xlim(Txmin, Txmax)
     ax2t.set_xlim(Txmin, Txmax)
+
+    ax1.legend(loc=0)
 
     if return_figure:
         return tree_sfh, fig

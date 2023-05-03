@@ -45,7 +45,6 @@ print(PACKAGE_PATH)
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-
 PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
@@ -56,10 +55,11 @@ setup(
     license = "IPAC",
     url = "https://github.com/mtakahiro",
     download_url = "https://github.com/",
-    packages=['gsf'],#,'example'
+    packages=['gsf'],
     package_dir={'gsf': 'gsf'},
     requires=['lmfit', 'fsps', 'emcee', 'corner'],
     use_scm_version=True,
+    # include_package_data=True,
     setup_requires=['setuptools_scm'],
     # 'python-fsps' could not be added here, somehow.
     # long_description=read('README.rst'),

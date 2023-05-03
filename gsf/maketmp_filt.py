@@ -686,6 +686,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         LSF = get_LSF(inputs, DIR_EXTR, MB.ID, lm)
     else:
         LSF = []
+        lm = []
     try:
         if inputs['MORP'] == 'jwst-prism':
             MB.file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
@@ -1530,6 +1531,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         LSF = get_LSF(inputs, DIR_EXTR, ID, lm)
     else:
         LSF = []
+        lm = []
     try:
         if inputs['MORP'] == 'jwst-prism':
             MB.file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
