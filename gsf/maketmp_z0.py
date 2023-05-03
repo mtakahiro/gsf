@@ -142,7 +142,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                             dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
                             duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                     else: # =Negative tau;
-                        MB.logger.infont('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
+                        MB.logger.info('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
                         if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1)
