@@ -58,15 +58,14 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     # Current age in Gyr;
     age_univ = MB.cosmo.age(0).value
 
-    print('#######################################')
-    print('Making templates at z=0, IMF=%d'%(nimf))
-    print('#######################################')
+    MB.logger.warning('Making templates at z=0 - This may take a while.')
+    MB.logger.info('IMF=%d'%(nimf))
     
     tree_spec = {}
     tree_ML = {}
     tree_lick = {}
 
-    print('tau is the width of each age bin.')
+    MB.logger.info('tau is the width of each age bin.')
     tau_age = np.zeros(Na,dtype='float')
     age_age = np.zeros(Na,dtype='float')
     flagz = True
@@ -124,8 +123,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 f_add_dust = False # Not yet. Or never...
                 if tautmp != tau0_old:
                     if int(tau0[pp]) == 99:
-                        print('CSP is applied.')
-                        print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
+                        MB.logger.info('CSP is applied.')
+                        MB.logger.info('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
                         if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
@@ -134,7 +133,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                             dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
                             duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                     elif tau0[pp] > 0.0:
-                        print('At t=%.3f, fixed tau, %.3f, is applied.'%(age[ss],tautmp))
+                        MB.logger.info('At t=%.3f, fixed tau, %.3f, is applied.'%(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0) # Lsun/Hz
                         if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=1, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0, add_neb_emission=1)
@@ -143,7 +142,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                             dust_type=2, dust2=0.0, tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
                             duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                     else: # =Negative tau;
-                        print('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
+                        MB.logger.infont('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
                         sptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
                         if fneb:
                             esptmp = fsps.StellarPopulation(zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1)
@@ -152,12 +151,12 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                             tau=20, const=0, sf_start=0, sf_trunc=tautmp, tburst=13, fburst=0,
                             duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0)
                 else:
-                    print('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
-                    print('Skip fsps, by using previous library.')
+                    MB.logger.info('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
+                    MB.logger.info('Skip fsps, by using previous library.')
 
                 tau0_old = tautmp
                 sp = sptmp
-                print('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), pp+1, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
+                MB.logger.info('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), pp+1, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
 
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True) # Lsun/AA
                 con = (wave0>lammin) & (wave0<lammax)
@@ -247,6 +246,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     # Save
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
+    MB.logger.info('Step 0: Done.')
 
 
 def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
