@@ -6,14 +6,15 @@
 
    </strike>
 
-GSF (|ss| Grism |se| Great SED Fitter)
+GSF 
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
-- SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__.
-- The main purpose is to explore galaxy star formation histories with a flexible form.
-- The code uses FSPS templates generated via python-fsps.
-- The code was originally designed for HST grism data, but now it can process a geranal (e.g.,broad band photometry) dataset too. 
+- SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__. 
+- (Recently renamed from `gsf`.)
+- The main purpose is to explore galaxy properties with flexible-form star formation histories.
+- This code utilizes fsps and BPASS templates; fsps templates are generated within the code by using python-fsps.
+- This code was originally designed for HST grism data; now it can be used for a geranal purpose (e.g., broadband photometry/JWST prism).
 
 
 ========================================================================================
@@ -84,17 +85,18 @@ Take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master
 
 Execution flag
 ~~~~~~~~~~~~~~
-- 0: Generating z=0 templates (takes a while if MILES). Start from here if any critical parameter (e.g., Z-range, age bins) in config file is changed. This will then automatically proceed to the next step.
-- 1: Redshift template to z=z_input, by using existing z=0 templates (from step0). This will then automatically proceed to the next step.
+- 0: Generating z=0 templates (takes a while if MILES is specified in the fsps config file). Start from here if any critical parameter (e.g., Z-range, age bins) in config file is changed. This will then automatically proceed to the next step.
+- 1: Redshift template to z=z_input, by using existing z=0 templates (from Step 0). This will then automatically proceed to the next step.
 - 2: Fitting part, by using existing redshifted templates (from step1). This will then automatically proceed to the next step.
 - 3: Creates SFH and SED plots by using the fitting results.
 
 
 Release notes
 ~~~~~~~~~~~~~
+- V1.8: JWST prism spectrum can be fit. Usability in Notebook has been improved.  
 - V1.7.4: pytest has been implemented.
 - V1.6: Emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
-- Far-IR data set can be fitted simultaneously with a simple gray body spectrum (to be published in a future version).
+- Far-IR data set can be fit simultaneously with a simple gray body spectrum (to be published in a future version).
 - V1.3: log-space samplings for amplitude parameters are implemented.
 - V1.2: BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
 - Data set without grism data, despite the code's name, can be also provided.
