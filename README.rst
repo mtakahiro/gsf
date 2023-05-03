@@ -30,7 +30,7 @@ For users without a sufficient number of data points, gsf can still offer SED fi
 fixed ranges of age, dust attenuation, metallicity, etc. Therefore, users are recommended to understand the advantage of gsf 
 over other SED fitting tools. For example, if the user is interested in quickly getting reasonable inference on stellar masses of many galaxies 
 from a survey, FAST/FAST++ (Kriek+09) offers excellent affordability. On the other hand, gsf can offer the user to explore a wider parameter range, 
-and can allow the user to *maximize* their uncertainty estimates, of galaxy properties that could have been underestimated with the simplified 
+and can allow the user to *maximize* their uncertainty estimates, of galaxy properties that could have been potentially underestimated with the simplified 
 configuration assumed in general SED fitting tools.
 
 
