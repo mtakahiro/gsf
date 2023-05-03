@@ -76,7 +76,14 @@ If a user prefers to install in a new conda environment, execute the following b
 
 Then, make sure to install `fsps <https://github.com/cconroy20/fsps>`__ and `python-fsps <https://github.com/dfm/python-fsps>`__ by following their instruction.
 
-Lastly, check your installation by;
+Lastly, make sure to add `GSF` alias to the path of the gsf repository (where `config` directory is visible):
+
+.. code-block:: bash
+
+    export GSF=/path/to/gsf/repo/
+
+
+Check your installation by;
 
 .. code-block:: bash
 
