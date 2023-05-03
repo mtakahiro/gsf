@@ -29,8 +29,8 @@ rest-UV-to-NIR, or high-S/N spectrum where continuum features are visible.
 For users without a sufficient number of data points, gsf can still offer SED fit at a reduced number of parameters, for example, 
 fixed ranges of age, dust attenuation, metallicity, etc. Therefore, users are recommended to understand the advantage of gsf 
 over other SED fitting tools. For example, if the user is interested in quickly getting reasonable inference on stellar masses of many galaxies 
-from a survey, FAST (Kriek09) offers excellent affordability. On the other hand, gsf can offer the user to explore a wider parameter range
- (and potentially *maximize* the uncertainty range) of galaxy properties that could have been underestimated with the simplified 
+from a survey, FAST/FAST++ (Kriek+09) offers excellent affordability. On the other hand, gsf can offer the user to explore a wider parameter range, 
+and potentially *maximize* the uncertainty range, of galaxy properties that could have been underestimated with the simplified 
  configuration assumed in general SED fitting tools.
 
 
@@ -119,3 +119,28 @@ Release notes
 - V1.3: log-space samplings for amplitude parameters are implemented.
 - V1.2: BPASS templates can also be implemented. Those who wish to try the functionality, please contact the author.
 - Data set without grism data, despite the code's name, can be also provided.
+
+
+Citation
+~~~~~~~~~
+
+```
+@ARTICLE{2019ApJ...877..141M,
+       author = {{Morishita}, T. and {Abramson}, L.~E. and {Treu}, T. and {Brammer}, G.~B. and {Jones}, T. and {Kelly}, P. and {Stiavelli}, M. and {Trenti}, M. and {Vulcani}, B. and {Wang}, X.},
+        title = "{Massive Dead Galaxies at z {\ensuremath{\sim}} 2 with HST Grism Spectroscopy. I. Star Formation Histories and Metallicity Enrichment}",
+      journal = {\apj},
+     keywords = {galaxies: abundances, galaxies: evolution, galaxies: formation, galaxies: high-redshift, galaxies: star formation, Astrophysics - Astrophysics of Galaxies},
+         year = 2019,
+        month = jun,
+       volume = {877},
+       number = {2},
+          eid = {141},
+        pages = {141},
+          doi = {10.3847/1538-4357/ab1d53},
+archivePrefix = {arXiv},
+       eprint = {1812.06980},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
