@@ -6,7 +6,7 @@
 
    </strike>
 
-GSF 
+gsf 
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
