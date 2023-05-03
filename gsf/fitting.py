@@ -996,11 +996,12 @@ class Mainbody(GsfBase):
                 ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
                 ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
             # bb;
-            con = (self.dict['NR']>=self.NRbb_lim)
-            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
-                color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
-            ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
-                color='orange', edgecolor='k', label='Observed photometry', zorder=4)
+            if include_photometry:
+                con = (self.dict['NR']>=self.NRbb_lim)
+                ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
+                    color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
+                ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
+                    color='orange', edgecolor='k', label='Observed photometry', zorder=4)
 
             # Write prob distribution;
             get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)

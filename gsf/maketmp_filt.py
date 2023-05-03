@@ -528,7 +528,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 ninp0[ff] = len(lm0tmp)
             elif spec_file.split('.')[-1] == 'fits':
                 fd0 = fits.open(os.path.join(DIR_EXTR, spec_file))[1].data
-                lm0tmp = fd0['wave']
+                eobs0 = fd0['full_err']
+                spec_mask = (eobs0>0)
+                lm0tmp = fd0['wave'][spec_mask]
                 ninp0[ff] = len(lm0tmp)
             else:
                 fd0 = np.loadtxt(os.path.join(DIR_EXTR, spec_file), comments='#')
@@ -553,12 +555,24 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 eobs0 = np.sqrt(fd0[id_asdf]['fluxvar']).value
             elif spec_file.split('.')[-1] == 'fits':
                 fd0 = fits.open(os.path.join(DIR_EXTR, spec_file))[1].data
-                lm0tmp = fd0['wave']
+                eobs0 = fd0['full_err']
+                if True:
+                    spec_mask = (eobs0>0)
+                else:
+                    spec_mask = ()
+                lm0tmp = fd0['wave'][spec_mask]
                 if lm0tmp.max() < 10:
                     MB.logger.warning('Wave column in the input spec file seems to be um. Scaling to AA.')
                     lm0tmp *= 1e4
-                fobs0 = fd0['flux']
-                eobs0 = fd0['full_err']
+                try:
+                    magzp_spec = float(inputs['MAGZP_SPEC'])
+                    magzp = float(inputs['MAGZP'])
+                    C_spec = 10**((magzp-magzp_spec)/(2.5))
+                except:
+                    MB.logger.info('`MAGZP_SPEC` not found. Assuming same as `MAGZP`')
+                    C_spec = 1
+                fobs0 = fd0['flux'][spec_mask] * C_spec
+                eobs0 = fd0['full_err'][spec_mask] * C_spec
             else:
                 fd0 = np.loadtxt(os.path.join(DIR_EXTR, spec_file), comments='#')
                 lm0tmp = fd0[:,0]
@@ -575,10 +589,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 fobs[ii] = fobs0[ii1]
                 eobs[ii] = eobs0[ii1]
 
-            MB.f_spec = True
             data_meta['data_len'][ff] = len(lm0tmp)
             data_meta['data_origin'] = np.append(data_meta['data_origin'], '%s'%spec_file)
             data_meta['data_index'] = np.append(data_meta['data_index'], '%d'%ff)
+            MB.f_spec = True
 
         except Exception:
             print('No spec data is registered.')
