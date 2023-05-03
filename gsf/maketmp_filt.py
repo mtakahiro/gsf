@@ -274,20 +274,21 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
     Amp = 0
     f_morp = False
     if inputs['MORP'] in lists_morp:
-        try:
-            mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-            fm = ascii.read(DIR_EXTR + mor_file)
-            Amp = fm['A']
-            gamma = fm['gamma']
-            if inputs['MORP'] == 'moffat':
-                alp = fm['alp']
-            else:
-                alp = 0
-            f_morp = True
-        except Exception:
-            msg = 'Error in reading morphology params.\nNo morphology convolution.'
-            print_err(msg, exit=False)
-            pass
+        if inputs['MORP'] in lists_morp[:2]:
+            try:
+                mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
+                fm = ascii.read(DIR_EXTR + mor_file)
+                Amp = fm['A']
+                gamma = fm['gamma']
+                if inputs['MORP'] == 'moffat':
+                    alp = fm['alp']
+                else:
+                    alp = 0
+                f_morp = True
+            except Exception:
+                msg = '`MORP_FILE` cannot be found.\nNo morphology convolution.'
+                print_err(msg, exit=False)
+                pass
     else:
         msg = 'MORP Keywords does not match.\nNo morphology convolution.'
         print_err(msg, exit=False)
@@ -475,10 +476,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     try:
         SFILT = MB.filts
         FWFILT = fil_fwhm(SFILT, DIR_FILT)
-        print('')
-        print('Filters in the input catalog are;')
-        print(','.join(MB.filts))
-        print('')
+        MB.logger.info('Filters in the input catalog are: ' + ','.join(MB.filts))
     except:
         msg = 'Filter is not detected!!\nMake sure your filter directory is correct.'
         print_err(msg, exit=True)
@@ -498,18 +496,16 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         DT0 = float(inputs['TDUST_LOW'])
         DT1 = float(inputs['TDUST_HIG'])
         dDT = float(inputs['TDUST_DEL'])
-        print('FIR is implemented.\n')
+        MB.logger.info('FIR is implemented.')
     else:
-        print('No FIR is implemented.\n')
+        MB.logger.info('No FIR is implemented.')
 
-    print('############################')
-    print('Making templates at z=%.4f'%(zbest))
-    print('############################')
+    MB.logger.info('Making templates at z=%.4f'%(zbest))
     ####################################################
     # Get extracted spectra.
     ####################################################
     #
-    # Get ascii data.
+    # Read ascii files
     #
     MB.f_spec = False
     data_meta = {'data_len':np.zeros(3,int),'data_origin':[],'data_index':[]}
@@ -531,7 +527,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     lm0tmp = fd0[:,0]
                     ninp0[ff] = len(lm0tmp)
             except Exception:
-                print('File, %s, cannot be open.'%(os.path.join(DIR_EXTR, spec_file)))
+                MB.logger.warning('File, %s, cannot be open.'%(os.path.join(DIR_EXTR, spec_file)))
                 pass
 
         # Then, Constructing arrays.
@@ -572,11 +568,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 print('No spec data is registered.')
                 pass
     except:
-        print('No spec file is provided.')
+        MB.logger.info('No spec file is provided.')
         pass
 
     if ncolbb < np.sum(data_meta['data_len']):
-        print('ncolbb is updated')
+        MB.logger.info('ncolbb is updated')
         ncolbb = np.sum(data_meta['data_len'])
         MB.NRbb_lim = ncolbb
     data_meta['data_len'] = np.asarray(data_meta['data_len'])
@@ -625,13 +621,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         try:
             unit = inputs['UNIT_SPEC']
         except:
-            print('No param for UNIT_SPEC is found.')
-            print('BB flux unit is assumed to F%s.'%unit)
+            MB.logger.info('No param for UNIT_SPEC is found.')
+            MB.logger.info('BB flux unit is assumed to F%s.'%unit)
             pass
 
         if unit == 'lambda':
-            print('#########################')
-            print('Changed BB from Flam to Fnu')
+            MB.logger.info('Changed BB from Flam to Fnu')
             snbb0 = fbb0/ebb0
             fbb = flamtonu(lmbb0, fbb0, m0set=MB.m0set)
             ebb = fbb/snbb0
@@ -702,7 +697,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             n_diff_conv = int(inputs['DIFF_CONV'])
             if n_diff_conv == 1:
                 MB.f_diff_conv = True
-                print('Differential template convolution is requested - this may take a while.')
+                MB.logger.warning('Differential template convolution, `DIFF_CONV`, is requested - this may take a while.')
         except:
             pass
 
@@ -788,7 +783,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             sfr[ss] = ms[ss] / (tautmp[ss]*1e9) # SFR per unit template, in units of Msolar/yr.
                         except:
                             if zz == 0 and ss == 0:
-                                print('realtau entry not found. SFR is set to 0. (Or rerun maketmp_z0.py)')
+                                MB.logger.warning('realtau entry not found. SFR is set to 0. (Or rerun maketmp_z0.py)')
                             sfr[ss] = 0
 
                         if MB.f_spec:
@@ -1089,7 +1084,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         dellam_d = 1e1
         lambda_d = np.arange(1e3, 1e7, dellam_d)
         
-        print('Reading dust table...')
+        MB.logger.info('Reading dust table...')
         for tt in range(len(Temp)):
             if tt == 0:
                 # For full;
@@ -1109,7 +1104,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             else:
                 if tt == 0:
                     from astropy.modeling import models
-                    print('Dust emission based on Modified Blackbody')
+                    MB.logger.info('Dust emission based on Modified Blackbody')
                     '''
                     # from Eq.3 of Bianchi 13
                     kabs0 = 4.0 # in cm2/g
@@ -1166,7 +1161,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         tree_spec_dust.update({'Mdust': Mdust_temp})
         tree.update({'spec_dust' : tree_spec_dust})
         tree.update({'spec_dust_full' : tree_spec_dust_full})
-        print('dust updated.')
+        MB.logger.info('dust updated.')
 
     # Save;
     file_asdf = os.path.join(DIR_TMP, 'spec_all_' + MB.ID + '.asdf')
@@ -1288,7 +1283,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             dict_bb_fir_obs = {'NR':nr_bb_d, 'x':x_bb_d, 'fy':fy_bb_d, 'ey':ey_bb_d}
             MB.data['bb_fir_obs'] = dict_bb_fir_obs
 
-        print('Done making templates at z=%.2f.\n'%zbest)
+        MB.logger.info('Done making templates at z=%.4f'%zbest)
         os.system('rm %s %s'%(file_tmp, file_tmp2))
 
     MB.ztemplate = True

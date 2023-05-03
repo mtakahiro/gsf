@@ -266,9 +266,8 @@ def loadcpkl(cpklfile):
     Load cpkl files.
     """
     import pickle
-
-    msg = 'cpkl will be deprecated from gsf. Rerun your fit with the latest version, so your sampler will be saved in asdf.'
-    print_err(msg)
+    # msg = 'cpkl will be deprecated from gsf. Rerun your fit with the latest version, so your sampler will be saved in asdf.'
+    # print_err(msg)
 
     if not os.path.isfile(cpklfile): raise ValueError(' ERR: cannot find the input file')
     f = open(cpklfile, 'rb') #, encoding='ISO-8859-1')

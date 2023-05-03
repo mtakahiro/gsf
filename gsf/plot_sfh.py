@@ -476,11 +476,11 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     # Plot MS?
     if f_SFMS:
         if f_log_sfh:
-            ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2)
-            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2, label='SFMS')
+            ax1.fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2, label='SFMS')
+            ax1.plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
         else:
-            ax1.fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3, zorder=-2)
-            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2, label='SFMS')
+            ax1.fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3, zorder=-2, label='SFMS')
+            ax1.plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
 
     #
     # Mass in each bin
@@ -805,7 +805,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ax1t.set_xlim(Txmin, Txmax)
     ax2t.set_xlim(Txmin, Txmax)
 
-    ax1.legend(loc=0)
+    ax1.legend(loc=0, fontsize=9)
 
     if return_figure:
         return tree_sfh, fig

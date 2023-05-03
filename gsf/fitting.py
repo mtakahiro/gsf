@@ -137,14 +137,14 @@ class Mainbody(GsfBase):
         try:
             self.config_path = self.inputs['CONFIG']
         except:
-            self.config_path = os.path.expandvars('$HOME/GitHub/gsf/config/')
-            print('CONFIG not found in the input file; Guessing to %s'%self.config_path)
+            self.config_path = os.path.expandvars('$GSF/config/')
+            self.logger.info('CONFIG is set to %s'%self.config_path)
 
         # Magzp;
         try:
             self.m0set = float(inputs['MAGZP'])
         except:
-            print('MAGZP is not found. Set to %.2f'%(m0set))
+            self.logger.info('MAGZP is not found. Set to %.2f'%(m0set))
             self.m0set = m0set
         self.d = 10**((48.6+self.m0set)/2.5) # Conversion factor from [ergs/s/cm2/A] to Fnu.
 
@@ -158,7 +158,7 @@ class Mainbody(GsfBase):
             self.ID = idman
         else:
             self.ID = inputs['ID']
-        print('\nFitting target: %s\n'%self.ID)
+        self.logger.info('Fitting target: %s'%self.ID)
 
         # Read catalog;
         try:
@@ -196,7 +196,7 @@ class Mainbody(GsfBase):
                     self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
                     self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
-                    print('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
+                    self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
                     self.zmcmin = None
                     self.zmcmax = None
 
@@ -228,7 +228,7 @@ class Mainbody(GsfBase):
                 self.f_Mdyn = False
 
         if self.verbose:
-            print('f_Mdyn is set to %s\n'%self.f_Mdyn)
+            self.logger.info('f_Mdyn is set to %s\n'%self.f_Mdyn)
         #self.f_Mdyn = True
         #self.logMdyn = 11.1
         #self.elogMdyn = 0.1
@@ -379,7 +379,7 @@ class Mainbody(GsfBase):
                 aamin = []
                 print('\n')
                 print('##########################')
-                print('AGEFIX is found.\nAge will be fixed to:')
+                self.logger.info('AGEFIX is found.\nAge will be fixed to:')
                 for age_tmp in self.age_fix:
                     ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
                     aamin.append(ageind)
@@ -436,7 +436,7 @@ class Mainbody(GsfBase):
             self.fzmc = int(inputs['F_ZMC'])
         except:
             self.fzmc = 0
-            print('Cannot find ZMC. Set to %d.'%(self.fzmc))
+            self.logger.warning('Cannot find ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
         self.has_ZFIX = False
@@ -451,8 +451,7 @@ class Mainbody(GsfBase):
             self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
 
             if self.verbose:
-                print('\n##########################')
-                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+                self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
 
             self.has_ZFIX = True
 
@@ -476,7 +475,7 @@ class Mainbody(GsfBase):
             try:
                 self.BPASS_DIR = inputs['BPASS_DIR']
             except:
-                print('BPASS_DIR is not found. Using default.')
+                self.logger.warning('BPASS_DIR is not found. Using default.')
                 self.BPASS_DIR = '/astro/udfcen3/Takahiro/BPASS/'
                 if not os.path.exists(self.BPASS_DIR):
                     msg = 'BPASS directory, %s, not found.'%self.BPASS_DIR
@@ -490,23 +489,22 @@ class Mainbody(GsfBase):
             try: # If ZFIX is found;
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
-                    print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
+                    self.logger.warning('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
                 self.ZFIX = Zbpass[iiz]
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
-                print('\n##########################')
-                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+                self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
                 self.has_ZFIX = True
             except:
-                print('ZFIX is not found.')
-                print('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
+                self.logger.warning('ZFIX is not found.')
+                self.logger.warning('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
-                print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
+                self.logger.info('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
                 if len(self.Zall)>1:
                     self.has_ZFIX = False
                     self.ZFIX = None
@@ -517,8 +515,7 @@ class Mainbody(GsfBase):
             Avfix = float(inputs['AVFIX'])
             self.AVFIX = Avfix
             self.nAV = 0
-            print('\n##########################')
-            print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
+            self.logger.info('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
             self.has_AVFIX = True
         except:
             try:
@@ -543,11 +540,11 @@ class Mainbody(GsfBase):
                 self.ZEVOL = 1
                 self.ndim = int(self.npeak * 2 + self.nAV) # age, Z, and Av.
                 if self.verbose:
-                    print('Metallicity evolution is on')
+                    self.logger.info('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
                 if self.verbose:
-                    print('Metallicity evolution is off')
+                    self.logger.info('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -562,11 +559,11 @@ class Mainbody(GsfBase):
                 self.ZEVOL = 1
                 self.nZ = self.npeak
                 if self.verbose:
-                    print('Metallicity evolution is on')
+                    self.logger.info('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
                 if self.verbose:
-                    print('Metallicity evolution is off')
+                    self.logger.info('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -583,8 +580,7 @@ class Mainbody(GsfBase):
         # Redshift
         self.ndim += self.fzmc
         if self.verbose:
-            print('\n##########################')
-            print('No. of params are : %d'%(self.ndim))
+            self.logger.info('No. of params are : %d'%(self.ndim))
 
         # Line
         try:
@@ -606,7 +602,7 @@ class Mainbody(GsfBase):
             elif self.dust_model == 4:
                 self.dust_model_name = 'KriekConroy'
             else:
-                print('Unknown number for dust attenuation. Calzetti.')
+                self.logger.warning('Unknown index number for dust attenuation. Setting to Calzetti.')
                 self.dust_model = 0
                 self.dust_model_name = 'Calz'
         except:
@@ -614,7 +610,7 @@ class Mainbody(GsfBase):
             self.dust_model_name = 'Calz'
 
         if self.verbose:
-            print('Dust attenuation is set to %s\n'%self.dust_model_name)
+            self.logger.info('Dust attenuation is set to %s\n'%self.dust_model_name)
 
         # If FIR data;
         try:
@@ -650,7 +646,7 @@ class Mainbody(GsfBase):
             except:
                 self.dust_numax = 3
                 self.dust_nmodel = 9
-            print('FIR fit is on.')
+            self.logger.info('FIR fit is on.')
         except:
             self.Temp = []
             self.f_dust = False
@@ -674,7 +670,7 @@ class Mainbody(GsfBase):
             self.nimf = int(inputs['NIMF'])
         except:
             self.nimf = 0
-            print('Cannot find NIMF. Set to %d.'%(self.nimf))
+            self.logger.warning('Cannot find NIMF. Set to %d.'%(self.nimf))
 
         # Error parameter
         try:
@@ -696,7 +692,7 @@ class Mainbody(GsfBase):
             else:
                 self.f_mcmc = True
         except:
-            print('Missing MC_SAMP keyword. Setting f_mcmc True.')
+            self.logger.info('Missing MC_SAMP keyword. Setting f_mcmc True.')
             self.f_mcmc = True
             pass
 
@@ -717,7 +713,7 @@ class Mainbody(GsfBase):
         #     self.norder_sfh_prior = None
         #     self.f_prior_sfh = False
 
-        print('\n')
+        self.logger.info('Complete')
         return True
 
 
@@ -1363,7 +1359,7 @@ class Mainbody(GsfBase):
                         self.ndim -= 1
                         self.age_vary.append(False)
                     elif self.age[aa]>agemax and not self.force_agefix:
-                        print('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
+                        self.logger.warning('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                         self.age_vary.append(False)
@@ -1384,13 +1380,13 @@ class Mainbody(GsfBase):
                     self.agemin = AGEFIX
                     self.agemax = AGEFIX
                     self.ndim -= 1
-                    print('AGEFIX is found. Set to %.2f'%(AGEFIX))
+                    self.logger.info('AGEFIX is found. Set to %.2f'%(AGEFIX))
                 except:
                     tcosmo = np.log10(self.cosmo.age(self.zgal).value) 
                     agemax_tmp = self.agemax
                     if agemax_tmp > tcosmo:
                         agemax_tmp = tcosmo
-                        print('Maximum age is set to the age of the univese (%.1fGyr) at this redshift.'%(self.cosmo.age(self.zgal).value))
+                        self.logger.info('Maximum age is set to the age of the univese (%.1fGyr) at this redshift.'%(self.cosmo.age(self.zgal).value))
                     if self.npeak>1:
                         if aa == 0:
                             fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=np.log10(1.0))
@@ -1436,7 +1432,7 @@ class Mainbody(GsfBase):
                 self.Avmin = 0.
                 self.Avmax = 4.
                 self.Avini = 0.5 #(Avmax-Avmin)/2. 
-                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
+                self.logger.info('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
                 fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
 
         #
@@ -1515,7 +1511,7 @@ class Mainbody(GsfBase):
         else:
             self.fzvis = False
         if self.f_nested:
-            print('Nested sample is on. Nelder is used for time saving analysis.')
+            self.logger.warning('Nested sample is on. Nelder is used to save time')
             self.fneld = 1 
 
         try:
@@ -1716,7 +1712,7 @@ class Mainbody(GsfBase):
             print('\n\n')
 
             ################################
-            print('\nMinimizer Defined\n')
+            self.logger.info('Minimizer Defined')
 
             print('########################')
             print('### Starting sampling ##')
@@ -1738,7 +1734,7 @@ class Mainbody(GsfBase):
                             aa += 1
 
                 if self.f_zeus:
-                    print('sampling with ZEUS')
+                    self.logger.info('sampling with ZEUS')
                     check_converge = False
                     f_burnin = True
                     if f_burnin:
@@ -1753,9 +1749,9 @@ class Mainbody(GsfBase):
                         # Run MCMC
                         nburn = int(self.nmc/10)
 
-                        print('Running burn-in')
+                        self.logger.info('Running burn-in')
                         sampler.run_mcmc(pos, nburn)
-                        print('Done burn-in')
+                        self.logger.info('Done burn-in')
 
                         # Get the burnin samples
                         burnin = sampler.get_chain()
@@ -1773,7 +1769,7 @@ class Mainbody(GsfBase):
                         )
 
                 else:
-                    print('sampling with EMCEE')
+                    self.logger.info('sampling with EMCEE')
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
@@ -1807,7 +1803,7 @@ class Mainbody(GsfBase):
                         converged = np.all(tau * 100 < sampler.iteration)
                         converged &= np.all(np.abs(old_tau - tau) / tau < nconverge)
                         if converged:
-                            print('Converged at %d/%d\n'%(index*nevery,self.nmc))
+                            self.logger.info('Converged at %d/%d\n'%(index*nevery,self.nmc))
                             nburn = int(index*nevery / 50) # Burn 50%
                             self.nmc = index*nevery
                             break
@@ -2040,9 +2036,7 @@ class Mainbody(GsfBase):
             self.Cz0 = Czrec0
             self.Cz1 = Czrec1
             self.Cz2 = Czrec2
-            print('\n\n')
-            print('Generating model templates with input redshift and Scale.')
-            print('\n\n')
+            self.logger.info('Generating model templates with input redshift and Scale.')
             return True
 
         else:
@@ -2061,9 +2055,7 @@ class Mainbody(GsfBase):
                 self.Cz2 = self.Czrec2
                 return True
             else:
-                print('\n\n')
-                print('Terminating process.')
-                print('\n\n')
+                self.logger.error('Terminating process.')
                 return False
 
 
@@ -2205,7 +2197,7 @@ class Mainbody(GsfBase):
             fm_int = fint(xobs)
 
             if fcon is None:
-                print('Data is none')
+                self.logger.warning('Data is none')
                 return fm_int
             else:
                 return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
