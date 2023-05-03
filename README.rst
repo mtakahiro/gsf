@@ -45,6 +45,8 @@ Required packages will be installed by;
 
 .. code-block:: bash
 
+    git clone https://github.com/mtakahiro/gsf.git
+    cd gsf 
     pip install -r requirements.txt 
 
 If a user prefers to install in a new conda environment, execute the following before the command above;
