@@ -10,11 +10,10 @@ gsf
 ~~~~~~~~~~~~~~~~~~~~~~
 version 1.7 and after
 
-- SED fitting code used in `Morishita et al. (2018a) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__. 
-- (Recently renamed from `gsf`.)
+- SED fitting code used in `Morishita et al. (2018) <http://adsabs.harvard.edu/abs/2018ApJ...856L...4M>`__ and `Morishita et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...877..141M/abstract>`__. 
 - The main purpose is to explore galaxy properties with flexible-form star formation histories.
 - This code utilizes fsps and BPASS templates; fsps templates are generated within the code by using python-fsps.
-- This code was originally designed for HST grism data; now it can be used for a geranal purpose (e.g., broadband photometry/JWST prism).
+- This code was originally designed for HST grism data; now it can be used for a geranal purpose (e.g., broadband photometry, JWST prism).
 
 
 ========================================================================================
@@ -32,10 +31,10 @@ Pre-requirement
 - astropy
 - Pandas
 - multiprocess
-- lmfit (no older than ver1.0.0)
-- emcee (no older than ver3.0.0)
+- lmfit (no older than v1.0.0)
+- emcee (no older than v3.0.0)
 - corner
-- python-fsps (ver0.3.0)
+- python-fsps (v0.3.0)
 - fsps
 
 
@@ -93,7 +92,7 @@ Execution flag
 
 Release notes
 ~~~~~~~~~~~~~
-- V1.8: JWST prism spectrum can be fit. Usability in Notebook has been improved.  
+- V1.8: JWST prism spectrum can be fit. Usability in Notebook has been improved. Logger has been implemented (thanks to Antonio Addis).
 - V1.7.4: pytest has been implemented.
 - V1.6: Emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.
 - Far-IR data set can be fit simultaneously with a simple gray body spectrum (to be published in a future version).
