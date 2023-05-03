@@ -43,7 +43,6 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
         MB.fnc = Func_tau(MB) # Set up the number of Age/ZZ
         MB.bfnc = Basic_tau(MB)
 
-
     #
     # 0. Make basic templates
     #

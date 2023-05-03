@@ -2,11 +2,12 @@
 This includes the main part of gsf.
 
 Original copyright:
-   Copyright (c) 2021 Takahiro Morishita, STScI
+   Copyright (c) 2023 Takahiro Morishita, IPAC
 """
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from lmfit import Model, Parameters, minimize, fit_report#, Minimizer
 from numpy import log10
 import os.path
@@ -22,6 +23,8 @@ import emcee
 import zeus
 import pandas as pd
 import asdf
+import logging
+import pathlib
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err
@@ -30,6 +33,14 @@ from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
+
+from .Logger.GsfBase import GsfBase
+try:
+    GSF = os.environ['GSF']
+except ValueError:
+    print("!! make sure you have set GSF to the path of your GSF repository;\n\
+          `export GSF=/your/Github/gsf-directory/`\
+          where you can see the `config/` directory.")
 
 ############################
 py_v = (sys.version_info[0])
@@ -47,7 +58,7 @@ LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 65
 fLW = np.zeros(len(LW), dtype='int')
 
 
-class Mainbody():
+class Mainbody(GsfBase):
     '''
     The list of (possible) `Mainbody` attributes is given below:
 
@@ -67,13 +78,25 @@ class Mainbody():
         or the width to the next age bin.
     '''
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
-        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000):
+        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None):
         '''
         Parameters
         ----------
         NRbb_lim : int
             BB data is associated with ids greater than this number.
         '''
+        import gsf
+        DIR_GSF = gsf.__path__[0]
+        if configurationfile == None:
+            configurationfile = f"{GSF}/config/config.yaml"
+        super().__init__(configurationfile)
+        self.outdir = pathlib.Path('./output_log/')
+        self.outdir.mkdir(parents=True, exist_ok=True)
+        self.logger = self.logger.getLogger(__name__, "gsf")
+        self.logger.info("init class")
+        self.flat_fin = {}
+
+        self.verbose = verbose
         flag_input = self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
         self.NRbb_lim = NRbb_lim
         self.ztemplate = False
@@ -110,11 +133,18 @@ class Mainbody():
         self.sigz = sigz
         self.fitc_cz_prev = None
 
+        # Set config path;
+        try:
+            self.config_path = self.inputs['CONFIG']
+        except:
+            self.config_path = os.path.expandvars('$GSF/config/')
+            self.logger.info('CONFIG is set to %s'%self.config_path)
+
         # Magzp;
         try:
             self.m0set = float(inputs['MAGZP'])
         except:
-            print('MAGZP is not found. Set to %.2f'%(m0set))
+            self.logger.info('MAGZP is not found. Set to %.2f'%(m0set))
             self.m0set = m0set
         self.d = 10**((48.6+self.m0set)/2.5) # Conversion factor from [ergs/s/cm2/A] to Fnu.
 
@@ -128,7 +158,7 @@ class Mainbody():
             self.ID = idman
         else:
             self.ID = inputs['ID']
-        print('\nFitting : %s\n'%self.ID)
+        self.logger.info('Fitting target: %s'%self.ID)
 
         # Read catalog;
         try:
@@ -166,7 +196,7 @@ class Mainbody():
                     self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
                     self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
-                    print('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
+                    self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
                     self.zmcmin = None
                     self.zmcmax = None
 
@@ -197,15 +227,15 @@ class Mainbody():
             except:
                 self.f_Mdyn = False
 
-        print('f_Mdyn is set to %s\n'%self.f_Mdyn)
-        
+        if self.verbose:
+            self.logger.info('f_Mdyn is set to %s\n'%self.f_Mdyn)
         #self.f_Mdyn = True
         #self.logMdyn = 11.1
         #self.elogMdyn = 0.1
-
         #if self.f_Mdyn:
         #    # If Mdyn is included.
         #    self.af = asdf.open(self.DIR_TMP + 'spec_all_' + self.ID + '_PA' + self.PA + '.asdf')
+
         try:
             self.DIR_EXTR = inputs['DIR_EXTR']
         except:
@@ -240,11 +270,18 @@ class Mainbody():
                 self.fneb = True
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
-                    self.logUMAX = float(inputs['logUMAX'])
-                    self.DELlogU = float(inputs['DELlogU'])
                 except:
                     self.logUMIN = -2.5
+                try:
+                    self.logUMAX = float(inputs['logUMAX'])
+                except:
                     self.logUMAX = -2.0
+                try:
+                    self.DELlogU = float(inputs['DELlogU'])
+                    if self.DELlogU<0.1:
+                        print_err('`DELlogU` cannot have value smaller than 0.1. Exiting.')
+                        sys.exit()
+                except:
                     self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
                 self.nlogU = len(self.logUs)
@@ -265,7 +302,8 @@ class Mainbody():
                 self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
         except:
-            print('No nebular added.')
+            self.verbose
+            print_err('Some error in nebular setup; No nebular added.')
             self.fneb = False
             self.logUMIN = -2.5
             self.logUMAX = -2.0
@@ -282,7 +320,7 @@ class Mainbody():
             self.DIR_OUT = './'
 
         # Filter response curve directory, if bb catalog is provided.
-        self.DIR_FILT = inputs['DIR_FILT']
+        self.DIR_FILT = os.path.join(self.config_path, 'filter/')
         try:
             self.filts = inputs['FILTER']
             self.filts = [x.strip() for x in self.filts.split(',')]
@@ -341,7 +379,7 @@ class Mainbody():
                 aamin = []
                 print('\n')
                 print('##########################')
-                print('AGEFIX is found.\nAge will be fixed to:')
+                self.logger.info('AGEFIX is found.\nAge will be fixed to:')
                 for age_tmp in self.age_fix:
                     ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
                     aamin.append(ageind)
@@ -398,7 +436,7 @@ class Mainbody():
             self.fzmc = int(inputs['F_ZMC'])
         except:
             self.fzmc = 0
-            print('Cannot find ZMC. Set to %d.'%(self.fzmc))
+            self.logger.warning('Cannot find ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
         self.has_ZFIX = False
@@ -411,9 +449,12 @@ class Mainbody():
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
             self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
-            print('\n##########################')
-            print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+
+            if self.verbose:
+                self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+
             self.has_ZFIX = True
+
         except:
             self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
             self.delZ = float(inputs['DELZ'])
@@ -434,7 +475,7 @@ class Mainbody():
             try:
                 self.BPASS_DIR = inputs['BPASS_DIR']
             except:
-                print('BPASS_DIR is not found. Using default.')
+                self.logger.warning('BPASS_DIR is not found. Using default.')
                 self.BPASS_DIR = '/astro/udfcen3/Takahiro/BPASS/'
                 if not os.path.exists(self.BPASS_DIR):
                     msg = 'BPASS directory, %s, not found.'%self.BPASS_DIR
@@ -448,23 +489,22 @@ class Mainbody():
             try: # If ZFIX is found;
                 iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
                 if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
-                    print('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
+                    self.logger.warning('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
                 self.ZFIX = Zbpass[iiz]
                 self.delZ = 0.0001
                 self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
-                print('\n##########################')
-                print('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+                self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
                 self.has_ZFIX = True
             except:
-                print('ZFIX is not found.')
-                print('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
+                self.logger.warning('ZFIX is not found.')
+                self.logger.warning('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
-                print('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
+                self.logger.info('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
                 if len(self.Zall)>1:
                     self.has_ZFIX = False
                     self.ZFIX = None
@@ -475,8 +515,7 @@ class Mainbody():
             Avfix = float(inputs['AVFIX'])
             self.AVFIX = Avfix
             self.nAV = 0
-            print('\n##########################')
-            print('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
+            self.logger.info('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
             self.has_AVFIX = True
         except:
             try:
@@ -494,15 +533,18 @@ class Mainbody():
                 self.Avmax = 4.0
 
         # Z evolution;
-        print('\n#############################')
+        if self.verbose:
+            print('\n#############################')
         if self.SFH_FORM == -99:
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.ndim = int(self.npeak * 2 + self.nAV) # age, Z, and Av.
-                print('Metallicity evolution is on')
+                if self.verbose:
+                    self.logger.info('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
-                print('Metallicity evolution is off')
+                if self.verbose:
+                    self.logger.info('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -516,10 +558,12 @@ class Mainbody():
             if int(inputs['ZEVOL']) == 1:
                 self.ZEVOL = 1
                 self.nZ = self.npeak
-                print('Metallicity evolution is on')
+                if self.verbose:
+                    self.logger.info('Metallicity evolution is on')
             else:
                 self.ZEVOL = 0
-                print('Metallicity evolution is off')
+                if self.verbose:
+                    self.logger.info('Metallicity evolution is off')
                 try:
                     ZFIX = float(inputs['ZFIX'])
                     self.nZ = 0
@@ -530,12 +574,13 @@ class Mainbody():
                         self.nZ = 1
                     
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
-        print('#############################\n')
+        if self.verbose:
+            print('#############################\n')
 
         # Redshift
         self.ndim += self.fzmc
-        print('\n##########################')
-        print('No. of params are : %d'%(self.ndim))
+        if self.verbose:
+            self.logger.info('No. of params are : %d'%(self.ndim))
 
         # Line
         try:
@@ -557,13 +602,15 @@ class Mainbody():
             elif self.dust_model == 4:
                 self.dust_model_name = 'KriekConroy'
             else:
-                print('Unknown number for dust attenuation. Calzetti.')
+                self.logger.warning('Unknown index number for dust attenuation. Setting to Calzetti.')
                 self.dust_model = 0
                 self.dust_model_name = 'Calz'
         except:
             self.dust_model = 0
             self.dust_model_name = 'Calz'
-        print('Dust attenuation is set to %s\n'%self.dust_model_name)
+
+        if self.verbose:
+            self.logger.info('Dust attenuation is set to %s\n'%self.dust_model_name)
 
         # If FIR data;
         try:
@@ -599,7 +646,7 @@ class Mainbody():
             except:
                 self.dust_numax = 3
                 self.dust_nmodel = 9
-            print('FIR fit is on.')
+            self.logger.info('FIR fit is on.')
         except:
             self.Temp = []
             self.f_dust = False
@@ -623,7 +670,7 @@ class Mainbody():
             self.nimf = int(inputs['NIMF'])
         except:
             self.nimf = 0
-            print('Cannot find NIMF. Set to %d.'%(self.nimf))
+            self.logger.warning('Cannot find NIMF. Set to %d.'%(self.nimf))
 
         # Error parameter
         try:
@@ -645,7 +692,7 @@ class Mainbody():
             else:
                 self.f_mcmc = True
         except:
-            print('Missing MC_SAMP keyword. Setting f_mcmc True.')
+            self.logger.info('Missing MC_SAMP keyword. Setting f_mcmc True.')
             self.f_mcmc = True
             pass
 
@@ -666,7 +713,7 @@ class Mainbody():
         #     self.norder_sfh_prior = None
         #     self.f_prior_sfh = False
 
-        print('\n')
+        self.logger.info('Complete')
         return True
 
 
@@ -704,6 +751,11 @@ class Mainbody():
         ##############
         NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
         data_len = self.data['meta']['data_len']
+        con_spec = (NR<10000)
+        if len(NR[con_spec])>0:
+            self.has_spectrum = True
+        else:
+            self.has_spectrum = False
 
         Cs = [Cz0, Cz1, Cz2]
         xx02 = []
@@ -723,6 +775,7 @@ class Mainbody():
         ##############
         try:
             NRbb, xbb, fybb, eybb, exbb = self.data['bb_obs']['NR'], self.data['bb_obs']['x'], self.data['bb_obs']['fy'], self.data['bb_obs']['ey'], self.data['bb_obs']['ex']
+            self.has_photometry = True
         except: # if no BB;
             print('No BB data.')
             NRbb = np.asarray([])
@@ -730,6 +783,7 @@ class Mainbody():
             fybb = np.asarray([])
             eybb = np.asarray([])
             exbb = np.asarray([])
+            self.has_photometry = False
 
         con_bb = ()
         xx_bb = xbb[con_bb]
@@ -789,11 +843,18 @@ class Mainbody():
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx_bb, 'exbb':ex_bb, 'fybb':fy_bb, 'eybb':ey_bb, 'wht':wht, 'wht2': wht2, 'sn':sn}
 
         return dict
+    
+
+    def plot_data(self,):
+        '''
+        '''
+        return None
 
 
-    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, zliml=0.01, 
-        zlimu=None, snlim=0, priors=None, f_line_check=False, 
-        f_norm=True, f_lambda=False, zmax=20, include_bb=False, f_exclude_negative=False):
+    def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, #zliml=0.01, zlimu=None, 
+                     snlim=0, priors=None, f_line_check=False, fzvis=False,
+                     f_norm=True, f_lambda=False, zmax=20, include_photometry=False, 
+                     f_exclude_negative=False, return_figure=False):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
         This module is effective only when spec data is provided.
@@ -814,7 +875,7 @@ class Mainbody():
             Minimum redshift uncertainty.
         snlim : float
             SN limit for data points. Those below the number will be cut from the fit.
-        include_bb : bool
+        include_photometry : bool
             Turn this True if Redshift fitting is requred for only BB data.
         f_line_check : bool
             If True, line masking.
@@ -822,6 +883,8 @@ class Mainbody():
             Dictionary that contains z (redshift grid) and chi2 (chi-square).
         f_exclude_negative : bool
             Exclude negative fluxes in spectrum.
+        return_figure : bool
+            This only works for notebook
 
         Notes
         -----
@@ -847,7 +910,7 @@ class Mainbody():
         sn = self.dict['fy'] / self.dict['ey']
 
         # Only spec data?
-        if include_bb:
+        if include_photometry:
             con_cz = ()#(sn>snlim)
         else:
             con_cz = (self.dict['NR']<self.NRbb_lim) #& (sn>snlim)
@@ -906,9 +969,14 @@ class Mainbody():
         if len(self.dict['fy'][con_cz])==0:
             return 'y'
 
-        if self.fzvis==1 and (include_bb | len(fy_cz)>0):
-            import matplotlib as mpl
-            mpl.use('TkAgg')
+        # Figure;
+        # mpl.use('TkAgg')
+        plt.close()
+        fig = plt.figure(figsize=(8,2.8))
+        # fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
+        ax1 = fig.add_subplot(111)
+
+        if (include_photometry | len(fy_cz)>0):# and fzvis:# and 
             data_model = np.zeros((len(x_cz),4),'float')
             data_model[:,0] = x_cz
             data_model[:,1] = fm_s
@@ -919,20 +987,23 @@ class Mainbody():
             #data_model_sort = np.sort(data_model, axis=0) # This does not work!!
 
             # Model based on input z.
-            plt.plot(data_model_sort[:,0], data_model_sort[:,1], 'gray', linestyle='--', linewidth=0.5, label='')
-            # Observation
+            # ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'b', linestyle='--', linewidth=0.5, label='')
+
+            # Observed data;
             # spec;
-            con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
-            plt.plot(self.dict['x'][con], self.dict['fy'][con], '.b', linestyle='-', linewidth=0.5, label='Obs.')
-            plt.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='b', capsize=0, linewidth=0.5)
+            if self.has_spectrum:
+                con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
+                ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
+                ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
             # bb;
             con = (self.dict['NR']>=self.NRbb_lim)
-            plt.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=5, marker='o', 
-                color='orange', capsize=0, linewidth=0.5, ls='None')
+            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
+                color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
+            ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
+                color='orange', edgecolor='k', label='Observed photometry', zorder=4)
 
             # Write prob distribution;
-            if True:
-                get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
+            get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
 
             print('############################')
             print('Start MCMC for redshift fit')
@@ -940,8 +1011,10 @@ class Mainbody():
             res_cz, fitc_cz = check_redshift(
                 fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), 
                 self.zgal, self.z_prior, self.p_prior,
-                NR_cz, self.data['meta']['data_len'], zliml, zlimu, self.nmc_cz, self.nwalk_cz, 
-                include_photometry=include_bb
+                NR_cz, self.data['meta']['data_len'], 
+                zliml, zlimu, 
+                self.nmc_cz, self.nwalk_cz, 
+                include_photometry=include_photometry
                 )
 
             z_cz = np.percentile(res_cz.flatchain['z'], [16,50,84])
@@ -1006,86 +1079,91 @@ class Mainbody():
         con_line = (wht3==0)
 
         # Visual inspection;
-        if self.fzvis==1:
-            # Ask interactively;
-            data_model_new = np.zeros((len(x_cz),4),'float')
-            data_model_new[:,0] = x_cz
-            data_model_new[:,1] = fm_s
-            data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
+        data_model_new = np.zeros((len(x_cz),4),'float')
+        data_model_new[:,0] = x_cz
+        data_model_new[:,1] = fm_s
+        data_model_new_sort = data_model_new[data_model_new[:, 0].argsort()]
 
-            plt.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'r', linestyle='-', linewidth=0.5, label='%s ($z=%.5f$)'%(fit_label,zrecom)) # Model based on recomended z.
-            plt.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3.)
+        ax1.plot(data_model_new_sort[:,0], data_model_new_sort[:,1], 'lightgreen', linestyle='--', linewidth=1, 
+                 label='%s ($z=%.5f$)'%(fit_label,zrecom), zorder=3) # Model based on recomended z.
+        ax1.plot(x_cz[con_line], fm_s[con_line], color='orange', marker='o', linestyle='', linewidth=3., zorder=5)
 
-            # Plot lines for reference
-            for ll in range(len(LW)):
-                try:
-                    conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
-                    yline = np.max(ypoly[conpoly])
-                    yy = np.arange(yline/1.02, yline*1.1)
-                    xxpre = yy * 0 + LW[ll] * (1.+self.zgal)
-                    xx = yy * 0 + LW[ll] * (1.+zrecom)
-                    plt.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
-                    plt.text(LW[ll] * (1.+self.zgal), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
-                    plt.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
-                    plt.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
-                except:
-                    pass
-
-            # Plot data
-            data_obsbb = np.zeros((len(self.dict['xbb']),3), 'float')
-            data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
-            if len(fm_tmp) == len(self.dict['xbb']): # BB only;
-                data_obsbb[:,2] = fm_tmp
-            data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
-            
-            if len(fm_tmp) == len(self.dict['xbb']): # BB only;
-                plt.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='gray', zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
-            else:
-                model_spec = np.zeros((len(fm_tmp),2), 'float')
-                model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
-                model_spec_sort = model_spec[model_spec[:, 0].argsort()]
-                plt.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='gray', ms=1, linestyle='-', linewidth=0.5, zorder=4, label='Current model ($z=%.5f$)'%(self.zgal))
-
+        # Plot lines for referenc
+        for ll in range(len(LW)):
             try:
-                xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
-            except:
-                xmin, xmax = 2000,10000
-
-            try:
-                plt.ylim(0,yline*1.1)
+                conpoly = (x_cz/(1.+zrecom)>3000) & (x_cz/(1.+zrecom)<8000)
+                yline = np.max(ypoly[conpoly])
+                yy = np.arange(yline/1.02, yline*1.1)
+                xxpre = yy * 0 + LW[ll] * (1.+self.zgal)
+                xx = yy * 0 + LW[ll] * (1.+zrecom)
+                ax1.plot(xxpre, yy/1.02, linewidth=0.5, linestyle='--', color='gray')
+                ax1.text(LW[ll] * (1.+self.zgal), yline/1.05, '%s'%(LN[ll]), fontsize=8, color='gray')
+                ax1.plot(xx, yy, linewidth=0.5, linestyle='-', color='orangered')
+                ax1.text(LW[ll] * (1.+zrecom), yline, '%s'%(LN[ll]), fontsize=8, color='orangered')
             except:
                 pass
 
-            plt.xlim(xmin,xmax)
-            plt.xlabel('Wavelength ($\mathrm{\AA}$)')
-            plt.ylabel('$F_\\nu$ (arb.)')
-            plt.legend(loc=0)
+        # Plot data
+        data_obsbb = np.zeros((len(self.dict['xbb']),3), 'float')
+        data_obsbb[:,0],data_obsbb[:,1] = self.dict['xbb'],self.dict['fybb']
+        if len(fm_tmp) == len(self.dict['xbb']): # BB only;
+            data_obsbb[:,2] = fm_tmp
+        data_obsbb_sort = data_obsbb[data_obsbb[:, 0].argsort()]            
+        
+        if len(fm_tmp) == len(self.dict['xbb']): # BB only;
+            ax1.scatter(data_obsbb_sort[:,0], data_obsbb_sort[:,2], color='none', marker='d', s=50, edgecolor='b', zorder=2, label='Current model ($z=%.5f$)'%(self.zgal))
+        else:
+            model_spec = np.zeros((len(fm_tmp),2), 'float')
+            model_spec[:,0],model_spec[:,1] = xm_tmp,fm_tmp
+            model_spec_sort = model_spec[model_spec[:, 0].argsort()]
+            # ax1.plot(model_spec_sort[:,0], model_spec_sort[:,1], marker='.', color='b', ms=1, linestyle='-', linewidth=0.5, zorder=2)
+            ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'b', linestyle='-', linewidth=3.0, zorder=2, label='Current model ($z=%.5f$)'%(self.zgal))
 
-            zzsigma = ((z_cz[2] - z_cz[0])/2.)/self.zgal
-            zsigma = np.abs(self.zgal-zrecom) / (self.zgal)
-            C0sigma = np.abs(Czrec0-self.Cz0)/self.Cz0
-            eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
-            C1sigma = np.abs(Czrec1-self.Cz1)/self.Cz1
-            eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
-            C2sigma = np.abs(Czrec2-self.Cz2)/self.Cz2
-            eC2sigma = ((scl_cz2[2]-scl_cz2[0])/2.)/self.Cz2
+        try:
+            xmin, xmax = np.min(x_cz)/1.1,np.max(x_cz)*1.1
+        except:
+            xmin, xmax = 2000,10000
 
-            print('\n##############################################################')
-            print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
-            print('Error is %.3f per cent.'%(zzsigma*100))
-            print('Input Cz0 is %.3f per cent agreement.'%((1.-C0sigma)*100))
-            print('Error is %.3f per cent.'%(eC0sigma*100))
-            print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
-            print('Error is %.3f per cent.'%(eC1sigma*100))
-            print('Input Cz2 is %.3f per cent agreement.'%((1.-C2sigma)*100))
-            print('Error is %.3f per cent.'%(eC2sigma*100))
-            print('##############################################################\n')
+        try:
+            plt.ylim(0,yline*1.1)
+        except:
+            pass
+
+        ax1.set_xlim(xmin,xmax)
+        ax1.set_xlabel('Wavelength ($\mathrm{\AA}$)')
+        ax1.set_ylabel('$F_\\nu$ (arb.)')
+        ax1.legend(loc=0)
+
+        zzsigma = ((z_cz[2] - z_cz[0])/2.)/self.zgal
+        zsigma = np.abs(self.zgal-zrecom) / (self.zgal)
+        C0sigma = np.abs(Czrec0-self.Cz0)/self.Cz0
+        eC0sigma = ((scl_cz0[2]-scl_cz0[0])/2.)/self.Cz0
+        C1sigma = np.abs(Czrec1-self.Cz1)/self.Cz1
+        eC1sigma = ((scl_cz1[2]-scl_cz1[0])/2.)/self.Cz1
+        C2sigma = np.abs(Czrec2-self.Cz2)/self.Cz2
+        eC2sigma = ((scl_cz2[2]-scl_cz2[0])/2.)/self.Cz2
+
+        print('\n##############################################################')
+        print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
+        print('Error is %.3f per cent.'%(zzsigma*100))
+        print('Input Cz0 is %.3f per cent agreement.'%((1.-C0sigma)*100))
+        print('Error is %.3f per cent.'%(eC0sigma*100))
+        print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
+        print('Error is %.3f per cent.'%(eC1sigma*100))
+        print('Input Cz2 is %.3f per cent agreement.'%((1.-C2sigma)*100))
+        print('Error is %.3f per cent.'%(eC2sigma*100))
+        print('##############################################################\n')
+
+        if fzvis==1:
+            # Ask interactively;
             plt.show()
             plt.close()
-
             flag_z = raw_input('Do you want to continue with the input redshift, Cz0, Cz1, Cz2, and chi2/nu, %.5f %.5f %.5f %.5f %.5f? ([y]/n/m) '%\
                 (self.zgal, self.Cz0, self.Cz1, self.Cz2, self.fitc_cz_prev))
         else:
+            if not return_figure:
+                plt.close()
+            self.fig_zfit = fig
             flag_z = 'y'
 
         try:
@@ -1105,10 +1183,12 @@ class Mainbody():
         self.res_cz = res_cz
         self.fitc_cz_prev = fitc_cz[1]
 
+        if return_figure:
+            return fig
         return flag_z
 
 
-    def get_zdist(self, f_interact=False, f_ascii=True):
+    def get_zdist(self, f_interact=False, f_ascii=True, return_figure=False):
         '''
         Saves a plot of z-distribution.
 
@@ -1117,11 +1197,11 @@ class Mainbody():
         f_interact : bool
             If true, this module returns figure ax.
         '''
-
         try:
-            fig = plt.figure(figsize=(6.5,2.5))
+            fig = plt.figure(figsize=(6.5,4))
             fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
+            ax1 = fig.add_subplot(211)
+            ax2 = fig.add_subplot(212)
             n, nbins, _ = ax1.hist(self.res_cz.flatchain['z'], bins=200, density=True, color='gray', label='')
 
             yy = np.arange(0,np.max(n),1)
@@ -1155,39 +1235,34 @@ class Mainbody():
             ax1.set_xlim(zp_min,zp_max)
             ax1.legend(loc=0)
             
-            # Save:
-            file_out = self.DIR_OUT + 'zmc_' + self.ID + '.png'
-            print('Figure is saved in %s'%file_out)
+            # # Save:
+            # file_out = self.DIR_OUT + 'zmc_' + self.ID + '.png'
+            # print('Figure is saved in %s'%file_out)
 
-            if f_interact:
-                fig.savefig(file_out, dpi=300)
-            else:
-                plt.savefig(file_out, dpi=300)
-                plt.close()
+            # if f_interact or return_figure:
+            #     fig.savefig(file_out, dpi=300)
+            # else:
+            #     plt.savefig(file_out, dpi=300)
+            #     plt.close()
         except:
             print('z-distribution figure is not generated.')
             pass
 
-
         if os.path.exists(self.file_zprob):
             # Also, make zprob;
-            fig = plt.figure(figsize=(6.5,2.5))
-            fig.subplots_adjust(top=0.96, bottom=0.16, left=0.09, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
-
             fd = ascii.read(self.file_zprob)
             z = fd['z']
             pz = fd['p(z)']
             pz /= pz.max()
 
             # prob:
-            ax1.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
+            ax2.plot(z, pz, linestyle='-', linewidth=1, color='r', label='')
 
             # Label:
-            ax1.set_xlabel('Redshift')
-            ax1.set_ylabel('$p(z)$')
+            ax2.set_xlabel('Redshift')
+            ax2.set_ylabel('$p(z)$')
             file_out = self.DIR_OUT + 'zprob_' + self.ID + '.png'
-            if f_interact:
+            if f_interact or return_figure:
                 fig.savefig(file_out, dpi=300)
             else:
                 plt.savefig(file_out, dpi=300)
@@ -1284,7 +1359,7 @@ class Mainbody():
                         self.ndim -= 1
                         self.age_vary.append(False)
                     elif self.age[aa]>agemax and not self.force_agefix:
-                        print('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
+                        self.logger.warning('At this redshift, A%d is beyond the age of universe and not being used.'%(aa))
                         fit_params.add('A'+str(aa), value=self.Amin, vary=False)
                         self.ndim -= 1
                         self.age_vary.append(False)
@@ -1305,13 +1380,13 @@ class Mainbody():
                     self.agemin = AGEFIX
                     self.agemax = AGEFIX
                     self.ndim -= 1
-                    print('AGEFIX is found. Set to %.2f'%(AGEFIX))
+                    self.logger.info('AGEFIX is found. Set to %.2f'%(AGEFIX))
                 except:
                     tcosmo = np.log10(self.cosmo.age(self.zgal).value) 
                     agemax_tmp = self.agemax
                     if agemax_tmp > tcosmo:
                         agemax_tmp = tcosmo
-                        print('Maximum age is set to the age of the univese (%.1fGyr) at this redshift.'%(self.cosmo.age(self.zgal).value))
+                        self.logger.info('Maximum age is set to the age of the univese (%.1fGyr) at this redshift.'%(self.cosmo.age(self.zgal).value))
                     if self.npeak>1:
                         if aa == 0:
                             fit_params.add('AGE%d'%aa, value=ageini, min=self.agemin, max=np.log10(1.0))
@@ -1357,7 +1432,7 @@ class Mainbody():
                 self.Avmin = 0.
                 self.Avmax = 4.
                 self.Avini = 0.5 #(Avmax-Avmin)/2. 
-                print('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
+                self.logger.info('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
                 fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
 
         #
@@ -1430,9 +1505,13 @@ class Mainbody():
         self.nmc_cz = int(self.inputs['NMCZ'])
         self.nwalk_cz = int(self.inputs['NWALKZ'])
         self.ZEVOL = int(self.inputs['ZEVOL'])
-        self.fzvis = int(self.inputs['ZVIS'])
+        nzvis = int(self.inputs['ZVIS'])
+        if nzvis == 1:
+            self.fzvis = True
+        else:
+            self.fzvis = False
         if self.f_nested:
-            print('Nested sample is on. Nelder is used for time saving analysis.')
+            self.logger.warning('Nested sample is on. Nelder is used to save time')
             self.fneld = 1 
 
         try:
@@ -1441,7 +1520,7 @@ class Mainbody():
             self.ntemp = 1
 
         try:
-            if int(inputs['DISP']) == 1:
+            if int(self.inputs['DISP']) == 1:
                 self.f_disp = True
             else:
                 self.f_disp = False
@@ -1501,7 +1580,8 @@ class Mainbody():
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
             f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
-            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_bb=True):
+            f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_photometry=True
+            ):
         '''
         Main module of this script.
 
@@ -1523,7 +1603,7 @@ class Mainbody():
             Check convergence at every certain number.
         f_plot_chain : book
             Plot MC sample chain.
-        '''
+        '''        
         # Call likelihood/prior/posterior function;
         class_post = Post(self)
 
@@ -1582,7 +1662,7 @@ class Mainbody():
         if skip_fitz:
             flag_z = 'y'
         else:
-            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
+            flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_photometry=include_photometry, fzvis=self.fzvis)
 
         #################################################
         # Gor for mcmc phase
@@ -1632,7 +1712,7 @@ class Mainbody():
             print('\n\n')
 
             ################################
-            print('\nMinimizer Defined\n')
+            self.logger.info('Minimizer Defined')
 
             print('########################')
             print('### Starting sampling ##')
@@ -1654,7 +1734,7 @@ class Mainbody():
                             aa += 1
 
                 if self.f_zeus:
-                    print('sampling with ZEUS')
+                    self.logger.info('sampling with ZEUS')
                     check_converge = False
                     f_burnin = True
                     if f_burnin:
@@ -1669,9 +1749,9 @@ class Mainbody():
                         # Run MCMC
                         nburn = int(self.nmc/10)
 
-                        print('Running burn-in')
+                        self.logger.info('Running burn-in')
                         sampler.run_mcmc(pos, nburn)
-                        print('Done burn-in')
+                        self.logger.info('Done burn-in')
 
                         # Get the burnin samples
                         burnin = sampler.get_chain()
@@ -1689,7 +1769,7 @@ class Mainbody():
                         )
 
                 else:
-                    print('sampling with EMCEE')
+                    self.logger.info('sampling with EMCEE')
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
@@ -1723,7 +1803,7 @@ class Mainbody():
                         converged = np.all(tau * 100 < sampler.iteration)
                         converged &= np.all(np.abs(old_tau - tau) / tau < nconverge)
                         if converged:
-                            print('Converged at %d/%d\n'%(index*nevery,self.nmc))
+                            self.logger.info('Converged at %d/%d\n'%(index*nevery,self.nmc))
                             nburn = int(index*nevery / 50) # Burn 50%
                             self.nmc = index*nevery
                             break
@@ -1956,9 +2036,7 @@ class Mainbody():
             self.Cz0 = Czrec0
             self.Cz1 = Czrec1
             self.Cz2 = Czrec2
-            print('\n\n')
-            print('Generating model templates with input redshift and Scale.')
-            print('\n\n')
+            self.logger.info('Generating model templates with input redshift and Scale.')
             return True
 
         else:
@@ -1977,14 +2055,12 @@ class Mainbody():
                 self.Cz2 = self.Czrec2
                 return True
             else:
-                print('\n\n')
-                print('Terminating process.')
-                print('\n\n')
+                self.logger.error('Terminating process.')
                 return False
 
 
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, 
-        f_get_templates=False, Zini=None, include_bb=True):
+        f_get_templates=False, Zini=None, include_photometry=True):
         '''Fits input data with a prepared template library, to get a chi-min result. 
         This function is being used in an example notebook.
 
@@ -1997,7 +2073,6 @@ class Mainbody():
         -------
         out, chidef, Zbest, xm_tmp, fm_tmp (if f_get_templates is set True).
         '''
-        from .posterior_flexible import Post
         print('#########')
         print('Quick fit')
         print('#########\n')
@@ -2028,16 +2103,17 @@ class Mainbody():
             # Check redshift
             ########################
             if self.fzvis:
-                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_bb=include_bb)
+                flag_z = self.fit_redshift(xm_tmp, fm_tmp, delzz=0.001, include_photometry=include_photometry, fzvis=self.fzvis)
 
             self.fzmc = 1
-            return out,chidef,Zbest, xm_tmp, fm_tmp
+            return out, chidef, Zbest, xm_tmp, fm_tmp
         else:
             self.fzmc = 1
-            return out,chidef,Zbest
+            return out, chidef, Zbest
 
 
-    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, lines=False, prior=None, method='powell'):
+    def search_redshift(self, dict, xm_tmp, fm_tmp, zliml=0.01, zlimu=6.0, delzz=0.01, 
+                        lines=False, prior=None, method='powell', include_photometry=False, f_plot=True):
         '''
         This module explores the redshift space to find the best redshift and probability distribution.
 
@@ -2068,7 +2144,7 @@ class Mainbody():
             Array of chi2 values corresponding to zspace.
         '''
         zspace = np.arange(zliml,zlimu,delzz)
-        chi2s = np.zeros((len(zspace),2), 'float')
+        chi2s = np.zeros((len(zspace),2), float)
         if prior == None:
             prior = zspace[:] * 0 + 1.0
 
@@ -2083,7 +2159,10 @@ class Mainbody():
         x1 = dict['x'][con1]
         fy1 = dict['fy'][con1]
         ey1 = dict['ey'][con1]
-        con2 = (NR>=data_len[1]+data_len[0]) & (NR<self.NRbb_lim)
+        if include_photometry:
+            con2 = (NR>=data_len[1]+data_len[0])
+        else:
+            con2 = (NR>=data_len[1]+data_len[0]) & (NR<self.NRbb_lim)
         x2 = dict['x'][con2]
         fy2 = dict['fy'][con2]
         ey2 = dict['ey'][con2]
@@ -2094,7 +2173,6 @@ class Mainbody():
         eycon = np.append(ey01,ey2)
         x01 = np.append(x0,x1)
         xobs = np.append(x01,x2)
-
         wht = 1./np.square(eycon)
         #if lines:
         #    wht2, ypoly = check_line_cz_man(fcon, xobs, wht, fm_s, z)
@@ -2108,9 +2186,8 @@ class Mainbody():
 
         def residual_z(pars,z):
             vals  = pars.valuesdict()
-
             xm_s = xm_tmp * (1+z)
-            fm_s = np.zeros(len(xm_tmp),'float')
+            fm_s = np.zeros(len(xm_tmp),float)
 
             for nn in range(len(fm_tmp[:,0])):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
@@ -2120,7 +2197,7 @@ class Mainbody():
             fm_int = fint(xobs)
 
             if fcon is None:
-                print('Data is none')
+                self.logger.warning('Data is none')
                 return fm_int
             else:
                 return (fm_int - fcon) * np.sqrt(wht2) # i.e. residual/sigma
@@ -2135,11 +2212,57 @@ class Mainbody():
             rcsq = out_cz.redchi
             fitc_cz = [csq, rcsq]
 
-            #return fitc_cz
             chi2s[zz,0] = csq
             chi2s[zz,1] = rcsq
 
         self.zspace = zspace
         self.chi2s = chi2s
 
+        if f_plot:
+            plt.close()
+            fig = plt.figure(figsize=(5,2.5))
+            ax1 = fig.add_subplot(111)
+            ax1.plot(zspace,chi2s[:,1])
+            ax1.set_ylabel('Reduced-$\chi^2$',fontsize=18)
+            ax1.set_xlabel('$z$',fontsize=18)
+            ax1.set_title('Redshift Fitting Result')
+            plt.savefig(os.path.join(self.DIR_OUT, 'zchi_%s.png'%self.ID), dpi=200)
+
         return zspace, chi2s
+
+
+    def plot_fit_result(self, out, xmin=2000, xmax=80000):
+        '''
+        out : class object
+            From minimizer.
+        '''
+        mb = self
+        # Read data with the current best-fit Cs.
+        dict = mb.read_data(mb.Cz0, mb.Cz1, mb.Cz2, mb.zgal)
+
+        plt.close()
+        fig = plt.figure(figsize=(8,2.8))
+        ax1 = fig.add_subplot(111)
+
+        # Generate the best-fit model;
+        flux_all, wave_all = mb.fnc.get_template(out, f_val=True, lib_all=True)
+
+        # Template
+        ax1.errorbar(wave_all, flux_all, ls='-', color='b', zorder=0, label='Best-fit model')
+
+        # plot;
+        if self.has_photometry:
+            ax1.scatter(dict['xbb'], dict['fybb'], marker='o', c='orange', edgecolor='k', s=150, zorder=2, alpha=1, label='Observed photometry')
+
+        if self.has_spectrum:
+            ax1.errorbar(dict['x'], dict['fy'], yerr=dict['ey'], ls='', color='gray', zorder=1, alpha=0.3)
+            ax1.scatter(dict['x'], dict['fy'], marker='o', color='r',edgecolor='r', s=10, zorder=1, alpha=1, label='Observed spectrum')
+
+        ax1.set_xlim(xmin, xmax)
+        ax1.set_xscale('log')
+
+        ax1.legend(loc=2)
+        ax1.set_xlabel('Wavelength [$\mathrm{\AA}$]')
+        ax1.set_ylabel('Flux$_\\nu$ (arb.)')
+        return fig
+    

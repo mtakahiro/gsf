@@ -8,16 +8,16 @@ from .function import check_line_cz_man
 
 def lnprob_cz(pars, zprior, prior, zliml, zlimu, args, kwargs):
     '''
+    @@@ For now, prior is not in use;
     '''
     resid = residual_z(pars, *args, **kwargs) # i.e. (data - model) * wht
     z = pars['z']
     s_z = 1 #pars['f_cz']
-    resid *= 1/s_z
+    resid *= 1 / s_z
     resid *= resid
 
     if False:
         nzz = np.argmin(np.abs(zprior-z))
-
         # For something unacceptable;
         if nzz<0 or zprior[nzz]<zliml or zprior[nzz]>zlimu or prior[nzz]<=0:
             return -np.inf
@@ -25,9 +25,15 @@ def lnprob_cz(pars, zprior, prior, zliml, zlimu, args, kwargs):
             respr = np.log(prior[nzz])
             resid += np.log(2 * np.pi * s_z**2)
             return -0.5 * np.sum(resid) + respr
+    elif z<zliml or z>zlimu:
+        print(z)
+        return -np.inf
     else:
         resid += np.log(2 * np.pi * s_z**2)
-        return -0.5 * np.sum(resid)
+        sum = np.sum(resid)
+        if np.isinf(np.abs(sum)):
+            return -np.inf
+        return -0.5 * sum
 
 
 def residual_z(pars, xm_tmp, fm_tmp, xobs, fobs, eobs, NR, data_len, NRbb_lim=10000, include_photometry=True, f_line_check=False):
@@ -113,7 +119,6 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, d
     xobs : 
         Observed spectrum. (Already scaled with Cz0prev.)
 
-
     Returns
     -------
     res_cz :
@@ -131,12 +136,18 @@ def check_redshift(fobs, eobs, xobs, fm_tmp, xm_tmp, zbest, zprior, prior, NR, d
     fit_par_cz.add('Cz0', value=1, min=0.5, max=1.5)
     fit_par_cz.add('Cz1', value=1, min=0.5, max=1.5)
     fit_par_cz.add('Cz2', value=1, min=0.5, max=1.5)
+    # Make sure that your prior has 0 in the outer range;
+    # conzpri = (zprior>=zliml) & (zprior<=zlimu)
+    # prior = prior[conzpri]
+    # zprior = zprior[conzpri]
+    # prior[0] = 0
+    # prior[-1] = 0
 
     # Get Best fit
     args_res = (xm_tmp, fm_tmp, xobs, fobs, eobs, NR, data_len)
     kwargs_res = {'include_photometry':include_photometry, 'f_line_check':f_line_check, 'NRbb_lim':NRbb_lim}
 
-    out_cz  = minimize(residual_z, fit_par_cz, args=args_res, method='nelder')
+    out_cz = minimize(residual_z, fit_par_cz, args=args_res, method='nelder')
     keys = fit_report(out_cz).split('\n')
     for key in keys:
         if key[4:7] == 'chi':
@@ -169,8 +180,10 @@ def get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp, file_zprob, rms_lim=1e
     '''
     mask = (ey_cz<rms_lim)
     prob_cz = np.zeros(len(zz_prob), float)
+ 
     fw = open(file_zprob, 'w')
     fw.write('# z p(z)\n')
+ 
     for ii in range(len(zz_prob)):
         z = zz_prob[ii]
         xm_s = xm_tmp * (1+z)
@@ -178,7 +191,6 @@ def get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp, file_zprob, rms_lim=1e
         fm_s = fint(x_cz)
 
         wht = 1./np.square(ey_cz)
-        # print(np.nansum((fm_s - fy_cz)**2 * (wht)))
         lnprob_cz = -0.5 * np.nansum( np.square((fm_s - fy_cz)[mask] * np.sqrt(wht[mask])) ) # i.e. (residual/sigma)^2
         prob_cz[ii] = np.exp(lnprob_cz)
         fw.write('%.3f %.3e\n'%(z,prob_cz[ii]))

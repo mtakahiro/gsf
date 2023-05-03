@@ -11,11 +11,23 @@ from astropy.convolution import convolve
 
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as ticker
+# import matplotlib
 
+# from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+# from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+# from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from scipy.optimize import curve_fit
+from scipy import asarray as ar,exp
+import scipy.integrate as integrate
+import scipy.special as special
+import os.path
+from astropy.io import ascii
+import time
+
+import corner
 from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv
 from .function_class import Func
 from .basic_func import Basic
-import corner
 from .maketmp_filt import get_LSF
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
@@ -24,7 +36,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
-    x1min=4000):
+    x1min=4000, return_figure=False):
     '''
     Parameters
     ----------
@@ -44,19 +56,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     plots
 
     '''
-
-    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-    from scipy.optimize import curve_fit
-    from scipy import asarray as ar,exp
-    import matplotlib
-    import scipy.integrate as integrate
-    import scipy.special as special
-    import os.path
-    from astropy.io import ascii
-    import time
-
     # if f_silence:
     #     try:
     #         import matplotlib
@@ -807,7 +806,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
 
     # For grism;
     if f_grsm:
-        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
+        LSF = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
         try:
             spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
             spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
@@ -1364,18 +1363,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     ## Save
     ####################
     ax1.legend(loc=1, fontsize=11)
+
     if figpdf:
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
 
+    if return_figure:
+        return tree_spec, fig
+
     fig.clear()
     plt.close()
+    return tree_spec
 
 
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
-    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000):
+    f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
+    return_figure=False):
     '''
     Parameters
     ----------
@@ -1394,19 +1399,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     -------
     plots
     '''
-
-    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-    from scipy.optimize import curve_fit
-    from scipy import asarray as ar,exp
-    import matplotlib
-    import scipy.integrate as integrate
-    import scipy.special as special
-    import os.path
-    from astropy.io import ascii
-    import time
-
     if f_silence:
         import matplotlib
         matplotlib.use("Agg")
@@ -2634,10 +2626,14 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ## Save
     ####################
     ax1.legend(loc=1, fontsize=11)
+
     if figpdf:
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
     else:
         fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+
+    if return_figure:
+        return fig
 
     fig.clear()
     plt.close()
@@ -2676,7 +2672,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:int=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
-    scale=1e-19, NRbb_lim=10000, save_pcl=True):
+    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False):
     '''
     Purpose
     -------
@@ -2858,7 +2854,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     ####################
     # MCMC corner plot.
     ####################
-    use_pickl = False#True#
+    use_pickl = True#False#
     samplepath = MB.DIR_OUT
     if use_pickl:
         pfile = 'chain_' + ID + '_corner.cpkl'
@@ -3321,14 +3317,16 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         ax0.plot(xx, xx * 0, linestyle='--', lw=0.5, color='k')
 
     plt.savefig(MB.DIR_OUT + 'param_' + ID + '_corner.png', dpi=150)
+    if return_figure:
+        return fig
 
 
-def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
+def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, ldw = 7, DIR_OUT='./'):
     '''
+    TBD
     '''
     dlw = R_grs * dw # Can affect the SFR.
-    ldw = 7
-
+    
     ###################################
     # To add lines in the plot,
     # ,manually edit the following file
@@ -3433,8 +3431,7 @@ def write_lines(ID, zbes, R_grs=45, dw=4, umag=1.0, DIR_OUT='./'):
 def plot_corner_physparam_frame(ID, PA, Zall=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], \
     tau0=[0.1,0.2,0.3], fig=None, dust_model=0):
     '''
-    If you like to
-    Creat temporal png for gif image.
+    Creat temporal png, for gif image.
     '''
     col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
