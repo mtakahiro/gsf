@@ -1,0 +1,8 @@
+input:
+  input_data: $GSF/test_data
+
+output:
+  outdir: $GSF/gsf_products
+
+  logprefix: $GSF/gsf_products/
+  verboselvl: 1

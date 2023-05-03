@@ -23,6 +23,8 @@ import emcee
 import zeus
 import pandas as pd
 import asdf
+import logging
+import pathlib
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err
@@ -31,6 +33,14 @@ from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
+
+from .Logger.GsfBase import GsfBase
+try:
+    GSF = os.environ['GSF']
+except ValueError:
+    print("!! make sure you have set GSF to the path of your GSF repository;\n\
+          `export GSF=/your/Github/gsf-directory/`\
+          where you can see the `config/` directory.")
 
 ############################
 py_v = (sys.version_info[0])
@@ -48,7 +58,7 @@ LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 65
 fLW = np.zeros(len(LW), dtype='int')
 
 
-class Mainbody():
+class Mainbody(GsfBase):
     '''
     The list of (possible) `Mainbody` attributes is given below:
 
@@ -68,13 +78,24 @@ class Mainbody():
         or the width to the next age bin.
     '''
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
-        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False):
+        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None):
         '''
         Parameters
         ----------
         NRbb_lim : int
             BB data is associated with ids greater than this number.
         '''
+        import gsf
+        DIR_GSF = gsf.__path__[0]
+        if configurationfile == None:
+            configurationfile = f"{GSF}/config/config.yaml"
+        super().__init__(configurationfile)
+        self.outdir = pathlib.Path('./output_log/')
+        self.outdir.mkdir(parents=True, exist_ok=True)
+        self.logger = self.logger.getLogger(__name__, "gsf")
+        self.logger.info("init class")
+        self.flat_fin = {}
+
         self.verbose = verbose
         flag_input = self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
         self.NRbb_lim = NRbb_lim
@@ -734,7 +755,8 @@ class Mainbody():
         ##############
         NR, x, fy00, ey00 = self.data['spec_obs']['NR'], self.data['spec_obs']['x'], self.data['spec_obs']['fy'], self.data['spec_obs']['ey']
         data_len = self.data['meta']['data_len']
-        if len(NR)>0:
+        con_spec = (NR<10000)
+        if len(NR[con_spec])>0:
             self.has_spectrum = True
         else:
             self.has_spectrum = False
@@ -973,9 +995,10 @@ class Mainbody():
 
             # Observed data;
             # spec;
-            con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
-            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
-            ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
+            if self.has_spectrum:
+                con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
+                ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
+                ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
             # bb;
             con = (self.dict['NR']>=self.NRbb_lim)
             ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
