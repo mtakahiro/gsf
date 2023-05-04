@@ -512,11 +512,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
     try:
         spec_files = [x.strip() for x in inputs['SPEC_FILE'].split(',')]
-        ninp0 = np.zeros(len(spec_files), dtype='int')
     except:
         spec_files = []
         MB.logger.info('No spec file is provided.')
         pass
+    ninp0 = np.zeros(len(spec_files), dtype='int')
 
     # THIS PART IS JUST TO GET THE TOTAL ARRAY NUMBER;
     for ff, spec_file in enumerate(spec_files):

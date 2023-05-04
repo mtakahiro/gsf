@@ -1323,9 +1323,7 @@ class Mainbody(GsfBase):
         '''
         Set parameters.
         '''
-        print('##################')
-        print('Setting parameters')
-        print('##################\n')
+        self.logger.info('Setting parameters')
         agemax = self.cosmo.age(self.zgal).value 
         fit_params = Parameters()
         f_Alog = True
@@ -1483,9 +1481,7 @@ class Mainbody(GsfBase):
     def prepare_class(self, add_fir=None):
         '''
         '''
-        print('#################')
-        print('Preparing library')
-        print('#################\n')
+        self.logger.info('Preparing library')
         # Load Spectral library;
         self.lib = self.fnc.open_spec_fits(fall=0)
         self.lib_all = self.fnc.open_spec_fits(fall=1, orig=True)
@@ -1703,21 +1699,11 @@ class Mainbody(GsfBase):
                     except:
                         out.params['Z0'].value = out_keep.params['Z0'].value
 
-
             ##############################
-            print('\n\n')
-            print('###############################')
-            print('Input redshift is adopted.')
-            print('Starting long journey in MCMC.')
-            print('###############################')
-            print('\n\n')
-
-            ################################
-            self.logger.info('Minimizer Defined')
-
-            print('########################')
-            print('### Starting sampling ##')
-            print('########################\n')
+            self.logger.info('Input redshift is adopted')
+            self.logger.info('Starting MCMC')
+            # self.logger.info('Minimizer Defined')
+            # self.logger.info('Starting sampling')
             start_mc = timeit.default_timer()
 
             # MCMC;

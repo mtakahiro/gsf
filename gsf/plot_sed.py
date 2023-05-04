@@ -36,7 +36,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
-    x1min=4000, return_figure=False):
+    x1min=4000, return_figure=False, lcb='#4682b4'):
     '''
     Parameters
     ----------
@@ -56,25 +56,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     plots
 
     '''
-    # if f_silence:
-    #     try:
-    #         import matplotlib
-    #         matplotlib.use("Agg")
-    #     except:
-    #         print('matplotlib Agg backend is not found.')
-    #         pass
-    # else:
-    #     try:
-    #         matplotlib.use("MacOSX")
-    #     except:
-    #         pass
-
-    def gaus(x,a,x0,sigma):
-        return a*exp(-(x-x0)**2/(2*sigma**2))
-
-    print('\n### Running plot_sed ###\n')
-
-    lcb = '#4682b4' # line color, blue
+    MB.logger.info('Running plot_sed')
 
     fnc  = MB.fnc 
     bfnc = MB.bfnc
@@ -132,7 +114,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     M50 = hdul[1].data['ms'][1]
     M84 = hdul[1].data['ms'][2]
     if verbose:
-        print('Total stellar mass is %.2e'%(M50))
+        MB.logger.info('Total stellar mass is %.2e'%(M50))
 
     # Amplitude MC
     A50 = np.zeros(len(age), dtype='float')
@@ -186,7 +168,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
-            print('Total dust mass is %.2e'%(MD50))
+            MB.logger.info('Total dust mass is %.2e'%(MD50))
 
     chi = hdul[1].data['chi'][0]
     chin = hdul[1].data['chi'][1]
@@ -286,7 +268,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             ax3t = ax1.inset_axes((0.7,.35,.28,.25))
 
         f_plot_resid = False
-        print('Grism data. f_plot_resid is turned off.')
+        MB.logger.info('Grism data. f_plot_resid is turned off.')
     else:
         if f_plot_resid:
             fig_mosaic = """
@@ -312,7 +294,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
             scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d))) / 10
         else:
             scale = 1e-19
-            print('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
+            MB.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
     d = MB.d * scale
 
     #######################################
@@ -612,7 +594,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
     DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm #, **cosmo) # Luminositydistance in cm
     Cons = (4.*np.pi*DL**2/(1.+zbes))
     if f_grsm:
-        print('This function (write_lines) needs to be revised.')
+        MB.logger.warning('This function (write_lines) needs to be revised.')
         write_lines(ID, zbes, DIR_OUT=MB.DIR_OUT)
 
 
@@ -847,7 +829,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=Fal
                 ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=-3)
             ysumtmp2_prior[:] = np.percentile(ysumtmp2[:, :], 50, axis=0)
     elif f_fill:
-        print('f_fancyplot is False. f_fill is set to False.')
+        MB.logger.info('f_fancyplot is False. f_fill is set to False.')
 
     # Calculate non-det chi2
     # based on Sawick12
