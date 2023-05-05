@@ -141,12 +141,11 @@ def check_library(MB, af, nround=3):
     
     flag = True
     MB.logger.info('Checking the template library...')
-    print('Speficied - Template')
 
     # No. of age;
     if MB.SFH_FORM==-99:
         if len(af['ML']['ms_0']) != len(MB.age):
-            print('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
+            MB.logger.error('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
             flag = False
     else:
         flag = True
@@ -154,35 +153,38 @@ def check_library(MB, af, nround=3):
     # Matallicity:
     for aa in range(len(Zall)):
         if Zall[aa] != af['Z%d'%(aa)]:
-            print('Z:', Zall[aa], af['Z%d'%(aa)])
+            MB.logger.error('Z:', Zall[aa], af['Z%d'%(aa)])
             flag = False
 
     if MB.SFH_FORM==-99:
         # Age:
         for aa in range(len(MB.age)):
             if round(MB.age[aa],nround) != round(af['age%d'%(aa)],nround):
-                print('age:', MB.age[aa], af['age%d'%(aa)])
+                MB.logger.error('age:', MB.age[aa], af['age%d'%(aa)])
                 flag = False
         # Tau (e.g. ssp/csp):
         for aa in range(len(MB.tau0)):
             if round(MB.tau0[aa]) != round(af['tau0%d'%(aa)]):
-                print('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
+                MB.logger.error('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
                 flag = False
     else:
         # Age:
         for aa in range(len(MB.ageparam)):
             if round(MB.ageparam[aa]) != round(af['age%d'%(aa)]):
-                print('age:', MB.ageparam[aa], af['age%d'%(aa)])
+                MB.logger.error('age:', MB.ageparam[aa], af['age%d'%(aa)])
                 flag = False
         for aa in range(len(MB.tau)):
             if round(MB.tau[aa]) != round(af['tau%d'%(aa)]):
-                print('tau:', MB.tau[aa], af['tau%d'%(aa)])
+                MB.logger.error('tau:', MB.tau[aa], af['tau%d'%(aa)])
                 flag = False
 
     # IMF:
     if MB.nimf != af['nimf']:
-        print('nimf:', MB.nimf, af['nimf'])
+        MB.logger.error('nimf:', MB.nimf, af['nimf'])
         flag = False
+
+    if not flag:
+        MB.logger.error('# Specified - Template')
 
     return flag
 
