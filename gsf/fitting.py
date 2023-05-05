@@ -992,12 +992,13 @@ class Mainbody(GsfBase):
             # Observed data;
             # spec;
             if self.has_spectrum:
-                con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
+                ey_max = 1000
+                con = (self.dict['ey']<ey_max) & (self.dict['NR']<self.NRbb_lim) & (self.dict['ey']>=0)
                 ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
                 ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
             # bb;
             if include_photometry:
-                con = (self.dict['NR']>=self.NRbb_lim)
+                con = (self.dict['NR']>=self.NRbb_lim) & (self.dict['ey']>=0)
                 ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
                     color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
                 ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
