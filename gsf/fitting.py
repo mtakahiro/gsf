@@ -992,15 +992,17 @@ class Mainbody(GsfBase):
             # Observed data;
             # spec;
             if self.has_spectrum:
-                con = (self.dict['ey']<1000) & (self.dict['NR']<self.NRbb_lim)
+                ey_max = 1000
+                con = (self.dict['ey']<ey_max) & (self.dict['NR']<self.NRbb_lim) & (self.dict['ey']>=0)
                 ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
                 ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
             # bb;
-            con = (self.dict['NR']>=self.NRbb_lim)
-            ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
-                color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
-            ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
-                color='orange', edgecolor='k', label='Observed photometry', zorder=4)
+            if include_photometry:
+                con = (self.dict['NR']>=self.NRbb_lim) & (self.dict['ey']>=0)
+                ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
+                    color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
+                ax1.scatter(self.dict['x'][con], self.dict['fy'][con], s=100, marker='o', 
+                    color='orange', edgecolor='k', label='Observed photometry', zorder=4)
 
             # Write prob distribution;
             get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
@@ -1322,9 +1324,7 @@ class Mainbody(GsfBase):
         '''
         Set parameters.
         '''
-        print('##################')
-        print('Setting parameters')
-        print('##################\n')
+        self.logger.info('Setting parameters')
         agemax = self.cosmo.age(self.zgal).value 
         fit_params = Parameters()
         f_Alog = True
@@ -1482,9 +1482,7 @@ class Mainbody(GsfBase):
     def prepare_class(self, add_fir=None):
         '''
         '''
-        print('#################')
-        print('Preparing library')
-        print('#################\n')
+        self.logger.info('Preparing library')
         # Load Spectral library;
         self.lib = self.fnc.open_spec_fits(fall=0)
         self.lib_all = self.fnc.open_spec_fits(fall=1, orig=True)
@@ -1702,21 +1700,11 @@ class Mainbody(GsfBase):
                     except:
                         out.params['Z0'].value = out_keep.params['Z0'].value
 
-
             ##############################
-            print('\n\n')
-            print('###############################')
-            print('Input redshift is adopted.')
-            print('Starting long journey in MCMC.')
-            print('###############################')
-            print('\n\n')
-
-            ################################
-            self.logger.info('Minimizer Defined')
-
-            print('########################')
-            print('### Starting sampling ##')
-            print('########################\n')
+            self.logger.info('Input redshift is adopted')
+            self.logger.info('Starting MCMC')
+            # self.logger.info('Minimizer Defined')
+            # self.logger.info('Starting sampling')
             start_mc = timeit.default_timer()
 
             # MCMC;

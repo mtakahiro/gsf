@@ -42,7 +42,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         import matplotlib
         matplotlib.use("Agg")
 
-    print('\n### Running plot_sfh ###\n')
+    MB.logger.info('Running plot_sfh')
+
     fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
@@ -276,7 +277,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
                 pass
     except:
         if verbose:
-            print('No simulation file (%s).\nError may be underestimated.' % meanfile)
+            MB.logger.warning('No simulation file (%s).\nError may be underestimated.' % meanfile)
         eA = age * 0
         eZ = age * 0
         eAv = 0
@@ -470,7 +471,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
         if verbose:
-            print('Failed to call rejuvenation module.')
+            MB.logger.warning('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?

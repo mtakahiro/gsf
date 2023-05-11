@@ -24,12 +24,12 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     Czrec1 = self.Cz1
     Czrec2 = self.Cz2
 
-    try:
+    if self.fzvis:
         z_cz = self.z_cz_prev
         scl_cz0 = self.scl_cz0
         scl_cz1 = self.scl_cz1
         scl_cz2 = self.scl_cz2
-    except: # When redshiftfit is skipped.
+    else: # When redshiftfit is skipped.
         z_cz = np.asarray([self.zgal,self.zgal,self.zgal])
         scl_cz0 = np.asarray([self.Cz0,self.Cz0,self.Cz0])
         scl_cz1 = np.asarray([self.Cz1,self.Cz1,self.Cz1])

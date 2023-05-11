@@ -87,7 +87,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
     f_prior_sfh=False, norder_sfh_prior=3, 
     f_shuffle=False, amp_shuffle=1e-2, Zini=None, tau_lim=0.001,
     skip_sfh=False, f_fancyplot=False, skip_zhist=False, f_sfh_yaxis_force=True, tset_SFR_SED=0.1, 
-    nthin=1, delwave=1, f_plot_resid=False, scale=1e-19, f_plot_filter=True,
+    nthin=1, delwave=1, f_plot_resid=False, scale=None, f_plot_filter=True,
     mmax_param:int=1000
     ):
     '''
