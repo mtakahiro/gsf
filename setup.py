@@ -55,7 +55,7 @@ setup(
     license = "IPAC",
     url = "https://github.com/mtakahiro",
     download_url = "https://github.com/",
-    packages=['gsf'],
+    packages=['gsf', 'gsf/Logger/'],
     package_dir={'gsf': 'gsf'},
     requires=['lmfit', 'fsps', 'emcee', 'corner'],
     use_scm_version=True,

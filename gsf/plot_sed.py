@@ -497,21 +497,27 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     #############
     # Main result
     #############
-    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
-    if len(fybb[conbb_ymax]):
-        ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
+    if MB.has_photometry:
+        conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
+        if len(fybb[conbb_ymax]):
+            ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
+        else:
+            ymax = np.nanmax(fybb*c/np.square(xbb)/d_scale) * 1.6
     else:
-        ymax = np.nanmax(fybb*c/np.square(xbb)/d_scale) * 1.6
+        ymax = None
 
     ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
     ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
 
     x1max = 100000
-    if x1max < np.nanmax(xbb):
-        x1max = np.nanmax(xbb) * 1.5
-    if len(fybb[conbb_ymax]):
-        if x1min > np.nanmin(xbb[conbb_ymax]):
-            x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+    if MB.has_photometry:
+        if x1max < np.nanmax(xbb):
+            x1max = np.nanmax(xbb) * 1.5
+        if len(fybb[conbb_ymax]):
+            if x1min > np.nanmin(xbb[conbb_ymax]):
+                x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+    else:
+        x1min = 2000
 
     xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
     xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
@@ -530,26 +536,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         scl_yaxis = 0.2
     else:
         scl_yaxis = 0.1
-    ax1.set_ylim(-ymax*scl_yaxis,ymax)
 
-    if False:
-        ax1.text(x1min+100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=7)
+    if not ymax == None:
+        ax1.set_ylim(-ymax*scl_yaxis,ymax)
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
-
-    if False:
-        dely1 = 0.5
-        while (ymax-0)/dely1<1:
-            dely1 /= 2.
-        while (ymax-0)/dely1>4:
-            dely1 *= 2.
-
-        y1ticks = np.arange(0, ymax, dely1)
-        ax1.set_yticks(y1ticks)
-        ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
-        ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-        ax1.yaxis.labelpad = 1.5
 
     xx = np.arange(100,400000)
     yy = xx * 0
@@ -612,9 +604,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         egrism = np.concatenate([eg0,eg1,eg2])
         con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
         con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
-        print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
-        print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
 
+        MB.logger.info('Median SN at 3400-3800 is; %.1f'%np.median((fgrism/egrism)[con4000b]))
+        MB.logger.info('Median SN at 4200-5000 is; %.1f'%np.median((fgrism/egrism)[con4000r]))
+
+        if MB.has_spectrum and not MB.has_photometry:
+            con_spec = (eg2 < 1000)
+            ax1.errorbar(xg2[con_spec], (fg2 * c/np.square(xg2)/d_scale)[con_spec], yerr=(eg2 * c/np.square(xg2)/d_scale)[con_spec], lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+            con_spec = (eg1 < 1000)
+            ax1.errorbar(xg1[con_spec], (fg1 * c/np.square(xg1)/d_scale)[con_spec], yerr=(eg1 * c/np.square(xg1)/d_scale)[con_spec], lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
+            con_spec = (eg0 < 1000)
+            ax1.errorbar(xg0[con_spec], (fg0 * c/np.square(xg0)/d_scale)[con_spec], yerr=(eg0 * c/np.square(xg0)/d_scale)[con_spec], lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
     #
     # From MCMC chain
@@ -1218,11 +1218,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))#, fin_chi2)
-            ylabel = ymax*0.45
         else:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
             %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))
-            ylabel = ymax*0.25
 
         if f_grsm:
             ax1.text(0.02, 0.68, label,\
@@ -3121,9 +3119,13 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         else:
             scl_yaxis = 0
 
-        ymax_bb = np.max(fybb[conbb] * c / np.square(xbb[conbb]) /d_scale) * 1.10
-        ymax_temp = np.max(ysum * c/ np.square(x0) /d_scale) * 1.10
-        ymax = np.max([ymax_bb, ymax_temp])
+        try:
+            ymax_bb = np.max(fybb[conbb] * c / np.square(xbb[conbb]) /d_scale) * 1.10
+            ymax_temp = np.max(ysum * c/ np.square(x0) /d_scale) * 1.10
+            ymax = np.max([ymax_bb, ymax_temp])
+        except:
+            ymax_temp = np.max(ysum * c/ np.square(x0) /d_scale) * 1.10
+            ymax = np.max(ymax_temp)
 
         # Convert into log
         Ztmp[kk] /= ACtmp[kk]
