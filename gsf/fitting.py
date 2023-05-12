@@ -326,10 +326,10 @@ class Mainbody(GsfBase):
             self.filts = [x.strip() for x in self.filts.split(',')]
         except:
             self.filts = []
-            for column in self.fd_cat.columns:
-                if column[0] == 'F':
-                    self.filts.append(column[1:])
-            pass
+            if not isinstance(self.fd_cat, type(None)):
+                for column in self.fd_cat.columns:
+                    if column[0] == 'F':
+                        self.filts.append(column[1:])
 
         self.band = {}
         for ii in range(len(self.filts)):
@@ -990,14 +990,13 @@ class Mainbody(GsfBase):
             # ax1.plot(data_model_sort[:,0], data_model_sort[:,1], 'b', linestyle='--', linewidth=0.5, label='')
 
             # Observed data;
-            # spec;
             if self.has_spectrum:
                 ey_max = 1000
                 con = (self.dict['ey']<ey_max) & (self.dict['NR']<self.NRbb_lim) & (self.dict['ey']>=0)
                 ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], color='gray', capsize=0, linewidth=0.5, linestyle='', zorder=4)
                 ax1.plot(self.dict['x'][con], self.dict['fy'][con], '.r', linestyle='', linewidth=0.5, label='Observed spectrum', zorder=4)
-            # bb;
-            if include_photometry:
+
+            if include_photometry and self.has_photometry:
                 con = (self.dict['NR']>=self.NRbb_lim) & (self.dict['ey']>=0)
                 ax1.errorbar(self.dict['x'][con], self.dict['fy'][con], yerr=self.dict['ey'][con], ms=15, marker='None', 
                     color='orange', capsize=0, linewidth=0.5, ls='None', label='', zorder=4)
@@ -1147,13 +1146,13 @@ class Mainbody(GsfBase):
 
         print('\n##############################################################')
         print('Input redshift is %.3f per cent agreement.'%((1.-zsigma)*100))
-        print('Error is %.3f per cent.'%(zzsigma*100))
+        print('Estimated error is %.3f per cent.'%(zzsigma*100))
         print('Input Cz0 is %.3f per cent agreement.'%((1.-C0sigma)*100))
-        print('Error is %.3f per cent.'%(eC0sigma*100))
+        print('Estimated error is %.3f per cent.'%(eC0sigma*100))
         print('Input Cz1 is %.3f per cent agreement.'%((1.-C1sigma)*100))
-        print('Error is %.3f per cent.'%(eC1sigma*100))
+        print('Estimated error is %.3f per cent.'%(eC1sigma*100))
         print('Input Cz2 is %.3f per cent agreement.'%((1.-C2sigma)*100))
-        print('Error is %.3f per cent.'%(eC2sigma*100))
+        print('Estimated error is %.3f per cent.'%(eC2sigma*100))
         print('##############################################################\n')
 
         if fzvis==1:
@@ -1209,8 +1208,9 @@ class Mainbody(GsfBase):
             yy = np.arange(0,np.max(n),1)
             xx = yy * 0 + self.z_cz[1]
             ax1.plot(xx,yy,linestyle='-',linewidth=1,color='orangered',\
-                label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_{z0}=%.3f$\n$C_{z1}=%.3f$\n$C_{z2}=%.3f$'%\
-                (self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1], self.Cz0, self.Cz1, self.Cz2))
+                # label='$z=%.5f_{-%.5f}^{+%.5f}$\n$C_{z0}=%.3f$\n$C_{z1}=%.3f$\n$C_{z2}=%.3f$'%\
+                label='$z=%.5f_{-%.5f}^{+%.5f}$'%\
+                (self.z_cz[1],self.z_cz[1]-self.z_cz[0],self.z_cz[2]-self.z_cz[1]))
 
             if f_ascii:
                 file_ascii_out = self.DIR_OUT + 'zmc_' + self.ID + '.txt'

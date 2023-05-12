@@ -1260,9 +1260,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             MB.data['spec_fir_obs'] = dict_spec_fir_obs
 
         # BB phot
+        MB.has_photometry = False
         fw = open(file_tmp,'w')
         fw_rem = open(file_tmp2, 'w')
         for ii in range(len(ltmpbb[0,:])):
+            MB.has_photometry = True
             if SFILT[ii] in SKIPFILT:# data point to be skiped;
                 fw.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], 0.0, fbb[ii], FWFILT[ii]/2., SFILT[ii]))
                 fw_rem.write('%d %.5f %.5e %.5e %.1f %s\n'%(ii+ncolbb, ltmpbb[0,ii], fbb[ii], ebb[ii], FWFILT[ii]/2., SFILT[ii]))
@@ -1276,23 +1278,24 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         fw_rem.close()
 
         # register;
-        dat = ascii.read(file_tmp, format='no_header')
-        NRbb = dat['col1']
-        xbb  = dat['col2']
-        fybb = dat['col3']
-        eybb = dat['col4']
-        exbb = dat['col5']
-        dict_bb_obs = {'NR':NRbb, 'x':xbb, 'fy':fybb, 'ey':eybb, 'ex':exbb}
-        MB.data['bb_obs'] = dict_bb_obs
-        if len(SKIPFILT)>0:#try:
-            dat = ascii.read(file_tmp2, format='no_header')
-            NR_ex = dat['col1']
-            x_ex = dat['col2']
-            fy_ex = dat['col3']
-            ey_ex = dat['col4']
-            ex_ex = dat['col5']
-            dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
-            MB.data['bb_obs_removed'] = dict_bb_obs_removed
+        if MB.has_photometry:
+            dat = ascii.read(file_tmp, format='no_header')
+            NRbb = dat['col1']
+            xbb  = dat['col2']
+            fybb = dat['col3']
+            eybb = dat['col4']
+            exbb = dat['col5']
+            dict_bb_obs = {'NR':NRbb, 'x':xbb, 'fy':fybb, 'ey':eybb, 'ex':exbb}
+            MB.data['bb_obs'] = dict_bb_obs
+            if len(SKIPFILT)>0:#try:
+                dat = ascii.read(file_tmp2, format='no_header')
+                NR_ex = dat['col1']
+                x_ex = dat['col2']
+                fy_ex = dat['col3']
+                ey_ex = dat['col4']
+                ex_ex = dat['col5']
+                dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
+                MB.data['bb_obs_removed'] = dict_bb_obs_removed
 
         # Dust; Not sure where this is being used...
         fw = open(file_tmp,'w')
