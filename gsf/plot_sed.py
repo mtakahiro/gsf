@@ -2653,7 +2653,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:int=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
-    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False, SNlim=1):
+    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False, SNlim=1, tset_SFR_SED=0.1):
     '''
     Purpose
     -------
@@ -2725,7 +2725,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
     ZZ50 = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
     chi = hdul[1].data['chi'][0]
@@ -2739,9 +2738,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
 
     # plot Configuration
     if MB.fzmc == 1:
-        Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$', '$z$']
+        Par = ['$\log M_*/M_\odot$', '$\log SFR/M_\odot \mathrm{yr}^{-1}$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$', '$z$']
     else:
-        Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
+        Par = ['$\log M_*/M_\odot$', '$\log SFR/M_\odot \mathrm{yr}^{-1}$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
 
     K = len(Par) # No of params.
     factor = 2.0           # size of one side of one panel
@@ -2878,7 +2877,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     Ztmp = np.zeros(mmax, dtype=float)
     Ttmp = np.zeros(mmax, dtype=float)
     ACtmp = np.zeros(mmax, dtype=float)
+    SFtmp = np.zeros(mmax, dtype=float)
     redshifttmp = np.zeros(mmax, dtype=float)
+
+    # SED-based SFR;
+    SFR_SED = np.zeros(mmax,dtype=float)
 
     # Time bin
     Tuni = MB.cosmo.age(zbes).value
@@ -2925,6 +2928,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
 
     files = [] # For gif animation
     SFmax = 0
+    SFmin = 0
     Tsmin = 0
     Tsmax = 0
     Zsmin = 0
@@ -2932,6 +2936,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     AMtmp = 0
     AMtmp16 = 0
     AMtmp84 = 0
+    SFmaxmc = 0
+    SFminmc = 0
+    delt_tmp = 0
 
     for ii in range(len(age)):
 
@@ -2975,23 +2982,32 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Zsmax += 10**ZZ_tmp84 * AA_tmp84 * mslist
         Zsmin += 10**ZZ_tmp16 * AA_tmp16 * mslist
 
-        SFtmp = AA_tmp * mslist / delT[ii]
-        if SFtmp > SFmax:
-            SFmax = SFtmp
+        SFmaxtmp = AA_tmp * mslist / delT[ii]
+        if SFmaxtmp > SFmax:
+            SFmax = SFmaxtmp
+        SFmin = AMtmp16 / delT[ii]
+
+        if age[ii]<=tset_SFR_SED:
+            SFmaxmc += mslist*AA_tmp84
+            SFminmc += mslist*AA_tmp16
+            delt_tmp += delT[ii]
+
+    SFmaxmc /= delt_tmp
+    SFminmc /= delt_tmp
+
     if SFmax > 0.5e4:
         SFmax = 0.5e4
 
-    delM = np.log10(M84) - np.log10(M16)
     if MB.fzmc == 1:
         if use_pickl:
-            NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
-            NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
+            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
         else:
-            NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
-            NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
+            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
     else:
-        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
-        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
+        NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
+        NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
 
     # For redshift
     if zbes<2:
@@ -3016,7 +3032,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         if Tzz[zz] < TMIN:
             Tzz[zz] = TMIN
 
-
     def density_estimation(m1, m2):
         xmin, xmax = np.min(m1), np.max(m1)
         ymin, ymax = np.min(m2), np.max(m2)
@@ -3027,11 +3042,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Z = np.reshape(kernel(positions).T, X.shape)
         return X, Y, Z
 
-
     for kk in range(0,mmax,1):
-
+        delt_tot = 0
         nr = np.random.randint(nshape_sample)
-        
         try:
             Avtmp[kk] = samples['Av'][nr]
         except:
@@ -3067,8 +3080,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
             lmtmp[kk] += AA_tmp * mslist
             Ztmp[kk] += (10 ** ZZ_tmp) * AA_tmp * mslist
             Ttmp[kk] += age[ii] * AA_tmp * mslist
-
             ACtmp[kk] += AA_tmp * mslist
+
+            if age[ii]<=tset_SFR_SED:
+                SFR_SED[kk] += AA_tmp * mslist
+                delt_tot += delT[ii]
 
             if MB.fzmc == 1:
                 redshifttmp[kk] = samples['zmc'][nr]
@@ -3094,6 +3110,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                 ysum += y0_r
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0_r * c/ np.square(x0) /d_scale, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
+
+        SFR_SED[kk] /= delt_tot
+        if SFR_SED[kk] > 0:
+            SFR_SED[kk] = np.log10(SFR_SED[kk])
+        else:
+            SFR_SED[kk] = -99
 
         for ss in range(len(age)):
             ii = ss # from old to young templates.
@@ -3137,9 +3159,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Ttmp[kk] = np.log10(Ttmp[kk])
 
         if MB.fzmc == 1:
-            NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
+            NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
         else:
-            NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
+            NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
         # This should happen at the last kk;
         if kk == mmax-1:
@@ -3163,7 +3185,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                     # ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
                     # ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
                 except:
-                    print('Failed at i,x=',i,x)
+                    MB.logger.warning('Failed at i,x=%d,%d'%(i,x))
 
                 ax.set_xlim(x1min, x1max)
                 ax.set_yticklabels([])
@@ -3175,9 +3197,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
             # save pck;
             if save_pcl:
                 if MB.fzmc == 1:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
                 else:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
 
                 use_pickl = False
                 if use_pickl:
