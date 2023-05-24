@@ -656,6 +656,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(mmax, dtype='float') # For Muv
+    Fuv16   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv16   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Fuv28   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
@@ -753,10 +755,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
             ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
 
-        # Get FUV flux density;
+        # Get FUV flux density at 10pc;
         Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
         Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk] = 0
+
+        fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
+        Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zbes), fnu_tmp / (1+zbes) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
 
         # Get UVJ Color;
         _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
@@ -1051,15 +1056,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         try:
             # Muv
-            MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
             hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
             hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
             hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Flam to Fnu
-            hdr['LUV16'] = 10**(-0.4*hdr['MUV16'])
-            hdr['LUV50'] = 10**(-0.4*hdr['MUV50'])
-            hdr['LUV84'] = 10**(-0.4*hdr['MUV84'])
+            hdr['LUV16'] = np.nanpercentile(Luv16, 16) #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            hdr['LUV50'] = np.nanpercentile(Luv16, 50) #10**(-0.4*hdr['MUV50']) * MB.Lsun #* 4 * np.pi * DL10**2
+            hdr['LUV84'] = np.nanpercentile(Luv16, 84) #10**(-0.4*hdr['MUV84']) * MB.Lsun #* 4 * np.pi * DL10**2
 
             # Fuv (!= flux of Muv)
             hdr['FUV16'] = np.percentile(Fuv28[:],16)
@@ -1081,6 +1085,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['UVBETA16'] = beta_16
         hdr['UVBETA50'] = beta_50
         hdr['UVBETA84'] = beta_84
+
+        # SFR from attenuation corrected LUV;
+        # Meurer+99, Smit+16;
+        A1600 = 4.43 + 1.99 * np.asarray([beta_16,beta_50,beta_84])
+        SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
+        hdr['SFRUV_ANGS'] = 1600
+        hdr['SFRUV16'] = SFRUV[0]
+        hdr['SFRUV50'] = SFRUV[1]
+        hdr['SFRUV84'] = SFRUV[2]
 
         # UVJ
         try:
