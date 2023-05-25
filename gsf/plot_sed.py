@@ -25,7 +25,7 @@ from astropy.io import ascii
 import time
 
 import corner
-from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv
+from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv,get_uvbeta
 from .function_class import Func
 from .basic_func import Basic
 from .maketmp_filt import get_LSF
@@ -663,8 +663,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
+    # UV beta;
+    betas = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+
     # From random chain;
-    alp=0.02
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
         try:
@@ -756,15 +758,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
 
         # Get FUV flux density at 10pc;
-        Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
-        Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
+        Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
+        Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk] = 0
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
-        Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zbes), fnu_tmp / (1+zbes) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
 
-        # Get UVJ Color;
-        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
+        betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
+
+        # Get RF Color;
+        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
         UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
@@ -1066,9 +1070,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             hdr['LUV84'] = np.nanpercentile(Luv16, 84) #10**(-0.4*hdr['MUV84']) * MB.Lsun #* 4 * np.pi * DL10**2
 
             # Fuv (!= flux of Muv)
-            hdr['FUV16'] = np.percentile(Fuv28[:],16)
-            hdr['FUV50'] = np.percentile(Fuv28[:],50)
-            hdr['FUV84'] = np.percentile(Fuv28[:],84)
+            # hdr['FUV16'] = np.percentile(Fuv28[:],16)
+            # hdr['FUV50'] = np.percentile(Fuv28[:],50)
+            # hdr['FUV84'] = np.percentile(Fuv28[:],84)
 
             # # LIR
             # hdr['LIR16'] = np.percentile(Lir[:],16)
@@ -1077,18 +1081,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         except:
             pass
 
-        # UV beta;
-        from .function import get_uvbeta
-        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
-        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
-        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
-        hdr['UVBETA16'] = beta_16
-        hdr['UVBETA50'] = beta_50
-        hdr['UVBETA84'] = beta_84
+        # # UV beta;
+        # from .function import get_uvbeta
+        betas_med = np.nanpercentile(betas, [16,50,84])
+        # beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        # beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        # beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = betas_med[0]
+        hdr['UVBETA50'] = betas_med[1]
+        hdr['UVBETA84'] = betas_med[2]
 
         # SFR from attenuation corrected LUV;
         # Meurer+99, Smit+16;
-        A1600 = 4.43 + 1.99 * np.asarray([beta_16,beta_50,beta_84])
+        A1600 = 4.43 + 1.99 * np.asarray(betas_med)
         SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
         hdr['SFRUV16'] = SFRUV[0]
