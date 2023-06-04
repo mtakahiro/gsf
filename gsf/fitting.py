@@ -717,12 +717,12 @@ class Mainbody(GsfBase):
             self.force_agefix = False
 
         # SFH prior;
-        # try:
-        #     self.norder_sfh_prior = int(inputs['norder_sfh_prior'])
-        #     self.f_prior_sfh = True
-        # except:
-        #     self.norder_sfh_prior = None
-        #     self.f_prior_sfh = False
+        try:
+            self.norder_sfh_prior = int(inputs['norder_sfh_prior'])
+            self.f_prior_sfh = True
+        except:
+            self.norder_sfh_prior = None
+            self.f_prior_sfh = False
 
         self.logger.info('Complete')
         return True

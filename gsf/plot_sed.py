@@ -25,7 +25,7 @@ from astropy.io import ascii
 import time
 
 import corner
-from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv
+from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv,get_uvbeta
 from .function_class import Func
 from .basic_func import Basic
 from .maketmp_filt import get_LSF
@@ -656,13 +656,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(mmax, dtype='float') # For Muv
+    Fuv16   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv16   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Fuv28   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
+    # UV beta;
+    betas = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+
     # From random chain;
-    alp=0.02
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
         try:
@@ -753,13 +757,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
             ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
 
-        # Get FUV flux density;
-        Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
-        Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
+        # Get FUV flux density at 10pc;
+        Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
+        Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk] = 0
 
-        # Get UVJ Color;
-        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
+        fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
+        Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+
+        betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
+
+        # Get RF Color;
+        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
         UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
         UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
@@ -1051,20 +1060,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         try:
             # Muv
-            MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
             hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
             hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
             hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Flam to Fnu
-            hdr['LUV16'] = 10**(-0.4*hdr['MUV16'])
-            hdr['LUV50'] = 10**(-0.4*hdr['MUV50'])
-            hdr['LUV84'] = 10**(-0.4*hdr['MUV84'])
+            hdr['LUV16'] = np.nanpercentile(Luv16, 16) #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            hdr['LUV50'] = np.nanpercentile(Luv16, 50) #10**(-0.4*hdr['MUV50']) * MB.Lsun #* 4 * np.pi * DL10**2
+            hdr['LUV84'] = np.nanpercentile(Luv16, 84) #10**(-0.4*hdr['MUV84']) * MB.Lsun #* 4 * np.pi * DL10**2
 
             # Fuv (!= flux of Muv)
-            hdr['FUV16'] = np.percentile(Fuv28[:],16)
-            hdr['FUV50'] = np.percentile(Fuv28[:],50)
-            hdr['FUV84'] = np.percentile(Fuv28[:],84)
+            # hdr['FUV16'] = np.percentile(Fuv28[:],16)
+            # hdr['FUV50'] = np.percentile(Fuv28[:],50)
+            # hdr['FUV84'] = np.percentile(Fuv28[:],84)
 
             # # LIR
             # hdr['LIR16'] = np.percentile(Lir[:],16)
@@ -1073,14 +1081,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         except:
             pass
 
-        # UV beta;
-        from .function import get_uvbeta
-        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
-        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
-        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
-        hdr['UVBETA16'] = beta_16
-        hdr['UVBETA50'] = beta_50
-        hdr['UVBETA84'] = beta_84
+        # # UV beta;
+        # from .function import get_uvbeta
+        betas_med = np.nanpercentile(betas, [16,50,84])
+        # beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        # beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        # beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = betas_med[0]
+        hdr['UVBETA50'] = betas_med[1]
+        hdr['UVBETA84'] = betas_med[2]
+
+        # SFR from attenuation corrected LUV;
+        # Meurer+99, Smit+16;
+        A1600 = 4.43 + 1.99 * np.asarray(betas_med)
+        SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
+        hdr['SFRUV_ANGS'] = 1600
+        hdr['SFRUV16'] = SFRUV[0]
+        hdr['SFRUV50'] = SFRUV[1]
+        hdr['SFRUV84'] = SFRUV[2]
 
         # UVJ
         try:
@@ -2653,7 +2671,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:int=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
-    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False, SNlim=1):
+    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False, SNlim=1, tset_SFR_SED=0.1):
     '''
     Purpose
     -------
@@ -2725,7 +2743,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
-        #NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
     ZZ50 = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
     chi = hdul[1].data['chi'][0]
@@ -2739,9 +2756,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
 
     # plot Configuration
     if MB.fzmc == 1:
-        Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$', '$z$']
+        Par = ['$\log M_*/M_\odot$', '$\log SFR/M_\odot \mathrm{yr}^{-1}$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$', '$z$']
     else:
-        Par = ['$\log M_*/M_\odot$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
+        Par = ['$\log M_*/M_\odot$', '$\log SFR/M_\odot \mathrm{yr}^{-1}$', '$\log T_*$/Gyr', '$A_V$/mag', '$\log Z_* / Z_\odot$']
 
     K = len(Par) # No of params.
     factor = 2.0           # size of one side of one panel
@@ -2878,7 +2895,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     Ztmp = np.zeros(mmax, dtype=float)
     Ttmp = np.zeros(mmax, dtype=float)
     ACtmp = np.zeros(mmax, dtype=float)
+    SFtmp = np.zeros(mmax, dtype=float)
     redshifttmp = np.zeros(mmax, dtype=float)
+
+    # SED-based SFR;
+    SFR_SED = np.zeros(mmax,dtype=float)
 
     # Time bin
     Tuni = MB.cosmo.age(zbes).value
@@ -2925,6 +2946,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
 
     files = [] # For gif animation
     SFmax = 0
+    SFmin = 0
     Tsmin = 0
     Tsmax = 0
     Zsmin = 0
@@ -2932,6 +2954,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     AMtmp = 0
     AMtmp16 = 0
     AMtmp84 = 0
+    SFmaxmc = 0
+    SFminmc = 0
+    delt_tmp = 0
 
     for ii in range(len(age)):
 
@@ -2975,23 +3000,32 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Zsmax += 10**ZZ_tmp84 * AA_tmp84 * mslist
         Zsmin += 10**ZZ_tmp16 * AA_tmp16 * mslist
 
-        SFtmp = AA_tmp * mslist / delT[ii]
-        if SFtmp > SFmax:
-            SFmax = SFtmp
+        SFmaxtmp = AA_tmp * mslist / delT[ii]
+        if SFmaxtmp > SFmax:
+            SFmax = SFmaxtmp
+        SFmin = AMtmp16 / delT[ii]
+
+        if age[ii]<=tset_SFR_SED:
+            SFmaxmc += mslist*AA_tmp84
+            SFminmc += mslist*AA_tmp16
+            delt_tmp += delT[ii]
+
+    SFmaxmc /= delt_tmp
+    SFminmc /= delt_tmp
+
     if SFmax > 0.5e4:
         SFmax = 0.5e4
 
-    delM = np.log10(M84) - np.log10(M16)
     if MB.fzmc == 1:
         if use_pickl:
-            NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
-            NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
+            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
         else:
-            NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
-            NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
+            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
     else:
-        NPARmin = [np.log10(M16)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
-        NPARmax = [np.log10(M84)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
+        NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
+        NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
 
     # For redshift
     if zbes<2:
@@ -3016,7 +3050,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         if Tzz[zz] < TMIN:
             Tzz[zz] = TMIN
 
-
     def density_estimation(m1, m2):
         xmin, xmax = np.min(m1), np.max(m1)
         ymin, ymax = np.min(m2), np.max(m2)
@@ -3027,11 +3060,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Z = np.reshape(kernel(positions).T, X.shape)
         return X, Y, Z
 
-
     for kk in range(0,mmax,1):
-
+        delt_tot = 0
         nr = np.random.randint(nshape_sample)
-        
         try:
             Avtmp[kk] = samples['Av'][nr]
         except:
@@ -3067,8 +3098,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
             lmtmp[kk] += AA_tmp * mslist
             Ztmp[kk] += (10 ** ZZ_tmp) * AA_tmp * mslist
             Ttmp[kk] += age[ii] * AA_tmp * mslist
-
             ACtmp[kk] += AA_tmp * mslist
+
+            if age[ii]<=tset_SFR_SED:
+                SFR_SED[kk] += AA_tmp * mslist
+                delt_tot += delT[ii]
 
             if MB.fzmc == 1:
                 redshifttmp[kk] = samples['zmc'][nr]
@@ -3094,6 +3128,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                 ysum += y0_r
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0_r * c/ np.square(x0) /d_scale, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
+
+        SFR_SED[kk] /= delt_tot
+        if SFR_SED[kk] > 0:
+            SFR_SED[kk] = np.log10(SFR_SED[kk])
+        else:
+            SFR_SED[kk] = -99
 
         for ss in range(len(age)):
             ii = ss # from old to young templates.
@@ -3137,9 +3177,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Ttmp[kk] = np.log10(Ttmp[kk])
 
         if MB.fzmc == 1:
-            NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
+            NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
         else:
-            NPAR = [lmtmp[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
+            NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
         # This should happen at the last kk;
         if kk == mmax-1:
@@ -3163,7 +3203,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                     # ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
                     # ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
                 except:
-                    print('Failed at i,x=',i,x)
+                    MB.logger.warning('Failed at i,x=%d,%d'%(i,x))
 
                 ax.set_xlim(x1min, x1max)
                 ax.set_yticklabels([])
@@ -3175,9 +3215,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
             # save pck;
             if save_pcl:
                 if MB.fzmc == 1:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
                 else:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
 
                 use_pickl = False
                 if use_pickl:
