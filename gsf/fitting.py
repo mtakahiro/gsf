@@ -105,6 +105,8 @@ class Mainbody(GsfBase):
         else:
             self.flag_class = True
 
+        self.fit_params = None
+
 
     def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,
                     idman:str=None, zman=None, zman_min=None, zman_max=None, sigz:float=5.0):
@@ -124,6 +126,9 @@ class Mainbody(GsfBase):
             Conversion factor from pixel-to-arcsec
 
         '''
+        self.key_params_prior = []
+        self.key_params_prior_sigma = []
+
         # Then register;
         self.inputs = inputs
         self.c = c
@@ -531,6 +536,12 @@ class Mainbody(GsfBase):
                 self.nAV = 1
                 self.Avmin = 0
                 self.Avmax = 4.0
+        try:
+            Av_prior = float(inputs['AVPRIOR_SIGMA'])
+            self.key_params_prior.append('Av')
+            self.key_params_prior_sigma.append(Av_prior)
+        except:
+            pass
 
         # Z evolution;
         if self.verbose:

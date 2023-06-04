@@ -6,9 +6,9 @@ from scipy import stats
 from numpy import exp as np_exp
 from numpy import log as np_log
 from scipy.special import erf
+from scipy.stats import lognorm
 
-
-class Post:
+class Post():
     '''
     Class function for MCMC
     '''
@@ -17,6 +17,7 @@ class Post:
         self.scale = 1
         self.gauss_Mdyn = None
         self.Na = len(self.mb.age)
+        self.mb.prior = None
 
 
     def residual(self, pars, fy:float, ey:float, wht:float, f_fir:bool, out:bool=False, 
@@ -268,9 +269,14 @@ class Post:
         if f_prior_sfh:
             respr += self.get_sfh_prior(vals, norder=norder_sfh_prior, alpha=alpha_sfh_prior)
 
+        # lognormal-prior for any params;
+        for ii,key_param in enumerate(self.mb.key_params_prior):
+            # key_param = 'Av'
+            sigma = self.mb.key_params_prior_sigma[ii]
+            respr += self.get_lognormal_prior(vals, key_param, sigma=sigma, mu=0)
+
         lnposterior = lnlike + respr
         if not np.isfinite(lnposterior):
-            # print('Posterior unacceptable.')
             return lnpreject
 
         return lnposterior
@@ -302,5 +308,24 @@ class Post:
             hoge
 
         lnprior = -0.5 * (np.sum(yres**2) * alpha)
+
+        return lnprior
+    
+
+    def get_lognormal_prior(self, vals, key_param, mu=0, sigma=100.0):
+        '''
+        '''
+        y = vals[key_param]
+
+        if self.mb.prior == None:
+            self.mb.prior = {}
+            for key_param in self.mb.fit_params:
+                self.mb.prior[key_param] = None
+
+        if self.mb.prior[key_param] == None:
+            self.mb.logger.info('Using lognormal prior for %s'%key_param)
+            self.mb.prior[key_param] = lognorm(sigma)
+
+        lnprior = np.log(self.mb.prior[key_param].pdf(y))
 
         return lnprior
