@@ -391,7 +391,7 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
     return f_rejuv,t_quench,t_rejuv
 
 
-def get_SFMS(red,age,mass,IMF=1):
+def get_SFMS(red,age,mass,IMF=1,get_param=False):
     '''
     Gets SFMS at age ago from z=red.
 
@@ -426,9 +426,13 @@ def get_SFMS(red,age,mass,IMF=1):
 
     x = np.log10(mass) - CIMF #np.arange(6,13,0.1)
     tz = cosmo.age(z=red).value - age # in Gyr
-    y1 = (0.84 - 0.026*tz) * x - (6.51 - 0.11*tz) # in log Msun/yr
+    alp = (0.84 - 0.026*tz)
+    beta = - (6.51 - 0.11*tz)
+    y1 = alp * x + beta # in log Msun/yr
     con = (y1<=0)
     y1[con] = -10
+    if get_param:
+        return y1, [alp,beta]
     return y1
 
 
