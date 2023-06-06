@@ -271,7 +271,6 @@ class Post():
 
         # lognormal-prior for any params;
         for ii,key_param in enumerate(self.mb.key_params_prior):
-            # key_param = 'Av'
             sigma = self.mb.key_params_prior_sigma[ii]
             respr += self.get_lognormal_prior(vals, key_param, sigma=sigma, mu=0)
 

@@ -136,6 +136,8 @@ class Mainbody(GsfBase):
 
             }
 
+        self.param_names = ['A', 'logU', 'AGE', 'Z', 'AV', 'ZMC', 'TDUST', 'TAU']
+
 
     def get_configfile(self, name=None):
         '''
@@ -596,7 +598,7 @@ class Mainbody(GsfBase):
                 self.Avmax = 4.0
         try:
             Av_prior = float(inputs['AVPRIOR_SIGMA'])
-            self.key_params_prior.append('Av')
+            self.key_params_prior.append('AV')
             self.key_params_prior_sigma.append(Av_prior)
         except:
             pass
@@ -1482,7 +1484,7 @@ class Mainbody(GsfBase):
         #
         try:
             Avfix = float(self.inputs['AVFIX'])
-            fit_params.add('Av', value=Avfix, vary=False)
+            fit_params.add('AV', value=Avfix, vary=False)
             self.Avmin = Avfix
             self.Avmax = Avfix
         except:
@@ -1492,17 +1494,17 @@ class Mainbody(GsfBase):
                 self.Avini = (self.Avmax+self.Avmin)/2.
                 self.Avini = 0.
                 if self.Avmin == self.Avmax:
-                    fit_params.add('Av', value=self.Avini, vary=False)
+                    fit_params.add('AV', value=self.Avini, vary=False)
                     self.Avmin = self.Avini
                     self.Avmax = self.Avini
                 else:
-                    fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
+                    fit_params.add('AV', value=self.Avini, min=self.Avmin, max=self.Avmax)
             except:
                 self.Avmin = 0.
                 self.Avmax = 4.
                 self.Avini = 0.5 #(Avmax-Avmin)/2. 
                 self.logger.info('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
-                fit_params.add('Av', value=self.Avini, min=self.Avmin, max=self.Avmax)
+                fit_params.add('AV', value=self.Avini, min=self.Avmin, max=self.Avmax)
 
         #
         # Metallicity;
@@ -1761,7 +1763,7 @@ class Mainbody(GsfBase):
                 # Fix params to what we had before.
                 if self.fzmc:
                     out.params['zmc'].value = self.zgal
-                out.params['Av'].value = out_keep.params['Av'].value
+                out.params['AV'].value = out_keep.params['AV'].value
                 for aa in range(len(self.age)):
                     out.params['A'+str(aa)].value = out_keep.params['A'+str(aa)].value
                     try:
@@ -2150,7 +2152,7 @@ class Mainbody(GsfBase):
             self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
         if f_get_templates:
-            Av_tmp = out.params['Av'].value
+            Av_tmp = out.params['AV'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
             # fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)

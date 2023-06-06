@@ -305,7 +305,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         mtmp  = np.random.randint(len(samples))# + Nburn
 
         try:
-            Av_tmp = samples['Av'][mtmp]
+            Av_tmp = samples['AV'][mtmp]
         except:
             Av_tmp = MB.AVFIX
 
@@ -1132,7 +1132,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     while mm<mmax:
         mtmp = np.random.randint(len(samples))# + Nburn
         if MB.nAV != 0:
-            Av_tmp = samples['Av'][mtmp]
+            Av_tmp = samples['AV'][mtmp]
         else:
             Av_tmp = MB.AVFIX
 
@@ -1695,7 +1695,7 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         ZZtmp = np.zeros(len(age), dtype=float)
         mslist= np.zeros(len(age), dtype=float)
 
-        Av_tmp = samples['Av'][mtmp]
+        Av_tmp = samples['AV'][mtmp]
 
         f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
         sedpar = f0[1]
@@ -1936,7 +1936,7 @@ def plot_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 
     file = 'summary_' + ID + '.fits'
     fd   = fits.open(file)[1].data
     #print(fits.open(file)[1].header)
-    Avtmp = fd['Av0']
+    Avtmp = fd['AV0']
     uvtmp = fd['uv']
     vjtmp = fd['vj']
     #ax2.plot(vj[1],uv[1],color='gray',marker='s',ms=3)

@@ -332,7 +332,7 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0,
             AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
             fwz.write(' %.5f'%(AA_tmp[aa]))
 
-        Av_tmp = out_tmp.params['Av'].value
+        Av_tmp = out_tmp.params['AV'].value
         fwz.write(' %.5f'%(Av_tmp))
         for aa in range(MB.npeak):
             if MB.ZEVOL == 1 or aa == 0:
