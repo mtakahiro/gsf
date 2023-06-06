@@ -107,6 +107,64 @@ class Mainbody(GsfBase):
 
         self.fit_params = None
 
+        self.config_params = {
+
+            'Templates' : ['TAU0', 'NIMF', 'BINARY', 
+                           'SFH_FORM',
+                           'AMIN', 'AMAX', 
+                           'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 'ADD_NEBULAE', 
+                           'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGE_FIX',
+                           'ZMIN', 'ZMAX', 'DELZ', 'ZFIX', 'ZEVOL', 
+                           'AVMIN', 'AVMAX', 'AVFIX', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
+                           'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
+                           'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST', 
+                           'BPASS', 'BPASS_DIR',
+                           'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK'],
+
+            'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
+                         'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
+                         'NTEMP', 'DISP', 'SIG_TEMP', 'VDISP', 
+                         'FORCE_AGE', 'NORDER_SFH_PRIOR', ],
+
+            'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
+                      'CAT_BB', 'SNLIM',
+                      'MORP', 'MORP_FILE', 
+                      'SPEC_FILE', 'DIR_EXTR', 'MAGZP_SPEC', 'UNIT_SPEC', 'DIFF_CONV', 
+                      'CZ0', 'CZ1', 'CZ2', 'LINE', ],
+
+            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER']
+
+            }
+
+
+    def get_configfile(self, name=None):
+        '''
+        Purpose
+        -------
+        Generate a configuration file.
+        '''
+        # Version;
+        import gsf
+        ver = gsf.__version__
+
+        if name == None:
+            name = 'default.input'
+            
+        fw = open(name,'w')
+        fw.write('#\n# Input file for ver.%s\n'%ver)
+
+        for key in self.config_params:
+            fw.write('\n# %s\n'%key)
+            for ele in self.config_params[key]:
+                try:
+                    value = self.inputs[ele]
+                    fw.write('%s\t%s\n'%(ele, value))
+                except:
+                    fw.write('# %s\t\n'%(ele))
+        
+        fw.close()
+        return name
+        
 
     def update_input(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, cosmo=None,
                     idman:str=None, zman=None, zman_min=None, zman_max=None, sigz:float=5.0):
@@ -625,9 +683,9 @@ class Mainbody(GsfBase):
 
         # If FIR data;
         try:
-            DT0 = float(inputs['TDUST_LOW'])
-            DT1 = float(inputs['TDUST_HIG'])
-            dDT = float(inputs['TDUST_DEL'])
+            DT0 = float(inputs['TDUSTMIN'])
+            DT1 = float(inputs['TDUSTMAX'])
+            dDT = float(inputs['DELTDUST'])
             try:
                 self.TDUSTFIX = float(inputs['TDUSTFIX'])
                 if self.TDUSTFIX < DT0 or self.TDUSTFIX > DT1:
@@ -718,7 +776,7 @@ class Mainbody(GsfBase):
 
         # SFH prior;
         try:
-            self.norder_sfh_prior = int(inputs['norder_sfh_prior'])
+            self.norder_sfh_prior = int(inputs['NORDER_SFH_PRIOR'])
             self.f_prior_sfh = True
         except:
             self.norder_sfh_prior = None

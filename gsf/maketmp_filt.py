@@ -495,9 +495,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         CAT_BB_DUST = inputs['CAT_BB_DUST']
-        DT0 = float(inputs['TDUST_LOW'])
-        DT1 = float(inputs['TDUST_HIG'])
-        dDT = float(inputs['TDUST_DEL'])
+        DT0 = float(inputs['TDUSTMIN'])
+        DT1 = float(inputs['TDUSTMAX'])
+        dDT = float(inputs['DELTDUST'])
         MB.logger.info('FIR is implemented.')
     else:
         MB.logger.info('No FIR is implemented.')
@@ -1416,9 +1416,9 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
         DFILT = [x.strip() for x in DFILT.split(',')]
         DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         CAT_BB_DUST = inputs['CAT_BB_DUST']
-        DT0 = float(inputs['TDUST_LOW'])
-        DT1 = float(inputs['TDUST_HIG'])
-        dDT = float(inputs['TDUST_DEL'])
+        DT0 = float(inputs['TDUSTMIN'])
+        DT1 = float(inputs['TDUSTMAX'])
+        dDT = float(inputs['DELTDUST'])
         print('FIR is implemented.\n')
     else:
         print('No FIR is implemented.\n')
