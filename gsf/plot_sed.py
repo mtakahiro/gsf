@@ -243,10 +243,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     for aa in range(len(age)):
         ms[aa] = sedpar['ML_' +  str(int(NZbest[aa]))][aa]
+    
     try:
         isochrone = af['isochrone']
         LIBRARY = af['library']
-        nimf = af['NIMF']
+        nimf = af['nimf']
     except:
         isochrone = ''
         LIBRARY = ''
@@ -382,8 +383,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fneb:
         lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
         lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
-
-    iimax = len(nage)-1
 
     # FIR dust plot;
     if MB.f_dust:
@@ -733,8 +732,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 par['TDUST'].value = MB.NTDUST
             else:
                 par['TDUST'].value = samples['TDUST'][nr]
-                #except:
-                #    par['TDUST'].value = 0
 
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
             if kk == 0:
@@ -1069,24 +1066,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             hdr['LUV50'] = np.nanpercentile(Luv16, 50) #10**(-0.4*hdr['MUV50']) * MB.Lsun #* 4 * np.pi * DL10**2
             hdr['LUV84'] = np.nanpercentile(Luv16, 84) #10**(-0.4*hdr['MUV84']) * MB.Lsun #* 4 * np.pi * DL10**2
 
-            # Fuv (!= flux of Muv)
-            # hdr['FUV16'] = np.percentile(Fuv28[:],16)
-            # hdr['FUV50'] = np.percentile(Fuv28[:],50)
-            # hdr['FUV84'] = np.percentile(Fuv28[:],84)
-
-            # # LIR
-            # hdr['LIR16'] = np.percentile(Lir[:],16)
-            # hdr['LIR50'] = np.percentile(Lir[:],50)
-            # hdr['LIR84'] = np.percentile(Lir[:],84)
         except:
             pass
 
         # # UV beta;
         # from .function import get_uvbeta
         betas_med = np.nanpercentile(betas, [16,50,84])
-        # beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
-        # beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
-        # beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
         hdr['UVBETA16'] = betas_med[0]
         hdr['UVBETA50'] = betas_med[1]
         hdr['UVBETA84'] = betas_med[2]
@@ -1146,35 +1131,41 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
 
         # ASDF;
-        tree_spec = {
-            'id': ID,
-            'redshift': '%.3f'%zbes,
-            'isochrone': '%s'%(isochrone),
-            'library': '%s'%(LIBRARY),
-            'nimf': '%s'%(nimf),
-            'scale': scale,
-            'm0set': MB.m0set,
-            'version_gsf': gsf.__version__
-        }
+        tree_spec = {}
+        #     'id': ID,
+        #     'redshift': '%.3f'%zbes,
+        #     'isochrone': '%s'%(isochrone),
+        #     'library': '%s'%(LIBRARY),
+        #     'nimf': '%s'%(nimf),
+        #     'scale': scale,
+        #     'magzp': MB.m0set,
+        #     'version_gsf': gsf.__version__
+        # }
         tree_spec['model'] = {}
         tree_spec['obs'] = {}
-        # Cnu_to_Jy = 10**((m0set-23.9))
-        Cnu_to_Jy = 10**((23.9-m0set)) # to microJy. So the final output SED library has uJy.
+        tree_spec['header'] = {}
+
+        # Dump physical parameters;
+        for key in hdr:
+            if key not in tree_spec:
+                if key[:-2] == 'SFRUV':
+                    tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
+                else:
+                    tree_spec['header'].update({'%s'%key: hdr[key]})
 
         # BB;
+        Cnu_to_Jy = 10**((23.9-m0set)) # to microJy. So the final output SED library has uJy.
         tree_spec['model'].update({'wave_bb': lbb * u.AA})
         tree_spec['model'].update({'fnu_bb_16': fbb16_nu * Cnu_to_Jy * u.uJy})
         tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
         tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
+
         # full spectrum;
-        # ytmp50 : scale * flambda
-        tree_spec['model'].update({'wave': x1_tot * u.AA})
-        
+        tree_spec['model'].update({'wave': x1_tot * u.AA})        
         # Get fnu in uJy;
         fnu_16 = flamtonu(x1_tot, ytmp16*scale,  m0set=23.9, m0=-48.6) * u.uJy
         fnu_50 = flamtonu(x1_tot, ytmp50*scale,  m0set=23.9, m0=-48.6) * u.uJy
         fnu_84 = flamtonu(x1_tot, ytmp84*scale,  m0set=23.9, m0=-48.6) * u.uJy
-
         tree_spec['model'].update({'fnu_16': fnu_16})
         tree_spec['model'].update({'fnu_50': fnu_50})
         tree_spec['model'].update({'fnu_84': fnu_84})

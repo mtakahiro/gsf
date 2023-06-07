@@ -679,30 +679,28 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     from astropy import units as u
 
     # ASDF;
-    tree_sfh = {
-        'id': ID,
-        'redshift': '%.3f'%zbes,
-        'nimf': '%s'%(IMF),
-        'version_gsf': gsf.__version__
-    }
+    tree_sfh = {}
+    #     'id': ID,
+    #     'redshift': '%.3f'%zbes,
+    #     'nimf': '%s'%(IMF),
+    #     'version_gsf': gsf.__version__
+    # }
+    tree_sfh['header'] = {}
     tree_sfh['sfh'] = {}
 
-    for ii in range(len(percs)):
-        tree_sfh['zmc_%d'%percs[ii]] = '%.3f'%zmc[ii]
-    for ii in range(len(percs)):
-        tree_sfh['Mstel_%d'%percs[ii]] = '%.3f'%(10**ACP[ii]) * u.Msun
-    for ii in range(len(percs)):
-        tree_sfh['SFR_%d'%percs[ii]] = '%.3f'%(10**SFR_SED_med[ii]) * u.Msun / u.yr
-    for ii in range(len(percs)):
-        tree_sfh['Z_MW_%d'%percs[ii]] = '%.3f'%ZCP[ii]
-    for ii in range(len(percs)):
-        tree_sfh['Z_LW_%d'%percs[ii]] = '%.3f'%ZLP[ii]
-    for ii in range(len(percs)):
-        tree_sfh['T_MW_%d'%percs[ii]] = '%.3f'%(10**TMW[ii]) * u.Gyr
-    for ii in range(len(percs)):
-        tree_sfh['T_LW_%d'%percs[ii]] = '%.3f'%(10**TLW[ii]) * u.Gyr
-    for ii in range(len(percs)):
-        tree_sfh['AV_%d'%percs[ii]] = '%.3f'%Avtmp[ii]*u.mag
+    # Dump physical parameters;
+    for key in prihdu.header:
+        if key not in tree_sfh:
+            if key.split('_')[0] == 'SFR':
+                tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.solMass / u.yr})
+            elif key.split('_')[0] == 'Mstel':
+                tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.solMass})
+            elif key.split('_')[0] == 'T':
+                tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.Gyr})
+            elif key.split('_')[0] == 'AV':
+                tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.mag})
+            else:
+                tree_sfh['header'].update({'%s'%key: prihdu.header[key]})
 
     # Mask values when age>age_uni;
     arrays = [SFp[:,0],SFp[:,1],SFp[:,2],ACp[:,0],ACp[:,1],ACp[:,2],ZCp[:,0],ZCp[:,1],ZCp[:,2]]
@@ -741,7 +739,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     # SFH
     zzall = np.arange(1.,12,0.01)
-    Tall = MB.cosmo.age(zzall).value
 
     dely2 = 0.1
     while (y2max-y2min)/dely2>7:
@@ -1780,7 +1777,6 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     zh_hr_in = np.interp(tuniv_hr,(Tuni-age)[::-1],ZCp[:,1][::-1])
 
     # FSPS
-    con_sfh = (tuniv_hr>0)
     import fsps
     nimf = int(inputs['NIMF'])
     try:
@@ -1788,6 +1784,7 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
     except:
         fneb = 0
 
+    con_sfh = (tuniv_hr>0)
     if fneb == 1:
         print('Metallicity is set to logZ/Zsun=%.2f'%(np.max(zh_hr_in)))
         sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, logzsol=np.max(zh_hr_in), sfh=3, dust_type=2, dust2=0.0, add_neb_emission=True)
