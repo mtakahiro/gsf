@@ -5,18 +5,17 @@ from scipy.integrate import simps
 from scipy import integrate
 
 
-def get_XI(z, zout=6, zin=8):
+def get_XI(z, zend=5, zstart=8):
 	'''
 	Very simplified model.
 	'''
-	zs = np.linspace(zout, zin, 100)
-	if z < zout:
+	zs = np.linspace(zend, zstart, 100)
+	if z < zend:
 		XI = 0
-	elif z > zin:
+	elif z > zstart:
 		XI = 1.
 	else:
-		XI = (z-zout) / (zin-zout) * 1.0
-
+		XI = (z-zend) / (zstart-zend) * 1.0
 	return XI
 
 
@@ -90,7 +89,8 @@ def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5
 
 
 def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5, 
-	R_b1=1.0, delta_v_0=600, alpha_x=1.0):
+	R_b1=1.0, delta_v_0=600, alpha_x=1.0, x_HI=None, verbose=False,
+	zend=5, zstart=8):
 	'''
 	Purpose
 	-------
@@ -122,7 +122,12 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 
 	xtmp_obs = xtmp * (1+zin)
 
-	x_HI = get_XI(zin) # neutral fraction
+	if x_HI == None:
+		x_HI = get_XI(zin, zend=zend, zstart=zstart) # neutral fraction
+	else:
+		if verbose:
+			print('Neutral fraction, x_HI = %.2f, is provided;'%(x_HI))
+		
 	x_D = alpha_x * x_HI # x_D is not clear..
 	delta_lam = (xtmp - xLL) * (zin + 1)
 	delta_lam_fine = (np.linspace(900,2000,1000) - xLL) * (zin + 1)

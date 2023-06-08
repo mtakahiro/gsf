@@ -100,6 +100,9 @@ class Mainbody(GsfBase):
         flag_input = self.update_input(inputs, idman=idman, zman=zman, zman_min=zman_min, zman_max=zman_max)
         self.NRbb_lim = NRbb_lim
         self.ztemplate = False
+        # self.z_prior = None
+        # self.p_prior = None
+
         if not flag_input:
             self.flag_class = False
         else:
@@ -119,7 +122,9 @@ class Mainbody(GsfBase):
                            'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST', 
                            'BPASS', 'BPASS_DIR',
-                           'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK'],
+                           'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
+                           'x_HI'
+                           ],
 
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
@@ -264,6 +269,8 @@ class Mainbody(GsfBase):
                     self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
                     self.zmcmin = None
                     self.zmcmax = None
+
+        self.set_zprior(self.zmcmin, self.zmcmax, delzz=0.01, f_eazy=False, eaz_pz=None, zmax=self.zmcmax)
 
         # Data directory;
         self.DIR_TMP = inputs['DIR_TEMP']
@@ -922,9 +929,43 @@ class Mainbody(GsfBase):
         return None
 
 
+    def set_zprior(self, zliml, zlimu, delzz=0.01, priors=None, 
+                   f_eazy=False, eaz_pz=None, zmax=20, f_norm=True):
+        '''
+        '''
+        if f_eazy:
+            dprob = np.loadtxt(eaz_pz, comments='#')
+            zprob = dprob[:,0]
+            cprob = dprob[:,1]
+            # Then interpolate to a common z grid;
+            zz_prob = np.arange(0,zmax,delzz)
+            cprob_s = np.interp(zz_prob, zprob, cprob)
+            prior_s = np.exp(-0.5 * cprob_s)
+            prior_s /= np.sum(prior_s)
+        else:
+            zz_prob = np.arange(zliml,zlimu,delzz)
+            if priors != None:
+                zprob = priors['z']
+                cprob = priors['chi2']
+
+                cprob_s = np.interp(zz_prob, zprob, cprob)
+                prior_s = np.exp(-0.5 * cprob_s) / np.sum(cprob_s)
+                con_pri = (zz_prob<np.min(zprob)) | (zz_prob>np.max(zprob))
+                prior_s[con_pri] = 0
+                if f_norm:
+                    prior_s /= np.sum(prior_s)
+            else:
+                prior_s = zz_prob * 0 + 1.
+                prior_s /= np.sum(prior_s)
+
+        self.z_prior = zz_prob
+        self.p_prior = prior_s
+        return 
+
+
     def fit_redshift(self, xm_tmp, fm_tmp, delzz=0.01, ezmin=0.01, #zliml=0.01, zlimu=None, 
                      snlim=0, priors=None, f_line_check=False, fzvis=False,
-                     f_norm=True, f_lambda=False, zmax=20, include_photometry=False, 
+                     f_norm=True, f_lambda=False, zmax=30, include_photometry=False, 
                      f_exclude_negative=False, return_figure=False):
         '''
         Find the best-fit redshift, before going into a big fit, through an interactive inspection.
@@ -975,7 +1016,7 @@ class Mainbody(GsfBase):
         if self.zmcmax != None:
             zlimu = self.zmcmax
         else:
-            zlimu = 20
+            zlimu = zmax
 
         # Observed data;
         sn = self.dict['fy'] / self.dict['ey']
@@ -1006,35 +1047,10 @@ class Mainbody(GsfBase):
             f_eazy = True
         except:
             f_eazy = False
-
-        if f_eazy:
-            dprob = np.loadtxt(eaz_pz, comments='#')
-            zprob = dprob[:,0]
-            cprob = dprob[:,1]
-            # Then interpolate to a common z grid;
-            zz_prob = np.arange(0,zmax,delzz)
-            cprob_s = np.interp(zz_prob, zprob, cprob)
-            prior_s = np.exp(-0.5 * cprob_s)
-            prior_s /= np.sum(prior_s)
-        else:
-            zz_prob = np.arange(zliml,zlimu,delzz)
-            if priors != None:
-                zprob = priors['z']
-                cprob = priors['chi2']
-
-                cprob_s = np.interp(zz_prob, zprob, cprob)
-                prior_s = np.exp(-0.5 * cprob_s) / np.sum(cprob_s)
-                con_pri = (zz_prob<np.min(zprob)) | (zz_prob>np.max(zprob))
-                prior_s[con_pri] = 0
-                if f_norm:
-                    prior_s /= np.sum(prior_s)
-            else:
-                prior_s = zz_prob * 0 + 1.
-                prior_s /= np.sum(prior_s)
+            eaz_pz = None
 
         # Attach prior:
-        self.z_prior = zz_prob
-        self.p_prior = prior_s
+        self.set_zprior(zliml, zlimu, delzz=delzz, f_eazy=f_eazy, eaz_pz=eaz_pz, zmax=zmax)
 
         # Plot;
         if len(self.dict['fy'][con_cz])==0:
@@ -1044,7 +1060,6 @@ class Mainbody(GsfBase):
         # mpl.use('TkAgg')
         plt.close()
         fig = plt.figure(figsize=(8,2.8))
-        # fig.subplots_adjust(top=0.88, bottom=0.18, left=0.07, right=0.99, hspace=0.15, wspace=0.3)
         ax1 = fig.add_subplot(111)
 
         if (include_photometry | len(fy_cz)>0):# and fzvis:# and 
@@ -1075,7 +1090,7 @@ class Mainbody(GsfBase):
                     color='orange', edgecolor='k', label='Observed photometry', zorder=4)
 
             # Write prob distribution;
-            get_chi2(zz_prob, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
+            get_chi2(self.z_prior, fy_cz, ey_cz, x_cz, fm_tmp, xm_tmp/(1+self.zgal), self.file_zprob)
 
             print('############################')
             print('Start MCMC for redshift fit')
