@@ -1023,17 +1023,24 @@ class Mainbody(GsfBase):
 
         # Only spec data?
         if include_photometry:
-            con_cz = ()#(sn>snlim)
+            if f_exclude_negative:
+                con_cz = (sn>snlim)
+            else:
+                con_cz = ()
         else:
-            con_cz = (self.dict['NR']<self.NRbb_lim) #& (sn>snlim)
-
-        if f_exclude_negative:
-            con_cz &= (sn>snlim)
+            if f_exclude_negative:
+                con_cz = (self.dict['NR']<self.NRbb_lim) & (sn>snlim)
+            else:
+                con_cz = (self.dict['NR']<self.NRbb_lim) #& (sn>snlim)
             
         fy_cz = self.dict['fy'][con_cz] # Already scaled by self.Cz0
         ey_cz = self.dict['ey'][con_cz]
         x_cz = self.dict['x'][con_cz] # Observed range
         NR_cz = self.dict['NR'][con_cz]
+        if len(NR_cz) == 0:
+            self.logger.error('No data point exists at SN>%.1f'%(snlim))
+            self.logger.error('Decrease `snlim` or turn `f_exclude_negative` to False')
+            return False
 
         fint = interpolate.interp1d(xm_tmp, fm_tmp, kind='nearest', fill_value="extrapolate")
         fm_s = fint(x_cz)
@@ -1215,6 +1222,10 @@ class Mainbody(GsfBase):
             plt.ylim(0,yline*1.1)
         except:
             pass
+
+        # lines;
+        xx = np.arange(xmin,xmax)
+        ax1.plot(xx, xx*0, lw=0.5, ls='--', color='gray')
 
         ax1.set_xlim(xmin,xmax)
         ax1.set_xlabel('Wavelength ($\mathrm{\AA}$)')
@@ -1815,10 +1826,10 @@ class Mainbody(GsfBase):
                         # Burn phase;
                         moves = zeus.moves.DifferentialMove() #GlobalMove()
                         sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
-                            args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
+                            args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust], \
                             moves=moves, maxiter=1e6,\
                             kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 
-                            'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
+                            'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim},\
                             )
                         # Run MCMC
                         nburn = int(self.nmc/10)
@@ -1836,20 +1847,20 @@ class Mainbody(GsfBase):
                     # Switch sampler;
                     moves = zeus.moves.GlobalMove()
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
-                        args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], \
+                        args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust], \
                         moves=moves, maxiter=1e4,\
                         kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 
-                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
+                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim},\
                         )
 
                 else:
                     self.logger.info('sampling with EMCEE')
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
-                        args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust),\
+                        args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust),\
                         #moves=moves,\
                         kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 
-                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior},\
+                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim},\
                         )
 
                 if check_converge:
@@ -1918,10 +1929,10 @@ class Mainbody(GsfBase):
                 # Dummy just to get structures;
                 print('\nRunning dummy sampler. Disregard message from here;\n')
                 mini = Minimizer(class_post.lnprob_emcee, out.params, 
-                fcn_args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust], 
+                fcn_args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust], 
                 f_disp=False, nan_policy='omit',
                 moves=moves,\
-                kwargs={'f_val': True},\
+                kwargs={'f_val': True, 'NRbb_lim':self.NRbb_lim},\
                 )
                 res = mini.emcee(burn=0, steps=10, thin=1, nwalkers=self.nwalk, 
                 params=out.params, is_weighted=True, ntemps=self.ntemp, workers=ncpu, float_behavior='posterior', progress=False)

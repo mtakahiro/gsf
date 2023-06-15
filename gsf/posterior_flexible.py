@@ -136,9 +136,9 @@ class Post():
         return pars
 
 
-    def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
+    def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, NR:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
         lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None,
-        f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3, verbose=False):
+        f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3, verbose=False, NRbb_lim=10000):
         '''
         Parameters
         ----------
@@ -194,7 +194,9 @@ class Post():
         sig_con = np.sqrt(ey[con_res]**2 + model[con_res]**2 * np_exp(2 * logf))
         chi_nd = 0.0
 
-        con_up = (ey>0) & (fy/ey<=SNlim)
+        # con_up = (ey>0) & (fy/ey<=SNlim)
+        # Or force avoid spec??
+        con_up = (ey>0) & (fy/ey<=SNlim) & (NRbb_lim<NR)
         if f_chind and len(fy[con_up])>0:
             x_erf = (ey[con_up]/SNlim - model[con_up]) / (np.sqrt(2) * ey[con_up]/SNlim)
             f_erf = erf(x_erf)
