@@ -16,384 +16,6 @@ from .function import *
 from .function_igm import *
 
 
-def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel,
-    DIR_DUST='./DL07spec/', phi=0.055, m0set=25.0):
-    '''
-    Parameters
-    ----------
-    lambda_d : array
-        Wavelength array, in AA.
-    phi : float
-        Eq.34 of Draine & Li 2007. (default: 0.055g/(ergs/s))
-    DL : float
-        in cm.
-
-    Returns
-    -------
-    Interpolated dust emission in Fnu of m0=25.0. In units of Fnu/Msun
-
-    Notes
-    -----
-    umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
-            '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '10.0', '12.0', '15.0',\
-            '20.0', '25.0']
-    umaxs = ['1e3', '1e4', '1e5', '1e6', '1e7']
-
-    '''
-    from .function import fnutonu
-    import scipy.interpolate as interpolate
-
-    Htokg = 1.66054e-27 # kg/H atom
-    kgtomsun = 1.989e+30 # kg/Msun
-    MsunperH = Htokg / kgtomsun # Msun/H
-    HperMsun = kgtomsun / Htokg # N_Hatom per Msun 
-
-    Jytoerg = 1e-23 # erg/s/cm2/Hz / Jy
-
-    umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
-            '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '12.0', '15.0',\
-            '20.0', '25.0']
-    umaxs = ['1e3', '1e4', '1e5', '1e6', '1e7']
-        
-    dust_model = DIR_DUST+'draine07_models.txt'
-    fd_model = ascii.read(dust_model)
-
-    umin = umins[numin]
-    umax = umaxs[numax]
-    dmodel = fd_model['name'][ndmodel]
-
-    if ndmodel == 6 or ndmodel == 1:
-        data_start = 55
-    else:
-        data_start = 36
-
-    file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
-    print(file_dust)
-    fd = ascii.read(file_dust, data_start=data_start)
-
-    wave = fd['col1'] # in mu m.
-    flux = fd['col2'] # nu*Pnu: erg/s H-1
-    flux_dens = fd['col3'] # j_nu, emissivity: Jy cm2 sr-1 H-1
-    #survey = fd['col4'] #
-
-    fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) * HperMsun
-    # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) * (H/Msun) = erg/s/cm2/Hz / Msun
-    # i.e. observed flux density from a dust of Msun at the distance of DL.
-
-    fnu = fnutonu(fobs, m0set=m0set, m0input=-48.6)
-    # Fnu / Msun
-
-    fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
-    yy_s = fint(lambda_d)
-    con_yys = (lambda_d<1e4) # Interpolation cause some error??
-    yy_s[con_yys] = 0
-
-    return yy_s
-
-
-def sim_spec(lmin, fin, sn):
-    '''
-    SIMULATION of SPECTRA.
-    
-    Parameters
-    ----------
-    sn : float array
-        
-    Returns
-    -------
-    frand : float array
-
-    erand :  float array
-
-
-    :func:`get_spectrum_draine`
-    '''
-
-    frand = fin * 0
-    erand = fin * 0
-    for ii in range(len(lmin)):
-        if fin[ii]>0 and sn[ii]>0:
-            erand[ii] = fin[ii]/sn[ii]
-            frand[ii] = np.random.normal(fin[ii],erand[ii],1)
-        else:
-            erand[ii] = 1e10
-            frand[ii] = np.random.normal(fin[ii],erand[ii],1)
-    return frand, erand
-
-
-def check_library(MB, af, nround=3):
-    '''Check library if it has a consistency setup as input file.
-
-    Returns
-    -------
-    flag : bool
-        
-    '''
-    # Z needs special care in z0 script, to avoid Zfix.
-    if False:
-        Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
-        delZ_tmp = float(MB.inputs['DELZ'])
-        if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
-            delZ_tmp = 0.0001
-        Zall = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
-    else:
-        Zall = MB.Zall
-    
-    flag = True
-    MB.logger.info('Checking the template library...')
-
-    # No. of age;
-    if MB.SFH_FORM==-99:
-        if len(af['ML']['ms_0']) != len(MB.age):
-            MB.logger.error('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
-            flag = False
-    else:
-        flag = True
-
-    # Matallicity:
-    for aa in range(len(Zall)):
-        if Zall[aa] != af['Z%d'%(aa)]:
-            MB.logger.error('Z:', Zall[aa], af['Z%d'%(aa)])
-            flag = False
-
-    if MB.SFH_FORM==-99:
-        # Age:
-        for aa in range(len(MB.age)):
-            if round(MB.age[aa],nround) != round(af['age%d'%(aa)],nround):
-                MB.logger.error('age:', MB.age[aa], af['age%d'%(aa)])
-                flag = False
-        # Tau (e.g. ssp/csp):
-        for aa in range(len(MB.tau0)):
-            if round(MB.tau0[aa]) != round(af['tau0%d'%(aa)]):
-                MB.logger.error('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
-                flag = False
-    else:
-        # Age:
-        for aa in range(len(MB.ageparam)):
-            if round(MB.ageparam[aa]) != round(af['age%d'%(aa)]):
-                MB.logger.error('age:', MB.ageparam[aa], af['age%d'%(aa)])
-                flag = False
-        for aa in range(len(MB.tau)):
-            if round(MB.tau[aa]) != round(af['tau%d'%(aa)]):
-                MB.logger.error('tau:', MB.tau[aa], af['tau%d'%(aa)])
-                flag = False
-
-    # IMF:
-    if MB.nimf != af['nimf']:
-        MB.logger.error('nimf:', MB.nimf, af['nimf'])
-        flag = False
-
-    if not flag:
-        MB.logger.error('# Specified - Template')
-
-    return flag
-
-
-def smooth_template_diff(waves, fluxes, Rs, Rs_template, f_diff_conv=False):
-    '''from Gina's code
-    Parameters
-    ----------
-    wave, flux, Rs: arrays
-        All have the same size.
-    sigma_template : float
-        Sigma of the template spectrum, in km/s
-
-    Notes
-    -----
-    fsps templates have a resolution of ~2.5A FWHM from 3750AA - 7200AA restframe, and much lower (R~200 or so, but not actually well defined) outside this range. 
-    '''
-    from scipy import ndimage
-    c_light = 299792.458 # speed of light in km/s
-
-    fluxes_conv = np.zeros(len(fluxes), float)
-
-    if f_diff_conv:
-
-        fluxes_tmp = np.zeros(len(fluxes), float)
-        for nw,wave in enumerate(waves):
-            fluxes_tmp[:] = 0
-
-            # Find resolution for roman pixel
-            if nw == 0:
-                delta_wvl = waves[nw+1] - waves[nw]
-            else:
-                delta_wvl = waves[nw] - waves[nw-1]
-
-            sigma_inst = c/(Rs[nw]*2.355)
-
-            # FWHM_gal = 1e4*np.sqrt(0.97*1.89)/R_median
-            sigma_template = c/(Rs_template[nw]*2.355)
-
-            # Smooth template to match roman resolution
-            smoothing_sigma = sigma_inst / sigma_template
-
-            # @@@ This part could be shortcut;
-            # smoothed = ndimage.gaussian_filter(fluxes_tmp, smoothing_sigma)
-            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-            Amp = 1.
-            LSF = gauss(xMof, Amp, smoothing_sigma)
-
-            # find indices that include pixel's wavelength and interpolate to find
-            # smoothed flux
-            fluxes_tmp[nw] = fluxes[nw]
-            smoothed = convolve(fluxes_tmp, LSF, boundary='extend')
-            fluxes_conv[:] += smoothed[:]
-
-    else:
-        delta_wvl = np.nanmedian(np.diff(waves))
-
-        sigma_inst = c/(Rs[:]*2.355)
-        sigma_template = c/(Rs_template[:]*2.355)
-
-        # Smooth template to match roman resolution
-        smoothing_sigma = np.nanmedian(sigma_inst / sigma_template)
-        # fluxes_conv = ndimage.gaussian_filter(fluxes, smoothing_sigma)
-        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-        Amp = 1.
-        LSF = gauss(xMof, Amp, smoothing_sigma)
-        fluxes_conv = convolve(fluxes, LSF, boundary='extend')
-        # print('smoothing_sigma is %.2f'%smoothing_sigma)
-
-    return fluxes_conv
-
-        
-def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
-    sig_temp_def=50., redshift=None):
-    '''
-    Load Morphology params, and returns LSF
-
-    Parameters
-    ----------
-    lm : float array
-        wavelength array for the observed spectrum, in AA.
-
-    Returns
-    -------
-    LSF
-
-    '''
-    lists_morp = ['moffat', 'gauss', 'jwst-prism']
-    Amp = 0
-    f_morp = False
-    if inputs['MORP'] in lists_morp:
-        if inputs['MORP'] in lists_morp[:2]:
-            try:
-                mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
-                fm = ascii.read(DIR_EXTR + mor_file)
-                Amp = fm['A']
-                gamma = fm['gamma']
-                if inputs['MORP'] == 'moffat':
-                    alp = fm['alp']
-                else:
-                    alp = 0
-                f_morp = True
-            except Exception:
-                msg = '`MORP_FILE` cannot be found.\nNo morphology convolution.'
-                print_err(msg, exit=False)
-                pass
-    else:
-        msg = 'MORP Keywords does not match.\nNo morphology convolution.'
-        print_err(msg, exit=False)
-
-    ############################
-    # Template convolution;
-    # fsps templates have a resolution of ~2.5A FWHM from 3750AA - 7200AA restframe, and much lower (R~200 or so, but not actually well defined) outside this range. 
-    ############################
-    try:
-        sig_temp = float(inputs['SIG_TEMP'])
-        print('Template is set to %.1f km/s.'%(sig_temp))
-    except:
-        sig_temp = sig_temp_def
-        print('Template resolution is unknown.')
-        print('Set to %.1f km/s.'%(sig_temp))
-
-    # @@@ Below assumes a constant R over wavelength range;
-    iixlam = np.argmin(np.abs(lm-wave_repr)) # Around 4000 AA
-    if iixlam == len(lm)-1:
-        dellam = lm[iixlam] - lm[iixlam-1] # AA/pix
-    else:
-        dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
-    R_temp = c / (sig_temp*1e3*1e10)
-    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
-    sig_inst = 0 #65 #km/s for Manga
-
-    # If grism;
-    if f_morp:
-        print('\nStarting templates convolution (intrinsic morphology).')
-        if gamma>sig_temp_pix:# and False:
-            sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
-        else:
-            sig_conv = 0
-            print('Template resolution is broader than Morphology.')
-            print('No convolution is applied to templates.')
-
-        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-        if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
-            LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
-            print('Template convolution with Moffat.')
-        elif inputs['MORP'] == 'gauss':
-            sigma = gamma
-            LSF = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
-            print('Template convolution with Gaussian.')
-            print('params is sigma;',sigma)
-        else:
-            msg = 'Something is wrong with the convolution file. Exiting.'
-            print_err(msg, exit=True)
-            LSF = []
-
-    else: # For slit spectroscopy. To be updated...
-        print('Templates convolution (intrinsic velocity).')
-        try:
-            vdisp = float(inputs['VDISP'])
-            dellam = lm[1] - lm[0] # AA/pix
-            R_disp = c/(np.sqrt(vdisp**2-sig_inst**2)*1e3*1e10)
-            vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
-            print('Templates are convolved at %.2f km/s.'%(vdisp))
-            if vdisp_pix-sig_temp_pix>0:
-                sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
-            else:
-                sig_conv = 0
-        except:
-            vdisp = 0.
-            # print('Templates are not convolved.')
-            sig_conv = 0 #np.sqrt(sig_temp_pix**2)
-            pass
-        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
-        Amp = 1.
-        LSF = gauss(xMof, Amp, sig_conv)
-
-    return LSF
-
-
-def convolve_templates(wave, spec, LSF, boundary='extend', f_prism=False, file_res=None, redshift=None, f_diff_conv=False):
-    '''
-    file_res : str
-        From the official jdocs.
-    '''
-    if len(LSF) > 1:
-        spec_conv = convolve(spec, LSF, boundary='extend')
-
-    elif f_prism:
-        fd_res = fits.open(file_res)[1].data
-        R_res = fd_res['R']
-        wave_res = fd_res['WAVELENGTH'] # in um;
-        wave_res *= 1e4
-        fint = interpolate.interp1d(wave_res, R_res, kind='nearest', fill_value="extrapolate")
-        Rs_res_interp = fint(wave)
-        Rs_template = np.zeros(len(wave),float) + 200 # Assuming R=200;
-        if redshift != None:
-            mask_hr = np.where((wave/(1+redshift) > 3750) & ((wave/(1+redshift) < 7200)))
-            Rs_template[mask_hr] = wave[mask_hr] / 2.5
-        else:
-            mask_hr = None
-        # Smooth;
-        spec_conv = smooth_template_diff(wave, spec, Rs_res_interp, Rs_template, f_diff_conv=f_diff_conv)
-
-    else:
-        spec_conv = spec
-
-    return spec_conv
-
 
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
     tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True):
@@ -870,6 +492,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 ftmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
                                 ltmpbb_neb = np.zeros((len(Z), len(MB.logUs), len(SFILT)), dtype=float)
                                 ftmp_neb_nu_int = np.zeros((len(Z), len(MB.logUs), len(lm)), dtype=float)
+                                ms_neb = np.zeros((len(Z), len(MB.logUs)), dtype=float)
 
                             for uu in range(len(MB.logUs)):
                                 if delwave>0:
@@ -893,6 +516,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 
                                 spec_mul_neb_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
                                 ltmpbb_neb[zz,uu,:], ftmpbb_neb[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_neb_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+                                ms_neb[zz,uu] *= (1./Ls[ss])*tmp_norm # M/L; 1 unit template has this mass/solar.
 
                                 if MB.f_spec:
                                     ftmp_neb_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_neb_nu[zz,uu,:])
@@ -918,6 +542,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         tree_ML.update({'ML_'+str(zz): ms})
                         # SFR
                         tree_SFR.update({'SFR_'+str(zz): sfr})
+
+                        if fneb == 1 and MB.f_bpass==0:
+                            # ML neb
+                            tree_ML.update({'ML_neb': ms_neb[zz,:]})
 
     else:
         ####################################
@@ -1905,3 +1533,382 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     print('Done making templates at z=%.2f.\n'%zbest)
 
     return True
+
+
+def get_spectrum_draine(lambda_d, DL, zbest, numin, numax, ndmodel,
+    DIR_DUST='./DL07spec/', phi=0.055, m0set=25.0):
+    '''
+    Parameters
+    ----------
+    lambda_d : array
+        Wavelength array, in AA.
+    phi : float
+        Eq.34 of Draine & Li 2007. (default: 0.055g/(ergs/s))
+    DL : float
+        in cm.
+
+    Returns
+    -------
+    Interpolated dust emission in Fnu of m0=25.0. In units of Fnu/Msun
+
+    Notes
+    -----
+    umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
+            '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '10.0', '12.0', '15.0',\
+            '20.0', '25.0']
+    umaxs = ['1e3', '1e4', '1e5', '1e6', '1e7']
+
+    '''
+    from .function import fnutonu
+    import scipy.interpolate as interpolate
+
+    Htokg = 1.66054e-27 # kg/H atom
+    kgtomsun = 1.989e+30 # kg/Msun
+    MsunperH = Htokg / kgtomsun # Msun/H
+    HperMsun = kgtomsun / Htokg # N_Hatom per Msun 
+
+    Jytoerg = 1e-23 # erg/s/cm2/Hz / Jy
+
+    umins = ['0.10', '0.15', '0.20', '0.30', '0.40', '0.50', '0.70', '0.80', '1.00', '1.20',\
+            '1.50', '2.00', '2.50', '3.00', '4.00', '5.00', '7.00', '8.00', '12.0', '15.0',\
+            '20.0', '25.0']
+    umaxs = ['1e3', '1e4', '1e5', '1e6', '1e7']
+        
+    dust_model = DIR_DUST+'draine07_models.txt'
+    fd_model = ascii.read(dust_model)
+
+    umin = umins[numin]
+    umax = umaxs[numax]
+    dmodel = fd_model['name'][ndmodel]
+
+    if ndmodel == 6 or ndmodel == 1:
+        data_start = 55
+    else:
+        data_start = 36
+
+    file_dust = DIR_DUST + 'U%s/U%s_%s_%s.txt'%(umin, umin, umax, dmodel)
+    print(file_dust)
+    fd = ascii.read(file_dust, data_start=data_start)
+
+    wave = fd['col1'] # in mu m.
+    flux = fd['col2'] # nu*Pnu: erg/s H-1
+    flux_dens = fd['col3'] # j_nu, emissivity: Jy cm2 sr-1 H-1
+    #survey = fd['col4'] #
+
+    fobs = flux_dens * Jytoerg / (4.*np.pi*DL**2/(1.+zbest)) * HperMsun
+    # Jy cm2 sr-1 H-1 * erg/s/cm2/Hz / Jy / (cm2 * sr) * (H/Msun) = erg/s/cm2/Hz / Msun
+    # i.e. observed flux density from a dust of Msun at the distance of DL.
+
+    fnu = fnutonu(fobs, m0set=m0set, m0input=-48.6)
+    # Fnu / Msun
+
+    fint = interpolate.interp1d(wave*1e4, fnu, kind='nearest', fill_value="extrapolate")
+    yy_s = fint(lambda_d)
+    con_yys = (lambda_d<1e4) # Interpolation cause some error??
+    yy_s[con_yys] = 0
+
+    return yy_s
+
+
+def sim_spec(lmin, fin, sn):
+    '''
+    SIMULATION of SPECTRA.
+    
+    Parameters
+    ----------
+    sn : float array
+        
+    Returns
+    -------
+    frand : float array
+
+    erand :  float array
+
+
+    :func:`get_spectrum_draine`
+    '''
+
+    frand = fin * 0
+    erand = fin * 0
+    for ii in range(len(lmin)):
+        if fin[ii]>0 and sn[ii]>0:
+            erand[ii] = fin[ii]/sn[ii]
+            frand[ii] = np.random.normal(fin[ii],erand[ii],1)
+        else:
+            erand[ii] = 1e10
+            frand[ii] = np.random.normal(fin[ii],erand[ii],1)
+    return frand, erand
+
+
+def check_library(MB, af, nround=3):
+    '''Check library if it has a consistency setup as input file.
+
+    Returns
+    -------
+    flag : bool
+        
+    '''
+    # Z needs special care in z0 script, to avoid Zfix.
+    if False:
+        Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])
+        delZ_tmp = float(MB.inputs['DELZ'])
+        if Zmax_tmp == Zmin_tmp or delZ_tmp==0:
+            delZ_tmp = 0.0001
+        Zall = np.arange(Zmin_tmp, Zmax_tmp+delZ_tmp, delZ_tmp) # in logZsun
+    else:
+        Zall = MB.Zall
+    
+    flag = True
+    MB.logger.info('Checking the template library...')
+
+    # No. of age;
+    if MB.SFH_FORM==-99:
+        if len(af['ML']['ms_0']) != len(MB.age):
+            MB.logger.error('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
+            flag = False
+    else:
+        flag = True
+
+    # Matallicity:
+    for aa in range(len(Zall)):
+        if Zall[aa] != af['Z%d'%(aa)]:
+            MB.logger.error('Z:', Zall[aa], af['Z%d'%(aa)])
+            flag = False
+
+    if MB.SFH_FORM==-99:
+        # Age:
+        for aa in range(len(MB.age)):
+            if round(MB.age[aa],nround) != round(af['age%d'%(aa)],nround):
+                MB.logger.error('age:', MB.age[aa], af['age%d'%(aa)])
+                flag = False
+        # Tau (e.g. ssp/csp):
+        for aa in range(len(MB.tau0)):
+            if round(MB.tau0[aa]) != round(af['tau0%d'%(aa)]):
+                MB.logger.error('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
+                flag = False
+    else:
+        # Age:
+        for aa in range(len(MB.ageparam)):
+            if round(MB.ageparam[aa]) != round(af['age%d'%(aa)]):
+                MB.logger.error('age:', MB.ageparam[aa], af['age%d'%(aa)])
+                flag = False
+        for aa in range(len(MB.tau)):
+            if round(MB.tau[aa]) != round(af['tau%d'%(aa)]):
+                MB.logger.error('tau:', MB.tau[aa], af['tau%d'%(aa)])
+                flag = False
+
+    # IMF:
+    if MB.nimf != af['nimf']:
+        MB.logger.error('nimf:', MB.nimf, af['nimf'])
+        flag = False
+
+    if not flag:
+        MB.logger.error('# Specified - Template')
+
+    return flag
+
+
+def smooth_template_diff(waves, fluxes, Rs, Rs_template, f_diff_conv=False):
+    '''from Gina's code
+    Parameters
+    ----------
+    wave, flux, Rs: arrays
+        All have the same size.
+    sigma_template : float
+        Sigma of the template spectrum, in km/s
+
+    Notes
+    -----
+    fsps templates have a resolution of ~2.5A FWHM from 3750AA - 7200AA restframe, and much lower (R~200 or so, but not actually well defined) outside this range. 
+    '''
+    from scipy import ndimage
+    c_light = 299792.458 # speed of light in km/s
+
+    fluxes_conv = np.zeros(len(fluxes), float)
+
+    if f_diff_conv:
+
+        fluxes_tmp = np.zeros(len(fluxes), float)
+        for nw,wave in enumerate(waves):
+            fluxes_tmp[:] = 0
+
+            # Find resolution for roman pixel
+            if nw == 0:
+                delta_wvl = waves[nw+1] - waves[nw]
+            else:
+                delta_wvl = waves[nw] - waves[nw-1]
+
+            sigma_inst = c/(Rs[nw]*2.355)
+
+            # FWHM_gal = 1e4*np.sqrt(0.97*1.89)/R_median
+            sigma_template = c/(Rs_template[nw]*2.355)
+
+            # Smooth template to match roman resolution
+            smoothing_sigma = sigma_inst / sigma_template
+
+            # @@@ This part could be shortcut;
+            # smoothed = ndimage.gaussian_filter(fluxes_tmp, smoothing_sigma)
+            xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+            Amp = 1.
+            LSF = gauss(xMof, Amp, smoothing_sigma)
+
+            # find indices that include pixel's wavelength and interpolate to find
+            # smoothed flux
+            fluxes_tmp[nw] = fluxes[nw]
+            smoothed = convolve(fluxes_tmp, LSF, boundary='extend')
+            fluxes_conv[:] += smoothed[:]
+
+    else:
+        delta_wvl = np.nanmedian(np.diff(waves))
+
+        sigma_inst = c/(Rs[:]*2.355)
+        sigma_template = c/(Rs_template[:]*2.355)
+
+        # Smooth template to match roman resolution
+        smoothing_sigma = np.nanmedian(sigma_inst / sigma_template)
+        # fluxes_conv = ndimage.gaussian_filter(fluxes, smoothing_sigma)
+        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+        Amp = 1.
+        LSF = gauss(xMof, Amp, smoothing_sigma)
+        fluxes_conv = convolve(fluxes, LSF, boundary='extend')
+        # print('smoothing_sigma is %.2f'%smoothing_sigma)
+
+    return fluxes_conv
+
+        
+def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
+    sig_temp_def=50., redshift=None):
+    '''
+    Load Morphology params, and returns LSF
+
+    Parameters
+    ----------
+    lm : float array
+        wavelength array for the observed spectrum, in AA.
+
+    Returns
+    -------
+    LSF
+
+    '''
+    lists_morp = ['moffat', 'gauss', 'jwst-prism']
+    Amp = 0
+    f_morp = False
+    if inputs['MORP'] in lists_morp:
+        if inputs['MORP'] in lists_morp[:2]:
+            try:
+                mor_file = inputs['MORP_FILE'].replace('$ID','%s'%(ID))
+                fm = ascii.read(DIR_EXTR + mor_file)
+                Amp = fm['A']
+                gamma = fm['gamma']
+                if inputs['MORP'] == 'moffat':
+                    alp = fm['alp']
+                else:
+                    alp = 0
+                f_morp = True
+            except Exception:
+                msg = '`MORP_FILE` cannot be found.\nNo morphology convolution.'
+                print_err(msg, exit=False)
+                pass
+    else:
+        msg = 'MORP Keywords does not match.\nNo morphology convolution.'
+        print_err(msg, exit=False)
+
+    ############################
+    # Template convolution;
+    # fsps templates have a resolution of ~2.5A FWHM from 3750AA - 7200AA restframe, and much lower (R~200 or so, but not actually well defined) outside this range. 
+    ############################
+    try:
+        sig_temp = float(inputs['SIG_TEMP'])
+        print('Template is set to %.1f km/s.'%(sig_temp))
+    except:
+        sig_temp = sig_temp_def
+        print('Template resolution is unknown.')
+        print('Set to %.1f km/s.'%(sig_temp))
+
+    # @@@ Below assumes a constant R over wavelength range;
+    iixlam = np.argmin(np.abs(lm-wave_repr)) # Around 4000 AA
+    if iixlam == len(lm)-1:
+        dellam = lm[iixlam] - lm[iixlam-1] # AA/pix
+    else:
+        dellam = lm[iixlam+1] - lm[iixlam] # AA/pix
+    R_temp = c / (sig_temp*1e3*1e10)
+    sig_temp_pix = np.median(lm) / R_temp / dellam # delta v in pixel;
+    sig_inst = 0 #65 #km/s for Manga
+
+    # If grism;
+    if f_morp:
+        print('\nStarting templates convolution (intrinsic morphology).')
+        if gamma>sig_temp_pix:# and False:
+            sig_conv = np.sqrt(gamma**2-sig_temp_pix**2)
+        else:
+            sig_conv = 0
+            print('Template resolution is broader than Morphology.')
+            print('No convolution is applied to templates.')
+
+        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+        if inputs['MORP'] == 'moffat' and Amp>0 and alp>0:
+            LSF = moffat(xMof, Amp, 0, np.sqrt(gamma**2-sig_temp_pix**2), alp)
+            print('Template convolution with Moffat.')
+        elif inputs['MORP'] == 'gauss':
+            sigma = gamma
+            LSF = gauss(xMof, Amp, np.sqrt(sigma**2-sig_temp_pix**2))
+            print('Template convolution with Gaussian.')
+            print('params is sigma;',sigma)
+        else:
+            msg = 'Something is wrong with the convolution file. Exiting.'
+            print_err(msg, exit=True)
+            LSF = []
+
+    else: # For slit spectroscopy. To be updated...
+        print('Templates convolution (intrinsic velocity).')
+        try:
+            vdisp = float(inputs['VDISP'])
+            dellam = lm[1] - lm[0] # AA/pix
+            R_disp = c/(np.sqrt(vdisp**2-sig_inst**2)*1e3*1e10)
+            vdisp_pix = np.median(lm) / R_disp / dellam # delta v in pixel;
+            print('Templates are convolved at %.2f km/s.'%(vdisp))
+            if vdisp_pix-sig_temp_pix>0:
+                sig_conv = np.sqrt(vdisp_pix**2-sig_temp_pix**2)
+            else:
+                sig_conv = 0
+        except:
+            vdisp = 0.
+            # print('Templates are not convolved.')
+            sig_conv = 0 #np.sqrt(sig_temp_pix**2)
+            pass
+        xMof = np.arange(-5, 5.1, .1) # dimension must be even.
+        Amp = 1.
+        LSF = gauss(xMof, Amp, sig_conv)
+
+    return LSF
+
+
+def convolve_templates(wave, spec, LSF, boundary='extend', f_prism=False, file_res=None, redshift=None, f_diff_conv=False):
+    '''
+    file_res : str
+        From the official jdocs.
+    '''
+    if len(LSF) > 1:
+        spec_conv = convolve(spec, LSF, boundary='extend')
+
+    elif f_prism:
+        fd_res = fits.open(file_res)[1].data
+        R_res = fd_res['R']
+        wave_res = fd_res['WAVELENGTH'] # in um;
+        wave_res *= 1e4
+        fint = interpolate.interp1d(wave_res, R_res, kind='nearest', fill_value="extrapolate")
+        Rs_res_interp = fint(wave)
+        Rs_template = np.zeros(len(wave),float) + 200 # Assuming R=200;
+        if redshift != None:
+            mask_hr = np.where((wave/(1+redshift) > 3750) & ((wave/(1+redshift) < 7200)))
+            Rs_template[mask_hr] = wave[mask_hr] / 2.5
+        else:
+            mask_hr = None
+        # Smooth;
+        spec_conv = smooth_template_diff(wave, spec, Rs_res_interp, Rs_template, f_diff_conv=f_diff_conv)
+
+    else:
+        spec_conv = spec
+
+    return spec_conv

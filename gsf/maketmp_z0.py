@@ -90,6 +90,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 # Determining tau for each age bin;
                 #
 
+                if zz == 0 and pp == 0 and ss == 0 and age[ss]<0.01:
+                    MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
+
                 # 1.Continuous age bin;
                 if int(tau0[pp]) == 99:
                     if ss==0:
@@ -199,6 +202,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 if fneb and pp == 0 and ss == 0:
 
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    stellar_mass_tmp = sp.stellar_mass
 
                     # Loop within logU;
                     for nlogU, logUtmp in enumerate(MB.logUs):
@@ -208,7 +212,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         con = (ewave0>lammin) & (ewave0<lammax)
                         flux_nebular = eflux0[con] - flux
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
-                
+                        tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
+                        tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: esp.emline_luminosity})
+                        tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: esp.stellar_mass - stellar_mass_tmp})
+
                 if f_add_dust:
                     wave0_d, flux0_d = dsptmp.get_spectrum(tage=age[ss], peraa=True)
                     con = (wave0_d>lammin) & (wave0_d<lammax)
@@ -251,13 +258,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                     # ASDF
                     tree_lick.update({INDICES[ll]+'_'+str(zz): LICK[:,ll]})
 
-                col1 = fits.Column(name='ms_'+str(zz), format='E', unit='Msun', array=ms)
                 tree_ML.update({'ms_'+str(zz): ms})
-                col2 = fits.Column(name='Ls_'+str(zz), format='E', unit='Lsun', array=Ls)
                 tree_ML.update({'Ls_'+str(zz): Ls})
-                col3 = fits.Column(name='fm_'+str(zz), format='E', unit='', array=mlost)
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
-                col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
                 tree_ML.update({'realtau_'+str(zz): ms})
 
     # Write;

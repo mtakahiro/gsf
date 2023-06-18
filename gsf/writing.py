@@ -287,7 +287,6 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '.fits', overwrite=True)
 
 
-
 def get_index(mmax=300):
     '''
     Purpose

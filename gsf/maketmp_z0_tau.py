@@ -86,6 +86,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
         if not Zforce == None and Z[zz] != Zforce:
             continue
         for ss in range(len(tau)):
+
             if 10**tau[ss]<0.01:
                 # then do SSP
                 print('!! tau is <0.01Gyr. SSP is applied. !!') # This corresponds to the min-tau of fsps.
@@ -109,6 +110,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
             mlost = np.zeros(Na, dtype='float')
 
             for tt in range(len(age)):
+
+                if zz == 0 and ss == 0 and tt == 0 and 10**age[tt]<0.01:
+                    MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
+
                 if sfh==6: # Tabular SFH.
                     tuniv_hr  = np.arange(0,age_univ,0.01) # in Gyr
                     T0 = np.log(10**age[tt])
@@ -131,7 +136,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                 mlost[tt] = sp.stellar_mass / sp.formed_mass
 
                 if fneb and tt == 0 and ss == 0:
+
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    stellar_mass_tmp = sp.stellar_mass
+
                     # Loop within logU;
                     for nlogU, logUtmp in enumerate(MB.logUs):
                         esptmp.params['gas_logu'] = logUtmp
@@ -140,6 +148,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                         con = (ewave0>lammin) & (ewave0<lammax)
                         flux_nebular = eflux0[con]-flux
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
+                        tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
+                        tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: esp.emline_luminosity})
+                        tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: esp.stellar_mass - stellar_mass_tmp})
 
                 if flagz and ss == 0 and tt == 0:
                     # ASDF Big tree;
