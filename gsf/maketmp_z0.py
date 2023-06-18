@@ -2,13 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from astropy.io import ascii,fits
+from astropy.convolution import Gaussian1DKernel, convolve
 
 from .function import get_ind
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
 
-def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True):
+def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True,
+                smooth_uv=False):
     '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
@@ -34,6 +36,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
 
     f_mp : bool
         Multiprocessing.
+    smooth_uv : bool
+        Experimental - smoothing stellar spectra at rf-UV, as they look wiggling...
     '''
     import asdf
     import fsps
@@ -183,6 +187,11 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 MB.logger.info('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), pp+1, len(tau0), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
 
                 wave0, flux0 = sp.get_spectrum(tage=age[ss], peraa=True) # Lsun/AA
+
+                # Post process RF-UV?
+                if smooth_uv and age[ss]<0.01:
+                    wave0, flux0 = smooth_spectrum(wave0, flux0, wmin=0, wmax=3000, sigma=10)
+
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
                 mlost[ss] = sp.stellar_mass / sp.formed_mass
@@ -528,3 +537,31 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
     af = asdf.AsdfFile(tree)
     af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
 
+
+def smooth_spectrum(wave, flux, wmin=0, wmax=1750, sigma=30, verbose=False):
+    '''
+    wave : float array
+        in AA
+    sigma : float
+        in AA
+    '''
+    con = (wave>wmin) & (wave<wmax)
+    
+    delwave = np.nanmedian(np.diff(wave[con]))
+    stddev = sigma / delwave
+    if verbose:
+        print('stddev is set to',stddev)
+        
+    if stddev < 0.1:
+        print('stddev is too small (%.2f). No processing.'%stddev)
+        return wave, flux
+        
+    # Create kernel
+    g = Gaussian1DKernel(stddev=stddev)
+
+    # Convolve data
+    z = convolve(flux[con], g, boundary='extend')
+    
+    flux[con] = z
+
+    return wave, flux
