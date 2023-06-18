@@ -464,7 +464,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             ysum += y0_r
             ysump[:nopt] += y0p
 
-            f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) /d_scale
+            f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d_scale
 
         # The following needs revised.
         f_uvj = False
