@@ -27,7 +27,7 @@ import logging
 import pathlib
 
 # import from custom codes
-from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err
+from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err, str2bool
 from .zfit import check_redshift,get_chi2
 from .writing import get_param
 from .function_class import Func
@@ -367,6 +367,13 @@ class Mainbody(GsfBase):
                     self.logUs = np.asarray([self.logUMAX])
                 except:
                     self.logUFIX = None
+
+                try:
+                    nfneb_tied = str(inputs['NEBULAE_TIED'])
+                except:
+                    nfneb_tied = '0'
+                self.fneb_tied = str2bool(nfneb_tied)
+
             else:
                 self.fneb = False                
                 self.logUMIN = -2.5
@@ -1403,7 +1410,13 @@ class Mainbody(GsfBase):
 
         # Nebular; ver1.6
         if self.fneb:
-            fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
+            if self.fneb_tied:
+                # @@@ TBD
+                iix = np.argmin(np.abs(self.age-0.01))
+                print('Aneb is tied to A%d'%iix)
+                fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d if Aneb > A%d'%(iix,iix)) #self.Amax)#, expr='<A%d'%iix)
+            else:
+                fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
             self.ndim += 1
             if not self.logUFIX == None:
                 fit_params.add('logU', value=self.logUFIX, vary=False)

@@ -89,9 +89,8 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 #
                 # Determining tau for each age bin;
                 #
-
-                if zz == 0 and pp == 0 and ss == 0 and age[ss]<0.01:
-                    MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
+                # if zz == 0 and pp == 0 and ss == 0 and age[ss]<0.01 and MB.fneb:
+                #     MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
 
                 # 1.Continuous age bin;
                 if int(tau0[pp]) == 99:
@@ -208,9 +207,27 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                     for nlogU, logUtmp in enumerate(MB.logUs):
                         esptmp.params['gas_logu'] = logUtmp
                         esp = esptmp
-                        ewave0, eflux0 = esp.get_spectrum(tage=0.001, peraa=True)
+
+                        if age[ss]>0.01:
+                            tage_neb = 0.01
+                            MB.logger.info('Nebular component is calculabed with %.2f Gyr'%tage_neb)
+                        else:
+                            tage_neb = age[ss]
+
+                        ewave0, eflux0 = esp.get_spectrum(tage=tage_neb, peraa=True)
+                        if age[ss] != tage_neb:
+                            sp_tmp = sp.copy()
+                            wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_neb, peraa=True) # Lsun/AA
+                            _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
+                        else:
+                            _, flux_tmp = wave, flux
+
                         con = (ewave0>lammin) & (ewave0<lammax)
-                        flux_nebular = eflux0[con] - flux
+                        flux_nebular = eflux0[con] - flux_tmp
+                        # Eliminate some negatives. Mostly on <912A;
+                        con_neg = flux_nebular<0
+                        flux_nebular[con_neg] = 0
+
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                         tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
                         tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: esp.emline_luminosity})
