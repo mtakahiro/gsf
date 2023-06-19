@@ -72,7 +72,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     col = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
 
     nstep_plot = 1
-    if MB.f_bpass:
+    if False and MB.f_bpass:
         nstep_plot = 30
 
     SNlim = MB.SNlim
