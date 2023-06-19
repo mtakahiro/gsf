@@ -319,7 +319,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
     lammax : float, optional
         Maximum value of the rest-frame wavelength of the template, in AA.
 
-    BPASS_DIR : str, optional
+    DIR_BPASS : str, optional
         Path to the ditectory where BPASS templates are storesd.
 
     BPASS_ver : str, optional
@@ -349,7 +349,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
     tau0 = MB.tau0
     fneb = MB.fneb
     if fneb:
-        print('Currently, BPASS does not have option of nebular emission.')
+        MB.logger.warning('Currently, BPASS does not have option of nebular emission.')
         fneb = False
     DIR_TMP= MB.DIR_TMP
 
@@ -361,7 +361,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
     else:
         bin_str = 'str'
 
-    DIR_LIB = MB.BPASS_DIR + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
+    DIR_LIB = MB.DIR_BPASS + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
 
     NZ = len(Z)
     Na = len(age)
@@ -483,7 +483,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
                         tautmp = ( 10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05) ) / 1e9 # Gyr
                         agetmp = (age[ss]+age[ss-1])/2.
 
-                    flux0  = fd_sed['col%d'%(iis+2)]
+                    flux0 = fd_sed['col%d'%(iis+2)]
                     ms[ss] = fd_stm['col2'][iistm]
                     mass_formed_tot += mass_formed
 

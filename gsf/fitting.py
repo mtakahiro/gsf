@@ -121,7 +121,7 @@ class Mainbody(GsfBase):
                            'AVMIN', 'AVMAX', 'AVFIX', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
                            'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST', 
-                           'BPASS', 'BPASS_DIR',
+                           'BPASS', 'DIR_BPASS',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
                            'x_HI'
                            ],
@@ -337,8 +337,15 @@ class Mainbody(GsfBase):
         # Becuase of force_no_neb, add logUs regardless of `ADD_NEBULAE` flag.
         self.fneb = False
         self.nlogU = 0
-        try:
-            if int(inputs['ADD_NEBULAE']) == 1:
+        
+        self.check_keys(self)
+
+        if 'BPASS' in self.input_keys and str2bool(inputs['BPASS']):
+            self.logger.warning('Currently, BPASS does not have option of nebular emission.')
+            inputs['ADD_NEBULAE'] = '0'
+
+        if 'ADD_NEBULAE' in self.input_keys:
+            if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
@@ -380,7 +387,7 @@ class Mainbody(GsfBase):
                 self.logUMAX = -2.0
                 self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
-        except:
+        else:
             self.verbose
             print_err('Some error in nebular setup; No nebular added.')
             self.fneb = False
@@ -552,12 +559,12 @@ class Mainbody(GsfBase):
         # If BPASS;
         if self.f_bpass == 1:
             try:
-                self.BPASS_DIR = inputs['BPASS_DIR']
+                self.DIR_BPASS = inputs['DIR_BPASS']
             except:
-                self.logger.warning('BPASS_DIR is not found. Using default.')
-                self.BPASS_DIR = '/astro/udfcen3/Takahiro/BPASS/'
-                if not os.path.exists(self.BPASS_DIR):
-                    msg = 'BPASS directory, %s, not found.'%self.BPASS_DIR
+                self.logger.warning('DIR_BPASS is not found. Using default.')
+                self.DIR_BPASS = '/astro/udfcen3/Takahiro/BPASS/'
+                if not os.path.exists(self.DIR_BPASS):
+                    msg = 'BPASS directory, %s, not found.'%self.DIR_BPASS
                     print_err(msg, exit=True)
 
             self.BPASS_ver = 'v2.2.1'
@@ -577,13 +584,15 @@ class Mainbody(GsfBase):
                 self.has_ZFIX = True
             except:
                 self.logger.warning('ZFIX is not found.')
-                self.logger.warning('Metallicities available in BPASS are limited and discrete. ZFIX is recommended.',self.Zall)
+                self.logger.warning('Metallicities available in BPASS are limited and discrete. ZFIX is recommended : ')
+                self.logger.warning(self.Zall)
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
-                self.logger.info('Final list for log(Z_BPASS/Zsun) is:',self.Zall)
+                self.logger.info('Final list for log(Z_BPASS/Zsun) is : ')
+                self.logger.info(self.Zall)
                 if len(self.Zall)>1:
                     self.has_ZFIX = False
                     self.ZFIX = None
@@ -2364,3 +2373,11 @@ class Mainbody(GsfBase):
         ax1.set_ylabel('Flux$_\\nu$ (arb.)')
         return fig
     
+    @staticmethod
+    def check_keys(self):
+        '''
+        '''
+        self.input_keys = []
+        for key in self.inputs.keys():
+            self.input_keys.append(key)
+        return self.input_keys
