@@ -1080,10 +1080,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
         SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
+        SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
         hdr['SFRUV16'] = SFRUV[0]
         hdr['SFRUV50'] = SFRUV[1]
         hdr['SFRUV84'] = SFRUV[2]
+        hdr['SFRUV_UNCOR_16'] = SFRUV_UNCOR[0]
+        hdr['SFRUV_UNCOR_50'] = SFRUV_UNCOR[1]
+        hdr['SFRUV_UNCOR_84'] = SFRUV_UNCOR[2]
 
         # UVJ
         try:

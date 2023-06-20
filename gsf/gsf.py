@@ -248,7 +248,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
                 flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
 
         if MB.SFH_FORM == -99:
-            from .plot_sed import plot_corner_physparam_frame,plot_corner_physparam_summary
+            from .plot_sed import plot_corner_physparam_summary
             plot_corner_physparam_summary(MB, mmax=mmax_param)
         else:
             #from .plot_sed_logA import plot_corner_physparam_summary_tau as plot_corner_physparam_summary
