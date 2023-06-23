@@ -49,8 +49,11 @@ def print_err(msg, exit=False, details=None):
 def str2bool(v):
     '''
     '''
+    import argparse
     if isinstance(v, bool):
        return v
+    if type(v) != str:
+        v = '%s'%v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
