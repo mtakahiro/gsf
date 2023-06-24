@@ -53,8 +53,13 @@ class Post():
 
         if self.mb.fneb:
             n_optir = self.mb.n_optir
-            model_neb, x1_neb = self.mb.fnc.get_template(vals, f_neb=True)
+            model_neb, _ = self.mb.fnc.get_template(vals, f_neb=True)
             model[:n_optir] += model_neb
+
+        if self.mb.fagn:
+            n_optir = self.mb.n_optir
+            model_agn, _ = self.mb.fnc.get_template(vals, f_agn=True)
+            model[:n_optir] += model_agn
 
         if self.mb.ferr:
             try:
@@ -320,8 +325,8 @@ class Post():
 
         if self.mb.prior == None:
             self.mb.prior = {}
-            for key_param in self.mb.fit_params:
-                self.mb.prior[key_param] = None
+            for key_param_tmp in self.mb.fit_params:
+                self.mb.prior[key_param_tmp] = None
 
         if self.mb.prior[key_param] == None:
             self.mb.logger.info('Using lognormal prior for %s'%key_param)

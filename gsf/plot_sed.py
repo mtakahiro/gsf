@@ -130,6 +130,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fneb:
         logU50 = hdul[1].data['logU'][1]
         Aneb50 = 10**hdul[1].data['Aneb'][1]
+    if MB.fagn:
+        AGNTAU50 = hdul[1].data['AGNTAU'][1]
+        Aagn50 = 10**hdul[1].data['Aagn'][1]
 
     aa = 0
     Av16 = hdul[1].data['AV'+str(aa)][0]
@@ -383,6 +386,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fneb:
         lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
         lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
+    if MB.fagn:
+        lib_agn = MB.fnc.open_spec_fits(fall=0, f_agn=True)
+        lib_agn_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_agn=True)
 
     # FIR dust plot;
     if MB.f_dust:
@@ -455,6 +461,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 # Only at one age pixel;
                 y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50)
                 y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50)
+                ysum += y0_r
+                ysump[:nopt] += y0p
+
+            if MB.fagn: 
+                # Only at one age pixel;
+                y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn_all, AGNTAU=AGNTAU50)
+                y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn, AGNTAU=AGNTAU50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
@@ -707,6 +720,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     fm_tmp += mod0_tmp
                     # Make no emission line template;
                     mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
+                    fm_tmp_nl += mod0_tmp_nl
+                if MB.fagn:
+                    Aagn_tmp = 10**samples['Aagn'][nr]
+                    if not MB.AGNTAUFIX == None:
+                        AGNTAU_tmp = MB.AGNTAUFIX
+                    else:
+                        AGNTAU_tmp = samples['AGNTAU'][nr]
+                    mod0_tmp, xm_tmp = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
+                    fm_tmp += mod0_tmp
+                    # Make no emission line template;
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
                     fm_tmp_nl += mod0_tmp_nl
             else:
                 mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)

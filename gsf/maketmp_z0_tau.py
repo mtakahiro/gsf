@@ -93,14 +93,20 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                 sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
                 if fneb == 1:
                     esptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1) # Lsun/Hz
+                if MB.fagn:
+                    asptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, fagn=1.0) # Lsun/Hz
             elif sfh<5:
                 sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=sfh, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=10**tau[ss], const=0, sf_start=0, sf_trunc=0, tburst=13, fburst=0) # Lsun/Hz
                 if fneb == 1:
                     esptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=sfh, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=10**tau[ss], const=0, sf_start=0, sf_trunc=0, tburst=13, fburst=0, add_neb_emission=1) # Lsun/Hz
+                if MB.fagn:
+                    asptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=sfh, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=10**tau[ss], const=0, sf_start=0, sf_trunc=0, tburst=13, fburst=0, fagn=1.0) # Lsun/Hz
             elif sfh==6: # Custom SFH
                 sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0)
                 if fneb == 1:
                     sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0, add_neb_emission=1)
+                if MB.fagn:
+                    asptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0, fagn=1.0)
                 print('Log normal is used. !!')
 
             print('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), ss+1, len(tau), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
@@ -144,13 +150,54 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                     for nlogU, logUtmp in enumerate(MB.logUs):
                         esptmp.params['gas_logu'] = logUtmp
                         esp = esptmp
-                        ewave0, eflux0 = esp.get_spectrum(tage=0.001, peraa=True)
+
+                        if age[ss]>0.01:
+                            tage_neb = 0.01
+                            MB.logger.info('Nebular component is calculabed with %.2f Gyr'%tage_neb)
+                        else:
+                            tage_neb = age[tt]
+
+                        ewave0, eflux0 = esp.get_spectrum(tage=age[tt], peraa=True)
                         con = (ewave0>lammin) & (ewave0<lammax)
                         flux_nebular = eflux0[con]-flux
+
+                        # Eliminate some negatives. Mostly on <912A;
+                        con_neg = flux_nebular<0
+                        flux_nebular[con_neg] = 0
+
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                         tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
                         tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: esp.emline_luminosity})
                         tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: esp.stellar_mass - stellar_mass_tmp})
+
+                if MB.fagn and tt == 0 and ss == 0:
+
+                    asptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    stellar_mass_tmp = sp.stellar_mass
+
+                    # Loop within logU;
+                    for nAGNTAU, AGNTAUtmp in enumerate(MB.AGNTAUs):
+                        asptmp.params['agn_tau'] = AGNTAUtmp
+                        asp = asptmp
+
+                        tage_agn = age[tt]
+
+                        ewave0, eflux0 = asp.get_spectrum(tage=tage_agn, peraa=True)
+                        if age[tt] != tage_agn:
+                            sp_tmp = sp.copy()
+                            wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_agn, peraa=True) # Lsun/AA
+                            _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
+                        else:
+                            _, flux_tmp = wave, flux
+
+                        con = (ewave0>lammin) & (ewave0<lammax)
+                        flux_agn = eflux0[con] - flux_tmp
+                        # Eliminate some negatives. Mostly on <912A;
+                        con_neg = flux_agn<0
+                        flux_agn[con_neg] = 0
+
+                        tree_spec.update({'flux_agn_Z%d'%zz+'_AGNTAU%d'%nAGNTAU: flux_agn})
+                        tree_spec.update({'agn_mass_Z%d'%zz+'_AGNTAU%d'%nAGNTAU: asp.stellar_mass - stellar_mass_tmp})
 
                 if flagz and ss == 0 and tt == 0:
                     # ASDF Big tree;
@@ -168,6 +215,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                         tree.update({'logUMIN': MB.logUMIN})
                         tree.update({'logUMAX': MB.logUMAX})
                         tree.update({'DELlogU': MB.DELlogU})
+                    if MB.fagn:
+                        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
+                        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
+                        tree.update({'DELAGNTAU': MB.DELAGNTAU})
 
                     tree_spec.update({'wavelength': wave})
                     flagz = False

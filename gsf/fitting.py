@@ -115,10 +115,11 @@ class Mainbody(GsfBase):
             'Templates' : ['TAU0', 'NIMF', 'BINARY', 
                            'SFH_FORM',
                            'AMIN', 'AMAX', 
-                           'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 'ADD_NEBULAE', 
-                           'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGE_FIX', 'AVEVOL',
+                           'ADD_NEBULAE', 'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 
+                           'ADD_AGN', 'AGNTAUMIN', 'AGNTAUMAX', 'DELAGNTAU', 'AGNTAUFIX', 
+                           'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGEFIX',
                            'ZMIN', 'ZMAX', 'DELZ', 'ZFIX', 'ZEVOL', 
-                           'AVMIN', 'AVMAX', 'AVFIX', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
+                           'AVMIN', 'AVMAX', 'AVFIX', 'AVEVOL', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
                            'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST', 
                            'BPASS', 'DIR_BPASS',
@@ -354,6 +355,7 @@ class Mainbody(GsfBase):
         # Becuase of force_no_neb, add logUs regardless of `ADD_NEBULAE` flag.
         self.fneb = False
         self.nlogU = 0
+        self.fagn = False
         
         self.check_keys(self)
 
@@ -361,6 +363,7 @@ class Mainbody(GsfBase):
             self.logger.warning('Currently, BPASS does not have option of nebular emission.')
             inputs['ADD_NEBULAE'] = '0'
 
+        # Nebular;
         if 'ADD_NEBULAE' in self.input_keys:
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
@@ -413,8 +416,56 @@ class Mainbody(GsfBase):
             self.DELlogU = 0.5
             self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
             pass
-        
-        # Outpu directory;
+
+        # AGN;
+        if 'ADD_AGN' in self.input_keys:
+            if str2bool(inputs['ADD_AGN']):
+                self.fagn = True
+                try:
+                    self.AGNTAUMIN = float(inputs['AGNTAUMIN'])
+                except:
+                    self.AGNTAUMIN = 5
+                try:
+                    self.AGNTAUMAX = float(inputs['AGNTAUMAX'])
+                except:
+                    self.AGNTAUMAX = 15
+                try:
+                    self.DELAGNTAU = float(inputs['DELAGNTAU'])
+                    if self.DELAGNTAU<1:
+                        print_err('`DELAGNTAU` cannot have value smaller than 1. Exiting.')
+                        sys.exit()
+                except:
+                    self.DELAGNTAU = 1.0
+                self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+                self.nAGNTAU = len(self.AGNTAUs)
+
+                try:
+                    self.AGNTAUFIX = float(inputs['AGNTAUFIX'])
+                    self.nAGNTAU = 1
+                    self.AGNTAUMIN = self.AGNTAUFIX
+                    self.AGNTAUMAX = self.AGNTAUFIX
+                    self.DELAGNTAU = 0
+                    self.AGNTAUs = np.asarray([self.AGNTAUMAX])
+                except:
+                    self.AGNTAUFIX = None
+
+            else:
+                self.fagn = False                
+                self.AGNTAUMIN = 10
+                self.AGNTAUMAX = 15
+                self.DELAGNTAU = 5
+                self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+        else:
+            self.verbose
+            print_err('Some error in agn setup; No agn added.')
+            self.fagn = False
+            self.AGNTAUMIN = 10
+            self.AGNTAUMAX = 15
+            self.DELAGNTAU = 5
+            self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+            pass
+
+        # Output directory;
         try:
             self.DIR_OUT = inputs['DIR_OUT']
             if not os.path.exists(self.DIR_OUT):
@@ -621,7 +672,8 @@ class Mainbody(GsfBase):
             self.AVEVOL = False
 
         try:
-            self.has_AVFIX = str2bool(inputs['AVFIX'])
+            _ = inputs['AVFIX']
+            self.has_AVFIX = True
         except:
             self.has_AVFIX = False
 
@@ -1461,6 +1513,18 @@ class Mainbody(GsfBase):
                 self.ndim += 1
             f_add = True
 
+        # AGN; ver1.9
+        if self.fagn:
+            fit_params.add('Aagn', value=self.Aini, min=self.Amin, max=self.Amax)
+            # fit_params.add('Aagn', value=self.Aini, min=0, max=5)
+            self.ndim += 1
+            if not self.AGNTAUFIX == None:
+                fit_params.add('AGNTAU', value=self.AGNTAUFIX, vary=False)
+            else:
+                fit_params.add('AGNTAU', value=np.median(self.AGNTAUs), min=self.AGNTAUMIN, max=self.AGNTAUMAX)
+                self.ndim += 1
+            f_add = True
+
         self.fit_params = fit_params
 
         return f_add
@@ -1640,6 +1704,9 @@ class Mainbody(GsfBase):
         if self.fneb:
             self.lib_neb = self.fnc.open_spec_fits(fall=0, f_neb=True)
             self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True)
+        if self.fagn:
+            self.lib_agn = self.fnc.open_spec_fits(fall=0, f_agn=True)
+            self.lib_agn_all = self.fnc.open_spec_fits(fall=1, f_agn=True)
 
         if add_fir == None:
             add_fir = self.f_dust

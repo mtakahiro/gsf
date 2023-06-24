@@ -254,6 +254,19 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         col50 = fits.Column(name='logU', format='E', unit='', array=logUmc[:])
         col01.append(col50)
 
+    if self.fagn:
+        Aagnmc = np.zeros(3, dtype=float)
+        AGNTAUmc = np.zeros(3, dtype=float)
+        Aagnmc[:] = np.percentile(res.flatchain['Aagn'][burnin:], [16,50,84])
+        if not self.AGNTAUFIX == None:
+            AGNTAUmc[:] = [self.AGNTAUFIX,self.AGNTAUFIX,self.AGNTAUFIX]
+        else:
+            AGNTAUmc[:] = np.percentile(res.flatchain['AGNTAU'][burnin:], [16,50,84])
+        col50 = fits.Column(name='Aagn', format='E', unit='', array=Anebmc[:])
+        col01.append(col50)
+        col50 = fits.Column(name='AGNTAU', format='E', unit='', array=logUmc[:])
+        col01.append(col50)
+
     # zmc
     col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
     col01.append(col50)

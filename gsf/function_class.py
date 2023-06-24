@@ -48,7 +48,7 @@ class Func:
         self.f_af0 = False
 
 
-    def open_spec_fits(self, fall:int = 0, orig:bool = False, f_neb=False):
+    def open_spec_fits(self, fall:int=0, orig:bool=False, f_neb=False, f_agn=False):
         '''Load template in obs range.
 
         Parameters
@@ -64,6 +64,7 @@ class Func:
             
         '''
         ID0 = self.MB.ID
+        DIR_TMP = self.DIR_TMP
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -78,8 +79,43 @@ class Func:
             app = 'all_'
             hdu0 = self.MB.af['spec_full']
 
-        if not f_neb:
-            DIR_TMP = self.DIR_TMP
+        if f_neb:
+            NZ = len(ZZ)
+            NU = len(self.MB.logUs)
+            for zz,Z in enumerate(ZZ):
+                for uu,logU in enumerate(self.MB.logUs):
+                    if zz == 0 and uu == 0:
+                        nr = hdu0['colnum']
+                        xx = hdu0['wavelength']
+                        coln = int(2 + NZ * NU)
+                        lib = np.zeros((len(nr), coln), dtype=float)
+                        lib[:,0] = nr[:]
+                        lib[:,1] = xx[:]
+                    if orig:
+                        colname = 'fspec_orig_nebular_Z%d'%zz + '_logU%d'%uu
+                    else:
+                        colname = 'fspec_nebular_Z%d'%zz + '_logU%d'%uu
+                    colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
+                    lib[:,colnall] = hdu0[colname]
+        elif f_agn:
+            NZ = len(ZZ)
+            NU = len(self.MB.AGNTAUs)
+            for zz,Z in enumerate(ZZ):
+                for uu,logU in enumerate(self.MB.AGNTAUs):
+                    if zz == 0 and uu == 0:
+                        nr = hdu0['colnum']
+                        xx = hdu0['wavelength']
+                        coln = int(2 + NZ * NU)
+                        lib = np.zeros((len(nr), coln), dtype=float)
+                        lib[:,0] = nr[:]
+                        lib[:,1] = xx[:]
+                    if orig:
+                        colname = 'fspec_orig_agn_Z%d'%zz + '_AGNTAU%d'%uu
+                    else:
+                        colname = 'fspec_agn_Z%d'%zz + '_AGNTAU%d'%uu
+                    colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
+                    lib[:,colnall] = hdu0[colname]
+        else:
             for pp in range(ntau0):
                 for zz in range(len(ZZ)):
                     Z = ZZ[zz]
@@ -99,24 +135,6 @@ class Func:
                             colname = 'fspec_' + str(zz) + '_' + str(aa) + '_' + str(pp)
                         colnall = int(2 + pp*len(ZZ)*len(AA) + zz*len(AA) + aa) # 2 takes account of wavelength and AV columns.
                         lib[:,colnall] = hdu0[colname]
-        else:
-            NZ = len(ZZ)
-            NU = len(self.MB.logUs)
-            for zz,Z in enumerate(ZZ):
-                for uu,logU in enumerate(self.MB.logUs):
-                    if zz == 0 and uu == 0:
-                        nr = hdu0['colnum']
-                        xx = hdu0['wavelength']
-                        coln = int(2 + NZ * NU)
-                        lib = np.zeros((len(nr), coln), dtype=float)
-                        lib[:,0] = nr[:]
-                        lib[:,1] = xx[:]
-                    if orig:
-                        colname = 'fspec_orig_nebular_Z%d'%zz + '_logU%d'%uu
-                    else:
-                        colname = 'fspec_nebular_Z%d'%zz + '_logU%d'%uu
-                    colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
-                    lib[:,colnall] = hdu0[colname]
 
         return lib
 
@@ -221,6 +239,68 @@ class Func:
             return nr, xx, yy
 
 
+    def get_total_flux_agn(self, par, f_Alog=True, lib_all=True, lib=None):
+        '''get total flux for a given set of parameter.
+
+        Parameters
+        ----------
+        par : library
+            contains parameters
+        '''
+        if lib == None:
+            if lib_all:
+                lib = self.MB.lib_agn_all
+            else:
+                lib = self.MB.lib_agn
+
+        aa = 0
+        if self.MB.ZEVOL==1 or aa == 0:
+            Z = par['Z'+str(aa)]
+            NZ = self.MB.bfnc.Z2NZ(Z)
+
+        try:
+            Aagn = par['Aagn']
+            AGNTAU = par['AGNTAU']
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+        except: # This is exception for initial minimizing;
+            Aagn = -99
+            AGNTAU = self.MB.AGNTAUs[0]
+            nAGNTAU = 0
+
+        # AGNTAU
+        NAGNT = self.MB.nAGNTAU
+
+        # Check limit;
+        if Aagn < self.MB.Amin:
+            Aagn = self.MB.Amin
+        if Aagn > self.MB.Amax:
+            Aagn = self.MB.Amax
+
+        # Z limit:
+        if aa == 0 or self.MB.ZEVOL == 1:
+            if par['Z%d'%aa] < self.MB.Zmin:
+                par['Z%d'%aa] = self.MB.Zmin
+            if par['Z%d'%aa] > self.MB.Zmax:
+                par['Z%d'%aa] = self.MB.Zmax
+
+        # Is A in logspace?
+        if f_Alog:
+            A00 = 10**Aagn
+        else:
+            A00 = Aagn
+
+        coln = int(2 + NZ*NAGNT + nAGNTAU)
+
+        if aa == 0:
+            nr = lib[:,0]
+            xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+            yy = A00 * lib[:,coln]
+        else:
+            yy += A00 * lib[:,coln]
+
+        return nr, xx, yy
+
+
     def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, lib=None):
         '''get total flux for a given set of parameter.
 
@@ -249,14 +329,31 @@ class Func:
             logU = self.MB.logUs[0]
             nlogU = 0
 
+        try:
+            Aagn = par['Aagn']
+            AGNTAU = par['AGNTAU']
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+        except: # This is exception for initial minimizing;
+            Aagn = -99
+            AGNTAU = self.MB.AGNTAUs[0]
+            nAGNTAU = 0
+
         # logU
         NU = self.MB.nlogU
+        # AGNTAU
+        NAGNT = self.MB.nAGNTAU
 
         # Check limit;
         if Aneb < self.MB.Amin:
             Aneb = self.MB.Amin
         if Aneb > self.MB.Amax:
             Aneb = self.MB.Amax
+
+        if Aagn < self.MB.Amin:
+            Aagn = self.MB.Amin
+        if Aagn > self.MB.Amax:
+            Aagn = self.MB.Amax
+
         # Z limit:
         if aa == 0 or self.MB.ZEVOL == 1:
             if par['Z%d'%aa] < self.MB.Zmin:
@@ -267,8 +364,10 @@ class Func:
         # Is A in logspace?
         if f_Alog:
             A00 = 10**Aneb
+            Aagn00 = 10**Aagn
         else:
             A00 = Aneb
+            Aagn00 = Aagn
 
         coln = int(2 + NZ*NU + nlogU)
 
@@ -282,7 +381,7 @@ class Func:
         return nr, xx, yy
 
 
-    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, f_apply_dust=True, EBVratio=2.27):
+    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27):
         '''
         Parameters
         ----------
@@ -309,15 +408,17 @@ class Func:
 
         if logU != None:
             NU = len(self.MB.logUs)
-
             # Dust attenuation to nebulae
             Av *= EBVratio
             nlogU = np.argmin(np.abs(self.MB.logUs - logU))
             coln = int(2 + NZ*NU + nlogU)
+        elif AGNTAU != None:
+            NU = len(self.MB.AGNTAUs)
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+            coln = int(2 + NZ*NU + nAGNTAU)
         else:
             coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
 
-        # 
         nr = lib[:,0]
         xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
         yy = lib[:,coln]
@@ -343,7 +444,7 @@ class Func:
 
 
     def get_template(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, 
-        f_apply_dust:bool=True, f_IGM=True, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27):
+        f_apply_dust:bool=True, f_IGM=True, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27, f_agn=False):
         '''Makes model template for a given parameter set, ``par``.
 
         Parameters
@@ -392,6 +493,8 @@ class Func:
         if f_neb:
             # Get total flux;
             nr, xx, yy = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all)
+        elif f_agn:
+            nr, xx, yy = self.get_total_flux_agn(par, f_Alog=f_Alog, lib_all=lib_all)
         else:
             nr, xx, yy = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all)
 
@@ -407,6 +510,8 @@ class Func:
                 else:
                     if f_neb:
                         nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True)
+                    elif f_agn:
+                        nr_full, xx_full, yy_full = self.get_total_flux_agn(par, f_Alog=f_Alog, lib_all=True)
                     else:
                         nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True)
 
@@ -569,7 +674,7 @@ class Func_tau:
         return lib
 
 
-    def open_spec_fits(self, fall=0, orig=False, f_neb=False):
+    def open_spec_fits(self, fall=0, orig=False, f_neb=False, f_agn=False):
         '''
         Loads template in obs range.
         '''
@@ -604,6 +709,23 @@ class Func_tau:
                         colname = 'fspec_orig_nebular_Z%d'%zz + '_logU%d'%uu
                     else:
                         colname = 'fspec_nebular_Z%d'%zz + '_logU%d'%uu
+                    colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
+                    lib[:,colnall] = hdu0[colname]
+        elif f_agn:
+            NU = len(self.MB.AGNTAUs)
+            for zz,Z in enumerate(ZZ):
+                for uu,AGNTAU in enumerate(self.MB.AGNTAUs):
+                    if zz == 0 and uu == 0:
+                        nr = hdu0['colnum']
+                        xx = hdu0['wavelength']
+                        coln = int(2 + NZ * NU)
+                        lib = np.zeros((len(nr), coln), dtype=float)
+                        lib[:,0] = nr[:]
+                        lib[:,1] = xx[:]
+                    if orig:
+                        colname = 'fspec_orig_agn_Z%d'%zz + '_logU%d'%uu
+                    else:
+                        colname = 'fspec_agn_Z%d'%zz + '_logU%d'%uu
                     colnall = int(2 + zz * NU + uu) # 2 takes account of wavelength and AV columns.
                     lib[:,colnall] = hdu0[colname]
         else:
@@ -688,6 +810,59 @@ class Func_tau:
                     yy = A00 * self.MB.lib[:, coln]
                 else:
                     yy += A00 * self.MB.lib[:, coln]
+
+        if f_get_Mtot:
+            return nr, xx, yy, Mtot
+        else:
+            return nr, xx, yy
+
+
+    def get_total_flux_agn(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
+        '''
+        '''
+        Mtot = 0
+        try:
+            Aagn = par['Aagn']
+            AGNTAU = par['AGNTAU']
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+        except: # This is exception for initial minimizing;
+            Aagn = -99
+            AGNTAU = self.MB.AGNTAUs[0]
+            nAGNTAU = 0
+
+        # logU
+        NU = len(self.MB.AGNTAUs)
+        # Check limit;
+        if f_check_limit:
+            if Aagn < self.MB.Amin:
+                Aagn = self.MB.Amin
+            if Aagn > self.MB.Amax:
+                Aagn = self.MB.Amax
+
+        # Is A in logspace?
+        if f_Alog:
+            A00 = 10**Aagn
+        else:
+            A00 = Aagn
+
+        aa = 0
+        if self.MB.ZEVOL==1 or aa == 0:
+            if f_check_limit:
+                # Z limit:
+                if par['Z%d'%aa] < self.MB.Zmin:
+                    par['Z%d'%aa] = self.MB.Zmin
+                if par['Z%d'%aa] > self.MB.Zmax:
+                    par['Z%d'%aa] = self.MB.Zmax
+            Z = par['Z%d'%aa]
+            NZ = np.argmin(np.abs(self.MB.Zall-Z))
+
+        coln = int(2 + NZ*NU + nAGNTAU)
+        if aa == 0:
+            nr = lib[:, 0]
+            xx = lib[:, 1] # This is OBSERVED wavelength range at z=zgal
+            yy = A00 * lib[:, coln]
+        else:
+            yy += A00 * lib[:, coln]
 
         if f_get_Mtot:
             return nr, xx, yy, Mtot
