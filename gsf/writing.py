@@ -88,10 +88,14 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             Amc[aa,:] = [-99,-99,-99]
             pass
         if aa == 0 or self.ZEVOL:
-            try:
-                Zb[aa] = res.params['Z'+str(aa)].value
-                Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
-            except:
+            if not self.has_ZFIX:
+                try:
+                    Zb[aa] = res.params['Z'+str(aa)].value
+                    Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
+                except:
+                    Zb[aa] = -99
+                    Zmc[aa,:] = [-99,-99,-99]
+            else:
                 ZFIX = self.ZFIX
                 Zb[aa] = ZFIX
                 Zmc[aa,:] = [ZFIX, ZFIX, ZFIX]

@@ -1560,7 +1560,8 @@ class Mainbody(GsfBase):
         if int(self.inputs['ZEVOL']) == 1:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99 or self.age[aa]>agemax:
-                    fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('Z'+str(aa), value=self.Zmin, vary=False)
+                    self.ndim -= 1
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
         else:
@@ -1928,6 +1929,7 @@ class Mainbody(GsfBase):
                     for key in out.params.valuesdict():
                         if out.params[key].vary:
                             labels.append(key)
+
                     for i in range(self.ndim):
                         if self.ndim>1:
                             ax = axes[i]
