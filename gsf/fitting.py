@@ -143,6 +143,23 @@ class Mainbody(GsfBase):
 
         self.param_names = ['A', 'logU', 'AGE', 'Z', 'AV', 'ZMC', 'TDUST', 'TAU']
 
+        self.check_input(inputs, self.config_params)
+
+
+    def check_input(self, inputs, dict_config):
+        '''
+        '''
+        keys = np.asarray([key for key in inputs.keys()])
+        flag_key = np.zeros(len(keys), int)
+        for kk,key in enumerate(keys):
+            for list in dict_config.keys():
+                if key in dict_config[list]:
+                    flag_key[kk] = 1
+        con = flag_key == 0
+        if len(keys[con])>0:
+            self.logger.warning('Some keywords in the config file are not recognized:')
+            print(keys[con])
+            
 
     def get_configfile(self, name=None):
         '''
