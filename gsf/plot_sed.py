@@ -668,10 +668,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     # From random chain;
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
-        try:
-            Av_tmp = samples['AV'][nr]
-        except:
+
+        if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
+        else:
+            Av_tmp = samples['AV0'][nr]
 
         try:
             zmc = samples['zmc'][nr]
@@ -1230,10 +1231,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))#, fin_chi2)
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))#, fin_chi2)
         else:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))
 
         if f_grsm:
             ax1.text(0.02, 0.68, label,\
@@ -1502,7 +1503,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     Av50 = hdul[1].data['AV'+str(aa)][1]
     Av84 = hdul[1].data['AV'+str(aa)][2]
     AAv = [Av50]
-    vals['AV'] = Av50
+    vals['AV0'] = Av50
 
     Z50 = np.zeros(len(age), dtype='float')
     Z16 = np.zeros(len(age), dtype='float')
@@ -1979,10 +1980,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
         try:
-            Av_tmp = samples['AV'][nr]
+            Av_tmp = samples['AV0'][nr]
         except:
             Av_tmp = MB.AVFIX
-        vals['AV'] = Av_tmp
+        vals['AV0'] = Av_tmp
 
         try:
             zmc = samples['zmc'][nr]
@@ -3059,7 +3060,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         delt_tot = 0
         nr = np.random.randint(nshape_sample)
         try:
-            Avtmp[kk] = samples['AV'][nr]
+            Avtmp[kk] = samples['AV0'][nr]
         except:
             Avtmp[kk] = MB.AVFIX
 

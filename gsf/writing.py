@@ -77,7 +77,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     try:
         msmc0 = np.zeros(len(res.flatchain['A%d'%self.aamin[0]][burnin:]), dtype='float')
     except:
-        msmc0 = np.zeros(len(res.flatchain['AV'][burnin:]), dtype='float')
+        msmc0 = np.zeros(len(res.flatchain['AV0'][burnin:]), dtype='float')
 
     for aa in range(len(age)):
         try:
@@ -135,8 +135,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     msmc = np.percentile(msmc0, [16,50,84])
     try:
-        Avb = res.params['AV'].value
-        Avmc = np.percentile(res.flatchain['AV'][burnin:], [16,50,84])
+        Avb = res.params['AV0'].value
+        Avmc = np.percentile(res.flatchain['AV0'][burnin:], [16,50,84])
     except:
         Avb = self.AVFIX
         Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
@@ -327,7 +327,7 @@ def get_index(mmax=300):
                 fit_params['Z'+str(aa)].value = res.flatchain['Z%d'%(aa)][rn]
             except:
                 pass
-        fit_params['AV'].value = res.flatchain['AV'][rn]
+        fit_params['AV0'].value = res.flatchain['AV0'][rn]
 
         model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
 

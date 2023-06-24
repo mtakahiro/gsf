@@ -379,11 +379,11 @@ class Func:
             zmc = self.MB.zgal
 
         # AV limit;
-        if par['AV'] < self.MB.Avmin:
-            par['AV'] = self.MB.Avmin
-        if par['AV'] > self.MB.Avmax:
-            par['AV'] = self.MB.Avmax
-        Av = par['AV']
+        if par['AV0'] < self.MB.Avmin:
+            par['AV0'] = self.MB.Avmin
+        if par['AV0'] > self.MB.Avmax:
+            par['AV0'] = self.MB.Avmax
+        Av = par['AV0']
 
         if f_neb:
             # Dust attenuation to nebulae
@@ -821,11 +821,11 @@ class Func_tau:
 
         if check_bound:
             # AV limit;
-            if par['AV'] < self.MB.Avmin:
-                par['AV'] = self.MB.Avmin
-            if par['AV'] > self.MB.Avmax:
-                par['AV'] = self.MB.Avmax
-        Av = par['AV']
+            if par['AV0'] < self.MB.Avmin:
+                par['AV0'] = self.MB.Avmin
+            if par['AV0'] > self.MB.Avmax:
+                par['AV0'] = self.MB.Avmax
+        Av = par['AV0']
 
         if f_neb:
             # @@@ Not clear why f_check_limit cannot work

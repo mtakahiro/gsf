@@ -304,10 +304,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         delt_tot = 0
         mtmp  = np.random.randint(len(samples))# + Nburn
 
-        try:
-            Av_tmp = samples['AV'][mtmp]
-        except:
+        if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
+        else:
+            Av_tmp = samples['AV0'][mtmp]
 
         Avrand = np.random.uniform(-eAv, eAv)
         if Av_tmp + Avrand<0:
@@ -638,7 +638,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     for ii in range(len(percs)):
         prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted age, logGyr')
     for ii in range(len(percs)):
-        prihdr['AV_%d'%percs[ii]] = ('%.3f'%Avtmp[ii], 'Dust attenuation, mag')
+        prihdr['AV0_%d'%percs[ii]] = ('%.3f'%Avtmp[ii], 'Dust attenuation, mag')
     prihdu = fits.PrimaryHDU(header=prihdr)
 
     # For SFH plot;
@@ -697,7 +697,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
                 tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.solMass})
             elif key.split('_')[0] == 'T':
                 tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.Gyr})
-            elif key.split('_')[0] == 'AV':
+            elif key.split('_')[0] == 'AV0':
                 tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.mag})
             else:
                 tree_sfh['header'].update({'%s'%key: prihdu.header[key]})
@@ -1129,7 +1129,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     while mm<mmax:
         mtmp = np.random.randint(len(samples))# + Nburn
         if MB.nAV != 0:
-            Av_tmp = samples['AV'][mtmp]
+            Av_tmp = samples['AV0'][mtmp]
         else:
             Av_tmp = MB.AVFIX
 
@@ -1692,7 +1692,7 @@ def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1
         ZZtmp = np.zeros(len(age), dtype=float)
         mslist= np.zeros(len(age), dtype=float)
 
-        Av_tmp = samples['AV'][mtmp]
+        Av_tmp = samples['AV0'][mtmp]
 
         f0 = fits.open(DIR_TMP + 'ms_' + ID + '.fits')
         sedpar = f0[1]
