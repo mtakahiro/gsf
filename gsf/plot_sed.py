@@ -169,7 +169,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         nTD84 = hdul[1].data['nTDUST'][2]
         DFILT = MB.inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
-        DFWFILT = fil_fwhm(DFILT, DIR_FILT)
+        # DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             MB.logger.info('Total dust mass is %.2e'%(MD50))
 
@@ -300,7 +300,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             scale = 1e-19
             MB.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
     d_scale = MB.d * scale
-    d = d_scale
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -399,16 +398,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         par.add('zmc',value=zp50)
 
         y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
+        y0d_cut, _ = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
 
         # data;
-        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
-        NRbbd = dat_d['col1']
-        xbbd = dat_d['col2']
-        fybbd = dat_d['col3']
-        eybbd = dat_d['col4']
-        exbbd = dat_d['col5']
-        snbbd = fybbd/eybbd
+        xbbd, fybbd, eybbd = MB.data['spec_fir_obs']['x'], MB.data['spec_fir_obs']['fy'], MB.data['spec_fir_obs']['ey']
 
         try:
             conbbd_hs = (fybbd/eybbd>SNlim)
@@ -431,7 +424,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
         except:
             pass
-
 
     #
     # This is for UVJ color time evolution.
@@ -661,9 +653,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
     ytmp_nl = np.zeros((mmax,len(ysum)), dtype='float') # no line
 
-    ytmpmax = np.zeros(len(ysum), dtype='float')
-    ytmpmin = np.zeros(len(ysum), dtype='float')
-
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
@@ -738,7 +727,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 fm_tmp_nl += mod0_tmp
 
             # Each;
-            ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+            ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) / d_scale
 
         #
         # Dust component;
@@ -759,15 +748,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 par['TDUST'].value = samples['TDUST'][nr]
 
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
+            model_dust_full, x1_dust_full = fnc.tmp04_dust(par.valuesdict(), return_full=True)
+
             if kk == 0:
-                deldt  = (x1_dust[1] - x1_dust[0])
+                deldt = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
                 # Redefine??
                 ytmp = np.zeros((mmax,len(x1_tot)), dtype='float')
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
-                ytmp_comp = np.zeros((mmax,len(x1_tot)), dtype='float')
+                ytmp_dust_full = np.zeros((mmax,len(model_dust_full)), dtype='float')
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d_scale
+            ytmp_dust_full[kk,:] = model_dust_full * c/np.square(x1_dust_full)/d_scale
+
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + np.interp(x1_tot,x1_dust,model_dust)
 
@@ -813,6 +806,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     
     if MB.f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
+        ytmp_dust50_full = np.percentile(ytmp_dust_full[:,:],50, axis=0)
 
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
@@ -1032,9 +1026,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
             col00.append(col1)
         if MB.f_dust:
-            col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust)
+            col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust_full)
             col00.append(col1)
-            col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50)
+            col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50_full)
             col00.append(col1)
             
         # Grism;
@@ -1224,8 +1218,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             tree_spec['model'].update({'fnu_stel_%d'%aa: fnu_tmp})
         if MB.f_dust:
             # dust
-            tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
-            fnu_tmp = flamtonu(x1_dust, ytmp_dust50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            # tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
+            # fnu_tmp = flamtonu(x1_dust, ytmp_dust50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            # tree_spec['model'].update({'fnu_dust': fnu_tmp})
+            tree_spec['model'].update({'wave_dust': x1_dust_full * u.AA})
+            fnu_tmp = flamtonu(x1_dust_full, ytmp_dust50_full * scale, m0set=23.9, m0=-48.6) * u.uJy
             tree_spec['model'].update({'fnu_dust': fnu_tmp})
 
         # Obs BB
@@ -1313,17 +1310,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     if MB.f_dust:
         try:
-            contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
+            contmp = (x1_tot>1e4) #& (fybbd/eybbd>SNlim)
             y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) /d_scale)[contmp]), np.max((model_tot * c/ np.square(x1_tot) /d_scale)[contmp])*2.0
             ax3t.set_ylim(y3min, y3max)
         except:
             if verbose:
                 print('y3 limit is not specified.')
             pass
-        ax3t.set_xlim(1e5, 3e7)
+        ax3t.set_xlim(1e4, 3e7)
         ax3t.set_xscale('log')
-        ax3t.set_xticks([100000, 1000000, 10000000])
-        ax3t.set_xticklabels(['10', '100', '1000'])
+        ax3t.set_xticks([10000, 1000000, 10000000])
+        ax3t.set_xticklabels(['1', '100', '1000'])
 
     ###############
     # Line name
@@ -1557,7 +1554,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         nTD84 = hdul[1].data['nTDUST'][2]
         DFILT = MB.inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
-        DFWFILT = fil_fwhm(DFILT, DIR_FILT)
+        # DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             print('Total dust mass is %.2e'%(MD50))
         f_dust = True

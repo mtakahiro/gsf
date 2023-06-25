@@ -121,7 +121,7 @@ class Mainbody(GsfBase):
                            'ZMIN', 'ZMAX', 'DELZ', 'ZFIX', 'ZEVOL', 
                            'AVMIN', 'AVMAX', 'AVFIX', 'AVEVOL', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
                            'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
-                           'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST', 
+                           'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST',
                            'BPASS', 'DIR_BPASS',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
                            'x_HI'
@@ -133,7 +133,7 @@ class Mainbody(GsfBase):
                          'FORCE_AGE', 'NORDER_SFH_PRIOR', ],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
-                      'CAT_BB', 'SNLIM',
+                      'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
                       'MORP', 'MORP_FILE', 
                       'SPEC_FILE', 'DIR_EXTR', 'MAGZP_SPEC', 'UNIT_SPEC', 'DIFF_CONV', 
                       'CZ0', 'CZ1', 'CZ2', 'LINE', ],
@@ -976,9 +976,12 @@ class Mainbody(GsfBase):
         #wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
         wht2 = wht[:]
 
+        # Check number of optical/IR data points;
+        self.n_optir = len(wht2)
+
         # Append data;
         if add_fir:
-            nr_d, x_d, fy_d, ey_d = self.data['spec_dust_obs']['NR'], self.data['spec_dust_obs']['x'], self.data['spec_dust_obs']['fy'], self.data['spec_dust_obs']['ey']
+            nr_d, x_d, fy_d, ey_d = self.data['spec_fir_obs']['NR'], self.data['spec_fir_obs']['x'], self.data['spec_fir_obs']['fy'], self.data['spec_fir_obs']['ey']
             NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
             ey = np.append(ey,ey_d)
@@ -1010,7 +1013,6 @@ class Mainbody(GsfBase):
             wht2= nrd_yyd_sort[:,5]
 
         sn = fy/ey
-        self.n_optir = len(sn)
 
         dict = {}
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx_bb, 'exbb':ex_bb, 'fybb':fy_bb, 'eybb':ey_bb, 'wht':wht, 'wht2': wht2, 'sn':sn}
@@ -1466,7 +1468,6 @@ class Mainbody(GsfBase):
     def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
         '''
         Add new parameters.
-
         '''
         f_add = False
 
@@ -1491,20 +1492,22 @@ class Mainbody(GsfBase):
             else:
                 fit_params.add('TDUST', value=0, vary=False)
 
-            fit_params.add('MDUST', value=9, min=0, max=15)
+            fit_params.add('MDUST', value=10, min=0, max=15)
             self.ndim += 1
             self.dict = self.read_data(self.Cz0, self.Cz1, self.Cz2, self.zgal, add_fir=self.f_dust)
             f_add = True
 
         # Nebular; ver1.6
         if self.fneb:
+            self.Anebmin = -10
+            self.Anebmax = 10
             if self.fneb_tied:
                 # @@@ TBD
                 iix = np.argmin(np.abs(self.age-0.01))
                 print('Aneb is tied to A%d'%iix)
                 fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d if Aneb > A%d'%(iix,iix)) #self.Amax)#, expr='<A%d'%iix)
             else:
-                fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
+                fit_params.add('Aneb', value=self.Aini, min=self.Anebmin, max=self.Anebmax)
             self.ndim += 1
             if not self.logUFIX == None:
                 fit_params.add('logU', value=self.logUFIX, vary=False)
@@ -1515,7 +1518,9 @@ class Mainbody(GsfBase):
 
         # AGN; ver1.9
         if self.fagn:
-            fit_params.add('Aagn', value=self.Aini, min=self.Amin, max=self.Amax)
+            self.AAGNmin = -3
+            self.AAGNmax = 10
+            fit_params.add('Aagn', value=self.Aini, min=self.AAGNmin, max=self.AAGNmax)
             # fit_params.add('Aagn', value=self.Aini, min=0, max=5)
             self.ndim += 1
             if not self.AGNTAUFIX == None:

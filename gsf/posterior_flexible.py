@@ -43,7 +43,7 @@ class Post():
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
-            n_optir = self.mb.n_optir #len(model)
+            n_optir = self.mb.n_optir
 
             # Add dust flux to opt/IR grid.
             model[:] += model_dust[:n_optir]

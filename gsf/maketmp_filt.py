@@ -313,8 +313,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         except:
             return False
             
-        id = fdd[key_id]
-
         fbb_d = np.zeros(len(DFILT), dtype=float)
         ebb_d = np.zeros(len(DFILT), dtype=float)
         for ii in range(len(DFILT)):
@@ -535,6 +533,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
 
                         if MB.fagn == 1 and MB.f_bpass==0 and ss==0 and pp==0:
+                            tmp_norm_agn = tmp_norm * 1e3 # so 1 AAGN = [this] Lsun in bolometric luminosity
                             if zz==0:
                                 spec_mul_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
                                 spec_mul_agn_nu = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
@@ -544,6 +543,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 ftmp_agn_nu_int = np.zeros((len(Z), len(MB.AGNTAUs), len(lm)), dtype=float)
                                 ms_agn = np.zeros((len(Z), len(MB.AGNTAUs)), dtype=float)
 
+                            # plt.close()
                             for uu in range(len(MB.AGNTAUs)):
                                 if delwave>0:
                                     fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
@@ -562,9 +562,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 
                                 spec_mul_agn_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
                                 
-                                spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                                spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm_agn # in unit of erg/s/Hz/cm2/ms[ss].
                                 ltmpbb_agn[zz,uu,:], ftmpbb_agn[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_agn_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
-                                ms_agn[zz,uu] *= (1./Ls[ss])*tmp_norm # 1 unit template has this bolometric luminosity.
+                                ms_agn[zz,uu] *= (1./Ls[ss])*tmp_norm_agn 
 
                                 if MB.f_spec:
                                     ftmp_agn_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_agn_nu[zz,uu,:])
@@ -581,6 +581,14 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                                 spec_agn_ap = np.append(ftmp_agn_nu_int[zz,uu,:], ftmpbb_agn[zz,uu,:])
                                 tree_spec.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_agn_ap})
+
+                                # plt.plot(wavetmp, spec_mul_agn_nu[zz,uu,:])
+                                
+                            # plt.xlim(100,50000)
+                            # plt.ylim(0,3)
+                            # plt.show()
+                            # hoge
+
 
                     #########################
                     # Summarize the ML
@@ -840,7 +848,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
         Mdust_temp = np.zeros(len(Temp),float)
         dellam_d = 1e1
-        lambda_d = np.arange(1e3, 1e7, dellam_d)
+        lambda_d = np.arange(5e2, 1e7, dellam_d)
         
         MB.logger.info('Reading dust table...')
         for tt in range(len(Temp)):
@@ -881,9 +889,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     nurest = c / wav.value # Hz
 
                 BT_nu = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Temp[tt])) - 1.0))
-                BT_nu_cmb = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Temp[tt])) - 1.0))
+                BT_nu_cmb = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Tcmb)) - 1.0))
+
                 # J s * (Hz)3 * (AA/s)^-2 = 1e+7 erg * (AA)-2 /s
-                denom = BT_nu-BT_nu_cmb
+                denom = BT_nu + BT_nu_cmb
 
                 fnu_d = (1+zbest) / (DL*MB.Mpc_cm)**2 * (kappa * denom)
                 # 1/cm2 * cm2/g * (1e+7 erg * (AA)-2 / s) = 1e7 erg /s / g / AA / AA
@@ -899,7 +908,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
             # Convolution;
             ALLFILT = np.append(SFILT,DFILT)
-            ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            ltmpbb_d, ftmpbb_d = filconv(ALLFILT, lambda_d*(1.+zbest), fnu_d, DIR_FILT)
             nd_db = np.arange(0, len(ftmpbb_d), 1)
 
             if MB.f_spec:
@@ -915,6 +924,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 tree_spec_dust.update({'colnum': nd_db})
 
             tree_spec_dust.update({'fspec_'+str(tt): ftmpbb_d})
+
+        #     plt.plot(lambda_d, fnu_d, )
+        # # plt.ylim(0, 0.01)
+        # plt.xlim(0,500000)
+        # plt.show()
+        # hoge
+
         # Md/temp;
         tree_spec_dust.update({'Mdust': Mdust_temp})
         tree.update({'spec_dust' : tree_spec_dust})
@@ -969,17 +985,16 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         dict_spec_obs = {'NR':NR, 'x':x, 'fy':fy00, 'ey':ey00}
         MB.data['spec_obs'] = dict_spec_obs
 
-        fw = open(file_tmp,'w')
         if MB.f_dust:
+            fw = open(file_tmp,'w')
             nbblast = len(ltmpbb[0,:])+len(lm)
             for ii in range(len(ebb_d[:])):
                 if ebb_d[ii]>ebblim:
                     fw.write('%d %.5f 0 1000\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast]))
                 else:
                     fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
-        fw.close()
+            fw.close()
         
-        if MB.f_dust:
             dat = ascii.read(file_tmp, format='no_header')
             nr_d = dat['col1']
             x_d = dat['col2']

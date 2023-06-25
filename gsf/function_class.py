@@ -142,20 +142,11 @@ class Func:
     def open_spec_dust_fits(self, fall:int = 0):
         '''Loads dust template in obs range.
         '''
-        ID0 = self.MB.ID
-        tau0= self.MB.tau0
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
-
         if fall == 0:
-            app = ''
             hdu0 = self.MB.af['spec_dust']
         elif fall == 1:
-            app = 'all_'
             hdu0 = self.MB.af['spec_dust_full']
 
-        DIR_TMP = self.DIR_TMP
         nr = hdu0['colnum']
         xx = hdu0['wavelength']
         
@@ -168,11 +159,6 @@ class Func:
             colname = 'fspec_' + str(aa)
             colnall = int(2 + aa)
             lib[:,colnall] = hdu0[colname]
-            if fall==1 and False:
-                import matplotlib.pyplot as plt
-                plt.close()
-                plt.plot(lib[:,1],lib[:,coln],linestyle='-')
-                plt.show()
         return lib
 
 
@@ -560,17 +546,11 @@ class Func:
                 return nr,yy,xx
 
 
-    def tmp04_dust(self, par, nprec=1):
+    def tmp04_dust(self, par, nprec=1, return_full=False):
         '''
         Makes model template with a given param setself.
         Also dust attenuation.
         '''
-        tau0= self.tau0
-        ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
-        DIR_TMP = self.MB.DIR_TMP
-
         try:
             m_dust = par['MDUST']
             t_dust = par['TDUST']
@@ -578,15 +558,23 @@ class Func:
             m_dust = -99
             t_dust = 0
 
-        nr = self.MB.lib_dust[:,0]
-        xx = self.MB.lib_dust[:,1] # This is OBSERVED wavelength range at z=zgal
+        if return_full:
+            lib = self.MB.lib_dust_all
+        else:
+            lib = self.MB.lib_dust
+
+        nr = lib[:,0]
+        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
         coln = 2+int(t_dust+0.5)
-        yy = 10**m_dust * self.MB.lib_dust[:,coln]
+        yy = 10**m_dust * lib[:,coln]
 
         if self.MB.fzmc == 1:
             zmc = par.params['zmc'].value
         else:
             zmc = self.MB.zgal
+
+        if return_full:
+            return yy, xx
 
         # How much does this cost in time?
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
@@ -928,9 +916,6 @@ class Func_tau:
         Makes model template with a given param setself.
         Also dust attenuation.
         '''
-        bfnc = self.MB.bfnc #Basic(ZZ)
-        DIR_TMP = self.MB.DIR_TMP #'./templates/'
-
         try:
             m_dust = par['MDUST']
             t_dust = par['TDUST']
