@@ -356,6 +356,7 @@ class Mainbody(GsfBase):
         self.fneb = False
         self.nlogU = 0
         self.fagn = False
+        self.nAGNTAU = 0
         
         self.check_keys(self)
 
@@ -408,8 +409,8 @@ class Mainbody(GsfBase):
                 self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
         else:
-            self.verbose
-            print_err('Some error in nebular setup; No nebular added.')
+            if self.verbose:
+                print_err('Some error in nebular setup; No nebular added.')
             self.fneb = False
             self.logUMIN = -2.5
             self.logUMAX = -2.0
@@ -456,8 +457,8 @@ class Mainbody(GsfBase):
                 self.DELAGNTAU = 5
                 self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
         else:
-            self.verbose
-            print_err('Some error in agn setup; No agn added.')
+            if self.verbose:
+                print_err('Some error in agn setup; No agn added.')
             self.fagn = False
             self.AGNTAUMIN = 10
             self.AGNTAUMAX = 15
