@@ -307,7 +307,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
         else:
-            Av_tmp = samples['AV0'][mtmp]
+            try:
+                Av_tmp = samples['AV0'][mtmp]
+            except:
+                Av_tmp = samples['AV'][mtmp]
 
         Avrand = np.random.uniform(-eAv, eAv)
         if Av_tmp + Avrand<0:
@@ -398,7 +401,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
                 TL[aa, mm] = np.nan
 
         # Do stuff...
-        time.sleep(0.01)
+        # time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 

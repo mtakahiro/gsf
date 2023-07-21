@@ -674,7 +674,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
         else:
-            Av_tmp = samples['AV0'][nr]
+            try:
+                Av_tmp = samples['AV0'][nr]
+            except:
+                Av_tmp = samples['AV'][nr]
 
         try:
             zmc = samples['zmc'][nr]
@@ -699,6 +702,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
+
+                # Each;
+                ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+
                 if MB.fneb:
                     Aneb_tmp = 10**samples['Aneb'][nr]
                     if not MB.logUFIX == None:
@@ -707,9 +714,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         logU_tmp = samples['logU'][nr]
                     mod0_tmp, xm_tmp = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp += mod0_tmp
+                    # ax1.plot(xm_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
+
                     # Make no emission line template;
                     mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp_nl += mod0_tmp_nl
+
                 if MB.fagn:
                     Aagn_tmp = 10**samples['Aagn'][nr]
                     if not MB.AGNTAUFIX == None:
@@ -721,13 +731,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     # Make no emission line template;
                     mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
                     fm_tmp_nl += mod0_tmp_nl
+
             else:
                 mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
 
-            # Each;
-            ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) / d_scale
+                # Each;
+                ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
 
         #
         # Dust component;
@@ -781,6 +792,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
 
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
+        # Check the slope;
+        # coeff = get_uvbeta(x1_tot, ytmp[kk,:], zmc, return_results=True)
+        # yn = np.poly1d(coeff)
+        # xn = np.arange(1650, 2200, 10)
+        # ax1.plot(xn*(1+zmc), 10**yn(np.log10(xn)), '-', lw=0.5, color='green', zorder=-1, alpha=0.05, label='')
 
         # Get RF Color;
         _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
@@ -790,7 +806,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
 
         # Do stuff...
-        time.sleep(0.01)
+        # time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
@@ -845,6 +861,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         ysumtmp = ytmp[0, ::nstep_plot] * 0
         ysumtmp2 = ytmp[:, ::nstep_plot] * 0
         ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
+
         for ss in range(len(age)):
             ii = int(len(nage) - ss - 1)
             # !! Take median after summation;
@@ -852,8 +869,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             if f_fill:
                 ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.percentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
             else:
-                ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=-3)
+                ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=1)
             ysumtmp2_prior[:] = np.percentile(ysumtmp2[:, :], 50, axis=0)
+
     elif f_fill:
         MB.logger.info('f_fancyplot is False. f_fill is set to False.')
 
@@ -1098,6 +1116,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # SFR from attenuation corrected LUV;
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
+        A1600[np.where(A1600<0)] = 0
         SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
         SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
@@ -2107,7 +2126,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
 
         # Do stuff...
-        time.sleep(0.01)
+        # time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
@@ -2418,6 +2437,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         hdr['UVBETA16'] = beta_16
         hdr['UVBETA50'] = beta_50
         hdr['UVBETA84'] = beta_84
+
 
         # UVJ
         try:

@@ -62,7 +62,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300):
+def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, return_results=False):
     '''
     Purpose
     -------
@@ -84,6 +84,9 @@ def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300):
             beta = -99
     except:
         beta = -99
+
+    if return_results:
+        return fit_results
     return beta
 
 
