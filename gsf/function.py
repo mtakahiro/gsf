@@ -240,7 +240,7 @@ def read_input(parfile):
             break
         else:
             cols = str.split(line)
-            if len(cols)>0 and cols[0][0] != '#':
+            if len(cols)>1 and cols[0][0] != '#':
                 input0.append(cols[0])
                 input1.append(cols[1])
     file.close()
