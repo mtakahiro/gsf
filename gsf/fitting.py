@@ -1796,7 +1796,7 @@ class Mainbody(GsfBase):
 
 
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
-            f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
+            f_move:bool=False, verbose:bool=False, skip_fitz:bool=True, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
             f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_photometry=True
             ):
@@ -1830,6 +1830,11 @@ class Mainbody(GsfBase):
 
         # Check Main Body;
         self.check_mainbody()
+
+        # Check if zmc is a free param;
+        if skip_fitz and self.fzmc==1:
+            self.logger.warning('ZMC is 1; skip_fitz is set to False.')
+            skip_fitz = False
 
         print('########################')
         print('### Fitting Function ###')
