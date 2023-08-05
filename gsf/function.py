@@ -1366,15 +1366,27 @@ def fil_fwhm(band0, DIR):
     return fwhm
 
 
-def calc_Dn4(x0, y0, z0):
-    con1 = (x0/(1+z0)>3750) & (x0/(1+z0)<3950)
-    con2 = (x0/(1+z0)>4050) & (x0/(1+z0)<4250)
-    D41  = np.average(y0[con1])
-    D42  = np.average(y0[con2])
+def calc_Dn4(x0, y0, z0,
+             lam_b_low=3750, lam_b_hig=3950,
+             lam_r_low=4050, lam_r_hig=4250,
+             ):
+    '''
+    Parameters
+    ----------
+    x0, y0 : float arrays
+        wavelength and flux
+    z0 : float
+        redshift
+    '''
+    con1 = (x0/(1+z0)>lam_b_low) & (x0/(1+z0)<lam_b_hig)
+    con2 = (x0/(1+z0)>lam_r_low) & (x0/(1+z0)<lam_r_hig)
+    D41 = np.nanmean(y0[con1])
+    D42 = np.nanmean(y0[con2])
     if D41>0 and D42>0:
         D4 = D42/D41
         return D4
     else:
+        # print('D41 and D42 are:',D42, D41)
         return -99
 
 
