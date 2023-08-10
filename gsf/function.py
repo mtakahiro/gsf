@@ -1369,6 +1369,7 @@ def fil_fwhm(band0, DIR):
 def calc_Dn4(x0, y0, z0,
              lam_b_low=3750, lam_b_hig=3950,
              lam_r_low=4050, lam_r_hig=4250,
+             is_fnu=False,
              ):
     '''
     Parameters
@@ -1380,8 +1381,12 @@ def calc_Dn4(x0, y0, z0,
     '''
     con1 = (x0/(1+z0)>lam_b_low) & (x0/(1+z0)<lam_b_hig)
     con2 = (x0/(1+z0)>lam_r_low) & (x0/(1+z0)<lam_r_hig)
+    if is_fnu:
+        y0 = fnutolam(x0, y0, m0set=25.0)
+        
     D41 = np.nanmean(y0[con1])
     D42 = np.nanmean(y0[con2])
+        
     if D41>0 and D42>0:
         D4 = D42/D41
         return D4

@@ -24,28 +24,25 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     Czrec1 = self.Cz1
     Czrec2 = self.Cz2
 
-    if self.fzvis:
+    if self.fzvis and self.fzmc == 1:
         z_cz = self.z_cz_prev
         scl_cz0 = self.scl_cz0
         scl_cz1 = self.scl_cz1
         scl_cz2 = self.scl_cz2
-    else: # When redshiftfit is skipped.
+    else: # When redshift fit is skipped.
         z_cz = np.asarray([self.zgal,self.zgal,self.zgal])
         scl_cz0 = np.asarray([self.Cz0,self.Cz0,self.Cz0])
         scl_cz1 = np.asarray([self.Cz1,self.Cz1,self.Cz1])
         scl_cz2 = np.asarray([self.Cz2,self.Cz2,self.Cz2])
 
-    tau0 = self.tau0
+    # tau0 = self.tau0
     ID0 = self.ID
     age = self.age
-    Zall = self.Zall
-
-    fnc  = self.fnc 
+    # Zall = self.Zall
+    # fnc  = self.fnc 
     bfnc = self.bfnc 
-
     DIR_TMP = self.DIR_TMP
-
-    fil_path = self.DIR_FILT
+    # fil_path = self.DIR_FILT
     nmc  = self.nmc
     ndim = self.ndim
     nwalker = self.nwalk
@@ -152,8 +149,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     else:
         logf = [-99,-99,-99]
 
-    AA_tmp = np.zeros(len(age), dtype='float')
-    ZZ_tmp = np.zeros(len(age), dtype='float')
+    # AA_tmp = np.zeros(len(age), dtype='float')
+    # ZZ_tmp = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
 
     ############
