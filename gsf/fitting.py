@@ -78,7 +78,8 @@ class Mainbody(GsfBase):
         or the width to the next age bin.
     '''
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
-        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None):
+        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None,
+        show_list=False):
         '''
         Parameters
         ----------
@@ -143,23 +144,31 @@ class Mainbody(GsfBase):
             }
 
         self.param_names = ['A', 'logU', 'AGE', 'Z', 'AV', 'ZMC', 'TDUST', 'TAU']
+        self.check_input(inputs, self.config_params, show_list=show_list)
 
-        self.check_input(inputs, self.config_params)
+        return 
 
 
-    def check_input(self, inputs, dict_config):
+    def check_input(self, inputs, dict_config, show_list=False):
         '''
         '''
         keys = np.asarray([key for key in inputs.keys()])
         flag_key = np.zeros(len(keys), int)
+ 
         for kk,key in enumerate(keys):
             for list in dict_config.keys():
                 if key in dict_config[list]:
                     flag_key[kk] = 1
+ 
         con = flag_key == 0
         if len(keys[con])>0:
+ 
             self.logger.warning('Some keywords in the config file are not recognized:')
             print(keys[con])
+ 
+            if show_list:
+                self.logger.warning('Available input keywords are as follow:')
+                print(dict_config)
             
 
     def get_configfile(self, name=None):
