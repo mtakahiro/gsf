@@ -79,7 +79,7 @@ class Mainbody(GsfBase):
     '''
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
         cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None,
-        show_list=False):
+        show_list=True):
         '''
         Parameters
         ----------
