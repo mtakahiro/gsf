@@ -337,6 +337,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             if os.path.exists(MB.file_res):
                 MB.f_prism = True
                 LSF = []
+        else:
+            MB.file_res = os.path.join(MB.config_path, 'jwst_%s_disp.fits'%inputs['MORP'])
+            if os.path.exists(MB.file_res):
+                MB.f_prism = True
+                LSF = []
     except:
         MB.f_prism = False
         pass
@@ -1901,9 +1906,10 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
     LSF
 
     '''
-    lists_morp = ['moffat', 'gauss', 'jwst-prism']
+    lists_morp = ['moffat', 'gauss', 'jwst-prism', 'nirspec_g140m', 'nirspec_g140h', 'nirspec_g235m', 'nirspec_g235h', 'nirspec_g395m', 'nirspec_g395h']
     Amp = 0
     f_morp = False
+    morp = inputs['MORP']
     if inputs['MORP'] in lists_morp:
         if inputs['MORP'] in lists_morp[:2]:
             try:
@@ -1921,7 +1927,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
                 print_err(msg, exit=False)
                 pass
     else:
-        msg = 'MORP Keywords does not match.\nNo morphology convolution.'
+        msg = f'MORP Keywords, {morp}, is not found in the list {lists_morp}\nNo morphology convolution.'
         print_err(msg, exit=False)
 
     ############################

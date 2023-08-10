@@ -219,7 +219,7 @@ class Mainbody(GsfBase):
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
-        self.fitc_cz_prev = None
+        self.fitc_cz_prev = 1e10
 
         # Set config path;
         try:
@@ -2269,7 +2269,7 @@ class Mainbody(GsfBase):
                 self.Cz2 = self.Czrec2
                 return True
             else:
-                self.logger.error('Terminating process.')
+                self.logger.info('Terminating process.')
                 return False
 
 

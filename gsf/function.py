@@ -228,7 +228,8 @@ def read_input(parfile):
 
     Returns
     -------
-    Input dictionary.
+    inputs : dict
+        Input dictionary.
 
     '''
     input0 = []
