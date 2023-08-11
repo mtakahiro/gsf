@@ -1013,6 +1013,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         except:
             pass
 
+    # Filters
+    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
+    if f_plot_filter:
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
     if save_sed:
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
@@ -1260,6 +1264,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             tree_spec['obs'].update({'eg2': eg2 * Cnu_to_Jy * u.uJy})
             tree_spec['obs'].update({'wg2': xg2 * u.AA})
 
+        # Filts;
+        tree_spec['filters'] = MB.filts
+        if f_plot_filter:
+            tree_spec['filter_response'] = MB.filt_responses
+
+        # Save;
         af = asdf.AsdfFile(tree_spec)
         af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
 
@@ -1389,10 +1399,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         except:
             pass
 
-    # Filters
-    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
-    if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
     ####################
     ## Save
@@ -2675,7 +2681,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     plt.close()
 
 
-def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=[]):
+def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
+                ind_remove=[], nmax=1000):
     '''
     Add filter response curve to ax1.
 
@@ -2684,6 +2691,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
     cm = plt.get_cmap(cmap)
     cols = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
 
+    filt_responses = {}
     wavecen = []
     for ii,filt in enumerate(MB.filts):
         wave = MB.band['%s_lam'%filt]
@@ -2699,10 +2707,29 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
         col = cols[iix]
         wave = MB.band['%s_lam'%filt]
         flux = MB.band['%s_res'%filt]
+        
+        if len(wave) > nmax:
+            nthin = int(len(wave)/nmax)
+        else:
+            nthin = 1
+
+        filt_responses[filt] = {}
+        wave_tmp = np.zeros(len(wave[::nthin]), float)
+        res_tmp = np.zeros(len(wave[::nthin]), float)
+
+        wave_tmp[:] = wave[::nthin]
+        res_tmp[:] = flux[::nthin]
+
+        filt_responses[filt]['wave'] = wave_tmp
+        filt_responses[filt]['response'] = res_tmp
+
         if ii in ind_remove:
             continue
+
         ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
         ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+
+    MB.filt_responses = filt_responses
 
     return ax
 
