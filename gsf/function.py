@@ -9,6 +9,8 @@ from scipy.interpolate import interp1d
 import logging
 from colorama import Fore, Back, Style
 from datetime import datetime
+from astropy import units as u
+from astropy.cosmology import WMAP9
 
 ################
 # Line library
@@ -420,7 +422,6 @@ def get_SFMS(red,age,mass,IMF=1,get_param=False):
     From Speagle+14 Eq28.
     Chabrier IMF, in default
     '''
-    from astropy.cosmology import WMAP9
     cosmo = WMAP9
 
     CIMF = 0
@@ -569,7 +570,7 @@ def data_int(lmobs, lmtmp, ftmp):
     return ftmp_int
 
 
-def fnutonu(fnu, m0set=25.0, m0input=-48.6):
+def fnutonu(fnu, m0set=25.0, m0input=-48.6, has_unit=False):
     '''
     Converts from Fnu (cgs) to Fnu (m0=m0set)
     
@@ -597,7 +598,7 @@ def flamtonu(lam, flam, m0set=25.0, m0=-48.6):
     return fnu
 
 
-def fnutolam(lam, fnu, m0set=25.0, m0=-48.6):
+def fnutolam(lam, fnu, m0set=25.0, m0=-48.6, has_unit=False):
     '''
     Converts from Fnu to Flam, from mag zeropoint of m0set (to -48.6).
 
@@ -608,6 +609,10 @@ def fnutolam(lam, fnu, m0set=25.0, m0=-48.6):
     m0 : float
         target magzp. The default, -48.6, is for flam (erg/s/cm2/lambda).
     '''
+    if has_unit:
+        flux_lam = fnu.to(u.erg/u.s/u.cm**2/u.AA, u.spectral_density(lam))
+        return flux_lam
+
     Ctmp = lam**2/c * 10**((m0set-m0)/2.5)
     flam = fnu / Ctmp
     return flam

@@ -1944,7 +1944,7 @@ class Mainbody(GsfBase):
             # MCMC;
             if self.f_mcmc or self.f_zeus:
                 nburn = int(self.nmc/2)
-                if f_shuffle:
+                if f_shuffle and not self.f_zeus:
                     # ZEUS may fail to run with f_shuffle.
                     pos = self.get_shuffle(out, amp=amp_shuffle)
                 else:
