@@ -24,28 +24,25 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     Czrec1 = self.Cz1
     Czrec2 = self.Cz2
 
-    if self.fzvis:
+    if self.fzvis and self.fzmc == 1:
         z_cz = self.z_cz_prev
         scl_cz0 = self.scl_cz0
         scl_cz1 = self.scl_cz1
         scl_cz2 = self.scl_cz2
-    else: # When redshiftfit is skipped.
+    else: # When redshift fit is skipped.
         z_cz = np.asarray([self.zgal,self.zgal,self.zgal])
         scl_cz0 = np.asarray([self.Cz0,self.Cz0,self.Cz0])
         scl_cz1 = np.asarray([self.Cz1,self.Cz1,self.Cz1])
         scl_cz2 = np.asarray([self.Cz2,self.Cz2,self.Cz2])
 
-    tau0 = self.tau0
+    # tau0 = self.tau0
     ID0 = self.ID
     age = self.age
-    Zall = self.Zall
-
-    fnc  = self.fnc 
+    # Zall = self.Zall
+    # fnc  = self.fnc 
     bfnc = self.bfnc 
-
     DIR_TMP = self.DIR_TMP
-
-    fil_path = self.DIR_FILT
+    # fil_path = self.DIR_FILT
     nmc  = self.nmc
     ndim = self.ndim
     nwalker = self.nwalk
@@ -77,7 +74,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     try:
         msmc0 = np.zeros(len(res.flatchain['A%d'%self.aamin[0]][burnin:]), dtype='float')
     except:
-        msmc0 = np.zeros(len(res.flatchain['AV'][burnin:]), dtype='float')
+        msmc0 = np.zeros(len(res.flatchain['AV0'][burnin:]), dtype='float')
 
     for aa in range(len(age)):
         try:
@@ -88,10 +85,14 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             Amc[aa,:] = [-99,-99,-99]
             pass
         if aa == 0 or self.ZEVOL:
-            try:
-                Zb[aa] = res.params['Z'+str(aa)].value
-                Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
-            except:
+            if not self.has_ZFIX:
+                try:
+                    Zb[aa] = res.params['Z'+str(aa)].value
+                    Zmc[aa,:] = np.percentile(res.flatchain['Z'+str(aa)][burnin:], [16,50,84])
+                except:
+                    Zb[aa] = -99
+                    Zmc[aa,:] = [-99,-99,-99]
+            else:
                 ZFIX = self.ZFIX
                 Zb[aa] = ZFIX
                 Zmc[aa,:] = [ZFIX, ZFIX, ZFIX]
@@ -131,8 +132,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
     msmc = np.percentile(msmc0, [16,50,84])
     try:
-        Avb = res.params['AV'].value
-        Avmc = np.percentile(res.flatchain['AV'][burnin:], [16,50,84])
+        Avb = res.params['AV0'].value
+        Avmc = np.percentile(res.flatchain['AV0'][burnin:], [16,50,84])
     except:
         Avb = self.AVFIX
         Avmc = [self.AVFIX,self.AVFIX,self.AVFIX]
@@ -148,8 +149,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     else:
         logf = [-99,-99,-99]
 
-    AA_tmp = np.zeros(len(age), dtype='float')
-    ZZ_tmp = np.zeros(len(age), dtype='float')
+    # AA_tmp = np.zeros(len(age), dtype='float')
+    # ZZ_tmp = np.zeros(len(age), dtype='float')
     NZbest = np.zeros(len(age), dtype='int')
 
     ############
@@ -250,6 +251,19 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         col50 = fits.Column(name='logU', format='E', unit='', array=logUmc[:])
         col01.append(col50)
 
+    if self.fagn:
+        Aagnmc = np.zeros(3, dtype=float)
+        AGNTAUmc = np.zeros(3, dtype=float)
+        Aagnmc[:] = np.percentile(res.flatchain['Aagn'][burnin:], [16,50,84])
+        if not self.AGNTAUFIX == None:
+            AGNTAUmc[:] = [self.AGNTAUFIX,self.AGNTAUFIX,self.AGNTAUFIX]
+        else:
+            AGNTAUmc[:] = np.percentile(res.flatchain['AGNTAU'][burnin:], [16,50,84])
+        col50 = fits.Column(name='Aagn', format='E', unit='', array=Anebmc[:])
+        col01.append(col50)
+        col50 = fits.Column(name='AGNTAU', format='E', unit='', array=logUmc[:])
+        col01.append(col50)
+
     # zmc
     col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
     col01.append(col50)
@@ -323,7 +337,7 @@ def get_index(mmax=300):
                 fit_params['Z'+str(aa)].value = res.flatchain['Z%d'%(aa)][rn]
             except:
                 pass
-        fit_params['AV'].value = res.flatchain['AV'][rn]
+        fit_params['AV0'].value = res.flatchain['AV0'][rn]
 
         model2, xm_tmp = fnc.tmp04(fit_params, zrecom, lib_all)
 

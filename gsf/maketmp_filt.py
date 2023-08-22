@@ -313,8 +313,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         except:
             return False
             
-        id = fdd[key_id]
-
         fbb_d = np.zeros(len(DFILT), dtype=float)
         ebb_d = np.zeros(len(DFILT), dtype=float)
         for ii in range(len(DFILT)):
@@ -336,6 +334,11 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     try:
         if inputs['MORP'] == 'jwst-prism':
             MB.file_res = os.path.join(MB.config_path, 'jwst_nirspec_prism_disp.fits')
+            if os.path.exists(MB.file_res):
+                MB.f_prism = True
+                LSF = []
+        else:
+            MB.file_res = os.path.join(MB.config_path, 'jwst_%s_disp.fits'%inputs['MORP'])
             if os.path.exists(MB.file_res):
                 MB.f_prism = True
                 LSF = []
@@ -534,6 +537,64 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
                                 tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
 
+                        if MB.fagn == 1 and MB.f_bpass==0 and ss==0 and pp==0:
+                            tmp_norm_agn = tmp_norm * 1e3 # so 1 AAGN = [this] Lsun in bolometric luminosity
+                            if zz==0:
+                                spec_mul_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
+                                spec_mul_agn_nu = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
+                                spec_mul_agn_nu_conv = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
+                                ftmpbb_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(SFILT)), dtype=float)
+                                ltmpbb_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(SFILT)), dtype=float)
+                                ftmp_agn_nu_int = np.zeros((len(Z), len(MB.AGNTAUs), len(lm)), dtype=float)
+                                ms_agn = np.zeros((len(Z), len(MB.AGNTAUs)), dtype=float)
+
+                            # plt.close()
+                            for uu in range(len(MB.AGNTAUs)):
+                                if delwave>0:
+                                    fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                                    spec_mul_agn[zz,uu,:] = fint(lm0)
+                                else:
+                                    spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin]
+                                
+                                con_agn = (spec_mul_agn[zz,uu,:]<0)
+                                spec_mul_agn[zz,uu,:][con_agn] = 0
+                                
+                                if f_IGM:
+                                    spec_agn_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_agn[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
+                                    spec_mul_agn[zz,uu,:] = spec_agn_av_tmp
+
+                                spec_mul_agn_nu[zz,uu,:] = flamtonu(wave, spec_mul_agn[zz,uu,:], m0set=MB.m0set)
+                                
+                                spec_mul_agn_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                                
+                                spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm_agn # in unit of erg/s/Hz/cm2/ms[ss].
+                                ltmpbb_agn[zz,uu,:], ftmpbb_agn[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_agn_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+                                ms_agn[zz,uu] *= (1./Ls[ss])*tmp_norm_agn 
+
+                                if MB.f_spec:
+                                    ftmp_agn_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_agn_nu[zz,uu,:])
+
+                                if MB.f_spec:
+                                    spec_mul_agn_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_agn_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                                f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
+                                else:
+                                    spec_mul_agn_nu_conv[zz,uu,:] = spec_mul_agn_nu[zz,uu,:]
+
+                                if zbest == MB.zgal:
+                                    tree_spec_full.update({'fspec_orig_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu[zz,uu,:]})
+                                    tree_spec_full.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu_conv[zz,uu,:]})
+
+                                spec_agn_ap = np.append(ftmp_agn_nu_int[zz,uu,:], ftmpbb_agn[zz,uu,:])
+                                tree_spec.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_agn_ap})
+
+                                # plt.plot(wavetmp, spec_mul_agn_nu[zz,uu,:])
+                                
+                            # plt.xlim(100,50000)
+                            # plt.ylim(0,3)
+                            # plt.show()
+                            # hoge
+
+
                     #########################
                     # Summarize the ML
                     #########################
@@ -546,6 +607,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         if fneb == 1 and MB.f_bpass==0:
                             # ML neb
                             tree_ML.update({'ML_neb': ms_neb[zz,:]})
+                        if MB.fagn == 1 and MB.f_bpass==0:
+                            tree_ML.update({'ML_agn': ms_agn[zz,:]})
 
     else:
         ####################################
@@ -710,6 +773,51 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             spec_neb_ap = np.append(ftmp_neb_nu_int[zz,uu,:], ftmpbb_neb[zz,uu,:])
                             tree_spec.update({'fspec_nebular_Z%d_logU%d'%(zz,uu): spec_neb_ap})
 
+                    # AGN library;
+                    if MB.fagn == 1 and MB.f_bpass==0 and ss==0 and tt==0:
+                        if zz==0:
+                            spec_mul_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
+                            spec_mul_agn_nu = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
+                            spec_mul_agn_nu_conv = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
+                            ftmpbb_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(SFILT)), dtype=float)
+                            ltmpbb_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(SFILT)), dtype=float)
+                            ftmp_agn_nu_int = np.zeros((len(Z), len(MB.AGNTAUs), len(lm)), dtype=float)
+
+                        for uu in range(len(MB.AGNTAUs)):
+                            if delwave>0:
+                                fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                                spec_mul_agn[zz,uu,:] = fint(lm0)
+                            else:
+                                spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin]
+                            
+                            con_agn = (spec_mul_agn[zz,uu,:]<0)
+                            spec_mul_agn[zz,uu,:][con_agn] = 0
+                            
+                            if f_IGM:
+                                # spec_agn_av_tmp = madau_igm_abs(wave, spec_mul_agn[zz,uu,:], zbest, cosmo=MB.cosmo)
+                                spec_agn_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_agn[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
+                                spec_mul_agn[zz,uu,:] = spec_agn_av_tmp
+
+                            spec_mul_agn_nu[zz,uu,:] = flamtonu(wave, spec_mul_agn[zz,uu,:], m0set=MB.m0set)
+                            spec_mul_agn_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                            spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+                            ltmpbb_agn[zz,uu,:], ftmpbb_agn[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_agn_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+
+                            if MB.f_spec:
+                                ftmp_agn_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_agn_nu[zz,uu,:])
+
+                            if MB.f_spec:
+                                spec_mul_agn_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_agn_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                            f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
+                            else:
+                                spec_mul_agn_nu_conv[zz,uu,:] = spec_mul_agn_nu[zz,uu,:]
+
+                            tree_spec_full.update({'fspec_orig_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu[zz,uu,:]})
+                            tree_spec_full.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu_conv[zz,uu,:]})
+
+                            spec_agn_ap = np.append(ftmp_agn_nu_int[zz,uu,:], ftmpbb_agn[zz,uu,:])
+                            tree_spec.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_agn_ap})
+
                 #########################
                 # Summarize the ML
                 #########################
@@ -745,7 +853,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
         Mdust_temp = np.zeros(len(Temp),float)
         dellam_d = 1e1
-        lambda_d = np.arange(1e3, 1e7, dellam_d)
+        lambda_d = np.arange(5e2, 1e7, dellam_d)
         
         MB.logger.info('Reading dust table...')
         for tt in range(len(Temp)):
@@ -786,9 +894,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     nurest = c / wav.value # Hz
 
                 BT_nu = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Temp[tt])) - 1.0))
-                BT_nu_cmb = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Temp[tt])) - 1.0))
+                BT_nu_cmb = (2.0 * hp * (nurest)**3. * c**(-2.) / (np.exp(hp*(nurest)/(kb * Tcmb)) - 1.0))
+
                 # J s * (Hz)3 * (AA/s)^-2 = 1e+7 erg * (AA)-2 /s
-                denom = BT_nu-BT_nu_cmb
+                denom = BT_nu + BT_nu_cmb
 
                 fnu_d = (1+zbest) / (DL*MB.Mpc_cm)**2 * (kappa * denom)
                 # 1/cm2 * cm2/g * (1e+7 erg * (AA)-2 / s) = 1e7 erg /s / g / AA / AA
@@ -804,7 +913,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
             # Convolution;
             ALLFILT = np.append(SFILT,DFILT)
-            ltmpbb_d, ftmpbb_d = filconv(ALLFILT,lambda_d*(1.+zbest),fnu_d,DIR_FILT)
+            ltmpbb_d, ftmpbb_d = filconv(ALLFILT, lambda_d*(1.+zbest), fnu_d, DIR_FILT)
             nd_db = np.arange(0, len(ftmpbb_d), 1)
 
             if MB.f_spec:
@@ -820,6 +929,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 tree_spec_dust.update({'colnum': nd_db})
 
             tree_spec_dust.update({'fspec_'+str(tt): ftmpbb_d})
+
+        #     plt.plot(lambda_d, fnu_d, )
+        # # plt.ylim(0, 0.01)
+        # plt.xlim(0,500000)
+        # plt.show()
+        # hoge
+
         # Md/temp;
         tree_spec_dust.update({'Mdust': Mdust_temp})
         tree.update({'spec_dust' : tree_spec_dust})
@@ -874,17 +990,16 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         dict_spec_obs = {'NR':NR, 'x':x, 'fy':fy00, 'ey':ey00}
         MB.data['spec_obs'] = dict_spec_obs
 
-        fw = open(file_tmp,'w')
         if MB.f_dust:
+            fw = open(file_tmp,'w')
             nbblast = len(ltmpbb[0,:])+len(lm)
             for ii in range(len(ebb_d[:])):
                 if ebb_d[ii]>ebblim:
                     fw.write('%d %.5f 0 1000\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast]))
                 else:
                     fw.write('%d %.5f %.5e %.5e\n'%(ii+ncolbb+nbblast, ltmpbb_d[ii+nbblast], fbb_d[ii], ebb_d[ii]))
-        fw.close()
+            fw.close()
         
-        if MB.f_dust:
             dat = ascii.read(file_tmp, format='no_header')
             nr_d = dat['col1']
             x_d = dat['col2']
@@ -1664,7 +1779,7 @@ def check_library(MB, af, nround=3):
     # No. of age;
     if MB.SFH_FORM==-99:
         if len(af['ML']['ms_0']) != len(MB.age):
-            MB.logger.error('No of age pixels:', len(MB.age), len(af['ML']['ms_0']))
+            MB.logger.error('No of age pixels: %.3f %.3f'%(len(MB.age), len(af['ML']['ms_0'])))
             flag = False
     else:
         flag = True
@@ -1672,34 +1787,34 @@ def check_library(MB, af, nround=3):
     # Matallicity:
     for aa in range(len(Zall)):
         if Zall[aa] != af['Z%d'%(aa)]:
-            MB.logger.error('Z:', Zall[aa], af['Z%d'%(aa)])
+            MB.logger.error('Z: %.3f %.3f'%(Zall[aa], af['Z%d'%(aa)]))
             flag = False
 
     if MB.SFH_FORM==-99:
         # Age:
         for aa in range(len(MB.age)):
             if round(MB.age[aa],nround) != round(af['age%d'%(aa)],nround):
-                MB.logger.error('age:', MB.age[aa], af['age%d'%(aa)])
+                MB.logger.error('age: %.3f %.3f'%(MB.age[aa], af['age%d'%(aa)]))
                 flag = False
         # Tau (e.g. ssp/csp):
         for aa in range(len(MB.tau0)):
             if round(MB.tau0[aa]) != round(af['tau0%d'%(aa)]):
-                MB.logger.error('tau0:', MB.tau0[aa], af['tau0%d'%(aa)])
+                MB.logger.error('tau0: %.3f %.3f'%(MB.tau0[aa], af['tau0%d'%(aa)]))
                 flag = False
     else:
         # Age:
         for aa in range(len(MB.ageparam)):
             if round(MB.ageparam[aa]) != round(af['age%d'%(aa)]):
-                MB.logger.error('age:', MB.ageparam[aa], af['age%d'%(aa)])
+                MB.logger.error('age: %.3f %.3f'%(MB.ageparam[aa], af['age%d'%(aa)]))
                 flag = False
         for aa in range(len(MB.tau)):
             if round(MB.tau[aa]) != round(af['tau%d'%(aa)]):
-                MB.logger.error('tau:', MB.tau[aa], af['tau%d'%(aa)])
+                MB.logger.error('tau: %.3f %.3f'%(MB.tau[aa], af['tau%d'%(aa)]))
                 flag = False
 
     # IMF:
     if MB.nimf != af['nimf']:
-        MB.logger.error('nimf:', MB.nimf, af['nimf'])
+        MB.logger.error('nimf: %.3f %.3f'%(MB.nimf, af['nimf']))
         flag = False
 
     if not flag:
@@ -1791,9 +1906,10 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
     LSF
 
     '''
-    lists_morp = ['moffat', 'gauss', 'jwst-prism']
+    lists_morp = ['moffat', 'gauss', 'jwst-prism', 'nirspec_g140m', 'nirspec_g140h', 'nirspec_g235m', 'nirspec_g235h', 'nirspec_g395m', 'nirspec_g395h']
     Amp = 0
     f_morp = False
+    morp = inputs['MORP']
     if inputs['MORP'] in lists_morp:
         if inputs['MORP'] in lists_morp[:2]:
             try:
@@ -1811,7 +1927,7 @@ def get_LSF(inputs, DIR_EXTR, ID, lm, wave_repr=4000, c=3e18,
                 print_err(msg, exit=False)
                 pass
     else:
-        msg = 'MORP Keywords does not match.\nNo morphology convolution.'
+        msg = f'MORP Keywords, {morp}, is not found in the list {lists_morp}\nNo morphology convolution.'
         print_err(msg, exit=False)
 
     ############################

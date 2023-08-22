@@ -56,13 +56,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     plots
 
     '''
+    # import matplotlib
+    # matplotlib.use("TkAgg")
     MB.logger.info('Running plot_sed')
 
     fnc  = MB.fnc 
     bfnc = MB.bfnc
-    ID   = MB.ID
-    Z    = MB.Zall
-    age  = MB.age
+    ID = MB.ID
+    Z = MB.Zall
+    age = MB.age
     nage = MB.nage 
     tau0 = MB.tau0
     
@@ -130,6 +132,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fneb:
         logU50 = hdul[1].data['logU'][1]
         Aneb50 = 10**hdul[1].data['Aneb'][1]
+    if MB.fagn:
+        AGNTAU50 = hdul[1].data['AGNTAU'][1]
+        Aagn50 = 10**hdul[1].data['Aagn'][1]
 
     aa = 0
     Av16 = hdul[1].data['AV'+str(aa)][0]
@@ -166,7 +171,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         nTD84 = hdul[1].data['nTDUST'][2]
         DFILT = MB.inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
-        DFWFILT = fil_fwhm(DFILT, DIR_FILT)
+        # DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             MB.logger.info('Total dust mass is %.2e'%(MD50))
 
@@ -297,7 +302,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             scale = 1e-19
             MB.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
     d_scale = MB.d * scale
-    d = d_scale
 
     #######################################
     # D.Kelson like Box for BB photometry
@@ -383,6 +387,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fneb:
         lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
         lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
+    if MB.fagn:
+        lib_agn = MB.fnc.open_spec_fits(fall=0, f_agn=True)
+        lib_agn_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_agn=True)
 
     # FIR dust plot;
     if MB.f_dust:
@@ -393,16 +400,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         par.add('zmc',value=zp50)
 
         y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
+        y0d_cut, _ = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
 
         # data;
-        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
-        NRbbd = dat_d['col1']
-        xbbd = dat_d['col2']
-        fybbd = dat_d['col3']
-        eybbd = dat_d['col4']
-        exbbd = dat_d['col5']
-        snbbd = fybbd/eybbd
+        xbbd, fybbd, eybbd = MB.data['spec_fir_obs']['x'], MB.data['spec_fir_obs']['fy'], MB.data['spec_fir_obs']['ey']
 
         try:
             conbbd_hs = (fybbd/eybbd>SNlim)
@@ -425,7 +426,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
         except:
             pass
-
 
     #
     # This is for UVJ color time evolution.
@@ -455,6 +455,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 # Only at one age pixel;
                 y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50)
                 y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50)
+                ysum += y0_r
+                ysump[:nopt] += y0p
+
+            if MB.fagn: 
+                # Only at one age pixel;
+                y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn_all, AGNTAU=AGNTAU50)
+                y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn, AGNTAU=AGNTAU50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
@@ -589,7 +596,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         MB.logger.warning('This function (write_lines) needs to be revised.')
         write_lines(ID, zbes, DIR_OUT=MB.DIR_OUT)
 
-
     ##########################
     # Zoom in Line regions
     ##########################
@@ -648,9 +654,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
     ytmp_nl = np.zeros((mmax,len(ysum)), dtype='float') # no line
 
-    ytmpmax = np.zeros(len(ysum), dtype='float')
-    ytmpmin = np.zeros(len(ysum), dtype='float')
-
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
@@ -668,10 +671,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     # From random chain;
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
-        try:
-            Av_tmp = samples['AV'][nr]
-        except:
+
+        if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
+        else:
+            try:
+                Av_tmp = samples['AV0'][nr]
+            except:
+                Av_tmp = samples['AV'][nr]
 
         try:
             zmc = samples['zmc'][nr]
@@ -696,6 +703,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
+
+                # Each;
+                ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+
                 if MB.fneb:
                     Aneb_tmp = 10**samples['Aneb'][nr]
                     if not MB.logUFIX == None:
@@ -704,16 +715,31 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         logU_tmp = samples['logU'][nr]
                     mod0_tmp, xm_tmp = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp += mod0_tmp
+                    # ax1.plot(xm_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
+
                     # Make no emission line template;
                     mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
                     fm_tmp_nl += mod0_tmp_nl
+
+                if MB.fagn:
+                    Aagn_tmp = 10**samples['Aagn'][nr]
+                    if not MB.AGNTAUFIX == None:
+                        AGNTAU_tmp = MB.AGNTAUFIX
+                    else:
+                        AGNTAU_tmp = samples['AGNTAU'][nr]
+                    mod0_tmp, xm_tmp = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
+                    fm_tmp += mod0_tmp
+                    # Make no emission line template;
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
+                    fm_tmp_nl += mod0_tmp_nl
+
             else:
                 mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
 
-            # Each;
-            ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+                # Each;
+                ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
 
         #
         # Dust component;
@@ -734,15 +760,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 par['TDUST'].value = samples['TDUST'][nr]
 
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
+            model_dust_full, x1_dust_full = fnc.tmp04_dust(par.valuesdict(), return_full=True)
+
             if kk == 0:
-                deldt  = (x1_dust[1] - x1_dust[0])
+                deldt = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
                 # Redefine??
                 ytmp = np.zeros((mmax,len(x1_tot)), dtype='float')
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
-                ytmp_comp = np.zeros((mmax,len(x1_tot)), dtype='float')
+                ytmp_dust_full = np.zeros((mmax,len(model_dust_full)), dtype='float')
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d_scale
+            ytmp_dust_full[kk,:] = model_dust_full * c/np.square(x1_dust_full)/d_scale
+
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + np.interp(x1_tot,x1_dust,model_dust)
 
@@ -761,7 +791,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
         Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
-
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
 
         # Get RF Color;
@@ -772,7 +801,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
 
         # Do stuff...
-        time.sleep(0.01)
+        # time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
@@ -788,6 +817,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     
     if MB.f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
+        ytmp_dust50_full = np.percentile(ytmp_dust_full[:,:],50, axis=0)
 
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
@@ -809,7 +839,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
         else:
             ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
-        
+
     # Attach the data point in MB;
     MB.sed_wave_obs = xbb
     MB.sed_flux_obs = fybb * c / np.square(xbb) /d_scale
@@ -826,6 +856,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         ysumtmp = ytmp[0, ::nstep_plot] * 0
         ysumtmp2 = ytmp[:, ::nstep_plot] * 0
         ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
+
         for ss in range(len(age)):
             ii = int(len(nage) - ss - 1)
             # !! Take median after summation;
@@ -833,8 +864,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             if f_fill:
                 ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.percentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
             else:
-                ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=-3)
+                ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=1)
             ysumtmp2_prior[:] = np.percentile(ysumtmp2[:, :], 50, axis=0)
+
     elif f_fill:
         MB.logger.info('f_fancyplot is False. f_fill is set to False.')
 
@@ -951,9 +983,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
             EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
 
-            cnt50 = fbb[iix2]
-            cnt16 = fbb16[iix2]
-            cnt84 = fbb84[iix2]
+            cnt50 = fbb[iix2] # in Flam
+            cnt16 = fbb16[iix2] # in Flam
+            cnt84 = fbb84[iix2] # in Flam
  
             # Luminosity;
             #Lsun = 3.839 * 1e33 #erg s-1
@@ -976,6 +1008,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         except:
             pass
 
+    # Filters
+    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
+    if f_plot_filter:
+        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
     if save_sed:
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
@@ -1007,9 +1043,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
             col00.append(col1)
         if MB.f_dust:
-            col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust)
+            col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust_full)
             col00.append(col1)
-            col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50)
+            col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50_full)
             col00.append(col1)
             
         # Grism;
@@ -1079,6 +1115,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # SFR from attenuation corrected LUV;
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
+        A1600[np.where(A1600<0)] = 0
         SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
         SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
@@ -1136,15 +1173,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         # ASDF;
         tree_spec = {}
-        #     'id': ID,
-        #     'redshift': '%.3f'%zbes,
-        #     'isochrone': '%s'%(isochrone),
-        #     'library': '%s'%(LIBRARY),
-        #     'nimf': '%s'%(nimf),
-        #     'scale': scale,
-        #     'magzp': MB.m0set,
-        #     'version_gsf': gsf.__version__
-        # }
         tree_spec['model'] = {}
         tree_spec['obs'] = {}
         tree_spec['header'] = {}
@@ -1158,18 +1186,26 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     tree_spec['header'].update({'%s'%key: hdr[key]})
 
         # BB;
-        Cnu_to_Jy = 10**((23.9-m0set)) # to microJy. So the final output SED library has uJy.
+        Cnu_to_Jy = 10**((23.9-m0set)) # fnu_mzpset to microJy. So the final output SED library has uJy.
+        # tree_spec['model'].update({'wave_bb': lbb * u.AA})
+        # tree_spec['model'].update({'fnu_bb_16': fbb16_nu * Cnu_to_Jy * u.uJy})
+        # tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
+        # tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
+
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fbb50_nu = flamtonu(lbb, fbb*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=23.9, m0=-48.6) * u.uJy
         tree_spec['model'].update({'wave_bb': lbb * u.AA})
-        tree_spec['model'].update({'fnu_bb_16': fbb16_nu * Cnu_to_Jy * u.uJy})
-        tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
-        tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
+        tree_spec['model'].update({'fnu_bb_16': fbb16_nu})
+        tree_spec['model'].update({'fnu_bb_50': fbb50_nu})
+        tree_spec['model'].update({'fnu_bb_84': fbb84_nu})
 
         # full spectrum;
         tree_spec['model'].update({'wave': x1_tot * u.AA})        
         # Get fnu in uJy;
-        fnu_16 = flamtonu(x1_tot, ytmp16*scale,  m0set=23.9, m0=-48.6) * u.uJy
-        fnu_50 = flamtonu(x1_tot, ytmp50*scale,  m0set=23.9, m0=-48.6) * u.uJy
-        fnu_84 = flamtonu(x1_tot, ytmp84*scale,  m0set=23.9, m0=-48.6) * u.uJy
+        fnu_16 = flamtonu(x1_tot, ytmp16*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fnu_50 = flamtonu(x1_tot, ytmp50*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fnu_84 = flamtonu(x1_tot, ytmp84*scale, m0set=23.9, m0=-48.6) * u.uJy
         tree_spec['model'].update({'fnu_16': fnu_16})
         tree_spec['model'].update({'fnu_50': fnu_50})
         tree_spec['model'].update({'fnu_84': fnu_84})
@@ -1182,9 +1218,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 tree_spec['model'].update({'EW_%s_84'%(ew_label[ii]): EW84[ii] * u.AA})
                 tree_spec['model'].update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii] * u.AA})
                 tree_spec['model'].update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii] * u.AA})
-                tree_spec['model'].update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii] / (c / np.square(x1_tot[:]) /d_scale) * Cnu_to_Jy * u.uJy})
-                tree_spec['model'].update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii] / (c / np.square(x1_tot[:]) /d_scale) * Cnu_to_Jy * u.uJy})
-                tree_spec['model'].update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii] / (c / np.square(x1_tot[:]) /d_scale) * Cnu_to_Jy * u.uJy})
+                tree_spec['model'].update({'cnt_%s_16'%(ew_label[ii]): flamtonu(x1_tot, cnt16[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy})
+                tree_spec['model'].update({'cnt_%s_50'%(ew_label[ii]): flamtonu(x1_tot, cnt50[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy})
+                tree_spec['model'].update({'cnt_%s_84'%(ew_label[ii]): flamtonu(x1_tot, cnt84[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy})
                 tree_spec['model'].update({'L_%s_16'%(ew_label[ii]): L16[ii] * u.erg / u.s})
                 tree_spec['model'].update({'L_%s_50'%(ew_label[ii]): L50[ii] * u.erg / u.s})
                 tree_spec['model'].update({'L_%s_84'%(ew_label[ii]): L84[ii] * u.erg / u.s})
@@ -1196,29 +1232,51 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         tree_spec['model'].update({'wave_stel': x0 * u.AA})
         for aa in range(len(age)):
             fnu_tmp = flamtonu(x0, f_50_comp[aa,:]*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            if aa == 0:
+                f_nu_stel = fnu_tmp
+            else:
+                f_nu_stel += fnu_tmp
             tree_spec['model'].update({'fnu_stel_%d'%aa: fnu_tmp})
+        tree_spec['model'].update({'fnu_stel': f_nu_stel})
+
         if MB.f_dust:
             # dust
-            tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
-            fnu_tmp = flamtonu(x1_dust, ytmp_dust50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            # tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
+            # fnu_tmp = flamtonu(x1_dust, ytmp_dust50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            # tree_spec['model'].update({'fnu_dust': fnu_tmp})
+            tree_spec['model'].update({'wave_dust': x1_dust_full * u.AA})
+            fnu_tmp = flamtonu(x1_dust_full, ytmp_dust50_full * scale, m0set=23.9, m0=-48.6) * u.uJy
             tree_spec['model'].update({'fnu_dust': fnu_tmp})
 
         # Obs BB
+        fybb_lam = fybb * c / np.square(xbb) / d_scale
+        eybb_lam = eybb * c / np.square(xbb) / d_scale
         tree_spec['obs'].update({'wave_bb': xbb * u.AA})
-        tree_spec['obs'].update({'fnu_bb': fybb[:] * Cnu_to_Jy * u.uJy})
-        tree_spec['obs'].update({'enu_bb': eybb[:] * Cnu_to_Jy * u.uJy})
+        # tree_spec['obs'].update({'fnu_bb': fybb[:] * Cnu_to_Jy * u.uJy})
+        # tree_spec['obs'].update({'enu_bb': eybb[:] * Cnu_to_Jy * u.uJy})
+        tree_spec['obs'].update({'fnu_bb': flamtonu(xbb, fybb_lam * scale, m0set=23.9, m0=-48.6) * u.uJy})
+        tree_spec['obs'].update({'enu_bb': flamtonu(xbb, eybb_lam * scale, m0set=23.9, m0=-48.6) * u.uJy})
+
         # grism:
         if f_grsm:
-            tree_spec['obs'].update({'fg0': fg0 * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'eg0': eg0 * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'wg0': xg0 * u.AA})
-            tree_spec['obs'].update({'fg1': fg1 * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'eg1': eg1 * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'wg1': xg1 * u.AA})
-            tree_spec['obs'].update({'fg2': fg2 * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'eg2': eg2 * Cnu_to_Jy * u.uJy})
-            tree_spec['obs'].update({'wg2': xg2 * u.AA})
+            fs = [fg0,fg1,fg2]
+            es = [eg0,eg1,eg2]
+            xs = [xg0,xg1,xg2]
+            for ff in range(len(fs)):
+                flam_tmp = fs[ff] * c / np.square(xs[ff]) / d_scale
+                elam_tmp = es[ff] * c / np.square(xs[ff]) / d_scale
+                fnu_tmp = flamtonu(xs[ff], flam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                enu_tmp = flamtonu(xs[ff], elam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                tree_spec['obs'].update({'fg%d'%ff: fnu_tmp})
+                tree_spec['obs'].update({'eg%d'%ff: enu_tmp})
+                tree_spec['obs'].update({'wg%d'%ff: xs[ff] * u.AA})
 
+        # Filts;
+        tree_spec['filters'] = MB.filts
+        if f_plot_filter:
+            tree_spec['filter_response'] = MB.filt_responses
+
+        # Save;
         af = asdf.AsdfFile(tree_spec)
         af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
 
@@ -1230,10 +1288,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))#, fin_chi2)
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))#, fin_chi2)
         else:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV_50']))
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))
 
         if f_grsm:
             ax1.text(0.02, 0.68, label,\
@@ -1288,17 +1346,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     if MB.f_dust:
         try:
-            contmp = (x1_tot>10*1e4) #& (fybbd/eybbd>SNlim)
+            contmp = (x1_tot>1e4) #& (fybbd/eybbd>SNlim)
             y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) /d_scale)[contmp]), np.max((model_tot * c/ np.square(x1_tot) /d_scale)[contmp])*2.0
             ax3t.set_ylim(y3min, y3max)
         except:
             if verbose:
                 print('y3 limit is not specified.')
             pass
-        ax3t.set_xlim(1e5, 3e7)
+        ax3t.set_xlim(1e4, 3e7)
         ax3t.set_xscale('log')
-        ax3t.set_xticks([100000, 1000000, 10000000])
-        ax3t.set_xticklabels(['10', '100', '1000'])
+        ax3t.set_xticks([10000, 1000000, 10000000])
+        ax3t.set_xticklabels(['1', '100', '1000'])
 
     ###############
     # Line name
@@ -1348,10 +1406,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         except:
             pass
 
-    # Filters
-    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
-    if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
     ####################
     ## Save
@@ -1374,7 +1428,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
-    return_figure=False):
+    return_figure=False, col_dat='r'):
     '''
     Parameters
     ----------
@@ -1502,7 +1556,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     Av50 = hdul[1].data['AV'+str(aa)][1]
     Av84 = hdul[1].data['AV'+str(aa)][2]
     AAv = [Av50]
-    vals['AV'] = Av50
+    vals['AV0'] = Av50
 
     Z50 = np.zeros(len(age), dtype='float')
     Z16 = np.zeros(len(age), dtype='float')
@@ -1532,7 +1586,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         nTD84 = hdul[1].data['nTDUST'][2]
         DFILT = MB.inputs['FIR_FILTER'] # filter band string.
         DFILT = [x.strip() for x in DFILT.split(',')]
-        DFWFILT = fil_fwhm(DFILT, DIR_FILT)
+        # DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             print('Total dust mass is %.2e'%(MD50))
         f_dust = True
@@ -1644,18 +1698,16 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
 
-    # Determine scale here;
+    # Determine scale for visualization;
+    # i.e. "x10^??" in y axis.
     if scale == None:
         conbb_hs = (fybb/eybb > SNlim)
         scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
-    d = MB.d * scale
+    # d = MB.d * scale
 
     #######################################
     # D.Kelson like Box for BB photometry
     #######################################
-    #col_dat = 'darkgreen'
-    #col_dat = 'tomato'
-    col_dat = 'r'
     if f_bbbox:
         for ii in range(len(xbb)):
             if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
@@ -1979,10 +2031,10 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
         try:
-            Av_tmp = samples['AV'][nr]
+            Av_tmp = samples['AV0'][nr]
         except:
             Av_tmp = MB.AVFIX
-        vals['AV'] = Av_tmp
+        vals['AV0'] = Av_tmp
 
         try:
             zmc = samples['zmc'][nr]
@@ -2085,7 +2137,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
 
         # Do stuff...
-        time.sleep(0.01)
+        # time.sleep(0.01)
         # Update Progress Bar
         printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
@@ -2397,6 +2449,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         hdr['UVBETA50'] = beta_50
         hdr['UVBETA84'] = beta_84
 
+
         # UVJ
         try:
             hdr['uv16'] = np.percentile(UVJ[:,0],16)
@@ -2633,7 +2686,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     plt.close()
 
 
-def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=[]):
+def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
+                ind_remove=[], nmax=1000):
     '''
     Add filter response curve to ax1.
 
@@ -2642,6 +2696,7 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
     cm = plt.get_cmap(cmap)
     cols = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
 
+    filt_responses = {}
     wavecen = []
     for ii,filt in enumerate(MB.filts):
         wave = MB.band['%s_lam'%filt]
@@ -2657,10 +2712,29 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, ind_remove=
         col = cols[iix]
         wave = MB.band['%s_lam'%filt]
         flux = MB.band['%s_res'%filt]
+        
+        if len(wave) > nmax:
+            nthin = int(len(wave)/nmax)
+        else:
+            nthin = 1
+
+        filt_responses[filt] = {}
+        wave_tmp = np.zeros(len(wave[::nthin]), float)
+        res_tmp = np.zeros(len(wave[::nthin]), float)
+
+        wave_tmp[:] = wave[::nthin]
+        res_tmp[:] = flux[::nthin]
+
+        filt_responses[filt]['wave'] = wave_tmp
+        filt_responses[filt]['response'] = res_tmp
+
         if ii in ind_remove:
             continue
+
         ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
         ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+
+    MB.filt_responses = filt_responses
 
     return ax
 
@@ -2830,7 +2904,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         conbb_hs = (fybb/eybb > SNlim)
         scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
     d_scale = MB.d * scale
-    d = d_scale
 
     # BB photometry
     conspec = (NR<NRbb_lim)
@@ -3055,11 +3128,28 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Z = np.reshape(kernel(positions).T, X.shape)
         return X, Y, Z
 
+    # Some other params;
+    m0set = MB.m0set
+    Mpc_cm = MB.Mpc_cm
+    DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
+    DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
+    Fuv     = np.zeros(mmax, dtype=float) # For Muv
+    Fuv16   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    Luv16   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    Fuv28   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    Lir     = np.zeros(mmax, dtype=float) # For L(8-1000um)
+    UVJ     = np.zeros((mmax,4), dtype=float) # For UVJ color;
+    Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
+    betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    SFRUV = np.zeros(mmax, dtype=float)
+    SFRUV_UNCOR = np.zeros(mmax, dtype=float)
+    MUV = np.zeros(mmax, dtype=float)
+
     for kk in range(0,mmax,1):
         delt_tot = 0
         nr = np.random.randint(nshape_sample)
         try:
-            Avtmp[kk] = samples['AV'][nr]
+            Avtmp[kk] = samples['AV0'][nr]
         except:
             Avtmp[kk] = MB.AVFIX
 
@@ -3124,6 +3214,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                 if AA_tmp/Asum > flim:
                     ax0.plot(x0, y0_r * c/ np.square(x0) /d_scale, '--', lw=.1, color=col[ii], zorder=-1, label='', alpha=0.01)
 
+        # SFH based SFR;
         SFR_SED[kk] /= delt_tot
         if SFR_SED[kk] > 0:
             SFR_SED[kk] = np.log10(SFR_SED[kk])
@@ -3176,6 +3267,36 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         else:
             NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
+        # store other params;
+        # Get FUV flux density at 10pc;
+        if MB.fzmc == 1:
+            zmc = redshifttmp[kk]
+        else:
+            zmc = zbes
+        Fuv[kk] = get_Fuv(x0/(1.+zmc), (ysum/(c/np.square(x0)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
+        Fuv28[kk] = get_Fuv(x0/(1.+zmc), (ysum/(c/np.square(x0)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
+        Lir[kk] = 0
+
+        fnu_tmp = flamtonu(x0, ysum*scale, m0set=-48.6, m0=-48.6)
+        Luv16[kk] = get_Fuv(x0/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        betas[kk] = get_uvbeta(x0, ysum, zmc)
+
+        # SFR from attenuation corrected LUV;
+        # Meurer+99, Smit+16;
+        A1600 = 4.43 + 1.99 * np.asarray(betas[kk])
+        if A1600<0:
+            A1600 = 0
+        SFRUV[kk] = 1.4 * 1e-28 * 10**(A1600/2.5) * Luv16[kk] # Msun / yr
+        SFRUV_UNCOR[kk] = 1.4 * 1e-28 * Luv16[kk]
+        MUV[kk] = -2.5 * np.log10(Fuv[kk]) + MB.m0set
+
+        # Get RF Color;
+        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x0/(1.+zmc), (ysum/(c/np.square(x0)/d_scale)))
+        UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
+        UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
+        UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
+        UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
+
         # This should happen at the last kk;
         if kk == mmax-1:
             # Histogram
@@ -3192,11 +3313,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
                     ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
                     ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
                     ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
-
-                    # percentile values?
-                    # ax.text(np.percentile(NPAR[i],16), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],16)), fontsize=9)
-                    # ax.text(np.percentile(NPAR[i],50), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],50)), fontsize=9)
-                    # ax.text(np.percentile(NPAR[i],84), np.max(yy)*1.02, '%.2f'%(np.percentile(NPAR[i],84)), fontsize=9)
                 except:
                     MB.logger.warning('Failed at i,x=%d,%d'%(i,x))
 
@@ -3210,9 +3326,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
             # save pck;
             if save_pcl:
                 if MB.fzmc == 1:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1]}
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1],
+                                'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
+                                }
                 else:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1]}
+                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1],
+                                'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
+                                }
+                    
+                # UVJ;
+                for cc in range(len(UVJ[0,:])):
+                    NPAR_LIB['COR_RF_%d'%cc] = UVJ[:kk+1,cc]
 
                 use_pickl = False
                 if use_pickl:

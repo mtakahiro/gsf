@@ -149,6 +149,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         if f_add_dust:
                             dsptmp = fsps.StellarPopulation(duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0, **kwargs)
 
+                        if MB.fagn:
+                            asptmp = fsps.StellarPopulation(add_neb_emission=0, fagn=1.0, **kwargs)
+
                     elif tau0[pp] > 0.0:
                         MB.logger.info('At t=%.3f, fixed tau, %.3f, is applied.'%(age[ss],tautmp))
 
@@ -165,6 +168,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         if f_add_dust:
                             dsptmp = fsps.StellarPopulation(duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0, **kwargs)
 
+                        if MB.fagn:
+                            asptmp = fsps.StellarPopulation(add_neb_emission=0, fagn=1.0, **kwargs)
+
                     else: # =Negative tau;
                         MB.logger.info('At t=%.3f, SSP (%.3f) is applied.'%(age[ss],tautmp))
 
@@ -180,6 +186,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
 
                         if f_add_dust:
                             dsptmp = fsps.StellarPopulation(duste_gamma=0.01, duste_umin=1.0, duste_qpah=3.5, fagn=0.0, **kwargs)
+
+                        if MB.fagn:
+                            asptmp = fsps.StellarPopulation(add_neb_emission=0, fagn=1.0, **kwargs)
                 else:
                     MB.logger.info('At t=%.3f, tau is %.3f Gyr' %(age[ss],tautmp))
                     MB.logger.info('Skip fsps, by using previous library.')
@@ -233,6 +242,35 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: esp.emline_luminosity})
                         tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: esp.stellar_mass - stellar_mass_tmp})
 
+                if MB.fagn and pp == 0 and ss == 0:
+
+                    asptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    stellar_mass_tmp = sp.stellar_mass
+
+                    # Loop within logU;
+                    for nAGNTAU, AGNTAUtmp in enumerate(MB.AGNTAUs):
+                        asptmp.params['agn_tau'] = AGNTAUtmp
+                        asp = asptmp
+
+                        tage_agn = age[ss]
+
+                        ewave0, eflux0 = asp.get_spectrum(tage=tage_agn, peraa=True)
+                        if age[ss] != tage_agn:
+                            sp_tmp = sp.copy()
+                            wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_neb, peraa=True) # Lsun/AA
+                            _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
+                        else:
+                            _, flux_tmp = wave, flux
+
+                        con = (ewave0>lammin) & (ewave0<lammax)
+                        flux_agn = eflux0[con] - flux_tmp
+                        # Eliminate some negatives. Mostly on <912A;
+                        con_neg = flux_agn<0
+                        flux_agn[con_neg] = 0
+
+                        tree_spec.update({'flux_agn_Z%d'%zz+'_AGNTAU%d'%nAGNTAU: flux_agn})
+                        tree_spec.update({'agn_mass_Z%d'%zz+'_AGNTAU%d'%nAGNTAU: asp.stellar_mass - stellar_mass_tmp})
+
                 if f_add_dust:
                     wave0_d, flux0_d = dsptmp.get_spectrum(tage=age[ss], peraa=True)
                     con = (wave0_d>lammin) & (wave0_d<lammax)
@@ -263,6 +301,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         tree.update({'logUMIN': MB.logUMIN})
                         tree.update({'logUMAX': MB.logUMAX})
                         tree.update({'DELlogU': MB.DELlogU})
+                    if MB.fagn:
+                        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
+                        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
+                        tree.update({'DELAGNTAU': MB.DELAGNTAU})
 
                     tree_spec.update({'wavelength': wave})
                     flagz = False

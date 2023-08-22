@@ -9,6 +9,8 @@ from scipy.interpolate import interp1d
 import logging
 from colorama import Fore, Back, Style
 from datetime import datetime
+from astropy import units as u
+from astropy.cosmology import WMAP9
 
 ################
 # Line library
@@ -62,7 +64,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300):
+def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, return_results=False):
     '''
     Purpose
     -------
@@ -84,6 +86,9 @@ def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300):
             beta = -99
     except:
         beta = -99
+
+    if return_results:
+        return fit_results
     return beta
 
 
@@ -225,7 +230,8 @@ def read_input(parfile):
 
     Returns
     -------
-    Input dictionary.
+    inputs : dict
+        Input dictionary.
 
     '''
     input0 = []
@@ -237,7 +243,7 @@ def read_input(parfile):
             break
         else:
             cols = str.split(line)
-            if len(cols)>0 and cols[0][0] != '#':
+            if len(cols)>1 and cols[0][0] != '#':
                 input0.append(cols[0])
                 input1.append(cols[1])
     file.close()
@@ -335,7 +341,7 @@ def get_leastsq(MB, ZZtmp, fneld, age, fit_params, residual, fy, ey, wht, ID0,
             AA_tmp[aa] = out_tmp.params['A'+str(aa)].value
             fwz.write(' %.5f'%(AA_tmp[aa]))
 
-        Av_tmp = out_tmp.params['AV'].value
+        Av_tmp = out_tmp.params['AV0'].value
         fwz.write(' %.5f'%(Av_tmp))
         for aa in range(MB.npeak):
             if MB.ZEVOL == 1 or aa == 0:
@@ -416,7 +422,6 @@ def get_SFMS(red,age,mass,IMF=1,get_param=False):
     From Speagle+14 Eq28.
     Chabrier IMF, in default
     '''
-    from astropy.cosmology import WMAP9
     cosmo = WMAP9
 
     CIMF = 0
@@ -565,7 +570,7 @@ def data_int(lmobs, lmtmp, ftmp):
     return ftmp_int
 
 
-def fnutonu(fnu, m0set=25.0, m0input=-48.6):
+def fnutonu(fnu, m0set=25.0, m0input=-48.6, has_unit=False):
     '''
     Converts from Fnu (cgs) to Fnu (m0=m0set)
     
@@ -593,7 +598,7 @@ def flamtonu(lam, flam, m0set=25.0, m0=-48.6):
     return fnu
 
 
-def fnutolam(lam, fnu, m0set=25.0, m0=-48.6):
+def fnutolam(lam, fnu, m0set=25.0, m0=-48.6, has_unit=False):
     '''
     Converts from Fnu to Flam, from mag zeropoint of m0set (to -48.6).
 
@@ -604,6 +609,10 @@ def fnutolam(lam, fnu, m0set=25.0, m0=-48.6):
     m0 : float
         target magzp. The default, -48.6, is for flam (erg/s/cm2/lambda).
     '''
+    if has_unit:
+        flux_lam = fnu.to(u.erg/u.s/u.cm**2/u.AA, u.spectral_density(lam))
+        return flux_lam
+
     Ctmp = lam**2/c * 10**((m0set-m0)/2.5)
     flam = fnu / Ctmp
     return flam
@@ -1363,15 +1372,32 @@ def fil_fwhm(band0, DIR):
     return fwhm
 
 
-def calc_Dn4(x0, y0, z0):
-    con1 = (x0/(1+z0)>3750) & (x0/(1+z0)<3950)
-    con2 = (x0/(1+z0)>4050) & (x0/(1+z0)<4250)
-    D41  = np.average(y0[con1])
-    D42  = np.average(y0[con2])
+def calc_Dn4(x0, y0, z0,
+             lam_b_low=3750, lam_b_hig=3950,
+             lam_r_low=4050, lam_r_hig=4250,
+             is_fnu=False,
+             ):
+    '''
+    Parameters
+    ----------
+    x0, y0 : float arrays
+        wavelength and flux
+    z0 : float
+        redshift
+    '''
+    con1 = (x0/(1+z0)>lam_b_low) & (x0/(1+z0)<lam_b_hig)
+    con2 = (x0/(1+z0)>lam_r_low) & (x0/(1+z0)<lam_r_hig)
+    if is_fnu:
+        y0 = fnutolam(x0, y0, m0set=25.0)
+        
+    D41 = np.nanmean(y0[con1])
+    D42 = np.nanmean(y0[con2])
+        
     if D41>0 and D42>0:
         D4 = D42/D41
         return D4
     else:
+        # print('D41 and D42 are:',D42, D41)
         return -99
 
 

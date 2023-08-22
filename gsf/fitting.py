@@ -78,7 +78,8 @@ class Mainbody(GsfBase):
         or the width to the next age bin.
     '''
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
-        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None):
+        cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None,
+        show_list=True):
         '''
         Parameters
         ----------
@@ -115,12 +116,13 @@ class Mainbody(GsfBase):
             'Templates' : ['TAU0', 'NIMF', 'BINARY', 
                            'SFH_FORM',
                            'AMIN', 'AMAX', 
-                           'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 'ADD_NEBULAE', 
-                           'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGE_FIX',
+                           'ADD_NEBULAE', 'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 
+                           'ADD_AGN', 'AGNTAUMIN', 'AGNTAUMAX', 'DELAGNTAU', 'AGNTAUFIX', 
+                           'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGEFIX',
                            'ZMIN', 'ZMAX', 'DELZ', 'ZFIX', 'ZEVOL', 
-                           'AVMIN', 'AVMAX', 'AVFIX', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
+                           'AVMIN', 'AVMAX', 'AVFIX', 'AVEVOL', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
                            'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
-                           'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST', 
+                           'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST',
                            'BPASS', 'DIR_BPASS',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
                            'x_HI'
@@ -132,7 +134,7 @@ class Mainbody(GsfBase):
                          'FORCE_AGE', 'NORDER_SFH_PRIOR', ],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
-                      'CAT_BB', 'SNLIM',
+                      'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
                       'MORP', 'MORP_FILE', 
                       'SPEC_FILE', 'DIR_EXTR', 'MAGZP_SPEC', 'UNIT_SPEC', 'DIFF_CONV', 
                       'CZ0', 'CZ1', 'CZ2', 'LINE', ],
@@ -142,7 +144,32 @@ class Mainbody(GsfBase):
             }
 
         self.param_names = ['A', 'logU', 'AGE', 'Z', 'AV', 'ZMC', 'TDUST', 'TAU']
+        self.check_input(inputs, self.config_params, show_list=show_list)
 
+        return 
+
+
+    def check_input(self, inputs, dict_config, show_list=False):
+        '''
+        '''
+        keys = np.asarray([key for key in inputs.keys()])
+        flag_key = np.zeros(len(keys), int)
+ 
+        for kk,key in enumerate(keys):
+            for list in dict_config.keys():
+                if key in dict_config[list]:
+                    flag_key[kk] = 1
+ 
+        con = flag_key == 0
+        if len(keys[con])>0:
+ 
+            self.logger.warning('Some keywords in the config file are not recognized:')
+            print(keys[con])
+ 
+            if show_list:
+                self.logger.warning('Available input keywords are as follow:')
+                print(dict_config)
+            
 
     def get_configfile(self, name=None):
         '''
@@ -201,7 +228,7 @@ class Mainbody(GsfBase):
         self.pixelscale = pixelscale
         self.Lsun = Lsun
         self.sigz = sigz
-        self.fitc_cz_prev = None
+        self.fitc_cz_prev = 1e10
 
         # Set config path;
         try:
@@ -337,6 +364,8 @@ class Mainbody(GsfBase):
         # Becuase of force_no_neb, add logUs regardless of `ADD_NEBULAE` flag.
         self.fneb = False
         self.nlogU = 0
+        self.fagn = False
+        self.nAGNTAU = 0
         
         self.check_keys(self)
 
@@ -344,6 +373,7 @@ class Mainbody(GsfBase):
             self.logger.warning('Currently, BPASS does not have option of nebular emission.')
             inputs['ADD_NEBULAE'] = '0'
 
+        # Nebular;
         if 'ADD_NEBULAE' in self.input_keys:
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
@@ -388,16 +418,64 @@ class Mainbody(GsfBase):
                 self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
         else:
-            self.verbose
-            print_err('Some error in nebular setup; No nebular added.')
+            if self.verbose:
+                print_err('Some error in nebular setup; No nebular added.')
             self.fneb = False
             self.logUMIN = -2.5
             self.logUMAX = -2.0
             self.DELlogU = 0.5
             self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
             pass
-        
-        # Outpu directory;
+
+        # AGN;
+        if 'ADD_AGN' in self.input_keys:
+            if str2bool(inputs['ADD_AGN']):
+                self.fagn = True
+                try:
+                    self.AGNTAUMIN = float(inputs['AGNTAUMIN'])
+                except:
+                    self.AGNTAUMIN = 5
+                try:
+                    self.AGNTAUMAX = float(inputs['AGNTAUMAX'])
+                except:
+                    self.AGNTAUMAX = 15
+                try:
+                    self.DELAGNTAU = float(inputs['DELAGNTAU'])
+                    if self.DELAGNTAU<1:
+                        print_err('`DELAGNTAU` cannot have value smaller than 1. Exiting.')
+                        sys.exit()
+                except:
+                    self.DELAGNTAU = 1.0
+                self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+                self.nAGNTAU = len(self.AGNTAUs)
+
+                try:
+                    self.AGNTAUFIX = float(inputs['AGNTAUFIX'])
+                    self.nAGNTAU = 1
+                    self.AGNTAUMIN = self.AGNTAUFIX
+                    self.AGNTAUMAX = self.AGNTAUFIX
+                    self.DELAGNTAU = 0
+                    self.AGNTAUs = np.asarray([self.AGNTAUMAX])
+                except:
+                    self.AGNTAUFIX = None
+
+            else:
+                self.fagn = False                
+                self.AGNTAUMIN = 10
+                self.AGNTAUMAX = 15
+                self.DELAGNTAU = 5
+                self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+        else:
+            if self.verbose:
+                print_err('Some error in agn setup; No agn added.')
+            self.fagn = False
+            self.AGNTAUMIN = 10
+            self.AGNTAUMAX = 15
+            self.DELAGNTAU = 5
+            self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+            pass
+
+        # Output directory;
         try:
             self.DIR_OUT = inputs['DIR_OUT']
             if not os.path.exists(self.DIR_OUT):
@@ -598,14 +676,23 @@ class Mainbody(GsfBase):
                     self.ZFIX = None
 
         # N of param:
-        self.has_AVFIX = False
         try:
+            self.AVEVOL = str2bool(inputs['AVEVOL'])
+        except:
+            self.AVEVOL = False
+
+        try:
+            _ = inputs['AVFIX']
+            self.has_AVFIX = True
+        except:
+            self.has_AVFIX = False
+
+        if self.has_AVFIX:
             Avfix = float(inputs['AVFIX'])
             self.AVFIX = Avfix
             self.nAV = 0
             self.logger.info('AVFIX is found.\nAv will be fixed to:\n %.2f'%(Avfix))
-            self.has_AVFIX = True
-        except:
+        else:
             try:
                 self.Avmin = float(inputs['AVMIN'])
                 self.Avmax = float(inputs['AVMAX'])
@@ -619,9 +706,10 @@ class Mainbody(GsfBase):
                 self.nAV = 1
                 self.Avmin = 0
                 self.Avmax = 4.0
+
         try:
             Av_prior = float(inputs['AVPRIOR_SIGMA'])
-            self.key_params_prior.append('AV')
+            self.key_params_prior.append('AV0')
             self.key_params_prior_sigma.append(Av_prior)
         except:
             pass
@@ -668,6 +756,7 @@ class Mainbody(GsfBase):
                         self.nZ = 1
                     
             self.ndim = int(self.npeak*3 + self.nZ + self.nAV) # age, Z, and Av.
+
         if self.verbose:
             print('#############################\n')
 
@@ -897,9 +986,12 @@ class Mainbody(GsfBase):
         #wht2 = check_line_man(fy, x, wht, fy, zgal, self.LW0)
         wht2 = wht[:]
 
+        # Check number of optical/IR data points;
+        self.n_optir = len(wht2)
+
         # Append data;
         if add_fir:
-            nr_d, x_d, fy_d, ey_d = self.data['spec_dust_obs']['NR'], self.data['spec_dust_obs']['x'], self.data['spec_dust_obs']['fy'], self.data['spec_dust_obs']['ey']
+            nr_d, x_d, fy_d, ey_d = self.data['spec_fir_obs']['NR'], self.data['spec_fir_obs']['x'], self.data['spec_fir_obs']['fy'], self.data['spec_fir_obs']['ey']
             NR = np.append(NR,nr_d)
             fy = np.append(fy,fy_d)
             ey = np.append(ey,ey_d)
@@ -931,7 +1023,6 @@ class Mainbody(GsfBase):
             wht2= nrd_yyd_sort[:,5]
 
         sn = fy/ey
-        self.n_optir = len(sn)
 
         dict = {}
         dict = {'NR':NR, 'x':x, 'fy':fy, 'ey':ey, 'NRbb':NRbb, 'xbb':xx_bb, 'exbb':ex_bb, 'fybb':fy_bb, 'eybb':ey_bb, 'wht':wht, 'wht2': wht2, 'sn':sn}
@@ -1387,7 +1478,6 @@ class Mainbody(GsfBase):
     def add_param(self, fit_params, sigz=1.0, zmin=None, zmax=None):
         '''
         Add new parameters.
-
         '''
         f_add = False
 
@@ -1412,25 +1502,41 @@ class Mainbody(GsfBase):
             else:
                 fit_params.add('TDUST', value=0, vary=False)
 
-            fit_params.add('MDUST', value=9, min=0, max=15)
+            fit_params.add('MDUST', value=10, min=0, max=15)
             self.ndim += 1
             self.dict = self.read_data(self.Cz0, self.Cz1, self.Cz2, self.zgal, add_fir=self.f_dust)
             f_add = True
 
         # Nebular; ver1.6
         if self.fneb:
+            self.Anebmin = -10
+            self.Anebmax = 10
             if self.fneb_tied:
                 # @@@ TBD
                 iix = np.argmin(np.abs(self.age-0.01))
                 print('Aneb is tied to A%d'%iix)
                 fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d if Aneb > A%d'%(iix,iix)) #self.Amax)#, expr='<A%d'%iix)
             else:
-                fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax)
+                fit_params.add('Aneb', value=self.Aini, min=self.Anebmin, max=self.Anebmax)
             self.ndim += 1
             if not self.logUFIX == None:
                 fit_params.add('logU', value=self.logUFIX, vary=False)
             else:
                 fit_params.add('logU', value=np.median(self.logUs), min=self.logUMIN, max=self.logUMAX)
+                self.ndim += 1
+            f_add = True
+
+        # AGN; ver1.9
+        if self.fagn:
+            self.AAGNmin = -3
+            self.AAGNmax = 10
+            fit_params.add('Aagn', value=self.Aini, min=self.AAGNmin, max=self.AAGNmax)
+            # fit_params.add('Aagn', value=self.Aini, min=0, max=5)
+            self.ndim += 1
+            if not self.AGNTAUFIX == None:
+                fit_params.add('AGNTAU', value=self.AGNTAUFIX, vary=False)
+            else:
+                fit_params.add('AGNTAU', value=np.median(self.AGNTAUs), min=self.AGNTAUMIN, max=self.AGNTAUMAX)
                 self.ndim += 1
             f_add = True
 
@@ -1532,7 +1638,7 @@ class Mainbody(GsfBase):
         #
         try:
             Avfix = float(self.inputs['AVFIX'])
-            fit_params.add('AV', value=Avfix, vary=False)
+            fit_params.add('AV0', value=Avfix, vary=False)
             self.Avmin = Avfix
             self.Avmax = Avfix
         except:
@@ -1542,17 +1648,17 @@ class Mainbody(GsfBase):
                 self.Avini = (self.Avmax+self.Avmin)/2.
                 self.Avini = 0.
                 if self.Avmin == self.Avmax:
-                    fit_params.add('AV', value=self.Avini, vary=False)
+                    fit_params.add('AV0', value=self.Avini, vary=False)
                     self.Avmin = self.Avini
                     self.Avmax = self.Avini
                 else:
-                    fit_params.add('AV', value=self.Avini, min=self.Avmin, max=self.Avmax)
+                    fit_params.add('AV0', value=self.Avini, min=self.Avmin, max=self.Avmax)
             except:
                 self.Avmin = 0.
                 self.Avmax = 4.
                 self.Avini = 0.5 #(Avmax-Avmin)/2. 
                 self.logger.info('Dust is set in [%.1f:%.1f]/mag. Initial value is set to %.1f'%(self.Avmin,self.Avmax,self.Avini))
-                fit_params.add('AV', value=self.Avini, min=self.Avmin, max=self.Avmax)
+                fit_params.add('AV0', value=self.Avini, min=self.Avmin, max=self.Avmax)
 
         #
         # Metallicity;
@@ -1560,7 +1666,8 @@ class Mainbody(GsfBase):
         if int(self.inputs['ZEVOL']) == 1:
             for aa in range(len(self.age)):
                 if self.age[aa] == 99 or self.age[aa]>agemax:
-                    fit_params.add('Z'+str(aa), value=0, min=0, max=1e-10)
+                    fit_params.add('Z'+str(aa), value=self.Zmin, vary=False)
+                    self.ndim -= 1
                 else:
                     fit_params.add('Z'+str(aa), value=0, min=self.Zmin, max=self.Zmax)
         else:
@@ -1612,6 +1719,9 @@ class Mainbody(GsfBase):
         if self.fneb:
             self.lib_neb = self.fnc.open_spec_fits(fall=0, f_neb=True)
             self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True)
+        if self.fagn:
+            self.lib_agn = self.fnc.open_spec_fits(fall=0, f_agn=True)
+            self.lib_agn_all = self.fnc.open_spec_fits(fall=1, f_agn=True)
 
         if add_fir == None:
             add_fir = self.f_dust
@@ -1695,7 +1805,7 @@ class Mainbody(GsfBase):
 
 
     def main(self, cornerplot:bool=True, specplot=1, sigz=1.0, ezmin=0.01, ferr=0,
-            f_move:bool=False, verbose:bool=False, skip_fitz:bool=False, out=None, f_plot_accept:bool=True,
+            f_move:bool=False, verbose:bool=False, skip_fitz:bool=True, out=None, f_plot_accept:bool=True,
             f_shuffle:bool=True, amp_shuffle=1e-2, check_converge:bool=True, Zini=None, f_plot_chain:bool=True,
             f_chind:bool=True, ncpu:int=0, f_prior_sfh:bool=False, norder_sfh_prior:int=3, include_photometry=True
             ):
@@ -1729,6 +1839,11 @@ class Mainbody(GsfBase):
 
         # Check Main Body;
         self.check_mainbody()
+
+        # Check if zmc is a free param;
+        if skip_fitz and self.fzmc==1:
+            self.logger.warning('ZMC is 1; skip_fitz is set to False.')
+            skip_fitz = False
 
         print('########################')
         print('### Fitting Function ###')
@@ -1811,7 +1926,7 @@ class Mainbody(GsfBase):
                 # Fix params to what we had before.
                 if self.fzmc:
                     out.params['zmc'].value = self.zgal
-                out.params['AV'].value = out_keep.params['AV'].value
+                out.params['AV0'].value = out_keep.params['AV0'].value
                 for aa in range(len(self.age)):
                     out.params['A'+str(aa)].value = out_keep.params['A'+str(aa)].value
                     try:
@@ -1829,7 +1944,7 @@ class Mainbody(GsfBase):
             # MCMC;
             if self.f_mcmc or self.f_zeus:
                 nburn = int(self.nmc/2)
-                if f_shuffle:
+                if f_shuffle and not self.f_zeus:
                     # ZEUS may fail to run with f_shuffle.
                     pos = self.get_shuffle(out, amp=amp_shuffle)
                 else:
@@ -1928,6 +2043,7 @@ class Mainbody(GsfBase):
                     for key in out.params.valuesdict():
                         if out.params[key].vary:
                             labels.append(key)
+
                     for i in range(self.ndim):
                         if self.ndim>1:
                             ax = axes[i]
@@ -2162,7 +2278,7 @@ class Mainbody(GsfBase):
                 self.Cz2 = self.Czrec2
                 return True
             else:
-                self.logger.error('Terminating process.')
+                self.logger.info('Terminating process.')
                 return False
 
 
@@ -2200,7 +2316,7 @@ class Mainbody(GsfBase):
             self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
 
         if f_get_templates:
-            Av_tmp = out.params['AV'].value
+            Av_tmp = out.params['AV0'].value
             AA_tmp = np.zeros(len(self.age), dtype='float')
             ZZ_tmp = np.zeros(len(self.age), dtype='float')
             # fm_tmp, xm_tmp = self.fnc.tmp04(out, f_val=True)
