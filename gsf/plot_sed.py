@@ -1232,7 +1232,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         tree_spec['model'].update({'wave_stel': x0 * u.AA})
         for aa in range(len(age)):
             fnu_tmp = flamtonu(x0, f_50_comp[aa,:]*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            if aa == 0:
+                f_nu_stel = fnu_tmp
+            else:
+                f_nu_stel += fnu_tmp
             tree_spec['model'].update({'fnu_stel_%d'%aa: fnu_tmp})
+        tree_spec['model'].update({'fnu_stel': f_nu_stel})
+
         if MB.f_dust:
             # dust
             # tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
