@@ -2728,6 +2728,23 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
         filt_responses[filt]['wave'] = wave_tmp
         filt_responses[filt]['response'] = res_tmp
 
+        # Get fwhm;
+        fsum = np.nansum(res_tmp)
+        fcum = np.zeros(len(res_tmp), dtype=float)
+        lam0,lam1 = 0,0
+        wave_median = 0
+        for jj in range(len(res_tmp)):
+            fcum[jj] = np.nansum(res_tmp[:jj])/fsum
+            if lam0 == 0 and fcum[jj]>0.05:
+                lam0 = wave_tmp[jj]
+            if lam1 == 0 and fcum[jj]>0.95:
+                lam1 = wave_tmp[jj]
+            if wave_median == 0 and fcum[jj]>0.50:
+                wave_median = wave_tmp[jj]
+        fwhm = lam1 - lam0
+        filt_responses[filt]['wave_mean'] = wave_median
+        filt_responses[filt]['fwhm'] = fwhm
+
         if ii in ind_remove:
             continue
 
