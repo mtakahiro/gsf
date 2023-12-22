@@ -796,6 +796,7 @@ def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, lmlimu=3.115, f_Ala
     lmmc = np.concatenate([lmm1,lmm2,lmm3])
     flc  = np.concatenate([fl1,fl2,fl3])
 
+    # Using average for SMC;
     c1,c2,c3,c4 = -0.856, 1.038, 3.215, 0.107
     x = 1./lmmc
     Dx = x**2 / ((x**2-x0**2)**2 +x**2*gamma**2)
@@ -940,7 +941,6 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     flc  = np.concatenate([fl1,fl2,fl3])
 
     Eb = 0.85 - 1.9 * gamma
-    #print('Eb is %.2f'%(Eb))
 
     # Bump;
     lm0   = 2175 / 10000 # micron m by Noll et al. (2009)
@@ -1023,11 +1023,9 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     Rv : float
         3.1 for MW.
     '''
-    # Validation;
-    if any(np.diff(lm)<0):
-        print('Something is wrong in lm: dust_mw of function.py')
-
-    Kl = np.zeros(len(lm), dtype='float')
+    # # Validation;
+    # if any(np.diff(lm)<0):
+    #     print('Something is wrong in lm: dust_mw of function.py')
 
     lmm  = lm/10000. # into micron
     xx   = 1./lmm
@@ -1085,7 +1083,7 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     ax   = np.concatenate([ax0,ax1,ax2,ax3,ax4])
     bx   = np.concatenate([bx0,bx1,bx2,bx3,bx4])
 
-    Alam   = Av * (ax + bx / Rv)
+    Alam = Av * (ax + bx / Rv)
 
     if False:
         import matplotlib.pyplot as plt
