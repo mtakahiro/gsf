@@ -318,7 +318,7 @@ class Post():
         return lnprior
     
 
-    def get_lognormal_prior(self, vals, key_param, mu=0, sigma=100.0):
+    def get_lognormal_prior(self, vals, key_param, mu=0, sigma=100.0, check_prior=False):
         '''
         '''
         y = vals[key_param]
@@ -331,7 +331,11 @@ class Post():
         if self.mb.prior[key_param] == None:
             self.mb.logger.info('Using lognormal prior for %s'%key_param)
             self.mb.prior[key_param] = lognorm(sigma)
+            if check_prior:
+                import matplotlib.pyplot as plt
+                plt.close()
+                yy = np.arange(0,4,0.1)
+                plt.plot(yy, np.log(self.mb.prior[key_param].pdf(yy)))
+                plt.show()
 
-        lnprior = np.log(self.mb.prior[key_param].pdf(y))
-
-        return lnprior
+        return np.log(self.mb.prior[key_param].pdf(y))

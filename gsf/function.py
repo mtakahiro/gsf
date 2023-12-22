@@ -21,6 +21,34 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
 
+def get_imf_str(nimf):
+    '''
+    from https://dfm.io/python-fsps/current/stellarpop_api/:
+    0: Salpeter (1955)
+    1: Chabrier (2003)
+    2: Kroupa (2001)
+    3: van Dokkum (2008)
+    4: Dave (2008)
+    5: tabulated piece-wise power law IMF, specified in imf.dat file located in the data directory
+    '''
+    if nimf == 0:
+        imf = 'Salpeter'
+    elif nimf == 1:
+        imf = 'Chabrier'
+    elif nimf == 2:
+        imf = 'Kroupa'
+    elif nimf == 3:
+        imf = 'van Dokkum'
+    elif nimf == 4:
+        imf = 'Dave'
+    elif nimf == 5:
+        imf = 'tabulated piece-wise power law IMF'
+    else:
+        print(nimf,'is not found in fsps library.')
+        imf = ''
+    return imf
+
+
 def print_err(msg, exit=False, details=None):
     '''
     '''
@@ -711,12 +739,78 @@ def apply_dust(yy, xx, nr, Av, dust_model=0):
 	elif dust_model == 2: # LMC
 		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
 	elif dust_model == 3: # SMC
-		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.42, Eb=0.0)
+		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, lmlimu=3.115, f_Alam=False)
 	elif dust_model == 4: # Kriek&Conroy with gamma=-0.2
 		yyd, xxd, nrd = dust_kc(xx, yy, Av, nr, Rv=4.05, gamma=-0.2)
 	else:
 		yyd, xxd, nrd = dust_calz(xx, yy, Av, nr)
 	return yyd, xxd, nrd
+
+
+def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, lmlimu=3.115, f_Alam=False):
+    '''
+    For general purpose (Noll+09).
+    This function is much better than previous, but is hard to impliment for the current version.
+    A difference from dust_gen is Eb is defined as a function of gamma.
+
+    Parameters
+    ----------
+    lm : float array
+        wavelength, at RF.
+    fl : float array
+        fnu
+    Av : float
+        in mag
+    nr : int array
+        index, to be used for sorting.
+    Rv : 
+        from Calzetti+00
+    gamma :
+        gamma.
+    '''
+    # # Validation;
+    # if any(np.diff(lm)<0):
+    #     print('Something is wrong in lm: dust_smc of function.py')
+
+    lmm  = lm/10000. # in micron
+    con1 = (lmm<=0.63)
+    con2 = (lmm>0.63)  & (lmm<=lmlimu)
+    con3 = (lmm>lmlimu)
+
+    #nr0 = nr[con0]
+    nr1 = nr[con1]
+    nr2 = nr[con2]
+    nr3 = nr[con3]
+
+    #lmm0 = lmm[con0]
+    lmm1 = lmm[con1]
+    lmm2 = lmm[con2]
+    lmm3 = lmm[con3]
+
+    #fl0 = fl[con0]
+    fl1 = fl[con1]
+    fl2 = fl[con2]
+    fl3 = fl[con3]
+
+    nrd  = np.concatenate([nr1,nr2,nr3])
+    lmmc = np.concatenate([lmm1,lmm2,lmm3])
+    flc  = np.concatenate([fl1,fl2,fl3])
+
+    c1,c2,c3,c4 = -0.856, 1.038, 3.215, 0.107
+    x = 1./lmmc
+    Dx = x**2 / ((x**2-x0**2)**2 +x**2*gamma**2)
+    Fx = 0.5329 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
+    con_fx = (x<5.9)
+    Fx[con_fx] = 0
+
+    EBlam_to_EB = c1+c2*x+c3*Dx+c4*Fx
+    Alam = Av / Rv * EBlam_to_EB
+    fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    if f_Alam:
+        return fl_cor, lmmc*10000., nrd, Alam
+    else:
+        return fl_cor, lmmc*10000., nrd
 
 
 def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=5000/10000, f_Alam=False):
@@ -742,6 +836,10 @@ def dust_gen(lm, fl, Av, nr, Rv=4.05, gamma=-0.05, Eb=3.0, lmlimu=3.115, lmv=500
     Eb:
         Eb
     '''
+    # # Validation;
+    # if any(np.diff(lm)<0):
+    #     print('Something is wrong in lm: dust_gen of function.py')
+
     Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
@@ -806,6 +904,10 @@ def dust_kc(lm, fl, Av, nr, Rv=4.05, gamma=0, lmlimu=3.115, lmv=5000/10000, f_Al
     gamma : float
         See Eq.1
     '''
+    # # Validation;
+    # if any(np.diff(lm)<0):
+    #     print('Something is wrong in lm: dust_kc of function.py')
+
     Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # in micron
@@ -859,7 +961,7 @@ def dust_calz(lm, fl, Av:float, nr, Rv:float = 4.05, lmlimu:float = 3.115, f_Ala
     Parameters
     ----------
     lm : float array
-        wavelength, at RF.
+        wavelength, at RF. Should be already sorted.
     fl : float array
         fnu
     Av : float
@@ -921,6 +1023,10 @@ def dust_mw(lm, fl, Av, nr, Rv=3.1, f_Alam=False):
     Rv : float
         3.1 for MW.
     '''
+    # Validation;
+    if any(np.diff(lm)<0):
+        print('Something is wrong in lm: dust_mw of function.py')
+
     Kl = np.zeros(len(lm), dtype='float')
 
     lmm  = lm/10000. # into micron
@@ -1381,7 +1487,7 @@ def calc_Dn4(x0, y0, z0,
     Parameters
     ----------
     x0, y0 : float arrays
-        wavelength and flux
+        wavelength and flux(flam)
     z0 : float
         redshift
     '''

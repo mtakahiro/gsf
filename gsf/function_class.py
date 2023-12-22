@@ -17,7 +17,7 @@ class Func:
     Attributes
     ----------
     '''
-    def __init__(self, MB, dust_model:int = 0):
+    def __init__(self, MB):
         '''
         Parameters
         ----------
@@ -31,7 +31,7 @@ class Func:
         self.tau0 = MB.tau0
         self.MB = MB
 
-        self.dust_model = dust_model
+        self.dust_model = MB.dust_model
         self.DIR_TMP = MB.DIR_TMP
 
         if MB.f_dust:
@@ -591,7 +591,7 @@ class Func:
 class Func_tau:
     '''
     '''
-    def __init__(self, MB, dust_model:int=0):
+    def __init__(self, MB):
         '''
         Parameters
         ----------
@@ -604,7 +604,7 @@ class Func_tau:
         self.AA = MB.nage
         self.tau = MB.tau
 
-        self.dust_model = dust_model
+        self.dust_model = MB.dust_model
         self.DIR_TMP = MB.DIR_TMP
 
         if MB.f_dust:

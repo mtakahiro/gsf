@@ -4,7 +4,7 @@ import os
 from astropy.io import ascii,fits
 from astropy.convolution import Gaussian1DKernel, convolve
 
-from .function import get_ind
+from .function import get_ind,get_imf_str
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
@@ -292,6 +292,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                     tree = {
                         'isochrone': '%s'%(sp.libraries[0].decode("utf-8")),
                         'library': '%s'%(sp.libraries[1].decode("utf-8")),
+                        'imf': get_imf_str(nimf),
                         'nimf': nimf,
                         'version_gsf': gsf.__version__
                     }

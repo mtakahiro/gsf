@@ -16,7 +16,6 @@ from .function import *
 from .function_igm import *
 
 
-
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
     tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True):
     '''
@@ -63,7 +62,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     spechdu = af['spec']
 
     # Consistency check:
-    flag = check_library(MB, af)
+    flag = check_library(MB, af, show_parameters=True)
     if not flag:
         msg = 'There is inconsistency in z0 library and input file. Exiting.'
         print_err(msg, exit=True)
@@ -1755,7 +1754,20 @@ def sim_spec(lmin, fin, sn):
     return frand, erand
 
 
-def check_library(MB, af, nround=3):
+def show_template_parameters(af):
+    ''''''
+    print('\nParameters defined in the z0 templates are:')
+    print('isochrone:',af['isochrone'])
+    print('library  :',af['library'])
+    print('nimf     :',af['nimf'])
+    print('age/Gyr  :',af['age'][:])
+    print('logZ/Zsun:',af['Z'][:])
+    print('logU     :',np.arange(af['logUMIN'], af['logUMAX']+0.01, af['DELlogU']))
+    print('\n')
+    return 
+
+
+def check_library(MB, af, nround=3, show_parameters=False):
     '''Check library if it has a consistency setup as input file.
 
     Returns
@@ -1763,6 +1775,9 @@ def check_library(MB, af, nround=3):
     flag : bool
         
     '''
+    if show_parameters:
+        show_template_parameters(af)
+
     # Z needs special care in z0 script, to avoid Zfix.
     if False:
         Zmax_tmp, Zmin_tmp = float(MB.inputs['ZMAX']), float(MB.inputs['ZMIN'])

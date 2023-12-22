@@ -2687,7 +2687,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
 
 def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
-                ind_remove=[], nmax=1000):
+                ind_remove=[], nmax=1000, plot_log=False):
     '''
     Add filter response curve to ax1.
 
@@ -2748,8 +2748,12 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
         if ii in ind_remove:
             continue
 
-        ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-        ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+        if not plot_log:
+            ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+            ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+        else:
+            ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+            ax.fill_between(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
 
     MB.filt_responses = filt_responses
 
