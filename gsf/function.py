@@ -428,7 +428,7 @@ def check_rejuv(age,SF,MS,SFMS_50,lm_old=10.0,delMS=0.2):
     return f_rejuv,t_quench,t_rejuv
 
 
-def get_SFMS(red,age,mass,IMF=1,get_param=False):
+def get_SFMS(red,age,mass,IMF=1,get_param=False, ylim=-99):
     '''
     Gets SFMS at age ago from z=red.
 
@@ -465,7 +465,7 @@ def get_SFMS(red,age,mass,IMF=1,get_param=False):
     alp = (0.84 - 0.026*tz)
     beta = - (6.51 - 0.11*tz)
     y1 = alp * x + beta # in log Msun/yr
-    con = (y1<=0)
+    con = (y1<=ylim)
     y1[con] = -10
     if get_param:
         return y1, [alp,beta]
