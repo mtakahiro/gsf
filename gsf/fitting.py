@@ -667,6 +667,12 @@ class Mainbody(GsfBase):
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
+
+                if len(self.Zall) == 0:
+                    self.logger.warning('No metallicity can be found. Available Zs are:')
+                    self.logger.info(Zbpass)
+                    sys.exit()
+
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
                 self.logger.info('Final list for log(Z_BPASS/Zsun) is : ')

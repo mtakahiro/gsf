@@ -553,6 +553,17 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
                         'version_gsf': gsf.__version__
                     }
 
+                    tree.update({'age': MB.age})
+                    tree.update({'Z': MB.Zall})
+                    if fneb:
+                        tree.update({'logUMIN': MB.logUMIN})
+                        tree.update({'logUMAX': MB.logUMAX})
+                        tree.update({'DELlogU': MB.DELlogU})
+                    if MB.fagn:
+                        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
+                        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
+                        tree.update({'DELAGNTAU': MB.DELAGNTAU})
+
                     # ASDF
                     tree_spec.update({'wavelength': wave})
                     flagz = True
@@ -578,6 +589,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02):
                 tree_ML.update({'frac_mass_survive_'+str(zz): mlost})
                 col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
                 tree_ML.update({'realtau_'+str(zz): ms})
+
 
     # Write;
     for aa in range(len(age)):
