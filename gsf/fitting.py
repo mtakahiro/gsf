@@ -137,9 +137,9 @@ class Mainbody(GsfBase):
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
                       'MORP', 'MORP_FILE', 
                       'SPEC_FILE', 'DIR_EXTR', 'MAGZP_SPEC', 'UNIT_SPEC', 'DIFF_CONV', 
-                      'CZ0', 'CZ1', 'CZ2', 'LINE', ],
+                      'CZ0', 'CZ1', 'CZ2', 'LINE', 'PA', ],
 
-            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER']
+            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER', 'DIR_FILT']
 
             }
 
@@ -600,7 +600,7 @@ class Mainbody(GsfBase):
             self.fzmc = int(inputs['F_ZMC'])
         except:
             self.fzmc = 0
-            self.logger.warning('Cannot find ZMC. Set to %d.'%(self.fzmc))
+            self.logger.warning('Cannot find F_ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
         self.has_ZFIX = False
@@ -1151,7 +1151,7 @@ class Mainbody(GsfBase):
         x_cz = self.dict['x'][con_cz] # Observed range
         NR_cz = self.dict['NR'][con_cz]
         if len(NR_cz) == 0:
-            self.logger.error('No data point exists at SN>%.1f'%(snlim))
+            self.logger.error('No data point exists at SNR > `snlim` (%.1f)'%(snlim))
             self.logger.error('Decrease `snlim` or turn `f_exclude_negative` to False')
             return False
 
@@ -2414,6 +2414,7 @@ class Mainbody(GsfBase):
             fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
 
         def residual_z(pars,z):
+            ''''''
             vals  = pars.valuesdict()
             xm_s = xm_tmp * (1+z)
             fm_s = np.zeros(len(xm_tmp),float)
@@ -2422,7 +2423,6 @@ class Mainbody(GsfBase):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
 
             fint = interpolate.interp1d(xm_s, fm_s, kind='nearest', fill_value="extrapolate")
-            #fm_int = np.interp(xobs, xm_s, fm_s)
             fm_int = fint(xobs)
 
             if fcon is None:
@@ -2433,7 +2433,6 @@ class Mainbody(GsfBase):
 
         # Start redshift search;
         for zz in range(len(zspace)):
-            # Best fit
             out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
             keys = fit_report(out_cz).split('\n')
 
