@@ -1077,6 +1077,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['library'] = LIBRARY
         hdr['nimf'] = nimf
         hdr['scale'] = scale
+        hdr['dust model'] = MB.dust_model_name
+        hdr['ndust model'] = MB.dust_model
 
         try:
             # Chi square:
@@ -1184,7 +1186,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
                 else:
                     tree_spec['header'].update({'%s'%key: hdr[key]})
-
         # BB;
         Cnu_to_Jy = 10**((23.9-m0set)) # fnu_mzpset to microJy. So the final output SED library has uJy.
         # tree_spec['model'].update({'wave_bb': lbb * u.AA})

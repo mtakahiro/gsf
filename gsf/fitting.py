@@ -791,15 +791,16 @@ class Mainbody(GsfBase):
             elif self.dust_model == 4:
                 self.dust_model_name = 'KriekConroy'
             else:
-                self.logger.warning('Unknown index number for dust attenuation. Setting to Calzetti.')
+                self.logger.warning('Unknown index number for dust model. Setting to Calzetti.')
                 self.dust_model = 0
                 self.dust_model_name = 'Calz'
         except:
+            self.logger.warning('Index number for dust model (DUST_MODEL) cannot be found. Setting to Calzetti.')
             self.dust_model = 0
             self.dust_model_name = 'Calz'
 
         if self.verbose:
-            self.logger.info('Dust attenuation is set to %s\n'%self.dust_model_name)
+            self.logger.info('Dust model is set to %s\n'%self.dust_model_name)
 
         # If FIR data;
         try:
