@@ -1077,6 +1077,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['library'] = LIBRARY
         hdr['nimf'] = nimf
         hdr['scale'] = scale
+        hdr['dust model'] = MB.dust_model_name
+        hdr['ndust model'] = MB.dust_model
 
         try:
             # Chi square:
@@ -1184,7 +1186,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
                 else:
                     tree_spec['header'].update({'%s'%key: hdr[key]})
-
         # BB;
         Cnu_to_Jy = 10**((23.9-m0set)) # fnu_mzpset to microJy. So the final output SED library has uJy.
         # tree_spec['model'].update({'wave_bb': lbb * u.AA})
@@ -2761,11 +2762,16 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
 
 
 def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:int=1000, TMIN=0.0001, tau_lim=0.01, f_plot_filter=True, 
-    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False, SNlim=1, tset_SFR_SED=0.1):
+    scale=1e-19, NRbb_lim=10000, save_pcl=True, return_figure=False, SNlim=1, tset_SFR_SED=0.1, use_SFR_UV=True):
     '''
     Purpose
     -------
     For summary. In the same format as plot_corner_physparam_frame.
+
+    Parameters
+    ----------
+    use_SFR_UV : bool
+        if True, SFR_UV will be used, instead of SFR_SFH.
 
     Notes
     -----
@@ -2783,10 +2789,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     Z = MB.Zall
     age = MB.age
     c = MB.c
-
-    tau0 = MB.tau0 
-    dust_model = MB.dust_model
-    DIR_TMP = MB.DIR_TMP
 
     Txmax = np.max(age) + 1.0 
 
@@ -2828,21 +2830,12 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     Z16  = np.zeros(len(age), dtype='float')
     Z84  = np.zeros(len(age), dtype='float')
 
-    NZbest = np.zeros(len(age), dtype='int')
     for aa in range(len(age)):
         Z50[aa] = hdul[1].data['Z'+str(aa)][1]
         Z16[aa] = hdul[1].data['Z'+str(aa)][0]
         Z84[aa] = hdul[1].data['Z'+str(aa)][2]
 
-    ZZ50 = np.sum(Z50*A50)/np.sum(A50) # Light weighted Z.
-    chi = hdul[1].data['chi'][0]
-    chin = hdul[1].data['chi'][1]
-    fitc = chin
-    Cz0 = hdul[0].header['Cz0']
-    Cz1 = hdul[0].header['Cz1']
-    Cz2 = hdul[0].header['Cz2']
     zbes = hdul[0].header['z']
-    zscl = (1.+zbes)
 
     # plot Configuration
     if MB.fzmc == 1:
@@ -3105,17 +3098,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     if SFmax > 0.5e4:
         SFmax = 0.5e4
 
-    if MB.fzmc == 1:
-        if use_pickl:
-            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
-            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
-        else:
-            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
-            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
-    else:
-        NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
-        NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
-
     # For redshift
     if zbes<2:
         zred  = [zbes, 2, 3, 6]
@@ -3167,6 +3149,7 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     MUV = np.zeros(mmax, dtype=float)
 
     for kk in range(0,mmax,1):
+
         delt_tot = 0
         nr = np.random.randint(nshape_sample)
         try:
@@ -3283,11 +3266,6 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         Ztmp[kk] = np.log10(Ztmp[kk])
         Ttmp[kk] = np.log10(Ttmp[kk])
 
-        if MB.fzmc == 1:
-            NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
-        else:
-            NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
-
         # store other params;
         # Get FUV flux density at 10pc;
         if MB.fzmc == 1:
@@ -3318,112 +3296,139 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
         UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
 
-        # This should happen at the last kk;
-        if kk == mmax-1:
-            # Histogram
-            for i, x in enumerate(Par):
-                ax = axes[i, i]
-                x1min, x1max = NPARmin[i], NPARmax[i]
-                nbin = 50
-                binwidth1 = (x1max-x1min)/nbin
-                bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
-                n, bins, patches = ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
-                yy = np.arange(0,np.max(n)*1.3,1)
+    # Summary;
+    kk = mmax - 1
+    if MB.fzmc == 1:
+        NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1], redshifttmp[:kk+1]]
+    else:
+        NPAR = [lmtmp[:kk+1], SFR_SED[:kk+1], Ttmp[:kk+1], Avtmp[:kk+1], Ztmp[:kk+1]]
 
-                try:
-                    ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
-                    ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
-                    ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
-                except:
-                    MB.logger.warning('Failed at i,x=%d,%d'%(i,x))
+    # Define range;
+    if MB.fzmc == 1:
+        if use_pickl:
+            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(samples['zmc'],1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(samples['zmc'],99)+0.1]
+        else:
+            NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2, np.nanpercentile(list(samples['zmc'].values()),1)-0.1]
+            NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2, np.nanpercentile(list(samples['zmc'].values()),99)+0.1]
+    else:
+        NPARmin = [np.log10(M16)-.1, np.log10(SFminmc)-.1, np.log10(Tsmin/AMtmp16)-0.1, Av16-0.1, np.log10(Zsmin/AMtmp16)-0.2]
+        NPARmax = [np.log10(M84)+.1, np.log10(SFmaxmc)+.1, np.log10(Tsmax/AMtmp84)+0.2, Av84+0.1, np.log10(Zsmax/AMtmp84)+0.2]
 
+    if use_SFR_UV:
+        NPAR[1] = np.log10(SFRUV)
+        NPARmin[1] = np.nanmin(NPAR[1]) - 0.1
+        NPARmax[1] = np.nanmax(NPAR[1]) + 0.1
+        Par[1] = '$\log \mathrm{SFR_{UV}}/M_\odot \mathrm{yr}^{-1}$'
+        
+
+    # This should happen at the last kk;
+    if kk == mmax-1:
+        # Histogram
+        for i, x in enumerate(Par):
+            ax = axes[i, i]
+            x1min, x1max = NPARmin[i], NPARmax[i]
+            nbin = 50
+            binwidth1 = (x1max-x1min)/nbin
+            bins1 = np.arange(x1min, x1max + binwidth1, binwidth1)
+            n, bins, patches = ax.hist(NPAR[i], bins=bins1, orientation='vertical', color='b', histtype='stepfilled', alpha=0.6)
+            yy = np.arange(0,np.max(n)*1.3,1)
+
+            try:
+                ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
+                ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
+                ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
+            except:
+                MB.logger.warning('Failed at i,x=%d,%d'%(i,x))
+
+            ax.set_xlim(x1min, x1max)
+            ax.set_yticklabels([])
+            if i == K-1:
+                ax.set_xlabel('%s'%(Par[i]), fontsize=12)
+            if i < K-1:
+                ax.set_xticklabels([])
+
+        # save pck;
+        if save_pcl:
+            if MB.fzmc == 1:
+                NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1],
+                            'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
+                            }
+            else:
+                NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1],
+                            'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
+                            }
+                
+            # UVJ;
+            for cc in range(len(UVJ[0,:])):
+                NPAR_LIB['COR_RF_%d'%cc] = UVJ[:kk+1,cc]
+
+            use_pickl = False
+            if use_pickl:
+                cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.cpkl')
+                savecpkl({'chain':NPAR_LIB,
+                            'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
+                            cpklname) # Already burn in
+            else:
+                cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.asdf')
+                tree = {'chain':NPAR_LIB, 'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim}
+                af = asdf.AsdfFile(tree)
+                af.write_to(cpklname, all_array_compression='zlib')
+
+
+    # Scatter and contour plot;
+    alp_sct = 0.1 / (mmax/1000)
+    for i, x in enumerate(Par):
+        for j, _ in enumerate(Par):
+            if i > j:
+                ax = axes[i, j]
+                ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='.', alpha=alp_sct)
+                ax.set_xlabel('%s'%(Par[j]), fontsize=12)
+
+                if kk == mmax-1:
+                    try:
+                        Xcont, Ycont, Zcont = density_estimation(NPAR[j], NPAR[i])
+                        mZ = np.max(Zcont)
+                        ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='orange')
+                    except:
+                        print('Error occurs when density estimation. Maybe because some params are fixed.')
+                        pass
+
+                x1min, x1max = NPARmin[j], NPARmax[j]
+                y1min, y1max = NPARmin[i], NPARmax[i]
                 ax.set_xlim(x1min, x1max)
+                ax.set_ylim(y1min, y1max)
+
+                if j==0:
+                    ax.set_ylabel('%s'%(Par[i]), fontsize=12)
+                if j>0:
+                    ax.set_yticklabels([])
+                if i<K-1:
+                    ax.set_xticklabels([])
+                if i == 2:
+                    ax.yaxis.labelpad = 5.
+
+            if i < j:
+                ax = axes[i, j]
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                ax.set_frame_on(False)
+                ax.set_xticks([])
+                ax.set_yticks([])
+
+            if i == j:
+                ax = axes[i, j]
                 ax.set_yticklabels([])
                 if i == K-1:
                     ax.set_xlabel('%s'%(Par[i]), fontsize=12)
                 if i < K-1:
                     ax.set_xticklabels([])
 
-            # save pck;
-            if save_pcl:
-                if MB.fzmc == 1:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1],
-                                'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
-                                }
-                else:
-                    NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1],
-                                'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
-                                }
-                    
-                # UVJ;
-                for cc in range(len(UVJ[0,:])):
-                    NPAR_LIB['COR_RF_%d'%cc] = UVJ[:kk+1,cc]
-
-                use_pickl = False
-                if use_pickl:
-                    cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.cpkl')
-                    savecpkl({'chain':NPAR_LIB,
-                                'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim},
-                                cpklname) # Already burn in
-                else:
-                    cpklname = os.path.join(MB.DIR_OUT, 'chain_' + MB.ID + '_phys.asdf')
-                    tree = {'chain':NPAR_LIB, 'burnin':burnin, 'nwalkers':nwalk,'niter':nmc,'ndim':ndim}
-                    af = asdf.AsdfFile(tree)
-                    af.write_to(cpklname, all_array_compression='zlib')
-
-
-        # Scatter and contour
-        for i, x in enumerate(Par):
-            for j, _ in enumerate(Par):
-                if i > j:
-                    ax = axes[i, j]
-                    ax.scatter(NPAR[j], NPAR[i], c='b', s=1, marker='.', alpha=0.01)
-                    ax.set_xlabel('%s'%(Par[j]), fontsize=12)
-
-                    if kk == mmax-1:
-                        try:
-                            Xcont, Ycont, Zcont = density_estimation(NPAR[j], NPAR[i])
-                            mZ = np.max(Zcont)
-                            ax.contour(Xcont, Ycont, Zcont, levels=[0.68*mZ, 0.95*mZ, 0.99*mZ], linewidths=[0.8,0.5,0.3], colors='orange')
-                        except:
-                            print('Error occurs when density estimation. Maybe because some params are fixed.')
-                            pass
-
-                    x1min, x1max = NPARmin[j], NPARmax[j]
-                    y1min, y1max = NPARmin[i], NPARmax[i]
-                    ax.set_xlim(x1min, x1max)
-                    ax.set_ylim(y1min, y1max)
-
-                    if j==0:
-                        ax.set_ylabel('%s'%(Par[i]), fontsize=12)
-                    if j>0:
-                        ax.set_yticklabels([])
-                    if i<K-1:
-                        ax.set_xticklabels([])
-                    if i == 2:
-                        ax.yaxis.labelpad = 5.
-
-                if i < j:
-                    ax = axes[i, j]
-                    ax.set_xticklabels([])
-                    ax.set_yticklabels([])
-                    ax.set_frame_on(False)
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-
-                if i == j:
-                    ax = axes[i, j]
-                    ax.set_yticklabels([])
-                    if i == K-1:
-                        ax.set_xlabel('%s'%(Par[i]), fontsize=12)
-                    if i < K-1:
-                        ax.set_xticklabels([])
-
-        if kk%10 == 0 and out_ind == 1:
-            fname = os.path.join(MB.DIR_OUT, '%d.png' % kk)
-            print('Saving frame', fname)
-            plt.savefig(fname, dpi=200)
-            files.append(fname)
+    if kk%10 == 0 and out_ind == 1:
+        fname = os.path.join(MB.DIR_OUT, '%d.png' % kk)
+        print('Saving frame', fname)
+        plt.savefig(fname, dpi=200)
+        files.append(fname)
 
     # For the last one
     ax0.plot(xg0, fg0 * c / np.square(xg0) /d_scale, marker='', linestyle='-', linewidth=0.5, ms=0.1, color='royalblue', label='')

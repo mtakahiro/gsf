@@ -137,9 +137,9 @@ class Mainbody(GsfBase):
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
                       'MORP', 'MORP_FILE', 
                       'SPEC_FILE', 'DIR_EXTR', 'MAGZP_SPEC', 'UNIT_SPEC', 'DIFF_CONV', 
-                      'CZ0', 'CZ1', 'CZ2', 'LINE', ],
+                      'CZ0', 'CZ1', 'CZ2', 'LINE', 'PA', ],
 
-            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER']
+            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER', 'DIR_FILT']
 
             }
 
@@ -600,7 +600,7 @@ class Mainbody(GsfBase):
             self.fzmc = int(inputs['F_ZMC'])
         except:
             self.fzmc = 0
-            self.logger.warning('Cannot find ZMC. Set to %d.'%(self.fzmc))
+            self.logger.warning('Cannot find F_ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
         self.has_ZFIX = False
@@ -667,6 +667,12 @@ class Mainbody(GsfBase):
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
                 con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
                 self.Zall = Zbpass[con_z]
+
+                if len(self.Zall) == 0:
+                    self.logger.warning('No metallicity can be found. Available Zs are:')
+                    self.logger.info(Zbpass)
+                    sys.exit()
+
                 self.delZ = 0.0001
                 self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
                 self.logger.info('Final list for log(Z_BPASS/Zsun) is : ')
@@ -785,15 +791,16 @@ class Mainbody(GsfBase):
             elif self.dust_model == 4:
                 self.dust_model_name = 'KriekConroy'
             else:
-                self.logger.warning('Unknown index number for dust attenuation. Setting to Calzetti.')
+                self.logger.warning('Unknown index number for dust model. Setting to Calzetti.')
                 self.dust_model = 0
                 self.dust_model_name = 'Calz'
         except:
+            self.logger.warning('Index number for dust model (DUST_MODEL) cannot be found. Setting to Calzetti.')
             self.dust_model = 0
             self.dust_model_name = 'Calz'
 
         if self.verbose:
-            self.logger.info('Dust attenuation is set to %s\n'%self.dust_model_name)
+            self.logger.info('Dust model is set to %s\n'%self.dust_model_name)
 
         # If FIR data;
         try:
@@ -1145,7 +1152,7 @@ class Mainbody(GsfBase):
         x_cz = self.dict['x'][con_cz] # Observed range
         NR_cz = self.dict['NR'][con_cz]
         if len(NR_cz) == 0:
-            self.logger.error('No data point exists at SN>%.1f'%(snlim))
+            self.logger.error('No data point exists at SNR > `snlim` (%.1f)'%(snlim))
             self.logger.error('Decrease `snlim` or turn `f_exclude_negative` to False')
             return False
 
@@ -2408,6 +2415,7 @@ class Mainbody(GsfBase):
             fit_par_cz.add('C%d'%nn, value=1., min=0., max=1e5)
 
         def residual_z(pars,z):
+            ''''''
             vals  = pars.valuesdict()
             xm_s = xm_tmp * (1+z)
             fm_s = np.zeros(len(xm_tmp),float)
@@ -2416,7 +2424,6 @@ class Mainbody(GsfBase):
                 fm_s += fm_tmp[nn,:] * pars['C%d'%nn]
 
             fint = interpolate.interp1d(xm_s, fm_s, kind='nearest', fill_value="extrapolate")
-            #fm_int = np.interp(xobs, xm_s, fm_s)
             fm_int = fint(xobs)
 
             if fcon is None:
@@ -2427,7 +2434,6 @@ class Mainbody(GsfBase):
 
         # Start redshift search;
         for zz in range(len(zspace)):
-            # Best fit
             out_cz = minimize(residual_z, fit_par_cz, args=([zspace[zz]]), method=method)
             keys = fit_report(out_cz).split('\n')
 

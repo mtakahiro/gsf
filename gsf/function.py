@@ -739,7 +739,7 @@ def apply_dust(yy, xx, nr, Av, dust_model=0):
 	elif dust_model == 2: # LMC
 		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
 	elif dust_model == 3: # SMC
-		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, lmlimu=3.115, f_Alam=False)
+		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, f_Alam=False)
 	elif dust_model == 4: # Kriek&Conroy with gamma=-0.2
 		yyd, xxd, nrd = dust_kc(xx, yy, Av, nr, Rv=4.05, gamma=-0.2)
 	else:
@@ -747,16 +747,14 @@ def apply_dust(yy, xx, nr, Av, dust_model=0):
 	return yyd, xxd, nrd
 
 
-def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, lmlimu=3.115, f_Alam=False):
+def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.6, gamma=1.0, f_Alam=False):
     '''
-    For general purpose (Noll+09).
-    This function is much better than previous, but is hard to impliment for the current version.
-    A difference from dust_gen is Eb is defined as a function of gamma.
+    Dust law for SMC (Gordon+03).
 
     Parameters
     ----------
     lm : float array
-        wavelength, at RF.
+        wavelength in AA, at RF.
     fl : float array
         fnu
     Av : float
@@ -772,41 +770,41 @@ def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, lmlimu=3.115, f_Ala
     # if any(np.diff(lm)<0):
     #     print('Something is wrong in lm: dust_smc of function.py')
 
-    lmm  = lm/10000. # in micron
-    con1 = (lmm<=0.63)
-    con2 = (lmm>0.63)  & (lmm<=lmlimu)
-    con3 = (lmm>lmlimu)
-
-    #nr0 = nr[con0]
-    nr1 = nr[con1]
-    nr2 = nr[con2]
-    nr3 = nr[con3]
-
-    #lmm0 = lmm[con0]
-    lmm1 = lmm[con1]
-    lmm2 = lmm[con2]
-    lmm3 = lmm[con3]
-
-    #fl0 = fl[con0]
-    fl1 = fl[con1]
-    fl2 = fl[con2]
-    fl3 = fl[con3]
-
-    nrd  = np.concatenate([nr1,nr2,nr3])
-    lmmc = np.concatenate([lmm1,lmm2,lmm3])
-    flc  = np.concatenate([fl1,fl2,fl3])
+    lmm  = lm/10000. # into micron
+    nrd = nr #np.concatenate([nr1,nr2,nr3])
+    lmmc = lmm #np.concatenate([lmm1,lmm2,lmm3])
+    flc = fl #np.concatenate([fl1,fl2,fl3])
 
     # Using average for SMC;
-    c1,c2,c3,c4 = -0.856, 1.038, 3.215, 0.107
+    c1,c2,c3,c4 = -4.959, 2.264, 0.389, 0.461
+    # SMC Wing Sample;
+    # c1,c2,c3,c4 = -0.856, 1.038, 3.215, 0.107
+
     x = 1./lmmc
-    Dx = x**2 / ((x**2-x0**2)**2 +x**2*gamma**2)
-    Fx = 0.5329 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
+    Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
+    Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
     con_fx = (x<5.9)
     Fx[con_fx] = 0
 
-    EBlam_to_EB = c1+c2*x+c3*Dx+c4*Fx
+    EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
     Alam = Av / Rv * EBlam_to_EB
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    if False:
+        import matplotlib.pyplot as plt
+        plt.close()
+        xs = np.arange(0.5, 10, 0.01)
+        x = xs
+        Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
+        Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
+        con_fx = (x<5.9)
+        Fx[con_fx] = 0
+        EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
+        Av = 2.0
+        Alam = Av / Rv * EBlam_to_EB
+        plt.scatter(x, EBlam_to_EB, )
+        plt.show()
+        hoge
 
     if f_Alam:
         return fl_cor, lmmc*10000., nrd, Alam

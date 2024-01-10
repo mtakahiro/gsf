@@ -1762,7 +1762,10 @@ def show_template_parameters(af):
     print('nimf     :',af['nimf'])
     print('age/Gyr  :',af['age'][:])
     print('logZ/Zsun:',af['Z'][:])
-    print('logU     :',np.arange(af['logUMIN'], af['logUMAX']+0.01, af['DELlogU']))
+    try:
+        print('logU     :',np.arange(af['logUMIN'], af['logUMAX']+0.01, af['DELlogU']))
+    except:
+        pass
     print('\n')
     return 
 
