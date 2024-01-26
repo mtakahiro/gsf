@@ -739,7 +739,7 @@ def apply_dust(yy, xx, nr, Av, dust_model=0):
 	elif dust_model == 2: # LMC
 		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
 	elif dust_model == 3: # SMC
-		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, f_Alam=False)
+		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.6, gamma=1.00, f_Alam=False)
 	elif dust_model == 4: # Kriek&Conroy with gamma=-0.2
 		yyd, xxd, nrd = dust_kc(xx, yy, Av, nr, Rv=4.05, gamma=-0.2)
 	else:
@@ -790,19 +790,21 @@ def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.6, gamma=1.0, f_Alam=False):
     Alam = Av / Rv * EBlam_to_EB
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
-    if False:
+    if False:#True:#False:
         import matplotlib.pyplot as plt
         plt.close()
-        xs = np.arange(0.5, 10, 0.01)
-        x = xs
-        Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
-        Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
-        con_fx = (x<5.9)
-        Fx[con_fx] = 0
-        EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
-        Av = 2.0
-        Alam = Av / Rv * EBlam_to_EB
-        plt.scatter(x, EBlam_to_EB, )
+        plt.scatter(lmmc, flc)
+        plt.scatter(lmmc, fl_cor)
+        # xs = np.arange(0.5, 10, 0.01)
+        # x = xs
+        # Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
+        # Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
+        # con_fx = (x<5.9)
+        # Fx[con_fx] = 0
+        # EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
+        # Av = 2.0
+        # Alam = Av / Rv * EBlam_to_EB
+        # plt.scatter(x, EBlam_to_EB, )
         plt.show()
         hoge
 

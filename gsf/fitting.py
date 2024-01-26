@@ -378,6 +378,15 @@ class Mainbody(GsfBase):
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
                 try:
+                    # Correlation between Aneb and LW age? May add some time; see posterior_flexible
+                    if inputs['PRIOR_NEBULAE'] == '1':
+                        self.neb_correlate = True 
+                    else:
+                        self.neb_correlate = False
+                except:
+                    self.neb_correlate = False
+                    
+                try:
                     self.logUMIN = float(inputs['logUMIN'])
                 except:
                     self.logUMIN = -2.5

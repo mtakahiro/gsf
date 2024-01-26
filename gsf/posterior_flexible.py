@@ -141,6 +141,18 @@ class Post():
         return pars
 
 
+    def get_lw_age(self, vals):
+        '''
+        '''
+        tlw_tmp = 0
+        amp_tmp = 0
+        for nn in range(len(self.mb.age)):
+            key = 'A%d'%nn
+            tlw_tmp += 10**vals[key].value * self.mb.age[nn]
+            amp_tmp += 10**vals[key].value
+        tlw_tmp /= amp_tmp
+        return tlw_tmp
+
     def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, NR:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
         lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None,
         f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3, verbose=False, NRbb_lim=10000):
@@ -281,11 +293,27 @@ class Post():
             sigma = self.mb.key_params_prior_sigma[ii]
             respr += self.get_lognormal_prior(vals, key_param, sigma=sigma, mu=0)
 
+        # Prior for emission line template??;
+        # Still in experiment;
+        if self.mb.neb_correlate:
+            respr += self.get_prior_neb(vals)
+
         lnposterior = lnlike + respr
+
         if not np.isfinite(lnposterior):
             return lnpreject
 
         return lnposterior
+    
+
+    def get_prior_neb(self, vals, alpha=1.0):
+        '''
+        '''
+        tlw_tmp = self.get_lw_age(vals)
+        # respr = np.log(tlw_tmp * 10**vals['Aneb']) #self.get_lognormal_prior(vals, key_param, sigma=sigma, mu=0)
+        Aneb_predict = np.log10(1/tlw_tmp) / (np.log10(self.mb.age.max()) - np.log10(self.mb.age.min()))
+        respr = -0.5 * ((Aneb_predict-vals['Aneb'])**2 * alpha)
+        return respr
 
 
     def get_sfh_prior(self, vals, norder=3, alpha=100.0):
