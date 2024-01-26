@@ -131,7 +131,7 @@ class Mainbody(GsfBase):
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
                          'NTEMP', 'DISP', 'SIG_TEMP', 'VDISP', 
-                         'FORCE_AGE', 'NORDER_SFH_PRIOR', ],
+                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR'],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
@@ -379,14 +379,12 @@ class Mainbody(GsfBase):
                 self.fneb = True
                 try:
                     # Correlation between Aneb and LW age? May add some time; see posterior_flexible
-                    if inputs['PRIOR_NEBULAE'] == '1':
+                    if inputs['NEBULAE_PRIOR'] == '1':
                         self.neb_correlate = True 
                     else:
                         self.neb_correlate = False
                 except:
                     self.neb_correlate = False
-                # For testing;
-                self.neb_correlate = True
                     
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
