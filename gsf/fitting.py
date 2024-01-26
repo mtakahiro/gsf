@@ -385,6 +385,8 @@ class Mainbody(GsfBase):
                         self.neb_correlate = False
                 except:
                     self.neb_correlate = False
+                # For testing;
+                self.neb_correlate = True
                     
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
