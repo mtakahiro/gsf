@@ -11,6 +11,7 @@ from colorama import Fore, Back, Style
 from datetime import datetime
 from astropy import units as u
 from astropy.cosmology import WMAP9
+from dust_extinction.averages import G03_SMCBar
 
 ################
 # Line library
@@ -782,20 +783,35 @@ def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.6, gamma=1.0, f_Alam=False):
     # x0,gamma = 4.703,1.212
 
     x = 1./lmmc
+
+    # Manual 
     Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
     Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
     con_fx = (x<5.9)
     Fx[con_fx] = 0
-
     EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
     Alam_to_Av = 1 + EBlam_to_EB / Rv
+
+    # By following Gordon's script here, https://github.com/karllark/dust_extinction,
+    # Generate region redder than 2760A by interpolation
+    lam_red = 2760. # AA
+    ref_wavs = np.array([0.276, 0.296, 0.37, 0.44, 0.55,
+                         0.65, 0.81, 1.25, 1.65, 2.198, 3.1])*10**4
+    ref_ext = np.array([2.220, 2.000, 1.672, 1.374, 1.00,
+                        0.801, 0.567, 0.25, 0.169, 0.11, 0.])
+
+    if np.max(lm) > lam_red:
+        Alam_to_Av[lm > lam_red] = np.interp(lm[lm > lam_red], ref_wavs, ref_ext, right=0.)
+
+    # Dust attenuation package;
+    # ext_model = G03_SMCBar()
+    # Alam_to_Av = ext_model(x/u.micron)
+
     Alam = Av * Alam_to_Av
-    # Alam = Av / Rv * EBlam_to_EB
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
     if False:#True:#
         import matplotlib.pyplot as plt
-        from dust_extinction.averages import G03_SMCBar
         # define the extinction model
         ext_model = G03_SMCBar()
         # generate the curves and plot them
