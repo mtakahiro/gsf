@@ -6,7 +6,7 @@ from scipy import stats
 from numpy import exp as np_exp
 from numpy import log as np_log
 from scipy.special import erf
-from scipy.stats import lognorm
+from scipy.stats import lognorm,norm
 
 class Post():
     '''
@@ -290,8 +290,12 @@ class Post():
 
         # lognormal-prior for any params;
         for ii,key_param in enumerate(self.mb.key_params_prior):
-            sigma = self.mb.key_params_prior_sigma[ii]
-            respr += self.get_lognormal_prior(vals, key_param, sigma=sigma, mu=0)
+            if key_param[:2] == 'AV':
+                sigma = self.mb.key_params_prior_sigma[ii]
+                respr += self.get_normal_prior(vals, key_param, sigma=sigma, mu=0)
+            else:
+                sigma = self.mb.key_params_prior_sigma[ii]
+                respr += self.get_lognormal_prior(vals, key_param, sigma=sigma, mu=0)
 
         # Prior for emission line template??;
         # Still in experiment;
@@ -366,4 +370,36 @@ class Post():
                 plt.plot(yy, np.log(self.mb.prior[key_param].pdf(yy)))
                 plt.show()
 
-        return np.log(self.mb.prior[key_param].pdf(y))
+        respr = np.log(self.mb.prior[key_param].pdf(y))
+
+        if not np.isfinite(respr):
+            respr = -1e10
+
+        return respr
+    
+    def get_normal_prior(self, vals, key_param, mu=0, sigma=100.0, check_prior=False):
+        '''
+        '''
+        y = vals[key_param]
+
+        if self.mb.prior == None:
+            self.mb.prior = {}
+            for key_param_tmp in self.mb.fit_params:
+                self.mb.prior[key_param_tmp] = None
+
+        if self.mb.prior[key_param] == None:
+            self.mb.logger.info('Using normal prior for %s'%key_param)
+            self.mb.prior[key_param] = norm()
+            if check_prior:
+                import matplotlib.pyplot as plt
+                plt.close()
+                yy = np.arange(-2,2,0.1)
+                plt.plot(yy, np.log(self.mb.prior[key_param].pdf((yy-mu) * np.sqrt(2) / sigma)))
+                plt.show()
+
+        respr = np.log(self.mb.prior[key_param].pdf((y-mu) * np.sqrt(2) / sigma))
+
+        if not np.isfinite(respr):
+            respr = -1e10
+
+        return respr
