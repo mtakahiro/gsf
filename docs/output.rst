@@ -37,3 +37,6 @@ as a function of lookback time (time). Star formation rate is the average SFR in
 ---------------
 stores the best fit model spectra for each age/tau component, as well as observed fluxes and 
 error.
+
+- Absolute UV magnitude, Muv, is calculated for each realization in the range of rest-frame wavelength range of 1250 - 1650AA using the full posterior SED spectrum. 
+- UV beta slope is calculated for each realization by fitting a single slope over a rest-frame wavelength range of 1650 - 2300AA.
