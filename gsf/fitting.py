@@ -131,7 +131,7 @@ class Mainbody(GsfBase):
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
                          'NTEMP', 'DISP', 'SIG_TEMP', 'VDISP', 
-                         'FORCE_AGE', 'NORDER_SFH_PRIOR', ],
+                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR'],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
@@ -377,6 +377,15 @@ class Mainbody(GsfBase):
         if 'ADD_NEBULAE' in self.input_keys:
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
+                try:
+                    # Correlation between Aneb and LW age? May add some time; see posterior_flexible
+                    if inputs['NEBULAE_PRIOR'] == '1':
+                        self.neb_correlate = True 
+                    else:
+                        self.neb_correlate = False
+                except:
+                    self.neb_correlate = False
+                    
                 try:
                     self.logUMIN = float(inputs['logUMIN'])
                 except:
@@ -1789,8 +1798,12 @@ class Mainbody(GsfBase):
 
     def get_shuffle(self, out, nshuf=3.0, amp=1e-4):
         '''
+        amp : amplitude, 0 to 1.
+        
         Shuffles initial parameters of each walker, to give it extra randomeness.
         '''
+        if amp>1:
+            amp = 1
         pos = np.zeros((self.nwalk, self.ndim), 'float')
         for ii in range(pos.shape[0]):
             aa = 0
@@ -1798,14 +1811,14 @@ class Mainbody(GsfBase):
                 if out.params[key].vary == True:
                     pos[ii,aa] += out.params[key].value
                     # This is critical to avoid parameters fall on the boundary.
-                    delpar = (out.params[key].max-out.params[key].min)/1000
+                    delpar = (out.params[key].max-out.params[key].min) * amp/2.
                     # or not,
-                    delpar = 0
+                    # delpar = 0
                     if np.random.uniform(0,1) > (1. - 1./self.ndim):        
-                        pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
+                        pos[ii,aa] = np.random.uniform(out.params[key].value-delpar, out.params[key].value+delpar)
                     else:
-                        if pos[ii,aa]<out.params[key].min+delpar or pos[ii,aa]>out.params[key].max-delpar:
-                            pos[ii,aa] = np.random.uniform(out.params[key].min+delpar, out.params[key].max-delpar)
+                        if pos[ii,aa]<out.params[key].min or pos[ii,aa]>out.params[key].max:
+                            pos[ii,aa] = np.random.uniform(out.params[key].value-delpar, out.params[key].value+delpar)
 
                     aa += 1
         return pos
@@ -1956,10 +1969,16 @@ class Mainbody(GsfBase):
                     pos = self.get_shuffle(out, amp=amp_shuffle)
                 else:
                     pos = amp_shuffle * np.random.randn(self.nwalk, self.ndim)
+                    pos += self.get_shuffle(out, amp=0)
+                    # Check boundary;
                     aa = 0
                     for aatmp,key in enumerate(out.params.valuesdict()):
                         if out.params[key].vary:
-                            pos[:,aa] += out.params[key].value
+                            con = (out.params[key].min > pos[:,aa])
+                            pos[:,aa][con] = out.params[key].min
+                            con = (out.params[key].max < pos[:,aa])
+                            pos[:,aa][con] = out.params[key].max
+                            # pos[:,aa] = out.params[key].value
                             aa += 1
 
                 if self.f_zeus:

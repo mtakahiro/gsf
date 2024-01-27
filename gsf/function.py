@@ -11,6 +11,7 @@ from colorama import Fore, Back, Style
 from datetime import datetime
 from astropy import units as u
 from astropy.cosmology import WMAP9
+from dust_extinction.averages import G03_SMCBar
 
 ################
 # Line library
@@ -739,7 +740,7 @@ def apply_dust(yy, xx, nr, Av, dust_model=0):
 	elif dust_model == 2: # LMC
 		yyd, xxd, nrd = dust_gen(xx, yy, Av, nr, Rv=4.05, gamma=-0.06, Eb=2.8)
 	elif dust_model == 3: # SMC
-		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.703, gamma=1.212, f_Alam=False)
+		yyd, xxd, nrd = dust_smc(xx, yy, Av, nr, Rv=2.74, x0=4.6, gamma=1.00, f_Alam=False)
 	elif dust_model == 4: # Kriek&Conroy with gamma=-0.2
 		yyd, xxd, nrd = dust_kc(xx, yy, Av, nr, Rv=4.05, gamma=-0.2)
 	else:
@@ -770,7 +771,7 @@ def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.6, gamma=1.0, f_Alam=False):
     # if any(np.diff(lm)<0):
     #     print('Something is wrong in lm: dust_smc of function.py')
 
-    lmm  = lm/10000. # into micron
+    lmm = lm/10000. # into micron
     nrd = nr #np.concatenate([nr1,nr2,nr3])
     lmmc = lmm #np.concatenate([lmm1,lmm2,lmm3])
     flc = fl #np.concatenate([fl1,fl2,fl3])
@@ -779,31 +780,61 @@ def dust_smc(lm, fl, Av, nr, Rv=2.74, x0=4.6, gamma=1.0, f_Alam=False):
     c1,c2,c3,c4 = -4.959, 2.264, 0.389, 0.461
     # SMC Wing Sample;
     # c1,c2,c3,c4 = -0.856, 1.038, 3.215, 0.107
+    # x0,gamma = 4.703,1.212
 
     x = 1./lmmc
+
+    # Manual 
     Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
     Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
     con_fx = (x<5.9)
     Fx[con_fx] = 0
-
     EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
-    Alam = Av / Rv * EBlam_to_EB
+    Alam_to_Av = 1 + EBlam_to_EB / Rv
+
+    # By following Gordon's script here, https://github.com/karllark/dust_extinction,
+    # Generate region redder than 2760A by interpolation
+    lam_red = 2760. # AA
+    ref_wavs = np.array([0.276, 0.296, 0.37, 0.44, 0.55,
+                         0.65, 0.81, 1.25, 1.65, 2.198, 3.1])*10**4
+    ref_ext = np.array([2.220, 2.000, 1.672, 1.374, 1.00,
+                        0.801, 0.567, 0.25, 0.169, 0.11, 0.])
+
+    if np.max(lm) > lam_red:
+        Alam_to_Av[lm > lam_red] = np.interp(lm[lm > lam_red], ref_wavs, ref_ext, right=0.)
+
+    # Dust attenuation package;
+    # ext_model = G03_SMCBar()
+    # Alam_to_Av = ext_model(x/u.micron)
+
+    Alam = Av * Alam_to_Av
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
 
-    if False:
+    if False:#True:#
         import matplotlib.pyplot as plt
+        # define the extinction model
+        ext_model = G03_SMCBar()
+        # generate the curves and plot them
+
         plt.close()
-        xs = np.arange(0.5, 10, 0.01)
-        x = xs
-        Dx = x**2 / ((x**2-x0**2)**2 + x**2*gamma**2)
+        x = np.arange(ext_model.x_range[0], ext_model.x_range[1],0.1)/u.micron
+        plt.plot(x,ext_model(x),label='G03 SMCBar')
+
+        print(c1,c2,c3,c4, x0, gamma)
+        lm = np.arange(0.1, 2.0, 0.01)
+        x = 1/lm
+        Dx = x**2 / ((x**2-x0**2)**2 + (x**2)*(gamma**2))
         Fx = 0.5392 * (x - 5.9)**2 + 0.05644 * (x-5.9)**3
         con_fx = (x<5.9)
         Fx[con_fx] = 0
         EBlam_to_EB = c1 + c2*x + c3*Dx + c4*Fx
-        Av = 2.0
+        Av = 2.5
         Alam = Av / Rv * EBlam_to_EB
-        plt.scatter(x, EBlam_to_EB, )
+        Alam_to_Av = 1 + EBlam_to_EB / Rv
+        plt.scatter(x, Alam_to_Av, color='k', marker='+')
+        plt.xlim(0.1, 9.0)
         plt.show()
+        # Why mismatch with Gordon?
         hoge
 
     if f_Alam:
@@ -999,6 +1030,41 @@ def dust_calz(lm, fl, Av:float, nr, Rv:float = 4.05, lmlimu:float = 3.115, f_Ala
 
     Alam = Kl * Av / Rv
     fl_cor = flc[:] * 10**(-0.4*Alam[:])
+
+    if False:#True:#
+        import matplotlib.pyplot as plt
+        plt.close()
+        lmm = np.arange(0.1, 2.0, 0.01)
+        nr = np.arange(0,len(lmm),1)
+        Kl = lmm[:]*0 #np.zeros(len(lm), dtype='float')
+        nrd = lmm[:]*0 #np.zeros(len(lm), dtype='float')
+        lmmc = lmm[:]*0 #np.zeros(len(lm), dtype='float')
+        flc = lmm[:]*0 #np.zeros(len(lm), dtype='float')
+        con1 = (lmm<=0.63)
+        con2 = (lmm>0.63)  & (lmm<=lmlimu)
+        con3 = (lmm>lmlimu)
+
+        Kl[con1] = (2.659 * (-2.156 + 1.509/lmm[con1] - 0.198/lmm[con1]**2 + 0.011/lmm[con1]**3) + Rv)
+        Kl[con2] = (2.659 * (-1.857 + 1.040/lmm[con2]) + Rv)
+        Kl[con3] = (2.659 * (-1.857 + 1.040/lmlimu + lmm[con3] * 0) + Rv)
+
+        nrd[con1] = nr[con1]
+        nrd[con2] = nr[con2]
+        nrd[con3] = nr[con3]
+
+        lmmc[con1] = lmm[con1]
+        lmmc[con2] = lmm[con2]
+        lmmc[con3] = lmm[con3]
+
+        Av = 2.5
+        Alam = Kl * Av / Rv
+        plt.scatter(lmm, 10**(-0.4*Alam[:]), )
+        plt.xlim(0.1, 2.0)
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.show()
+        hoge
+
 
     if f_Alam:
         return fl_cor, lmmc*10000., nrd, Alam
