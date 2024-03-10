@@ -252,12 +252,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         fbb = np.zeros(len(SFILT), dtype=float)
         ebb = np.zeros(len(SFILT), dtype=float)
         for ii in range(len(SFILT)):
-            try:
-                fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
-                ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
-            except:
+
+            if 'F%s'%(SFILT[ii]) not in fd0.keys() or 'E%s'%(SFILT[ii]) not in fd0.keys():
                 msg = 'Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii])
                 print_err(msg, exit=True)
+
+            fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
+            ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
 
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         unit = 'nu'
