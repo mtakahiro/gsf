@@ -367,7 +367,8 @@ class Func:
         return nr, xx, yy
 
 
-    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27):
+    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
+                            f_apply_igm=True):
         '''
         Parameters
         ----------
@@ -409,10 +410,14 @@ class Func:
         xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
         yy = lib[:,coln]
 
+        if f_apply_igm:
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=self.MB.x_HI_input)
+            self.MB.x_HI = x_HI
+
         if f_apply_dust:
             yyd, xxd, nrd = apply_dust(yy, xx/(1+zgal), nr, Av, dust_model=self.dust_model)
         else:
-            yyd, xxd, nrd = yy, xx, nr
+            yyd, xxd, nrd = yy, xx/(1+zgal), nr
 
         xxd *= (1.+zgal)
 
@@ -430,7 +435,7 @@ class Func:
 
 
     def get_template(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, 
-        f_apply_dust:bool=True, f_IGM=True, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27, f_agn=False):
+        f_apply_dust:bool=True, f_apply_igm=True, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27, f_agn=False):
         '''Makes model template for a given parameter set, ``par``.
 
         Parameters
@@ -521,6 +526,10 @@ class Func:
 
         xx = xx_s
         yy = yy_s
+
+        if f_apply_igm:
+            yy, x_HI = dijkstra_igm_abs(xx / (1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=self.MB.x_HI_input)
+            self.MB.x_HI = x_HI
 
         if f_apply_dust:
             yyd, xxd, nrd = apply_dust(yy, xx/(1+zmc), nr, Av, dust_model=self.dust_model)
@@ -946,7 +955,7 @@ class Func_tau:
 
   
     def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
-        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_neb=False, deltaz_lim=0.1):
+        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_apply_igm=True, f_neb=False, deltaz_lim=0.1):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -1029,6 +1038,10 @@ class Func_tau:
 
         xx = xx_s
         yy = yy_s
+
+        if f_apply_igm:
+            yy, x_HI = dijkstra_igm_abs(xx / (1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=self.MB.x_HI_input)
+            self.MB.x_HI = x_HI
 
         if f_apply_dust:
             yyd, xxd, nrd = apply_dust(yy, xx/(1+zmc), nr, Av, dust_model=self.dust_model)

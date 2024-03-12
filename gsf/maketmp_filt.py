@@ -37,6 +37,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tmp_norm : float
         Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
     '''
+    f_IGM = False
+
     inputs = MB.inputs
     age = MB.age
     nage = MB.nage
@@ -360,6 +362,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print('Neutral fraction, x_HI = %.2f, is provided;'%(x_HI_input))
     except:
         x_HI_input = None
+    MB.x_HI_input = x_HI_input
 
     if MB.SFH_FORM == -99:
         ####################################

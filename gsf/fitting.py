@@ -1941,7 +1941,6 @@ class Mainbody(GsfBase):
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 # showing this is confusing.
                 # print('\nMinimizer refinement;')
-                # print(fit_report(out))
 
                 # Fix params to what we had before.
                 if self.fzmc:

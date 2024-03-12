@@ -153,6 +153,7 @@ class Post():
         tlw_tmp /= amp_tmp
         return tlw_tmp, amp_tmp
 
+
     def lnprob_emcee(self, pos, pars, fy:float, ey:float, wht:float, NR:float, f_fir:bool, f_chind:bool=True, SNlim:float=1.0, f_scale:bool=False, 
         lnpreject=-np.inf, f_like:bool=False, flat_prior:bool=False, gauss_prior:bool=True, f_val:bool=True, nsigma:float=1.0, out=None,
         f_prior_sfh=False, alpha_sfh_prior=100, norder_sfh_prior=3, verbose=False, NRbb_lim=10000):

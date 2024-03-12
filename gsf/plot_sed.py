@@ -36,6 +36,7 @@ col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral
 def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
+    f_apply_igm=True, show_noattn=False, percs=[16,50,84],
     x1min=4000, return_figure=False, lcb='#4682b4'):
     '''
     Parameters
@@ -653,14 +654,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
     ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
     ytmp_nl = np.zeros((mmax,len(ysum)), dtype='float') # no line
+    ytmp_noatn = np.zeros((mmax,len(ysum)), dtype='float') # no attenuation
 
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(mmax, dtype='float') # For Muv
-    Fuv16   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
-    Luv16   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
-    Fuv28   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv1600   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Fuv2800   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
@@ -700,9 +701,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     ZZ_tmp = MB.ZFIX
 
             if ss == MB.aamin[0]:
-                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
+
+                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
+
+                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False)
 
                 # Each;
                 ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -713,13 +717,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         logU_tmp = MB.logUFIX
                     else:
                         logU_tmp = samples['logU'][nr]
-                    mod0_tmp, xm_tmp = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
+
+                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm)
                     fm_tmp += mod0_tmp
                     # ax1.plot(xm_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm)
                     fm_tmp_nl += mod0_tmp_nl
+
+                    # Make attenuation free template;
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False)
+                    fm_tmp_noatn += mod0_tmp_noatn
 
                 if MB.fagn:
                     Aagn_tmp = 10**samples['Aagn'][nr]
@@ -727,16 +736,23 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         AGNTAU_tmp = MB.AGNTAUFIX
                     else:
                         AGNTAU_tmp = samples['AGNTAU'][nr]
-                    mod0_tmp, xm_tmp = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
+                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm)
                     fm_tmp += mod0_tmp
+
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm)
                     fm_tmp_nl += mod0_tmp_nl
 
+                    # Make attenuation free template;
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False)
+                    fm_tmp_noatn += mod0_tmp_noatn
+
             else:
-                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all)
+                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
+                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False)
+                fm_tmp_noatn += mod0_tmp_noatn
 
                 # Each;
                 ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -775,30 +791,36 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
             model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
             model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + np.interp(x1_tot,x1_dust,model_dust)
+            model_tot_noatn = np.interp(x1_tot,xx_tmp,fm_tmp_noatn) + np.interp(x1_tot,x1_dust,model_dust)
 
             ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d_scale
             ytmp_nl[kk,:] = model_tot_nl[:] * c/np.square(x1_tot[:])/d_scale
+            ytmp_noatn[kk,:] = model_tot_noatn[:] * c/np.square(x1_tot[:])/d_scale
 
         else:
             x1_tot = xm_tmp
             ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
             ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
+            ytmp_noatn[kk,:] = fm_tmp_noatn[:] * c / np.square(xm_tmp[:]) /d_scale
 
         # Get FUV flux density at 10pc;
         Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
-        Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
+        Fuv2800[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk] = 0
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
-        Luv16[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
 
         # Get RF Color;
         _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
-        UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
-        UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
-        UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
-        UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
+        indb = [0,1,2,4]
+        indr = [2,2,3,3]
+        for ii in range(len(indr)):
+            if fconv[indb[ii]]>0 and fconv[indr[ii]]>0:
+                UVJ[kk,ii] = -2.5*np.log10(fconv[indb[ii]]/fconv[indr[ii]])
+            else:
+                UVJ[kk,ii] = np.nan
 
         # Do stuff...
         # time.sleep(0.01)
@@ -811,9 +833,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ytmp16 = np.percentile(ytmp[:,:],16,axis=0)
     ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
     ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
-    ytmp16_nl = np.percentile(ytmp_nl[:,:],16,axis=0)
-    ytmp50_nl = np.percentile(ytmp_nl[:,:],50,axis=0)
-    ytmp84_nl = np.percentile(ytmp_nl[:,:],84,axis=0)
+    ytmps_nl = [np.percentile(ytmp_nl[:,:],perc,axis=0) for perc in percs]
+    ytmps_noatn = [np.percentile(ytmp_noatn[:,:],perc,axis=0) for perc in percs]
     
     if MB.f_dust:
         ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
@@ -822,6 +843,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
     ax1.plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+    if show_noattn:#True:#
+        # ax1.plot(x1_tot[::nstep_plot], ytmps_nl[1][::nstep_plot], '--', lw=.5, color='yellow', zorder=-1, alpha=1.)
+        ax1.plot(x1_tot[::nstep_plot], ytmps_noatn[1][::nstep_plot], '--', lw=.5, color='cyan', zorder=-1, alpha=1.)
 
     # For grism;
     if f_grsm:
@@ -1028,11 +1052,17 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         col00.append(col3)
         col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
         col00.append(col4)
-        col2  = fits.Column(name='f_model_noline_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16_nl[:])
+        col2  = fits.Column(name='f_model_noline_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_nl[0])
         col00.append(col2)
-        col3  = fits.Column(name='f_model_noline_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50_nl[:])
+        col3  = fits.Column(name='f_model_noline_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_nl[1])
         col00.append(col3)
-        col4  = fits.Column(name='f_model_noline_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84_nl[:])
+        col4  = fits.Column(name='f_model_noline_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_nl[2])
+        col00.append(col4)
+        col2  = fits.Column(name='f_model_noattn_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_noatn[0])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_noattn_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_noatn[1])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_noattn_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_noatn[2])
         col00.append(col4)
 
         # Each component
@@ -1093,40 +1123,36 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             print('Chi seems to be wrong...')
             pass
 
-        try:
-            # Muv
-            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
-            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
-            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
-
-            # Flam to Fnu
-            hdr['LUV16'] = np.nanpercentile(Luv16, 16) #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
-            hdr['LUV50'] = np.nanpercentile(Luv16, 50) #10**(-0.4*hdr['MUV50']) * MB.Lsun #* 4 * np.pi * DL10**2
-            hdr['LUV84'] = np.nanpercentile(Luv16, 84) #10**(-0.4*hdr['MUV84']) * MB.Lsun #* 4 * np.pi * DL10**2
-
-        except:
-            pass
-
-        # # UV beta;
-        # from .function import get_uvbeta
+        # Write parameters;
+        # Muv
+        Muvs = -2.5 * np.log10(np.percentile(Fuv[:],percs)) + MB.m0set
+        Luvs = np.nanpercentile(Luv1600, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
-        hdr['UVBETA16'] = betas_med[0]
-        hdr['UVBETA50'] = betas_med[1]
-        hdr['UVBETA84'] = betas_med[2]
 
         # SFR from attenuation corrected LUV;
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
         A1600[np.where(A1600<0)] = 0
-        SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
-        SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
+        SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
+        SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray(Luvs) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
-        hdr['SFRUV16'] = SFRUV[0]
-        hdr['SFRUV50'] = SFRUV[1]
-        hdr['SFRUV84'] = SFRUV[2]
-        hdr['SFRUV_UNCOR_16'] = SFRUV_UNCOR[0]
-        hdr['SFRUV_UNCOR_50'] = SFRUV_UNCOR[1]
-        hdr['SFRUV_UNCOR_84'] = SFRUV_UNCOR[2]
+
+        for ii in range(len(percs)):
+            if not np.isnan(Muvs[ii]):
+                hdr['MUV%d'%percs[ii]] = Muvs[ii]
+            else:
+                hdr['MUV%d'%percs[ii]] = 99
+            if not np.isnan(Luvs[ii]):
+                hdr['LUV%d'%percs[ii]] = Luvs[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV%d'%percs[ii]] = -99
+            if not np.isnan(betas_med[ii]):
+                hdr['UVBETA%d'%percs[ii]] = betas_med[ii]
+            else:
+                hdr['UVBETA%d'%percs[ii]] = 99
+            
+            hdr['SFRUV%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
 
         # UVJ
         try:
@@ -1210,6 +1236,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         tree_spec['model'].update({'fnu_16': fnu_16})
         tree_spec['model'].update({'fnu_50': fnu_50})
         tree_spec['model'].update({'fnu_84': fnu_84})
+        for ii in range(len(percs)):
+            fnus_noln = flamtonu(x1_tot, ytmps_nl[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_noline%d'%percs[ii]: fnus_noln})
+        for ii in range(len(percs)):
+            fnus_noatn = flamtonu(x1_tot, ytmps_noatn[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_noattn_%d'%percs[ii]: fnus_noatn})
 
         # EW;
         try:
@@ -2021,7 +2053,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(mmax, dtype='float') # For Muv
-    Fuv28   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Fuv2800   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
 
@@ -2127,7 +2159,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         if True:
             # Get FUV flux;
             Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
-            Fuv28[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
+            Fuv2800[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
             Lir[kk] = 0
 
             # Get UVJ Color;
@@ -2430,9 +2462,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
 
             # Fuv (!= flux of Muv)
-            hdr['FUV16'] = np.percentile(Fuv28[:],16)
-            hdr['FUV50'] = np.percentile(Fuv28[:],50)
-            hdr['FUV84'] = np.percentile(Fuv28[:],84)
+            hdr['FUV16'] = np.percentile(Fuv2800[:],16)
+            hdr['FUV50'] = np.percentile(Fuv2800[:],50)
+            hdr['FUV84'] = np.percentile(Fuv2800[:],84)
 
             # LIR
             hdr['LIR16'] = np.percentile(Lir[:],16)
@@ -3137,9 +3169,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(mmax, dtype=float) # For Muv
-    Fuv16   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
-    Luv16   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
-    Fuv28   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    # Fuv16   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    Luv1600   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+    Fuv2800   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype=float) # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype=float) # For UVJ color;
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
@@ -3273,11 +3305,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         else:
             zmc = zbes
         Fuv[kk] = get_Fuv(x0/(1.+zmc), (ysum/(c/np.square(x0)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
-        Fuv28[kk] = get_Fuv(x0/(1.+zmc), (ysum/(c/np.square(x0)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
+        Fuv2800[kk] = get_Fuv(x0/(1.+zmc), (ysum/(c/np.square(x0)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
         Lir[kk] = 0
 
         fnu_tmp = flamtonu(x0, ysum*scale, m0set=-48.6, m0=-48.6)
-        Luv16[kk] = get_Fuv(x0/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        Luv1600[kk] = get_Fuv(x0/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
         betas[kk] = get_uvbeta(x0, ysum, zmc)
 
         # SFR from attenuation corrected LUV;
@@ -3285,8 +3317,8 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         A1600 = 4.43 + 1.99 * np.asarray(betas[kk])
         if A1600<0:
             A1600 = 0
-        SFRUV[kk] = 1.4 * 1e-28 * 10**(A1600/2.5) * Luv16[kk] # Msun / yr
-        SFRUV_UNCOR[kk] = 1.4 * 1e-28 * Luv16[kk]
+        SFRUV[kk] = 1.4 * 1e-28 * 10**(A1600/2.5) * Luv1600[kk] # Msun / yr
+        SFRUV_UNCOR[kk] = 1.4 * 1e-28 * Luv1600[kk]
         MUV[kk] = -2.5 * np.log10(Fuv[kk]) + MB.m0set
 
         # Get RF Color;
@@ -3352,11 +3384,11 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         if save_pcl:
             if MB.fzmc == 1:
                 NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1], 'z':redshifttmp[:kk+1],
-                            'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
+                            'MUV':MUV[:kk+1], 'Luv1600':Luv1600[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
                             }
             else:
                 NPAR_LIB = {'logM_stel':lmtmp[:kk+1], 'logSFR':SFR_SED[:kk+1], 'logT_MW':Ttmp[:kk+1], 'AV':Avtmp[:kk+1], 'logZ_MW':Ztmp[:kk+1],
-                            'MUV':MUV[:kk+1], 'Luv1600':Luv16[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
+                            'MUV':MUV[:kk+1], 'Luv1600':Luv1600[:kk+1], 'beta_UV':betas[:kk+1], 'SFRUV':SFRUV[:kk+1], 'SFRUV_UNCOR':SFRUV_UNCOR[:kk+1]
                             }
                 
             # UVJ;
