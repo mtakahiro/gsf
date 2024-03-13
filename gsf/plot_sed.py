@@ -660,8 +660,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv     = np.zeros(mmax, dtype='float') # For Muv
-    Luv1600   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
-    Fuv2800   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv1600 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv1600_noatn = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Fuv2800 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
@@ -810,6 +811,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
         Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
+        Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
 
         # Get RF Color;
@@ -1127,6 +1131,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # Muv
         Muvs = -2.5 * np.log10(np.percentile(Fuv[:],percs)) + MB.m0set
         Luvs = np.nanpercentile(Luv1600, percs) 
+        Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
 
         # SFR from attenuation corrected LUV;
@@ -1138,14 +1143,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['SFRUV_ANGS'] = 1600
 
         for ii in range(len(percs)):
+
             if not np.isnan(Muvs[ii]):
                 hdr['MUV%d'%percs[ii]] = Muvs[ii]
             else:
                 hdr['MUV%d'%percs[ii]] = 99
+
             if not np.isnan(Luvs[ii]):
                 hdr['LUV%d'%percs[ii]] = Luvs[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
             else:
                 hdr['LUV%d'%percs[ii]] = -99
+
+            if not np.isnan(Luvs_noatn[ii]):
+                hdr['LUV_noattn_%d'%percs[ii]] = Luvs_noatn[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV_noattn_%d'%percs[ii]] = -99
+
             if not np.isnan(betas_med[ii]):
                 hdr['UVBETA%d'%percs[ii]] = betas_med[ii]
             else:
