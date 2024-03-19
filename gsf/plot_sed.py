@@ -25,12 +25,117 @@ from astropy.io import ascii
 import time
 
 import corner
-from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv,get_uvbeta
+from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv,get_uvbeta,print_err
 from .function_class import Func
 from .basic_func import Basic
 from .maketmp_filt import get_LSF
 
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
+
+
+def modify_keys_sed(fd_sfh, label, gsf_dict=None, key_skip=['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']):
+    '''
+    label : 'sfh' or 'sed' 
+    '''
+    q_labels = []
+    percs = [16,50,84]
+    
+    if gsf_dict == None:
+        gsf_dict = {}
+        gsf_dict[label] = {}
+        
+    if label not in gsf_dict:
+        gsf_dict[label] = {}
+
+    for key in fd_sfh['header'].keys():
+        key_mod = key
+        for perc in percs:
+            key_mod = key_mod.replace('_%d'%perc,'%d'%perc)
+            key_mod = key_mod.replace('%d'%perc,'_%d'%perc)
+        key_mod = key_mod.upper()
+
+        if key_mod in key_skip:
+            continue
+
+        gsf_dict[label][key_mod] = fd_sfh['header'][key]
+
+        key_q = key_mod
+        for perc in percs:
+            key_q = key_q.replace('_%d'%perc,'')
+        if key_q not in q_labels:
+            q_labels.append(key_q)
+
+    for key in fd_sfh.keys():
+        key_mod = key
+        for perc in percs:
+            key_mod = key_mod.replace('_%d'%perc,'%d'%perc)
+            key_mod = key_mod.replace('%d'%perc,'_%d'%perc)
+        key_mod = key_mod.upper()
+
+        if key_mod in key_skip:
+            continue
+
+        gsf_dict[label][key_mod] = fd_sfh[key]
+
+        key_q = key_mod
+        for perc in percs:
+            key_q = key_q.replace('_%d'%perc,'')
+        if key_q not in q_labels:
+            q_labels.append(key_q)
+
+    gsf_dict[label]['quantities'.upper()] = q_labels
+    return gsf_dict
+
+
+def modify_keys(fd_sfh, label, gsf_dict=None, key_skip=['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']):
+    '''
+    label : 'sfh' or 'sed' 
+    '''
+    q_labels = []
+    percs = [16,50,84]
+    
+    if gsf_dict == None:
+        gsf_dict = {}
+        gsf_dict[label] = {}
+
+    for key in fd_sfh['header'].keys():
+        key_mod = key
+        for perc in percs:
+            key_mod = key_mod.replace('_%d'%perc,'%d'%perc)
+            key_mod = key_mod.replace('%d'%perc,'_%d'%perc)
+        key_mod = key_mod.upper()
+
+        if key_mod in key_skip:
+            continue
+
+        gsf_dict[label][key_mod] = fd_sfh['header'][key]
+
+        key_q = key_mod
+        for perc in percs:
+            key_q = key_q.replace('_%d'%perc,'')
+        if key_q not in q_labels:
+            q_labels.append(key_q)
+
+    for key in fd_sfh[label].keys():
+        key_mod = key
+        for perc in percs:
+            key_mod = key_mod.replace('_%d'%perc,'%d'%perc)
+            key_mod = key_mod.replace('%d'%perc,'_%d'%perc)
+        key_mod = key_mod.upper()
+
+        if key_mod in key_skip:
+            continue
+
+        gsf_dict[label][key_mod] = fd_sfh[label][key]
+
+        key_q = key_mod
+        for perc in percs:
+            key_q = key_q.replace('_%d'%perc,'')
+        if key_q not in q_labels:
+            q_labels.append(key_q)
+
+    gsf_dict[label]['quantities'.upper()] = q_labels
+    return gsf_dict
 
 
 def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
@@ -1326,6 +1431,24 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         af = asdf.AsdfFile(tree_spec)
         af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
 
+    # a single ASDF;
+    tree_shf = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)))
+    gsf_dict = modify_keys(tree_shf, 'sfh')
+
+    tree_sed = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)))
+    gsf_dict['sed'] = {}
+
+    lbls_sed_skip = ['header']
+    lbls_sed_skip = [s.upper() for s in lbls_sed_skip]
+    key_skip = ['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']
+    key_skip += lbls_sed_skip
+
+    label = 'sed'
+    gsf_dict = modify_keys_sed(tree_sed, label, gsf_dict=gsf_dict, key_skip=key_skip)
+
+    af = asdf.AsdfFile(gsf_dict)
+    af.write_to(os.path.join(MB.DIR_OUT, 'gsf_%s.asdf'%(ID)), all_array_compression='zlib')
+
     #
     # SED params in plot
     #
@@ -1468,6 +1591,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     fig.clear()
     plt.close()
+
     return tree_spec
 
 
