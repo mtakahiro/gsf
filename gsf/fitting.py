@@ -374,6 +374,7 @@ class Mainbody(GsfBase):
             inputs['ADD_NEBULAE'] = '0'
 
         # Nebular;
+        self.neb_correlate = False
         if 'ADD_NEBULAE' in self.input_keys:
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
