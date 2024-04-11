@@ -1369,6 +1369,10 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
 
             con = (l0>lmin) & (l0<lmax)
             delw = np.nanmin(np.diff(l0))
+
+            if delw == 0:
+                delw = (lmax-lmin) / 100
+
             if delw > np.nanmin(np.diff(ffil)):
                 lfil_new = np.arange(lmin,lmax,delw)
                 fint = interpolate.interp1d(lfil, ffil, kind='nearest', fill_value="extrapolate")

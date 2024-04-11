@@ -3,6 +3,7 @@ import sys
 import os
 import asdf
 
+import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 from numpy import log10
 from scipy.integrate import simps
@@ -18,8 +19,8 @@ import matplotlib.ticker as ticker
 # from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
-import scipy.integrate as integrate
-import scipy.special as special
+# import scipy.integrate as integrate
+# import scipy.special as special
 import os.path
 from astropy.io import ascii
 import time
@@ -762,20 +763,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ytmp_noatn = np.zeros((mmax,len(ysum)), dtype='float') # no attenuation
 
     # MUV;
-    DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
-    DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-    Fuv     = np.zeros(mmax, dtype='float') # For Muv
+    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
+    DL10 = Mpc_cm/1e6 * 10 # 10pc in cm
+    Fuv = np.zeros(mmax, dtype='float') # For Muv
     Luv1600 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Luv1600_noatn = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Fuv2800 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
-    Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
-    UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
-    Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
+    Lir = np.zeros(mmax, dtype='float') # For L(8-1000um)
+    UVJ = np.zeros((mmax,4), dtype='float') # For UVJ color;
+    Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # UV beta;
     betas = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
 
     # From random chain;
+    mmax = 10
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
 
@@ -819,6 +821,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
                 if MB.fneb:
                     Aneb_tmp = 10**samples['Aneb'][nr]
+
                     if not MB.logUFIX == None:
                         logU_tmp = MB.logUFIX
                     else:
@@ -865,7 +868,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         #
         # Dust component;
-        #
+        # @@@ Why so slow?
         if MB.f_dust:
             if kk == 0:
                 par = Parameters()
@@ -880,24 +883,41 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 par['TDUST'].value = MB.NTDUST
             else:
                 par['TDUST'].value = samples['TDUST'][nr]
-
+            
             model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
             model_dust_full, x1_dust_full = fnc.tmp04_dust(par.valuesdict(), return_full=True)
+            # print(par['MDUST'].value, samples['MDUST'][nr], np.nanmax(model_dust_full * c/np.square(x1_dust_full)/d_scale))
 
             if kk == 0:
                 deldt = (x1_dust[1] - x1_dust[0])
                 x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
                 # Redefine??
                 ytmp = np.zeros((mmax,len(x1_tot)), dtype='float')
+                ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype='float')
+                ytmp_noatn = np.zeros((mmax,len(x1_tot)), dtype='float')
                 ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
                 ytmp_dust_full = np.zeros((mmax,len(model_dust_full)), dtype='float')
 
             ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d_scale
-            ytmp_dust_full[kk,:] = model_dust_full * c/np.square(x1_dust_full)/d_scale
+            ytmp_dust_full[kk,:] = model_dust_full * c/np.square(x1_dust_full)/d_scale # flambda * 1e-20
 
-            model_tot = np.interp(x1_tot,xx_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
-            model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + np.interp(x1_tot,x1_dust,model_dust)
-            model_tot_noatn = np.interp(x1_tot,xx_tmp,fm_tmp_noatn) + np.interp(x1_tot,x1_dust,model_dust)
+            fint = interpolate.interp1d(x1_dust, model_dust, kind='nearest', fill_value="extrapolate")
+            flux_dust_tmp = fint(x1_tot)
+            # flux_dust_tmp = np.interp(x1_tot,x1_dust,model_dust)
+
+            fint = interpolate.interp1d(xx_tmp,fm_tmp, kind='nearest', fill_value="extrapolate")
+            flux_stel_tmp = fint(x1_tot)
+            model_tot = flux_stel_tmp + flux_dust_tmp
+
+            fint = interpolate.interp1d(xx_tmp,fm_tmp_nl, kind='nearest', fill_value="extrapolate")
+            flux_stel_tmp = fint(x1_tot)
+            model_tot_nl = flux_stel_tmp + flux_dust_tmp
+            # model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + flux_dust_tmp
+
+            fint = interpolate.interp1d(xx_tmp,fm_tmp_noatn, kind='nearest', fill_value="extrapolate")
+            flux_stel_tmp = fint(x1_tot)
+            model_tot_noatn = flux_stel_tmp + flux_dust_tmp
+            # model_tot_noatn = np.interp(x1_tot,xx_tmp,fm_tmp_noatn) + flux_dust_tmp
 
             ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d_scale
             ytmp_nl[kk,:] = model_tot_nl[:] * c/np.square(x1_tot[:])/d_scale
@@ -918,7 +938,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
         fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
         Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
-
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
 
         # Get RF Color;
@@ -939,15 +958,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     #
     # Plot Median SED;
     #
-    ytmp16 = np.percentile(ytmp[:,:],16,axis=0)
-    ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
-    ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
-    ytmps_nl = [np.percentile(ytmp_nl[:,:],perc,axis=0) for perc in percs]
-    ytmps_noatn = [np.percentile(ytmp_noatn[:,:],perc,axis=0) for perc in percs]
+    ytmp16 = np.nanpercentile(ytmp[:,:],16,axis=0)
+    ytmp50 = np.nanpercentile(ytmp[:,:],50,axis=0)
+    ytmp84 = np.nanpercentile(ytmp[:,:],84,axis=0)
+    ytmps_nl = [np.nanpercentile(ytmp_nl[:,:],perc,axis=0) for perc in percs]
+    ytmps_noatn = [np.nanpercentile(ytmp_noatn[:,:],perc,axis=0) for perc in percs]
     
     if MB.f_dust:
-        ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
-        ytmp_dust50_full = np.percentile(ytmp_dust_full[:,:],50, axis=0)
+        ytmp_dust50 = np.nanpercentile(ytmp_dust[:,:],50, axis=0)
+        ytmp_dust50_full = np.nanpercentile(ytmp_dust_full[:,:], 50, axis=0)
+        ytmps_dust_full = [np.nanpercentile(ytmp_dust_full[:,:],perc,axis=0) for perc in percs]
 
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
@@ -985,7 +1005,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     if f_fancyplot:
         alp_fancy = 0.5
-        #ax1.plot(x1_tot[::nstep_plot], np.percentile(ytmp[:, ::nstep_plot], 50, axis=0), '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+        #ax1.plot(x1_tot[::nstep_plot], np.nanpercentile(ytmp[:, ::nstep_plot], 50, axis=0), '-', lw=.5, color='gray', zorder=-1, alpha=1.)
         ysumtmp = ytmp[0, ::nstep_plot] * 0
         ysumtmp2 = ytmp[:, ::nstep_plot] * 0
         ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
@@ -995,10 +1015,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             # !! Take median after summation;
             ysumtmp2[:,:len(xm_tmp)] += ytmp_each[:, ::nstep_plot, ii]
             if f_fill:
-                ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.percentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
+                ax1.fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.nanpercentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=col[ii], alpha=alp_fancy, zorder=-3)
             else:
-                ax1.plot(x1_tot[::nstep_plot], np.percentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=1)
-            ysumtmp2_prior[:] = np.percentile(ysumtmp2[:, :], 50, axis=0)
+                ax1.plot(x1_tot[::nstep_plot], np.nanpercentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=col[ii], alpha=alp_fancy, zorder=1)
+            ysumtmp2_prior[:] = np.nanpercentile(ysumtmp2[:, :], 50, axis=0)
 
     elif f_fill:
         MB.logger.info('f_fancyplot is False. f_fill is set to False.')
@@ -1054,9 +1074,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     col_dia = 'blue'
     if MB.f_dust:
         ALLFILT = np.append(SFILT,DFILT)
-        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-        lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
-        lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
+        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
 
         ax1.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
         ax3t.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
@@ -1070,6 +1090,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # plot FIR range;
         ax3t.scatter(lbb, fbb, lw=0.5, color='none', edgecolor=col_dia, \
         zorder=2, alpha=1.0, marker='d', s=50)
+        print(lbb, fbb)
 
     else:
         lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
@@ -1234,7 +1255,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         # Write parameters;
         # Muv
-        Muvs = -2.5 * np.log10(np.percentile(Fuv[:],percs)) + MB.m0set
+        Muvs = -2.5 * np.log10(np.nanpercentile(Fuv[:],percs)) + MB.m0set
+        for ii in range(3):
+            if np.isinf(Muvs[ii]):
+                Muvs[ii] = 99
         Luvs = np.nanpercentile(Luv1600, percs) 
         Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
@@ -1274,18 +1298,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         # UVJ
         try:
-            hdr['uv16'] = np.percentile(UVJ[:,0],16)
-            hdr['uv50'] = np.percentile(UVJ[:,0],50)
-            hdr['uv84'] = np.percentile(UVJ[:,0],84)
-            hdr['bv16'] = np.percentile(UVJ[:,1],16)
-            hdr['bv50'] = np.percentile(UVJ[:,1],50)
-            hdr['bv84'] = np.percentile(UVJ[:,1],84)
-            hdr['vj16'] = np.percentile(UVJ[:,2],16)
-            hdr['vj50'] = np.percentile(UVJ[:,2],50)
-            hdr['vj84'] = np.percentile(UVJ[:,2],84)
-            hdr['zj16'] = np.percentile(UVJ[:,3],16)
-            hdr['zj50'] = np.percentile(UVJ[:,3],50)
-            hdr['zj84'] = np.percentile(UVJ[:,3],84)
+            hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
+            hdr['uv50'] = np.nanpercentile(UVJ[:,0],50)
+            hdr['uv84'] = np.nanpercentile(UVJ[:,0],84)
+            hdr['bv16'] = np.nanpercentile(UVJ[:,1],16)
+            hdr['bv50'] = np.nanpercentile(UVJ[:,1],50)
+            hdr['bv84'] = np.nanpercentile(UVJ[:,1],84)
+            hdr['vj16'] = np.nanpercentile(UVJ[:,2],16)
+            hdr['vj50'] = np.nanpercentile(UVJ[:,2],50)
+            hdr['vj84'] = np.nanpercentile(UVJ[:,2],84)
+            hdr['zj16'] = np.nanpercentile(UVJ[:,3],16)
+            hdr['zj50'] = np.nanpercentile(UVJ[:,3],50)
+            hdr['zj84'] = np.nanpercentile(UVJ[:,3],84)
         except:
             print('\nError when writinf UVJ colors;\n')
             pass
@@ -1356,10 +1380,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         tree_spec['model'].update({'fnu_84': fnu_84})
         for ii in range(len(percs)):
             fnus_noln = flamtonu(x1_tot, ytmps_nl[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
-            tree_spec['model'].update({'fnu_noline%d'%percs[ii]: fnus_noln})
+            tree_spec['model'].update({'fnu_noline_%d'%percs[ii]: fnus_noln})
         for ii in range(len(percs)):
             fnus_noatn = flamtonu(x1_tot, ytmps_noatn[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
             tree_spec['model'].update({'fnu_noattn_%d'%percs[ii]: fnus_noatn})
+
+        if MB.f_dust:
+            tree_spec['model'].update({'wave_fir': x1_dust_full})
+            for ii in range(len(percs)):
+                # fnus_fir = flamtonu(x1_tot, ytmps_noatn[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+                # tree_spec['model'].update({'fnu_fir_%d'%percs[ii]: fnus_fir})
+                fnus_fir = flamtonu(x1_dust_full, ytmps_dust_full[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+                tree_spec['model'].update({'fnu_fir_%d'%percs[ii]: fnus_fir})
 
         # EW;
         try:
@@ -2316,12 +2348,12 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #
     # Plot Median SED;
     #
-    ytmp16 = np.percentile(ytmp[:,:],16,axis=0)
-    ytmp50 = np.percentile(ytmp[:,:],50,axis=0)
-    ytmp84 = np.percentile(ytmp[:,:],84,axis=0)
+    ytmp16 = np.nanpercentile(ytmp[:,:],16,axis=0)
+    ytmp50 = np.nanpercentile(ytmp[:,:],50,axis=0)
+    ytmp84 = np.nanpercentile(ytmp[:,:],84,axis=0)
     
     if f_dust:
-        ytmp_dust50 = np.percentile(ytmp_dust[:,:],50, axis=0)
+        ytmp_dust50 = np.nanpercentile(ytmp_dust[:,:],50, axis=0)
 
     # For grism;
     if f_grsm:
@@ -2594,19 +2626,19 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         try:
             # Muv
             MUV = -2.5 * np.log10(Fuv[:]) + MB.m0set
-            hdr['MUV16'] = -2.5 * np.log10(np.percentile(Fuv[:],16)) + MB.m0set
-            hdr['MUV50'] = -2.5 * np.log10(np.percentile(Fuv[:],50)) + MB.m0set
-            hdr['MUV84'] = -2.5 * np.log10(np.percentile(Fuv[:],84)) + MB.m0set
+            hdr['MUV16'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],16)) + MB.m0set
+            hdr['MUV50'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],50)) + MB.m0set
+            hdr['MUV84'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],84)) + MB.m0set
 
             # Fuv (!= flux of Muv)
-            hdr['FUV16'] = np.percentile(Fuv2800[:],16)
-            hdr['FUV50'] = np.percentile(Fuv2800[:],50)
-            hdr['FUV84'] = np.percentile(Fuv2800[:],84)
+            hdr['FUV16'] = np.nanpercentile(Fuv2800[:],16)
+            hdr['FUV50'] = np.nanpercentile(Fuv2800[:],50)
+            hdr['FUV84'] = np.nanpercentile(Fuv2800[:],84)
 
             # LIR
-            hdr['LIR16'] = np.percentile(Lir[:],16)
-            hdr['LIR50'] = np.percentile(Lir[:],50)
-            hdr['LIR84'] = np.percentile(Lir[:],84)
+            hdr['LIR16'] = np.nanpercentile(Lir[:],16)
+            hdr['LIR50'] = np.nanpercentile(Lir[:],50)
+            hdr['LIR84'] = np.nanpercentile(Lir[:],84)
         except:
             pass
 
@@ -2622,18 +2654,18 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         # UVJ
         try:
-            hdr['uv16'] = np.percentile(UVJ[:,0],16)
-            hdr['uv50'] = np.percentile(UVJ[:,0],50)
-            hdr['uv84'] = np.percentile(UVJ[:,0],84)
-            hdr['bv16'] = np.percentile(UVJ[:,1],16)
-            hdr['bv50'] = np.percentile(UVJ[:,1],50)
-            hdr['bv84'] = np.percentile(UVJ[:,1],84)
-            hdr['vj16'] = np.percentile(UVJ[:,2],16)
-            hdr['vj50'] = np.percentile(UVJ[:,2],50)
-            hdr['vj84'] = np.percentile(UVJ[:,2],84)
-            hdr['zj16'] = np.percentile(UVJ[:,3],16)
-            hdr['zj50'] = np.percentile(UVJ[:,3],50)
-            hdr['zj84'] = np.percentile(UVJ[:,3],84)
+            hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
+            hdr['uv50'] = np.nanpercentile(UVJ[:,0],50)
+            hdr['uv84'] = np.nanpercentile(UVJ[:,0],84)
+            hdr['bv16'] = np.nanpercentile(UVJ[:,1],16)
+            hdr['bv50'] = np.nanpercentile(UVJ[:,1],50)
+            hdr['bv84'] = np.nanpercentile(UVJ[:,1],84)
+            hdr['vj16'] = np.nanpercentile(UVJ[:,2],16)
+            hdr['vj50'] = np.nanpercentile(UVJ[:,2],50)
+            hdr['vj84'] = np.nanpercentile(UVJ[:,2],84)
+            hdr['zj16'] = np.nanpercentile(UVJ[:,3],16)
+            hdr['zj50'] = np.nanpercentile(UVJ[:,3],50)
+            hdr['zj84'] = np.nanpercentile(UVJ[:,3],84)
         except:
             print('\nError when writinf UVJ colors;\n')
             pass
@@ -3504,9 +3536,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
             yy = np.arange(0,np.max(n)*1.3,1)
 
             try:
-                ax.plot(yy*0+np.percentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
-                ax.plot(yy*0+np.percentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
-                ax.plot(yy*0+np.percentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
+                ax.plot(yy*0+np.nanpercentile(NPAR[i],16), yy, linestyle='--', color='gray', lw=1)
+                ax.plot(yy*0+np.nanpercentile(NPAR[i],50), yy, linestyle='-', color='gray', lw=1)
+                ax.plot(yy*0+np.nanpercentile(NPAR[i],84), yy, linestyle='--', color='gray', lw=1)
             except:
                 MB.logger.warning('Failed at i,x=%d,%d'%(i,x))
 
