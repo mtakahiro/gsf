@@ -123,6 +123,11 @@ def modify_keys(fd_sfh, label, gsf_dict=None, key_skip=['BITPIX', 'EXTEND', 'SIM
             key_mod = key_mod.replace('_%d'%perc,'%d'%perc)
             key_mod = key_mod.replace('%d'%perc,'_%d'%perc)
         key_mod = key_mod.upper()
+            
+        if key_mod.split('_')[0] == 'MSTEL':
+            key_mod = 'MSTEL_HIST_%s'%(key_mod.split('_')[1])
+        if key_mod.split('_')[0] == 'SFR':
+            key_mod = 'SFR_HIST_%s'%(key_mod.split('_')[1])
 
         if key_mod in key_skip:
             continue
@@ -777,7 +782,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     betas = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
 
     # From random chain;
-    mmax = 10
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
 
