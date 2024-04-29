@@ -102,7 +102,7 @@ def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, return_results=False
     Parameters
     ----------
     lm : float array
-        in lambda
+        observed-frame wavelength, in lambda
     flam : float array
         in flambda 
     '''
