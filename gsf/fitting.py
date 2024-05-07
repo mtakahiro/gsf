@@ -33,7 +33,6 @@ from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
-from .function_igm import get_XI
 
 from .Logger.GsfBase import GsfBase
 try:
@@ -126,14 +125,13 @@ class Mainbody(GsfBase):
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST',
                            'BPASS', 'DIR_BPASS',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
-                           'XHIFIX'
+                           'x_HI'
                            ],
 
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
                          'NTEMP', 'DISP', 'SIG_TEMP', 'VDISP', 
-                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR',
-                         'F_XHI'],
+                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR'],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
@@ -376,7 +374,6 @@ class Mainbody(GsfBase):
             inputs['ADD_NEBULAE'] = '0'
 
         # Nebular;
-        self.neb_correlate = False
         if 'ADD_NEBULAE' in self.input_keys:
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
@@ -694,9 +691,9 @@ class Mainbody(GsfBase):
                     self.ZFIX = None
 
         # N of param:
-        if 'AVEVOL' in inputs:
+        try:
             self.AVEVOL = str2bool(inputs['AVEVOL'])
-        else:
+        except:
             self.AVEVOL = False
 
         try:
@@ -725,10 +722,12 @@ class Mainbody(GsfBase):
                 self.Avmin = 0
                 self.Avmax = 4.0
 
-        if 'AVPRIOR_SIGMA' in inputs:
+        try:
             Av_prior = float(inputs['AVPRIOR_SIGMA'])
             self.key_params_prior.append('AV0')
             self.key_params_prior_sigma.append(Av_prior)
+        except:
+            pass
 
         # Z evolution;
         if self.verbose:
@@ -780,19 +779,6 @@ class Mainbody(GsfBase):
         self.ndim += self.fzmc
         if self.verbose:
             self.logger.info('No. of params are : %d'%(self.ndim))
-
-        # XHI as a param;
-        if 'XHIFIX' in inputs:
-            self.x_HI_input = float(inputs['XHIFIX'])
-            self.fxhi = False
-        else:
-            self.x_HI_input = None
-            if 'F_XHI' in inputs:
-                self.fxhi = str2bool(inputs['F_XHI'])
-                if self.fxhi:
-                    self.ndim += 1
-            else:
-                self.fxhi = False
 
         # Line
         try:
@@ -1570,12 +1556,6 @@ class Mainbody(GsfBase):
                 self.ndim += 1
             f_add = True
 
-        # xhi
-        if self.fxhi:
-            xhi0 = get_XI(self.zgal)
-            fit_params.add('xhi', value=xhi0, min=0, max=1)
-            f_add = True
-
         self.fit_params = fit_params
 
         return f_add
@@ -1961,6 +1941,7 @@ class Mainbody(GsfBase):
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 # showing this is confusing.
                 # print('\nMinimizer refinement;')
+                # print(fit_report(out))
 
                 # Fix params to what we had before.
                 if self.fzmc:

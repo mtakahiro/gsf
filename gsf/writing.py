@@ -209,11 +209,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     for aa in range(len(TAUmc)):
         col50 = fits.Column(name='TAU'+str(aa), format='E', unit='logGyr', array=TAUmc[aa][:])
         col01.append(col50)
-
-    if self.fxhi:
-        col50 = fits.Column(name='xhi', format='E', unit='', array=np.percentile(res.flatchain['xhi'][burnin:], [16,50,84]))
-        col01.append(col50)
-
+        
     if self.f_dust:
         Mdust_per_temp = self.af['spec_dust']['Mdust']
         if self.DT0 == self.DT1 or self.DT0 + self.dDT >= self.DT1:

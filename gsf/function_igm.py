@@ -127,10 +127,7 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 	else:
 		if verbose:
 			print('Neutral fraction, x_HI = %.2f, is provided;'%(x_HI))
-
-	# This helps speeding up
-	x_HI = float("{:.3f}".format(x_HI))
-
+		
 	x_D = alpha_x * x_HI # x_D is not clear..
 	delta_lam = (xtmp - xLL) * (zin + 1)
 	delta_lam_fine = (np.linspace(900,2000,1000) - xLL) * (zin + 1)
