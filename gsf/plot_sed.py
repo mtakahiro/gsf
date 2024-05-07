@@ -289,6 +289,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         if verbose:
             MB.logger.info('Total dust mass is %.2e'%(MD50))
 
+    if MB.fxhi:
+        # xhi16 = hdul[1].data['xhi'][0]
+        xhi50 = hdul[1].data['xhi'][1]
+        # xhi84 = hdul[1].data['xhi'][2]
+    else:
+        xhi50 = None
+
     chi = hdul[1].data['chi'][0]
     chin = hdul[1].data['chi'][1]
     fitc = chin
@@ -557,8 +564,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     for jj in range(len(age)):
         ii = int(len(nage) - jj - 1) # from old to young templates.
         if jj == 0:
-            y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, xhi=xhi50)
+            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib, xhi=xhi50)
 
             ysum = y0
             ysump = y0p
@@ -576,21 +583,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
             if MB.fneb: 
                 # Only at one age pixel;
-                y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50)
-                y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50)
+                y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50, xhi=xhi50)
+                y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50, xhi=xhi50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
             if MB.fagn: 
                 # Only at one age pixel;
-                y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn_all, AGNTAU=AGNTAU50)
-                y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn, AGNTAU=AGNTAU50)
+                y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn_all, AGNTAU=AGNTAU50, xhi=xhi50)
+                y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn, AGNTAU=AGNTAU50, xhi=xhi50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
         else:
-            y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all)
-            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
+            y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, xhi=xhi50)
+            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib, xhi=xhi50)
             ysum += y0_r
             ysump[:nopt] += y0p
 
@@ -796,6 +803,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
 
+        if MB.fxhi:
+            xhi = samples['xhi'][nr]
+        else:
+            xhi = MB.x_HI_input
+
         if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
         else:
@@ -825,11 +837,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
             if ss == MB.aamin[0]:
 
-                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm)
+                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
 
-                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False)
+                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
 
                 # Each;
                 ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -842,16 +854,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     else:
                         logU_tmp = samples['logU'][nr]
 
-                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm)
+                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
                     # ax1.plot(xm_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp_nl += mod0_tmp_nl
 
                     # Make attenuation free template;
-                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False)
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
                 if MB.fagn:
@@ -860,22 +872,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         AGNTAU_tmp = MB.AGNTAUFIX
                     else:
                         AGNTAU_tmp = samples['AGNTAU'][nr]
-                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm)
+                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp_nl += mod0_tmp_nl
 
                     # Make attenuation free template;
-                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False)
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
             else:
-                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm)
+                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
-                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False)
+                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                 fm_tmp_noatn += mod0_tmp_noatn
 
                 # Each;

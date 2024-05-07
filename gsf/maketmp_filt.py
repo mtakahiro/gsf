@@ -37,8 +37,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tmp_norm : float
         Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
     '''
-    # Why???
-    # f_IGM = False
+    # Why??? -> IGM is now applied during the fit;
+    f_IGM = False
 
     inputs = MB.inputs
     age = MB.age
@@ -358,13 +358,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         except:
             pass
 
-    if 'x_HI' in inputs:
-        x_HI_input = float(inputs['x_HI'])
-        print('Neutral fraction, x_HI = %.2f, is provided;'%(x_HI_input))
-    else:
-        x_HI_input = None
-    MB.x_HI_input = x_HI_input
-
     if MB.SFH_FORM == -99:
         ####################################
         # Start generating templates
@@ -427,8 +420,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         ###################
                         # IGM attenuation.
                         ###################
-                        if f_IGM:
-                            spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
+                        if False:
+                            # @@@ This is now done during fitting routine.
+                            spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
                             MB.x_HI = x_HI
                             spec_mul[ss,:] = spec_av_tmp
 

@@ -33,6 +33,7 @@ from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
+from .function_igm import get_XI
 
 from .Logger.GsfBase import GsfBase
 try:
@@ -125,13 +126,14 @@ class Mainbody(GsfBase):
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST',
                            'BPASS', 'DIR_BPASS',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
-                           'x_HI'
+                           'XHIFIX'
                            ],
 
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
                          'NTEMP', 'DISP', 'SIG_TEMP', 'VDISP', 
-                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR'],
+                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR',
+                         'F_XHI'],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
@@ -778,6 +780,19 @@ class Mainbody(GsfBase):
         self.ndim += self.fzmc
         if self.verbose:
             self.logger.info('No. of params are : %d'%(self.ndim))
+
+        # XHI as a param;
+        if 'XHIFIX' in inputs:
+            self.x_HI_input = float(inputs['XHIFIX'])
+            self.fxhi = False
+        else:
+            self.x_HI_input = None
+            if 'F_XHI' in inputs:
+                self.fxhi = str2bool(inputs['F_XHI'])
+                if self.fxhi:
+                    self.ndim += 1
+            else:
+                self.fxhi = False
 
         # Line
         try:
@@ -1553,6 +1568,12 @@ class Mainbody(GsfBase):
             else:
                 fit_params.add('AGNTAU', value=np.median(self.AGNTAUs), min=self.AGNTAUMIN, max=self.AGNTAUMAX)
                 self.ndim += 1
+            f_add = True
+
+        # xhi
+        if self.fxhi:
+            xhi0 = get_XI(self.zgal)
+            fit_params.add('xhi', value=xhi0, min=0, max=1)
             f_add = True
 
         self.fit_params = fit_params
