@@ -692,9 +692,9 @@ class Mainbody(GsfBase):
                     self.ZFIX = None
 
         # N of param:
-        try:
+        if 'AVEVOL' in inputs:
             self.AVEVOL = str2bool(inputs['AVEVOL'])
-        except:
+        else:
             self.AVEVOL = False
 
         try:
@@ -723,12 +723,10 @@ class Mainbody(GsfBase):
                 self.Avmin = 0
                 self.Avmax = 4.0
 
-        try:
+        if 'AVPRIOR_SIGMA' in inputs:
             Av_prior = float(inputs['AVPRIOR_SIGMA'])
             self.key_params_prior.append('AV0')
             self.key_params_prior_sigma.append(Av_prior)
-        except:
-            pass
 
         # Z evolution;
         if self.verbose:

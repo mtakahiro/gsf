@@ -148,7 +148,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
     f_apply_igm=True, show_noattn=False, percs=[16,50,84],
-    x1min=4000, return_figure=False, lcb='#4682b4'):
+    x1min=4000, return_figure=False, lcb='#4682b4',
+    lam_b=1350, lam_r=3000
+    ):
     '''
     Parameters
     ----------
@@ -463,6 +465,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, yerr=leng,\
             uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, linestyle='', color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
 
+    # Get beta from obs;
+    # Detection and rest-frame;
+    con_bet = (fybb/eybb>SNlim) & (xbb/(1+zp50)>lam_b) & (xbb/(1+zp50)<lam_r)
+    nbeta_obs = len(con_bet)
+    if nbeta_obs>1:
+        beta_obs = get_uvbeta(xbb[con_bet], fybb[con_bet] * c / np.square(xbb[con_bet]) / d_scale, zp50, elam=eybb[con_bet]*c/np.square(xbb[con_bet])/d_scale,
+                                lam_blue=lam_b, lam_red=lam_r)
+    else:
+        beta_obs = np.nan
 
     # For any data removed fron fit (i.e. IRAC excess):
     f_exclude = False
@@ -942,7 +953,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
         fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
         Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
-        betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc)
+        betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc, lam_blue=lam_b, lam_red=lam_r)
 
         # Get RF Color;
         _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
@@ -1299,6 +1310,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             
             hdr['SFRUV%d'%percs[ii]] = SFRUV[ii]
             hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
+
+        # UV beta obs;
+        hdr['UVBETA_obs'] = beta_obs
+        hdr['NUVBETA_obs'] = nbeta_obs
 
         # UVJ
         try:
@@ -2647,7 +2662,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             pass
 
         # UV beta;
-        from .function import get_uvbeta
         beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
         beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
         beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)

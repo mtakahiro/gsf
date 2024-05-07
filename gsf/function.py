@@ -93,7 +93,9 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, return_results=False):
+def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, 
+               elam=[],
+               return_results=False):
     '''
     Purpose
     -------
@@ -107,9 +109,11 @@ def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, return_results=False
         in flambda 
     '''
     con_uv = (lm/(1.+zbes)>lam_blue) & (lm/(1.+zbes)<lam_red)
-    #flam = fnutolam(lm,fl)
     try:
-        fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1) #, w=flam[con_uv])
+        if len(elam) == len(flam):
+            fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1, w=1/np.square(elam[con_uv]))
+        else:
+            fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1) #, w=flam[con_uv])
         beta = fit_results[0]
         if np.isnan(beta):
             beta = -99
