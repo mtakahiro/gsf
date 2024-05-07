@@ -39,7 +39,15 @@ class Post():
         else:
             vals = pars.valuesdict()
 
-        model, x1 = self.mb.fnc.get_template(vals)
+        if self.mb.fxhi:
+            if 'xhi' in vals:
+                xhi = float(vals['xhi'])
+            else:
+                xhi = None
+        else:
+            xhi = self.mb.x_HI_input
+
+        model, x1 = self.mb.fnc.get_template(vals, xhi=xhi)
 
         if self.mb.f_dust:
             model_dust, x1_dust = self.mb.fnc.tmp04_dust(vals)
@@ -53,12 +61,12 @@ class Post():
 
         if self.mb.fneb:
             n_optir = self.mb.n_optir
-            model_neb, _ = self.mb.fnc.get_template(vals, f_neb=True)
+            model_neb, _ = self.mb.fnc.get_template(vals, f_neb=True, xhi=xhi)
             model[:n_optir] += model_neb
 
         if self.mb.fagn:
             n_optir = self.mb.n_optir
-            model_agn, _ = self.mb.fnc.get_template(vals, f_agn=True)
+            model_agn, _ = self.mb.fnc.get_template(vals, f_agn=True, xhi=xhi)
             model[:n_optir] += model_agn
 
         if self.mb.ferr:
