@@ -1558,7 +1558,7 @@ class Mainbody(GsfBase):
 
         # AGN; ver1.9
         if self.fagn:
-            self.AAGNmin = -3
+            self.AAGNmin = -5
             self.AAGNmax = 10
             fit_params.add('Aagn', value=self.Aini, min=self.AAGNmin, max=self.AAGNmax)
             # fit_params.add('Aagn', value=self.Aini, min=0, max=5)
