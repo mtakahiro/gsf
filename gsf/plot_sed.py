@@ -477,10 +477,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     con_bet = (fybb/eybb>SNlim) & (xbb/(1+zp50)>lam_b) & (xbb/(1+zp50)<lam_r)
     nbeta_obs = len(con_bet)
     if nbeta_obs>1:
-        beta_obs = get_uvbeta(xbb[con_bet], fybb[con_bet] * c / np.square(xbb[con_bet]) / d_scale, zp50, elam=eybb[con_bet]*c/np.square(xbb[con_bet])/d_scale,
-                                lam_blue=lam_b, lam_red=lam_r)
+        nmc_uv = 3000
+        betas_obs = np.zeros(nmc_uv,float)
+        y = fybb[con_bet]*c/np.square(xbb[con_bet])/d_scale
+        yerr = eybb[con_bet]*c/np.square(xbb[con_bet])/d_scale
+        noise = np.zeros((nmc_uv,len(xbb[con_bet])),float)
+        for nn in range(len(xbb[con_bet])):
+            noise[:,nn] = np.random.normal(0,yerr[nn],nmc_uv)
+
+        for nn in range(nmc_uv):
+            betas_obs[nn] = get_uvbeta(xbb[con_bet], y+noise[nn,:], zp50, #elam=yerr,
+                                    lam_blue=lam_b, lam_red=lam_r)
+        beta_obs_percs = np.nanpercentile(betas_obs,percs)
     else:
-        beta_obs = np.nan
+        beta_obs_percs = [np.nan,np.nan,np.nan]
 
     # For any data removed fron fit (i.e. IRAC excess):
     f_exclude = False
@@ -1323,9 +1333,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             hdr['SFRUV%d'%percs[ii]] = SFRUV[ii]
             hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
 
-        # UV beta obs;
-        hdr['UVBETA_obs'] = beta_obs
-        hdr['NUVBETA_obs'] = nbeta_obs
+            # UV beta obs;
+            if ii == 0:
+                hdr['NUVBETA_obs'] = nbeta_obs
+            hdr['UVBETA_obs%d'%percs[ii]] = beta_obs_percs[ii]
 
         # UVJ
         try:
