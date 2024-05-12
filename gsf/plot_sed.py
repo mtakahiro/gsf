@@ -808,6 +808,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     # UV beta;
     betas = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    AVs = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
 
     # From random chain;
     for kk in range(0,mmax,1):
@@ -825,6 +826,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 Av_tmp = samples['AV0'][nr]
             except:
                 Av_tmp = samples['AV'][nr]
+        AVs[kk] = Av_tmp
 
         try:
             zmc = samples['zmc'][nr]
@@ -1300,13 +1302,29 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
 
+        #
         # SFR from attenuation corrected LUV;
+        #
+        # beta correction;
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
         A1600[np.where(A1600<0)] = 0
-        SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
+        SFRUV_BETA = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
         SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray(Luvs) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
+
+        # Av-based correction;
+        AVs_med = np.nanpercentile(AVs, [16,50,84])
+        lam = np.asarray([hdr['SFRUV_ANGS']])
+        fl = np.zeros(len(lam),float) + 1
+        nr = np.arange(0,len(lam),1)
+        SFRUV = np.zeros(len(Luvs), float)
+        for ii in range(len(AVs_med)):
+            from .function import apply_dust
+            yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=MB.dust_model)
+            fl_cor = 1/yyd
+            SFRUV[ii] = 1.4 * 1e-28 * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
 
         for ii in range(len(percs)):
 
@@ -1330,7 +1348,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             else:
                 hdr['UVBETA%d'%percs[ii]] = 99
             
-            hdr['SFRUV%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
+            hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
             hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
 
             # UV beta obs;
@@ -1396,6 +1415,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
                 else:
                     tree_spec['header'].update({'%s'%key: hdr[key]})
+
         # BB;
         Cnu_to_Jy = 10**((23.9-m0set)) # fnu_mzpset to microJy. So the final output SED library has uJy.
         # tree_spec['model'].update({'wave_bb': lbb * u.AA})
