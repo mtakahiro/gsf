@@ -13,6 +13,11 @@ from astropy import units as u
 from astropy.cosmology import WMAP9
 from dust_extinction.averages import G03_SMCBar
 
+from astropy import units as u
+from astropy.modeling.polynomial import Chebyshev1D
+from specutils.fitting import continuum 
+from specutils.spectra.spectrum1d import Spectrum1D
+
 ################
 # Line library
 ################
@@ -21,6 +26,58 @@ LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
+
+def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r, 
+            percs=[16,50,84], norder_cont=1, ):
+    '''
+    wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r : float
+        Rest-frame wavelengths that define the range of continuum flux.
+    '''
+    wave_obs = fd_gsf['OBS']['wave_bb'].value
+    flux_obs = fd_gsf['OBS']['fnu_bb'].value
+    fluxerr_obs = fd_gsf['OBS']['enu_bb'].value
+    filters = np.asarray(fd_gsf['FILTERS'])
+
+    con_obs = (wave_obs>wl_cont_b_r *(1+z)) & (wave_obs<wl_cont_r_b *(1+z))
+    if len(wave_obs[con_obs]) == 0:
+        print('No obs data found within the range')
+        return np.zeros(1,float), np.zeros((1,3),float)
+    
+    ews = np.zeros((len(wave_obs[con_obs]),3), float)
+
+    for ii in range(len(percs)):
+        flux_model = fd_gsf['MODEL']['fnu_%d'%percs[ii]].value
+        wave_model = fd_gsf['MODEL']['wave'].value
+        mask = ((wave_model>wl_cont_b_b*(1+z)) & ((wave_model<wl_cont_b_r*(1+z)))) | ((wave_model>wl_cont_r_b*(1+z)) & ((wave_model<wl_cont_r_r*(1+z))))
+        # flux_cont = np.nanmedian(flux_model)
+
+        spec_unit = u.MJy
+        obs_200 = Spectrum1D(spectral_axis=wave_model[mask]*u.AA, flux=flux_model[mask]*spec_unit)
+        continuum_200 = continuum.fit_generic_continuum(obs_200, model=Chebyshev1D(norder_cont))
+
+        obs_200 = Spectrum1D(spectral_axis=wave_model*u.AA, flux=flux_model*spec_unit)
+        flux_model_cont = continuum_200(obs_200.spectral_axis).value
+
+        fint = interpolate.interp1d(wave_model, flux_model_cont, kind='nearest', fill_value="extrapolate")
+        flux_model_cont_resamp = fint(wave_obs[con_obs]) # This us flam
+
+        if False:#True:#
+            plt.close()
+            plt.scatter(wave_model[mask], flux_model[mask], marker='x')
+            plt.scatter(wave_obs[con_obs], flux_obs[con_obs], marker='d')
+            plt.scatter(wave_obs[con_obs], flux_model_cont_resamp, marker='s')
+            plt.plot(wave_model, flux_model)
+            plt.plot(wave_model, flux_model_cont)
+            plt.show()
+
+        for jj in range(len(wave_obs[con_obs])):
+            ifilt = filters[con_obs][jj]
+            fwhm_filt = fd_gsf['FILTER_RESPONSE'][ifilt]['fwhm']
+
+            ews[jj,ii] = flux_obs[con_obs][jj] * fwhm_filt / flux_model_cont_resamp[jj]
+            # print(ews[jj,ii], flux_obs[con_obs][jj], flux_model_cont_resamp[jj])
+
+    return wave_obs[con_obs], ews/(1+z)
 
 def get_imf_str(nimf):
     '''
