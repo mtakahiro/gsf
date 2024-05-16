@@ -74,7 +74,13 @@ def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r,
             ifilt = filters[con_obs][jj]
             fwhm_filt = fd_gsf['FILTER_RESPONSE'][ifilt]['fwhm']
 
-            ews[jj,ii] = flux_obs[con_obs][jj] * fwhm_filt / flux_model_cont_resamp[jj]
+            if flux_obs[con_obs][jj]>0:
+                ews[jj,ii] = flux_obs[con_obs][jj] * fwhm_filt / flux_model_cont_resamp[jj]
+            elif flux_obs[con_obs][jj]==0 and fluxerr_obs[con_obs][jj]>0:
+                # e.g., when bb is specified as SKIPFILT;
+                ews[jj,ii] = fluxerr_obs[con_obs][jj] * fwhm_filt / flux_model_cont_resamp[jj]
+            else:
+                ews[jj,ii] = -99
             # print(ews[jj,ii], flux_obs[con_obs][jj], flux_model_cont_resamp[jj])
 
     return wave_obs[con_obs], ews/(1+z)
