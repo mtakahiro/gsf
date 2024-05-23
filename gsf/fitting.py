@@ -2328,7 +2328,7 @@ class Mainbody(GsfBase):
 
 
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, 
-        f_get_templates=False, Zini=None, include_photometry=True):
+        f_get_templates=False, Zini=None, include_photometry=True, f_only_spec=False):
         '''Fits input data with a prepared template library, to get a chi-min result. 
         This function is being used in an example notebook.
 
@@ -2358,7 +2358,7 @@ class Mainbody(GsfBase):
         # Temporarily disable zmc;
         self.fzmc = 0
         out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
-            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID, f_only_spec=f_only_spec)
 
         if f_get_templates:
             Av_tmp = out.params['AV0'].value

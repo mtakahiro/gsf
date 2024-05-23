@@ -1355,7 +1355,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             # UV beta obs;
             if ii == 0:
                 hdr['NUVBETA_obs'] = nbeta_obs
-            hdr['UVBETA_obs%d'%percs[ii]] = beta_obs_percs[ii]
+            if not np.isnan(beta_obs_percs[ii]):
+                hdr['UVBETA_obs%d'%percs[ii]] = beta_obs_percs[ii]
+            else:
+                hdr['UVBETA_obs%d'%percs[ii]] = -99
 
         # UVJ
         try:
