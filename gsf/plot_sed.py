@@ -1534,6 +1534,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     # a single ASDF;
     tree_shf = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)))
+    gsf_dict['sfh'] = {}
     gsf_dict = modify_keys(tree_shf, 'sfh', gsf_dict=gsf_dict)
 
     tree_sed = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)))
