@@ -1549,7 +1549,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     gsf_dict = modify_keys_sed(tree_sed, label, gsf_dict=gsf_dict, key_skip=key_skip)
 
     keys_param_sed = ['MUV', 'SFRUV', 'SFRUV_BETA', 'SFRUV_UNCOR', 'UVBETA', 'UVBETA_OBS', 'UV', 'VJ']
-    keys_param_sfh = ['ZMC', 'MSTEL', 'SFR', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW']
+    keys_param_sfh = ['ZMC', 'MSTEL', 'SFR', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW', 'AV0']
     for key in keys_param_sed:
         for perc in percs:
             gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sed']['%s_%d'%(key, perc)]
