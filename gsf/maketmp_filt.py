@@ -1033,7 +1033,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
             exbb = dat['col5']
             dict_bb_obs = {'NR':NRbb, 'x':xbb, 'fy':fybb, 'ey':eybb, 'ex':exbb}
             MB.data['bb_obs'] = dict_bb_obs
-            if len(SKIPFILT)>0:#try:
+
+            try:
                 dat = ascii.read(file_tmp2, format='no_header')
                 NR_ex = dat['col1']
                 x_ex = dat['col2']
@@ -1042,6 +1043,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                 ex_ex = dat['col5']
                 dict_bb_obs_removed = {'NR':NR_ex, 'x':x_ex, 'fy':fy_ex, 'ey':ey_ex, 'ex':ex_ex}
                 MB.data['bb_obs_removed'] = dict_bb_obs_removed
+            except:
+                print('%s cannot open.'%file_tmp2)
+                pass
 
         # Dust; Not sure where this is being used...
         fw = open(file_tmp,'w')
