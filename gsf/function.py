@@ -18,6 +18,7 @@ from astropy.modeling.polynomial import Chebyshev1D
 from specutils.fitting import continuum 
 from specutils.spectra.spectrum1d import Spectrum1D
 
+
 ################
 # Line library
 ################
@@ -28,8 +29,10 @@ c = 3.e18 # A/s
 
 
 def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r, 
-            percs=[16,50,84], norder_cont=1, ):
+            percs=[16,50,84], norder_cont=1, snlim=1):
     '''
+    Parameters
+    ----------
     wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r : float
         Rest-frame wavelengths that define the range of continuum flux.
     '''
@@ -41,10 +44,10 @@ def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r,
     con_obs = (wave_obs>wl_cont_b_r *(1+z)) & (wave_obs<wl_cont_r_b *(1+z))
     if len(wave_obs[con_obs]) == 0:
         print('No obs data found within the range')
-        return np.zeros(1,float), np.zeros((1,3),float)
+        return np.zeros(1,float), np.zeros((1,3),float), '0', np.zeros(1,float), '0'
+    cont_obs = (fluxerr_obs > 0) & (flux_obs/fluxerr_obs > snlim) & (((wave_obs>wl_cont_b_b *(1+z)) & (wave_obs<wl_cont_b_r *(1+z))) | ((wave_obs>wl_cont_r_b *(1+z)) & (wave_obs<wl_cont_r_r *(1+z))))
     
     ews = np.zeros((len(wave_obs[con_obs]),3), float)
-
     for ii in range(len(percs)):
         flux_model = fd_gsf['MODEL']['fnu_%d'%percs[ii]].value
         wave_model = fd_gsf['MODEL']['wave'].value
@@ -81,9 +84,12 @@ def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r,
                 ews[jj,ii] = fluxerr_obs[con_obs][jj] * fwhm_filt / flux_model_cont_resamp[jj]
             else:
                 ews[jj,ii] = -99
-            # print(ews[jj,ii], flux_obs[con_obs][jj], flux_model_cont_resamp[jj])
 
-    return wave_obs[con_obs], ews/(1+z)
+    if len(wave_obs[cont_obs])==0:
+        return wave_obs[con_obs], ews/(1+z), filters[con_obs], [0], [0]
+    else:
+        return wave_obs[con_obs], ews/(1+z), filters[con_obs], wave_obs[cont_obs], filters[cont_obs]
+
 
 def get_imf_str(nimf):
     '''
