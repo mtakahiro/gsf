@@ -41,7 +41,7 @@ def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r,
     fluxerr_obs = fd_gsf['OBS']['enu_bb'].value
     filters = np.asarray(fd_gsf['FILTERS'])
 
-    con_obs = (wave_obs>wl_cont_b_r *(1+z)) & (wave_obs<wl_cont_r_b *(1+z))
+    con_obs = (fluxerr_obs > 0) & (wave_obs>wl_cont_b_r *(1+z)) & (wave_obs<wl_cont_r_b *(1+z))
     if len(wave_obs[con_obs]) == 0:
         print('No obs data found within the range')
         return np.zeros(1,float), np.zeros((1,3),float), '0', np.zeros(1,float), '0'
