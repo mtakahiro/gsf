@@ -92,7 +92,7 @@ class Mainbody(GsfBase):
         if configurationfile == None:
             configurationfile = f"{GSF}/config/config.yaml"
         super().__init__(configurationfile)
-        self.outdir = pathlib.Path('./output_log/')
+        self.outdir = pathlib.Path('/tmp/logs/')
         self.outdir.mkdir(parents=True, exist_ok=True)
         self.logger = self.logger.getLogger(__name__, "gsf")
         self.logger.info("init class")
