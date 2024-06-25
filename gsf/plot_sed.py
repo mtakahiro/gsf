@@ -610,7 +610,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib, xhi=xhi50)
             ysum += y0_r
             ysump[:nopt] += y0p
-
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d_scale
 
         # The following needs revised.

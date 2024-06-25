@@ -17,7 +17,8 @@ from .function_igm import *
 
 
 def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
-    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True):
+    tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True,
+    agn_powerlaw=True):
     '''
     Make SPECTRA at given z and filter set.
     Also, after v1.8, through this function library and data are register to the main class object, MB.
@@ -506,7 +507,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 
                                 if f_IGM:
                                     # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
-                                    spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
+                                    spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
                                     # spec_neb_av_tmp = masongronke_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
                                     spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
@@ -536,6 +537,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                         if MB.fagn == 1 and MB.f_bpass==0 and ss==0 and pp==0:
                             tmp_norm_agn = tmp_norm * 1e3 # so 1 AAGN = [this] Lsun in bolometric luminosity
+
                             if zz==0:
                                 spec_mul_agn = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
                                 spec_mul_agn_nu = np.zeros((len(Z), len(MB.AGNTAUs), len(lm0)), dtype=float)
@@ -546,48 +548,92 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 ms_agn = np.zeros((len(Z), len(MB.AGNTAUs)), dtype=float)
 
                             # plt.close()
-                            for uu in range(len(MB.AGNTAUs)):
-                                if delwave>0:
-                                    fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
-                                    spec_mul_agn[zz,uu,:] = fint(lm0)
-                                else:
-                                    spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin]
-                                
-                                con_agn = (spec_mul_agn[zz,uu,:]<0)
-                                spec_mul_agn[zz,uu,:][con_agn] = 0
-                                
-                                if f_IGM:
-                                    spec_agn_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_agn[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
-                                    spec_mul_agn[zz,uu,:] = spec_agn_av_tmp
+                            MB.agn_powerlaw = agn_powerlaw
+                            if not agn_powerlaw:#False:
+                                # Realistic AGN comp from FSPS;
+                                for uu in range(len(MB.AGNTAUs)):
+                                    if delwave>0:
+                                        fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                                        spec_mul_agn[zz,uu,:] = fint(lm0)
+                                    else:
+                                        spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin]
+                                    
+                                    con_agn = (spec_mul_agn[zz,uu,:]<0)
+                                    spec_mul_agn[zz,uu,:][con_agn] = 0
+                                    
+                                    if f_IGM:
+                                        spec_agn_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_agn[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
+                                        spec_mul_agn[zz,uu,:] = spec_agn_av_tmp
 
-                                spec_mul_agn_nu[zz,uu,:] = flamtonu(wave, spec_mul_agn[zz,uu,:], m0set=MB.m0set)
-                                
-                                spec_mul_agn_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
-                                
-                                spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm_agn # in unit of erg/s/Hz/cm2/ms[ss].
-                                ltmpbb_agn[zz,uu,:], ftmpbb_agn[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_agn_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
-                                ms_agn[zz,uu] *= (1./Ls[ss])*tmp_norm_agn 
+                                    spec_mul_agn_nu[zz,uu,:] = flamtonu(wave, spec_mul_agn[zz,uu,:], m0set=MB.m0set)
+                                    
+                                    spec_mul_agn_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                                    
+                                    spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm_agn # in unit of erg/s/Hz/cm2/ms[ss].
+                                    ltmpbb_agn[zz,uu,:], ftmpbb_agn[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_agn_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+                                    ms_agn[zz,uu] *= (1./Ls[ss])*tmp_norm_agn 
 
-                                if MB.f_spec:
-                                    ftmp_agn_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_agn_nu[zz,uu,:])
+                                    if MB.f_spec:
+                                        ftmp_agn_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_agn_nu[zz,uu,:])
 
-                                if MB.f_spec:
-                                    spec_mul_agn_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_agn_nu[zz,uu,:], LSF, boundary='extend', 
-                                                                                f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
-                                else:
-                                    spec_mul_agn_nu_conv[zz,uu,:] = spec_mul_agn_nu[zz,uu,:]
+                                    if MB.f_spec:
+                                        spec_mul_agn_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_agn_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                                    f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
+                                    else:
+                                        spec_mul_agn_nu_conv[zz,uu,:] = spec_mul_agn_nu[zz,uu,:]
 
-                                if zbest == MB.zgal:
-                                    tree_spec_full.update({'fspec_orig_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu[zz,uu,:]})
-                                    tree_spec_full.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu_conv[zz,uu,:]})
+                                    if zbest == MB.zgal:
+                                        tree_spec_full.update({'fspec_orig_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu[zz,uu,:]})
+                                        tree_spec_full.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu_conv[zz,uu,:]})
 
-                                spec_agn_ap = np.append(ftmp_agn_nu_int[zz,uu,:], ftmpbb_agn[zz,uu,:])
-                                tree_spec.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_agn_ap})
+                                    spec_agn_ap = np.append(ftmp_agn_nu_int[zz,uu,:], ftmpbb_agn[zz,uu,:])
+                                    tree_spec.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_agn_ap})
+                            else:
+                                # A stupid simple model;
+                                wave_cut_agn = 0
+                                for uu in range(len(MB.AGNTAUs)):
+                                    flux_agn_stp = lm0_orig ** (MB.AGNTAUs[uu]) / 1e4 #
+                                    if delwave>0:
+                                        fint = interpolate.interp1d(lm0_orig, flux_agn_stp, kind='nearest', fill_value="extrapolate")
+                                        spec_mul_agn[zz,uu,:] = fint(lm0)
+                                    else:
+                                        spec_mul_agn[zz,uu,:] = flux_agn_stp[::nthin]
+                                    
+                                    con_agn = (spec_mul_agn[zz,uu,:]<0) | (lm0<wave_cut_agn)
+                                    spec_mul_agn[zz,uu,:][con_agn] = 0
+                                    
+                                    if f_IGM:
+                                        spec_agn_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_agn[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
+                                        spec_mul_agn[zz,uu,:] = spec_agn_av_tmp
 
-                                # plt.plot(wavetmp, spec_mul_agn_nu[zz,uu,:])
+                                    spec_mul_agn_nu[zz,uu,:] = flamtonu(wave, spec_mul_agn[zz,uu,:], m0set=MB.m0set)
+                                    
+                                    spec_mul_agn_nu[zz,uu,:] *= MB.Lsun/(4.*np.pi*DL**2/(1.+zbest))
+                                    
+                                    spec_mul_agn_nu[zz,uu,:] *= (1./Ls[ss])*tmp_norm_agn # in unit of erg/s/Hz/cm2/ms[ss].
+                                    ltmpbb_agn[zz,uu,:], ftmpbb_agn[zz,uu,:] = filconv(SFILT, wavetmp, spec_mul_agn_nu[zz,uu,:], DIR_FILT, MB=MB, f_regist=False)
+                                    ms_agn[zz,uu] *= (1./Ls[ss])*tmp_norm_agn 
+
+                                    if MB.f_spec:
+                                        ftmp_agn_nu_int[zz,uu,:] = data_int(lm, wavetmp, spec_mul_agn_nu[zz,uu,:])
+
+                                    if MB.f_spec:
+                                        spec_mul_agn_nu_conv[zz,uu,:] = convolve_templates(wavetmp, spec_mul_agn_nu[zz,uu,:], LSF, boundary='extend', 
+                                                                                    f_prism=MB.f_prism, file_res=MB.file_res, redshift=zbest, f_diff_conv=MB.f_diff_conv)
+                                    else:
+                                        spec_mul_agn_nu_conv[zz,uu,:] = spec_mul_agn_nu[zz,uu,:]
+
+                                    if zbest == MB.zgal:
+                                        tree_spec_full.update({'fspec_orig_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu[zz,uu,:]})
+                                        tree_spec_full.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_mul_agn_nu_conv[zz,uu,:]})
+
+                                    spec_agn_ap = np.append(ftmp_agn_nu_int[zz,uu,:], ftmpbb_agn[zz,uu,:])
+                                    tree_spec.update({'fspec_agn_Z%d_AGNTAU%d'%(zz,uu): spec_agn_ap})
+
+                            #         plt.plot(wavetmp, np.log10(spec_mul_agn_nu[zz,uu,:]))
                                 
                             # plt.xlim(100,50000)
-                            # plt.ylim(0,3)
+                            # plt.ylim(0,6)
                             # plt.show()
                             # hoge
 
