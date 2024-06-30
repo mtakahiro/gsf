@@ -149,10 +149,15 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     for ff, spec_file in enumerate(spec_files):
         try:
             if spec_file.split('.')[-1] == 'asdf':
-                id_asdf = int(spec_file.split('_')[2])
-                fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
-                lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom)
+                try:
+                    id_asdf = int(spec_file.split('_')[2])
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
+                    lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom)
+                except:
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))[MB.ID]
+                    lm0tmp = fd0['wavelength'].to(u.angstrom)
                 ninp0[ff] = len(lm0tmp)
+
             elif spec_file.split('.')[-1] == 'fits':
                 fd0 = fits.open(os.path.join(DIR_EXTR, spec_file))[1].data
                 eobs0 = fd0['full_err']
@@ -175,11 +180,17 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     for ff, spec_file in enumerate(spec_files):
         try:
             if spec_file.split('.')[-1] == 'asdf':
-                id_asdf = int(spec_file.split('_')[2])
-                fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
-                lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom).value
-                fobs0 = fd0[id_asdf]['flux'].value
-                eobs0 = np.sqrt(fd0[id_asdf]['fluxvar']).value
+                try:
+                    id_asdf = int(spec_file.split('_')[2])
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))
+                    lm0tmp = fd0[id_asdf]['wavelength'].to(u.angstrom).value
+                    fobs0 = fd0[id_asdf]['flux'].value
+                    eobs0 = np.sqrt(fd0[id_asdf]['fluxvar']).value
+                except:
+                    fd0 = asdf.open(os.path.join(DIR_EXTR, spec_file))[MB.ID]
+                    lm0tmp = fd0['wavelength'].to(u.angstrom).value
+                    fobs0 = fd0['flux']
+                    eobs0 = np.sqrt(fd0['fluxvar'])
             elif spec_file.split('.')[-1] == 'fits':
                 fd0 = fits.open(os.path.join(DIR_EXTR, spec_file))[1].data
                 eobs0 = fd0['full_err']
