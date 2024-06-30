@@ -883,6 +883,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     #########################
     tree['id'] = MB.ID
     tree['z'] = zbest
+    tree['fnu'] = True
     try:
         tree['x_HI'] = x_HI
     except:
@@ -1560,6 +1561,7 @@ def maketemp_tau(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, tau_
     #########################
     tree['id'] = ID
     tree['z'] = zbest
+    tree['fnu'] = True
     try:
         tree['x_HI'] = x_HI
     except:

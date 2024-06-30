@@ -254,9 +254,9 @@ class Mainbody(GsfBase):
             self.cosmo = cosmo
 
         if idman != None:
-            self.ID = idman
+            self.ID = '%s'%idman
         else:
-            self.ID = inputs['ID']
+            self.ID = '%s'%inputs['ID']
         self.logger.info('Fitting target: %s'%self.ID)
 
         # Read catalog;

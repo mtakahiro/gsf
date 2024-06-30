@@ -1617,6 +1617,188 @@ def fil_fwhm(band0, DIR):
     return fwhm
 
 
+def get_ratio_error(flux_n, fluxerr_n, flux_d, fluxerr_d):
+    '''
+    Get error for flux_n/flux_d
+    '''
+    A = flux_n/flux_d
+    err_tmp = A * np.sqrt( (fluxerr_n/flux_n)**2 + (fluxerr_d/flux_d)**2 )
+    return err_tmp
+    
+
+def calc_uvj(x0, y0,
+             y0_err=[],
+            #  lam_b_low=3050, lam_b_hig=3650,
+            #  lam_r_low=3950, lam_r_hig=4550,
+             is_fnu=False, plot=False, scale_rms=True,
+             snlim=0.0, nlim=3,
+             fil_path=None, band0 = ['u','v','j']
+             ):
+    '''
+    Parameters
+    ----------
+    x0, y0 : float arrays
+        rest wavelength and flux(flam)
+    z0 : float
+        redshift
+    is_fnu : bool
+        if input flux is in fnu, make this True.
+    '''
+    if not is_fnu:
+        # y0 = fnutolam(x0, y0, m0set=25.0)
+        y0 = flamtonu(x0, y0, m0set=25.0)
+        if len(y0_err) == len(y0):
+            y0_err = flamtonu(x0, y0_err, m0set=25.0)
+
+    con1 = ()#(x0>lam_b_low) & (x0<lam_b_hig)
+    con2 = ()#(x0>lam_r_low) & (x0<lam_r_hig) & ((x0<4102-100) | (x0>4102+100)) & ((x0<4360-100) | (x0>4360+100))
+    # if len(y0_err) == len(y0):
+    #     con1 = (x0>lam_b_low) & (x0<lam_b_hig) & (y0/y0_err>snlim)
+    #     con2 = (x0>lam_r_low) & (x0<lam_r_hig) & (y0/y0_err>snlim)
+
+    # if len(y0[con1])<nlim or len(y0[con2])<nlim:
+    #     return -99,-99
+
+    # Check scale;
+    # if len(y0_err) == len(y0) and scale_rms:
+    #     fmed1 = np.nanmean(y0[con1])
+    #     fcontsub1 = y0[con1] - fmed1
+    #     fmed2 = np.nanmean(y0[con2])
+    #     fcontsub2 = y0[con2] - fmed2
+    #     rms = np.nanstd(np.concatenate([fcontsub1,fcontsub2]))
+    #     rms_orig = np.nanmean(np.concatenate([y0_err[con1],y0_err[con2]]))
+    #     scl_rms = rms/rms_orig
+    #     if scl_rms < 1:
+    #         scl_rms = 1
+    #     y0_err *= scl_rms
+
+    if len(y0_err) == len(y0):
+        # wht = np.zeros(len(y0), float) + 1
+        wht = 1./np.square(y0_err)
+    else:
+        wht = np.zeros(len(y0), float) + 1
+
+    
+    if fil_path == None:
+        fil_path = os.path.join(os.environ['GSF'],'config/filter/')
+
+    _,fconv = filconv(band0, x0, y0, fil_path) # f0 in fnu
+    fu_t = fconv[0]
+    fv_t = fconv[1]
+    fj_t = fconv[2]
+
+    # if plot:
+    #     import matplotlib.pyplot as plt
+    #     if len(y0_err) == len(y0):
+    #         plt.errorbar(x0, y0, yerr=y0_err, color='k', zorder=-1)
+    #     plt.plot(x0, y0, color='k')
+    #     plt.plot(x0[con1], y0[con1], color='b')
+    #     plt.plot(x0[con2], y0[con2], color='r')
+    #     plt.scatter(np.nanmean(x0[con1]), D41, c='b', marker='o')
+    #     plt.scatter(np.nanmean(x0[con2]), D42, c='r', marker='o')
+    #     D4 = D42/D41
+    #     D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
+    #     print(D4,D4_err)
+    #     plt.show()
+    #     hoge
+
+    if fu_t>0 and fv_t>0:
+        uv = -2.5*np.log10(fu_t/fv_t)
+        uv_err = get_ratio_error(fu_t, fu_t*0, fv_t, fv_t*0)
+    else:
+        uv = -99
+        uv_err = -99
+    if fj_t>0 and fv_t>0:
+        vj = -2.5*np.log10(fv_t/fj_t)
+        vj_err = get_ratio_error(fv_t, fv_t*0, fj_t, fj_t*0)
+    else:
+        vj = -99
+        vj_err = -99
+
+    return uv, uv_err, vj, vj_err
+
+
+def calc_balmer(x0, y0,
+             y0_err=[],
+             lam_b_low=3050, lam_b_hig=3650,
+             lam_r_low=3950, lam_r_hig=4550,
+             is_fnu=False, plot=False, scale_rms=True,
+             snlim=0.0, nlim=3,
+             ):
+    '''
+    Parameters
+    ----------
+    x0, y0 : float arrays
+        rest wavelength and flux(flam)
+    z0 : float
+        redshift
+    is_fnu : bool
+        if input flux is in fnu, make this True.
+    '''
+    if not is_fnu:
+        # y0 = fnutolam(x0, y0, m0set=25.0)
+        y0 = flamtonu(x0, y0, m0set=25.0)
+        if len(y0_err) == len(y0):
+            y0_err = flamtonu(x0, y0_err, m0set=25.0)
+
+    con1 = (x0>lam_b_low) & (x0<lam_b_hig)
+    con2 = (x0>lam_r_low) & (x0<lam_r_hig) & ((x0<4102-100) | (x0>4102+100)) & ((x0<4360-100) | (x0>4360+100))
+    if len(y0_err) == len(y0):
+        con1 = (x0>lam_b_low) & (x0<lam_b_hig) & (y0/y0_err>snlim)
+        con2 = (x0>lam_r_low) & (x0<lam_r_hig) & (y0/y0_err>snlim)
+
+    if len(y0[con1])<nlim or len(y0[con2])<nlim:
+        return -99,-99
+
+    # Check scale;
+    if len(y0_err) == len(y0) and scale_rms:
+        fmed1 = np.nanmean(y0[con1])
+        fcontsub1 = y0[con1] - fmed1
+        fmed2 = np.nanmean(y0[con2])
+        fcontsub2 = y0[con2] - fmed2
+        rms = np.nanstd(np.concatenate([fcontsub1,fcontsub2]))
+        rms_orig = np.nanmean(np.concatenate([y0_err[con1],y0_err[con2]]))
+        scl_rms = rms/rms_orig
+        if scl_rms < 1:
+            scl_rms = 1
+        y0_err *= scl_rms
+
+    if len(y0_err) == len(y0):
+        # wht = np.zeros(len(y0), float) + 1
+        wht = 1./np.square(y0_err)
+    else:
+        wht = np.zeros(len(y0), float) + 1
+
+    D41 = np.nansum(y0[con1] * wht[con1]) / np.nansum(wht[con1])
+    D42 = np.nansum(y0[con2] * wht[con2]) / np.nansum(wht[con2])
+    D41_err = np.sqrt(1.0 / np.nansum(wht[con1]))
+    D42_err = np.sqrt(1.0 / np.nansum(wht[con2]))
+    # print(D41,D41_err)
+
+    if plot:
+        import matplotlib.pyplot as plt
+        if len(y0_err) == len(y0):
+            plt.errorbar(x0, y0, yerr=y0_err, color='k', zorder=-1)
+        plt.plot(x0, y0, color='k')
+        plt.plot(x0[con1], y0[con1], color='b')
+        plt.plot(x0[con2], y0[con2], color='r')
+        plt.scatter(np.nanmean(x0[con1]), D41, c='b', marker='o')
+        plt.scatter(np.nanmean(x0[con2]), D42, c='r', marker='o')
+        D4 = D42/D41
+        D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
+        print(D4,D4_err)
+        plt.show()
+        hoge
+
+    if D41>0 and D42>0:
+        D4 = D42/D41
+        D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
+        return D4, D4_err
+    else:
+        # print('D41 and D42 are:',D42, D41)
+        return -99, -99
+
+
 def calc_Dn4(x0, y0, z0,
              lam_b_low=3750, lam_b_hig=3950,
              lam_r_low=4050, lam_r_hig=4250,

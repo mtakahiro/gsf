@@ -383,6 +383,11 @@ class Func:
             E(B-V)_neb / E(B-V)_st. 
             Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
 
+        Returns
+        -------
+        A00 * yyd_sort, xxd_sort : float arrays
+            Flux (fnu) and wavelength (AA; observed frame)
+
         Notes
         -----
         This function is only used in plot_sed.py.
