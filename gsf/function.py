@@ -1763,17 +1763,23 @@ def calc_balmer(x0, y0,
             scl_rms = 1
         y0_err *= scl_rms
 
-    if len(y0_err) == len(y0):
+    if False:#len(y0_err) == len(y0):
         # wht = np.zeros(len(y0), float) + 1
         wht = 1./np.square(y0_err)
     else:
-        wht = np.zeros(len(y0), float) + 1
+        wht = np.zeros(len(y0), float) + 1.0
 
-    D41 = np.nansum(y0[con1] * wht[con1]) / np.nansum(wht[con1])
-    D42 = np.nansum(y0[con2] * wht[con2]) / np.nansum(wht[con2])
-    D41_err = np.sqrt(1.0 / np.nansum(wht[con1]))
-    D42_err = np.sqrt(1.0 / np.nansum(wht[con2]))
-    # print(D41,D41_err)
+    if False:
+        D41 = np.nansum(y0[con1] * wht[con1]) / np.nansum(wht[con1])
+        D42 = np.nansum(y0[con2] * wht[con2]) / np.nansum(wht[con2])
+        D41_err = np.sqrt(1.0 / np.nansum(wht[con1]))
+        D42_err = np.sqrt(1.0 / np.nansum(wht[con2]))
+    else:
+        D41 = np.nanmean(y0[con1])
+        D42 = np.nanmean(y0[con2])
+        D41_err = np.std(y0[con1])
+        D42_err = np.std(y0[con2])
+    # print(D41,D41_err,D42,D42_err)
 
     if plot:
         import matplotlib.pyplot as plt
@@ -1787,6 +1793,8 @@ def calc_balmer(x0, y0,
         D4 = D42/D41
         D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
         print(D4,D4_err)
+        plt.errorbar(np.nanmean(x0[con1]), D41, yerr=D41_err, color='b', zorder=-2)
+        plt.errorbar(np.nanmean(x0[con2]), D42, yerr=D42_err, color='r', zorder=-2)
         plt.show()
         hoge
 
