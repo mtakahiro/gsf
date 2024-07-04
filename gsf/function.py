@@ -1625,6 +1625,16 @@ def get_ratio_error(flux_n, fluxerr_n, flux_d, fluxerr_d):
     err_tmp = A * np.sqrt( (fluxerr_n/flux_n)**2 + (fluxerr_d/flux_d)**2 )
     return err_tmp
     
+    
+def get_logratio_error(flux_n, fluxerr_n, flux_d, fluxerr_d):
+    '''
+    Get error for np.log10(flux_n/flux_d)
+    '''
+    A = flux_n/flux_d
+    err_tmp_before_log = A * np.sqrt( (fluxerr_n/flux_n)**2 + (fluxerr_d/flux_d)**2 )
+    err_tmp = (err_tmp_before_log / (A * np.log(10)) )
+    return err_tmp
+    
 
 def calc_uvj(x0, y0,
              y0_err=[],
@@ -1723,7 +1733,7 @@ def calc_balmer(x0, y0,
              lam_b_low=3050, lam_b_hig=3650,
              lam_r_low=3950, lam_r_hig=4550,
              is_fnu=False, plot=False, scale_rms=True,
-             snlim=0.0, nlim=3,
+             snlim=0.0, nlim=3, log=False,
              ):
     '''
     Parameters
@@ -1799,8 +1809,12 @@ def calc_balmer(x0, y0,
         hoge
 
     if D41>0 and D42>0:
-        D4 = D42/D41
-        D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
+        if log:
+            D4 = np.log10(D42/D41)
+            D4_err = get_logratio_error(D41, D41_err, D42, D42_err)
+        else:
+            D4 = D42/D41
+            D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
         return D4, D4_err
     else:
         # print('D41 and D42 are:',D42, D41)
