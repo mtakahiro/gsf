@@ -1304,12 +1304,18 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         #
         # SFR from attenuation corrected LUV;
         #
+        C_SFR_Kenn = 1.4 * 1e-28
+        if nimf == 1: # Chabrier
+            C_SFR_Kenn /= 10**0.23 # Cimatti+08
+        elif nimf == 2: # Kroupa
+            C_SFR_Kenn /= 10**(0.23-0.04) # Cimatti+08
+
         # beta correction;
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
         A1600[np.where(A1600<0)] = 0
-        SFRUV_BETA = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
-        SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray(Luvs) # Msun / yr
+        SFRUV_BETA = C_SFR_Kenn * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
+        SFRUV_UNCOR = C_SFR_Kenn * np.asarray(Luvs) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
 
         # Av-based correction;
@@ -1322,7 +1328,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             from .function import apply_dust
             yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=MB.dust_model)
             fl_cor = 1/yyd
-            SFRUV[ii] = 1.4 * 1e-28 * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            SFRUV[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
             # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
 
         for ii in range(len(percs)):
@@ -1405,7 +1411,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
 
         # ASDF;
-        tree_spec = {}
+        tree_spec = {
+            'id': ID,
+            'redshift': '%.3f'%zbes,
+            'isochrone': '%s'%(isochrone),
+            'library': '%s'%(LIBRARY),
+            'nimf': '%s'%(nimf),
+            'scale': scale,
+            'version_gsf': gsf.__version__
+        }
         tree_spec['model'] = {}
         tree_spec['obs'] = {}
         tree_spec['header'] = {}
@@ -3560,11 +3574,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
 
         # SFR from attenuation corrected LUV;
         # Meurer+99, Smit+16;
+        C_SFR_Kenn = 1.4 * 1e-28
+        if MB.nimf == 1: # Chabrier
+            C_SFR_Kenn /= 10**0.23 # Cimatti+08
+        elif MB.nimf == 2: # Kroupa
+            C_SFR_Kenn /= 10**(0.23-0.04) # Cimatti+08
+
         A1600 = 4.43 + 1.99 * np.asarray(betas[kk])
         if A1600<0:
             A1600 = 0
-        SFRUV[kk] = 1.4 * 1e-28 * 10**(A1600/2.5) * Luv1600[kk] # Msun / yr
-        SFRUV_UNCOR[kk] = 1.4 * 1e-28 * Luv1600[kk]
+        SFRUV[kk] = C_SFR_Kenn * 10**(A1600/2.5) * Luv1600[kk] # Msun / yr
+        SFRUV_UNCOR[kk] = C_SFR_Kenn * Luv1600[kk]
         MUV[kk] = -2.5 * np.log10(Fuv[kk]) + MB.m0set
 
         # Get RF Color;
