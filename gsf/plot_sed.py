@@ -1305,10 +1305,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # SFR from attenuation corrected LUV;
         #
         C_SFR_Kenn = 1.4 * 1e-28
-        if nimf == 1: # Chabrier
-            C_SFR_Kenn /= 10**0.23 # Cimatti+08
-        elif nimf == 2: # Kroupa
-            C_SFR_Kenn /= 10**(0.23-0.04) # Cimatti+08
+        if MB.nimf == 1: # Chabrier
+            C_SFR_Kenn /= 0.63 # Madau&Dickinson+14
+        elif MB.nimf == 2: # Kroupa
+            C_SFR_Kenn /= 0.67 # Madau&Dickinson+14
 
         # beta correction;
         # Meurer+99, Smit+16;
@@ -3576,9 +3576,9 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
         # Meurer+99, Smit+16;
         C_SFR_Kenn = 1.4 * 1e-28
         if MB.nimf == 1: # Chabrier
-            C_SFR_Kenn /= 10**0.23 # Cimatti+08
+            C_SFR_Kenn /= 0.63 # Madau&Dickinson+14
         elif MB.nimf == 2: # Kroupa
-            C_SFR_Kenn /= 10**(0.23-0.04) # Cimatti+08
+            C_SFR_Kenn /= 0.67 # Madau&Dickinson+14
 
         A1600 = 4.43 + 1.99 * np.asarray(betas[kk])
         if A1600<0:
