@@ -28,6 +28,70 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
 
+def get_ews_model(fd_gsf, wl_b, wl_r, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r, 
+            percs=[16,50,84], norder_cont=1, snlim=1, stellar_only=False, return_lines=False):
+    '''
+    Parameters
+    ----------
+    wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r : float
+        Rest-frame wavelengths that define the range of continuum flux.
+    '''
+    # wave_obs = fd_gsf['sed']['OBS']['wave_bb'].value
+    # flux_obs = fd_gsf['sed']['OBS']['fnu_bb'].value
+    # fluxerr_obs = fd_gsf['sed']['OBS']['enu_bb'].value
+    # filters = np.asarray(fd_gsf['FILTERS'])
+
+    # con_obs = (fluxerr_obs > 0) & (wave_obs>wl_cont_b_r *(1+z)) & (wave_obs<wl_cont_r_b *(1+z))
+    # if len(wave_obs[con_obs]) == 0:
+    #     print('No obs data found within the range')
+    #     return np.zeros(1,float), np.zeros((1,3),float), '0', np.zeros(1,float), '0'
+    # cont_obs = (fluxerr_obs > 0) & (flux_obs/fluxerr_obs > snlim) & (((wave_obs>wl_cont_b_b *(1+z)) & (wave_obs<wl_cont_b_r *(1+z))) | ((wave_obs>wl_cont_r_b *(1+z)) & (wave_obs<wl_cont_r_r *(1+z))))
+    
+    z = fd_gsf['sed']['REDSHIFT']
+    flux_key = 'fnu'
+    if stellar_only:
+        flux_key = 'fnu_noline'
+
+    ews = np.zeros(3, float)
+    els = np.zeros(3, float)
+    for ii in range(len(percs)):
+        flux_model = fd_gsf['sed']['MODEL']['%s_%d'%(flux_key, percs[ii])].value
+        wave_model = fd_gsf['sed']['MODEL']['wave'].value
+        mask = ((wave_model>wl_cont_b_b*(1+z)) & ((wave_model<wl_cont_b_r*(1+z)))) | ((wave_model>wl_cont_r_b*(1+z)) & ((wave_model<wl_cont_r_r*(1+z))))
+
+        spec_unit = u.MJy
+        obs_200 = Spectrum1D(spectral_axis=wave_model[mask]*u.AA, flux=flux_model[mask]*spec_unit)
+        continuum_200 = continuum.fit_generic_continuum(obs_200, model=Chebyshev1D(norder_cont))
+
+        obs_200 = Spectrum1D(spectral_axis=wave_model*u.AA, flux=flux_model*spec_unit)
+        flux_model_cont = continuum_200(obs_200.spectral_axis).value #  # erg/s/cm2/pixel
+
+        mask_emi = (wave_model>wl_b*(1+z)) & (wave_model<wl_r*(1+z))
+        flux_emi = np.nansum((flux_model-flux_model_cont)[mask_emi]) # erg/s/cm2
+
+        # fint = interpolate.interp1d(wave_model, flux_model_cont, kind='nearest', fill_value="extrapolate")
+        # flux_model_cont_resamp = fint(wave_obs[con_obs]) # This us flam
+        delm = np.nanmedian(np.diff(wave_model[mask_emi])) # AA per pixel
+        ews[ii] = flux_emi / np.nanmean(flux_model_cont[mask_emi]) * delm
+
+        m0set = 31.4
+        flux_lam = fnutolam(wave_model, flux_model-flux_model_cont, m0set=m0set, m0=-48.6)
+        els[ii] = np.nansum((flux_lam)[mask_emi]) * delm # erg/s/cm2
+
+    # if ews[1]<0:
+    #     import matplotlib.pyplot as plt
+    #     plt.plot(wave_model, flux_model)
+    #     plt.plot(wave_model, flux_model_cont)
+    #     plt.xlim((wl_cont_b_b-100)*(1+z), (wl_cont_r_r+100)*(1+z))
+    #     plt.show()
+    #     print(ews/(1+z))
+    #     oge
+
+    if return_lines:
+        return ews/(1+z), els
+    return ews/(1+z)
+
+
 def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r, 
             percs=[16,50,84], norder_cont=1, snlim=1):
     '''
@@ -1733,7 +1797,8 @@ def calc_balmer(x0, y0,
              lam_b_low=3050, lam_b_hig=3650,
              lam_r_low=3950, lam_r_hig=4550,
              is_fnu=False, plot=False, scale_rms=True,
-             snlim=0.0, nlim=3, log=False,
+             snlim=0.0, nlim=3, log=False, fit_linear=True,
+             return_fluxes=False,
              ):
     '''
     Parameters
@@ -1756,9 +1821,14 @@ def calc_balmer(x0, y0,
     if len(y0_err) == len(y0):
         con1 = (x0>lam_b_low) & (x0<lam_b_hig) & (y0/y0_err>snlim)
         con2 = (x0>lam_r_low) & (x0<lam_r_hig) & (y0/y0_err>snlim)
+    else:
+        fit_linear = False
 
     if len(y0[con1])<nlim or len(y0[con2])<nlim:
-        return -99,-99
+        if return_fluxes:
+            return -99,-99,-99,-99,-99,-99
+        else:
+            return -99,-99
 
     # Check scale;
     if len(y0_err) == len(y0) and scale_rms:
@@ -1773,22 +1843,67 @@ def calc_balmer(x0, y0,
             scl_rms = 1
         y0_err *= scl_rms
 
-    if False:#len(y0_err) == len(y0):
+    if True:#len(y0_err) == len(y0):
         # wht = np.zeros(len(y0), float) + 1
         wht = 1./np.square(y0_err)
     else:
         wht = np.zeros(len(y0), float) + 1.0
 
-    if False:
+    if False:#True:#
         D41 = np.nansum(y0[con1] * wht[con1]) / np.nansum(wht[con1])
         D42 = np.nansum(y0[con2] * wht[con2]) / np.nansum(wht[con2])
         D41_err = np.sqrt(1.0 / np.nansum(wht[con1]))
         D42_err = np.sqrt(1.0 / np.nansum(wht[con2]))
+
+    elif False:#True:#
+        D41 = np.nansum(y0[con1] * wht[con1]) / np.nansum(wht[con1])
+        D42 = np.nansum(y0[con2] * wht[con2]) / np.nansum(wht[con2])
+        D41_err_1 = np.sqrt(1.0 / np.nansum(wht[con1]))
+        D42_err_1 = np.sqrt(1.0 / np.nansum(wht[con2]))
+        D41_err_2 = np.nanstd(y0[con1])
+        D42_err_2 = np.nanstd(y0[con2])
+        D41_err = np.sqrt(D41_err_1**2 + D41_err_2**2)
+        D42_err = np.sqrt(D42_err_1**2 + D42_err_2**2)
+
+    elif fit_linear:
+        import borgpipe as bp
+        from utils import fit_linear_relation
+        Nmc = 1e3
+
+        try:
+            x,xerr,y,yerr = x0[con1], x0[con1]*0, y0[con1], y0_err[con1]
+            sampler = fit_linear_relation(x,xerr,y,yerr, Nmc=Nmc, Nwalker=50, Ndim=3,
+                    initial_guess=None,Mn=np.nanmedian(x), cpklname=None, save_pcl=True,
+                    slope_fix=None, method=None, sigma_clip=False, nsigma=4.0)
+            flat_samples_41 = sampler.get_chain(discard=int(Nmc/2), thin=2, flat=True)
+            x,xerr,y,yerr = x0[con2], x0[con2]*0, y0[con2], y0_err[con2]
+            sampler = fit_linear_relation(x,xerr,y,yerr, Nmc=Nmc, Nwalker=50, Ndim=3,
+                    initial_guess=None,Mn=np.nanmedian(x), cpklname=None, save_pcl=True,
+                    slope_fix=None, method=None, sigma_clip=False, nsigma=4.0)
+            flat_samples_42 = sampler.get_chain(discard=int(Nmc/2), thin=2, flat=True)
+        except:
+            if return_fluxes:
+                return -99,-99,-99,-99,-99,-99
+            else:
+                return -99,-99
+
+        D41s = np.zeros(int(Nmc/2), float)
+        D42s = np.zeros(int(Nmc/2), float)
+        for i in range(int(Nmc/2)):
+            D41s[i] = flat_samples_41[i,0]
+            D42s[i] = flat_samples_42[i,0]
+        D41_mc = np.nanpercentile(D41s,[16,50,84])
+        D42_mc = np.nanpercentile(D42s,[16,50,84])
+        D41 = D41_mc[1]
+        D42 = D42_mc[1]
+        D41_err = np.abs(D41_mc[2] - D41_mc[0])/2.
+        D42_err = np.abs(D42_mc[2] - D42_mc[0])/2.
+
     else:
         D41 = np.nanmean(y0[con1])
         D42 = np.nanmean(y0[con2])
-        D41_err = np.std(y0[con1])
-        D42_err = np.std(y0[con2])
+        D41_err = np.nanstd(y0[con1])
+        D42_err = np.nanstd(y0[con2])
     # print(D41,D41_err,D42,D42_err)
 
     if plot:
@@ -1815,10 +1930,16 @@ def calc_balmer(x0, y0,
         else:
             D4 = D42/D41
             D4_err = get_ratio_error(D41, D41_err, D42, D42_err)
-        return D4, D4_err
+        if return_fluxes:
+            return D4, D4_err, D41, D41_err, D42, D42_err
+        else:
+            return D4, D4_err
     else:
         # print('D41 and D42 are:',D42, D41)
-        return -99, -99
+        if return_fluxes:
+            return -99, -99, -99, -99, -99, -99
+        else:
+            return -99, -99
 
 
 def calc_Dn4(x0, y0, z0,
