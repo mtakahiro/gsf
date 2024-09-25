@@ -9,10 +9,10 @@ from scipy.interpolate import interp1d
 import logging
 from colorama import Fore, Back, Style
 from datetime import datetime
+
 from astropy import units as u
 from astropy.cosmology import WMAP9
 from dust_extinction.averages import G03_SMCBar
-
 from astropy import units as u
 from astropy.modeling.polynomial import Chebyshev1D
 from specutils.fitting import continuum 
@@ -26,6 +26,38 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
+
+
+def get_sed_plot(file, ax=None, unit='nJy', show_bb=True, show_obs=True,
+                 kwargs_plt={'color':'k', 'ls':'-', 'lw':0.5, 'label':''}
+                 ):
+    ''''''
+    import matplotlib.pyplot as plt
+    import asdf
+    if ax == None:
+        fig = plt.figure(figsize=(6,3))
+        fig.subplots_adjust(top=.97, bottom=0.16,left=0.19,right=0.96,hspace=0,wspace=0)
+        ax = fig.add_subplot(111)
+
+    fd = asdf.open(file)
+    # fd.info()
+
+    fd_model = fd['sed']['MODEL']
+    fd_obs = fd['sed']['OBS']
+
+    ax.plot(fd_model['wave'], fd_model['fnu_50'], **kwargs_plt)
+    # ax.fill_between(fd_pz['z'], fd_pz['pz']*0, fd_pz['pz'], color='k', alpha=0.2)
+
+    # bb;
+    if show_bb:
+        ax.scatter(fd_model['wave_bb'], fd_model['fnu_bb_50'], edgecolor='b', facecolor='None', marker='d', label='')
+    if show_obs:
+        ax.errorbar(fd_obs['wave_bb'], fd_obs['fnu_bb'], yerr=fd_obs['enu_bb'], color='r', marker='None', label='', ls='None')
+        ax.scatter(fd_obs['wave_bb'], fd_obs['fnu_bb'], edgecolor='none', facecolor='r', marker='o', label='')
+    ax.set_ylabel('$f_\\nu$ [%s]'%unit)
+    ax.set_xlabel('Wavelength [$\mathrm{\AA}$]')
+
+    return ax
 
 
 def get_ews_model(fd_gsf, wl_b, wl_r, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r, 
