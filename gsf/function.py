@@ -45,17 +45,21 @@ def get_sed_plot(file, ax=None, unit='nJy', show_bb=True, show_obs=True,
     fd_model = fd['sed']['MODEL']
     fd_obs = fd['sed']['OBS']
 
+    if kwargs_plt['label'] == None:
+        kwargs_plt['label'] = '$z=%.2f (\chi^2=%.2f)$'%(float(fd['sed']['REDSHIFT']),float(fd['sed']['CHI2']))
+
     ax.plot(fd_model['wave'], fd_model['fnu_50'], **kwargs_plt)
     # ax.fill_between(fd_pz['z'], fd_pz['pz']*0, fd_pz['pz'], color='k', alpha=0.2)
 
     # bb;
     if show_bb:
-        ax.scatter(fd_model['wave_bb'], fd_model['fnu_bb_50'], edgecolor='b', facecolor='None', marker='d', label='')
+        ax.scatter(fd_model['wave_bb'], fd_model['fnu_bb_50'], edgecolor=kwargs_plt['color'], facecolor='None', marker='d', label='', s=50, zorder=2)
     if show_obs:
-        ax.errorbar(fd_obs['wave_bb'], fd_obs['fnu_bb'], yerr=fd_obs['enu_bb'], color='r', marker='None', label='', ls='None')
-        ax.scatter(fd_obs['wave_bb'], fd_obs['fnu_bb'], edgecolor='none', facecolor='r', marker='o', label='')
+        ax.errorbar(fd_obs['wave_bb'], fd_obs['fnu_bb'], yerr=fd_obs['enu_bb'], color='r', marker='None', label='', ls='None', zorder=3)
+        ax.scatter(fd_obs['wave_bb'], fd_obs['fnu_bb'], edgecolor='none', facecolor='r', marker='o', label='', s=30, zorder=4)
     ax.set_ylabel('$f_\\nu$ [%s]'%unit)
     ax.set_xlabel('Wavelength [$\mathrm{\AA}$]')
+    ax.legend(loc=0)
 
     return ax
 
