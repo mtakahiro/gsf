@@ -1,4 +1,4 @@
-from scipy import asarray as ar,exp
+# from scipy import asarray as ar,exp
 import numpy as np
 import sys
 from scipy.integrate import simps
@@ -28,8 +28,10 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
 
-def get_sed_plot(file, ax=None, unit='nJy', show_bb=True, show_obs=True,
-                 kwargs_plt={'color':'k', 'ls':'-', 'lw':0.5, 'label':''}
+def get_sed_plot(file, ax=None, unit='uJy', show_bb=True, show_obs=True,
+                 kwargs_plt={'color':'k', 'ls':'-', 'lw':0.5, 'label':''},
+                 snlim=2, fix_ylim=False, fs_leg=12, ylim_use_broad=True,
+                 show_flam=False
                  ):
     ''''''
     import matplotlib.pyplot as plt
@@ -38,6 +40,10 @@ def get_sed_plot(file, ax=None, unit='nJy', show_bb=True, show_obs=True,
         fig = plt.figure(figsize=(6,3))
         fig.subplots_adjust(top=.97, bottom=0.16,left=0.19,right=0.96,hspace=0,wspace=0)
         ax = fig.add_subplot(111)
+
+    if fix_ylim:
+        ymin, ymax = ax.get_ylim()
+        ax.set_ylim(ymin, ymax)
 
     fd = asdf.open(file)
     # fd.info()
@@ -48,18 +54,46 @@ def get_sed_plot(file, ax=None, unit='nJy', show_bb=True, show_obs=True,
     if kwargs_plt['label'] == None:
         kwargs_plt['label'] = '$z=%.2f (\chi^2=%.2f)$'%(float(fd['sed']['REDSHIFT']),float(fd['sed']['CHI2']))
 
-    ax.plot(fd_model['wave'], fd_model['fnu_50'], **kwargs_plt)
+    if show_flam:
+        fd_model_show = fnutolam(fd_model['wave'], fd_model['fnu_50'], m0set=23.9)
+    else:
+        fd_model_show = fd_model['fnu_50']
+
+    ax.plot(fd_model['wave'], fd_model_show, **kwargs_plt)
     # ax.fill_between(fd_pz['z'], fd_pz['pz']*0, fd_pz['pz'], color='k', alpha=0.2)
 
     # bb;
+    if show_flam:
+        fd_obs_show = fnutolam(fd_obs['wave_bb'], fd_obs['fnu_bb'], m0set=23.9)
+        ed_obs_show = fnutolam(fd_obs['wave_bb'], fd_obs['enu_bb'], m0set=23.9)
+        fd_model_bb = fnutolam(fd_model['wave_bb'], fd_model['fnu_bb_50'], m0set=23.9)
+    else:
+        fd_obs_show = fd_obs['fnu_bb']
+        ed_obs_show = fd_obs['enu_bb']
+        fd_model_bb = fd_model['fnu_bb_50']
+
     if show_bb:
-        ax.scatter(fd_model['wave_bb'], fd_model['fnu_bb_50'], edgecolor=kwargs_plt['color'], facecolor='None', marker='d', label='', s=50, zorder=2)
+        ax.scatter(fd_model['wave_bb'], fd_model_bb, edgecolor=kwargs_plt['color'], facecolor='None', marker='d', label='', s=50, zorder=kwargs_plt['zorder'])
     if show_obs:
-        ax.errorbar(fd_obs['wave_bb'], fd_obs['fnu_bb'], yerr=fd_obs['enu_bb'], color='r', marker='None', label='', ls='None', zorder=3)
-        ax.scatter(fd_obs['wave_bb'], fd_obs['fnu_bb'], edgecolor='none', facecolor='r', marker='o', label='', s=30, zorder=4)
+        con = (ed_obs_show>0) & (fd_obs_show/ed_obs_show>=snlim)
+        ax.errorbar(fd_obs['wave_bb'][con], fd_obs_show[con], yerr=ed_obs_show[con], color='r', marker='None', label='', ls='None', zorder=3)
+        ax.scatter(fd_obs['wave_bb'][con], fd_obs_show[con], edgecolor='none', facecolor='r', marker='o', label='', s=30, zorder=4)
+        con = (ed_obs_show>0) & (fd_obs_show/ed_obs_show<snlim)
+        # ymin_tmp,ymax_tmp = ax.get_ylim()
+        # length = (ymax_tmp-0)*0.03 * ed_obs_show[0].unit
+        # ax.errorbar(fd_obs['wave_bb'][con], ed_obs_show[con]*snlim, yerr=ed_obs_show[con] * 0 + length, uplims=ed_obs_show[con]*snlim, color='r', marker='None', capsize=3, label='', ls='None', zorder=3)
+        ax.errorbar(fd_obs['wave_bb'][con], ed_obs_show[con]*snlim, yerr=ed_obs_show[con], uplims=ed_obs_show[con]*snlim, color='r', marker='None', capsize=3, label='', ls='None', zorder=3)
+
+    # set y lim using broadband;
+    if ylim_use_broad:
+        con = (ed_obs_show>0) & (fd_obs_show/ed_obs_show>=snlim)
+        ymax = np.nanmax(fd_obs_show[con]+ed_obs_show[con]).value
+        ymin, _ = ax.get_ylim()
+        ax.set_ylim(ymin, ymax)
+
     ax.set_ylabel('$f_\\nu$ [%s]'%unit)
     ax.set_xlabel('Wavelength [$\mathrm{\AA}$]')
-    ax.legend(loc=0)
+    ax.legend(loc=2, fontsize=fs_leg)
 
     return ax
 

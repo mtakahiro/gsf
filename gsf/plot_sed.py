@@ -18,7 +18,7 @@ import matplotlib.ticker as ticker
 # from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 # from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.optimize import curve_fit
-from scipy import asarray as ar,exp
+# from scipy import asarray as ar,exp
 # import scipy.integrate as integrate
 # import scipy.special as special
 import os.path
@@ -1278,18 +1278,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['dust model'] = MB.dust_model_name
         hdr['ndust model'] = MB.dust_model
 
+        # Chi square:
+        hdr['chi2'] = chi2
+        hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
+        hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
         try:
-            # Chi square:
-            hdr['chi2'] = chi2
-            hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
-            hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
             hdr['hierarch Chi2-of-nondetection'] = chi_nd
-            hdr['hierarch No-of-params'] = ndim_eff
-            hdr['hierarch Degree-of-freedom']  = nod
+        except:
+            hdr['hierarch Chi2-of-nondetection'] = 0
+        hdr['hierarch No-of-params'] = ndim_eff
+        hdr['hierarch Degree-of-freedom']  = nod
+        try:
             hdr['hierarch reduced-chi2'] = fin_chi2
         except:
-            print('Chi seems to be wrong...')
-            pass
+            hdr['hierarch reduced-chi2'] = 0
 
         # Write parameters;
         # Muv
@@ -1427,7 +1429,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # Dump physical parameters;
         for key in hdr:
             if key not in tree_spec:
-                if key[:-2] == 'SFRUV':
+                if key[:-3] == 'SFRUV':
                     tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
                 else:
                     tree_spec['header'].update({'%s'%key: hdr[key]})
