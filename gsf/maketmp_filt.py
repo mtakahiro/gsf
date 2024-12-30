@@ -38,9 +38,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tmp_norm : float
         Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
     '''
-    # Why??? -> IGM is now applied during the fit;
-    f_IGM = False
-
     inputs = MB.inputs
     age = MB.age
     nage = MB.nage
@@ -267,13 +264,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         fbb = np.zeros(len(SFILT), dtype=float)
         ebb = np.zeros(len(SFILT), dtype=float)
         for ii in range(len(SFILT)):
-
-            if 'F%s'%(SFILT[ii]) not in fd0.keys() or 'E%s'%(SFILT[ii]) not in fd0.keys():
+            try:
+                fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
+                ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
+            except:
                 msg = 'Could not find flux inputs for filter %s in the input BB catalog! Exiting.'%(SFILT[ii])
                 print_err(msg, exit=True)
-
-            fbb[ii] = fd0['F%s'%(SFILT[ii])][ii0]
-            ebb[ii] = fd0['E%s'%(SFILT[ii])][ii0]
 
     elif CAT_BB_IND: # if individual photometric catalog; made in get_sdss.py
         unit = 'nu'
@@ -370,6 +366,12 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         except:
             pass
 
+    try:
+        x_HI_input = float(inputs['x_HI'])
+        print('Neutral fraction, x_HI = %.2f, is provided;'%(x_HI_input))
+    except:
+        x_HI_input = None
+
     if MB.SFH_FORM == -99:
         ####################################
         # Start generating templates
@@ -432,9 +434,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         ###################
                         # IGM attenuation.
                         ###################
-                        if False:
-                            # @@@ This is now done during fitting routine.
-                            spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
+                        if f_IGM:
+                            # spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
+                            spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
                             MB.x_HI = x_HI
                             spec_mul[ss,:] = spec_av_tmp
 
