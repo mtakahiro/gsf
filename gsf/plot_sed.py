@@ -17,9 +17,9 @@ import matplotlib.ticker as ticker
 # from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 # from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.optimize import curve_fit
-from scipy import asarray as ar,exp
-import scipy.integrate as integrate
-import scipy.special as special
+# from scipy import asarray as ar,exp
+# import scipy.integrate as integrate
+# import scipy.special as special
 import os.path
 from astropy.io import ascii
 import time
@@ -351,6 +351,25 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, yerr=leng,\
             uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, linestyle='', color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
 
+    # Get beta from obs;
+    # Detection and rest-frame;
+    con_bet = (fybb/eybb>SNlim) & (xbb/(1+zp50)>lam_b) & (xbb/(1+zp50)<lam_r)
+    nbeta_obs = len(con_bet)
+    if nbeta_obs>1:
+        nmc_uv = 3000
+        betas_obs = np.zeros(nmc_uv,float)
+        y = fybb[con_bet]*c/np.square(xbb[con_bet])/d_scale
+        yerr = eybb[con_bet]*c/np.square(xbb[con_bet])/d_scale
+        noise = np.zeros((nmc_uv,len(xbb[con_bet])),float)
+        for nn in range(len(xbb[con_bet])):
+            noise[:,nn] = np.random.normal(0,yerr[nn],nmc_uv)
+
+        for nn in range(nmc_uv):
+            betas_obs[nn] = get_uvbeta(xbb[con_bet], y+noise[nn,:], zp50, #elam=yerr,
+                                    lam_blue=lam_b, lam_red=lam_r)
+        beta_obs_percs = np.nanpercentile(betas_obs,percs)
+    else:
+        beta_obs_percs = [np.nan,np.nan,np.nan]
 
     # For any data removed fron fit (i.e. IRAC excess):
     f_exclude = False
@@ -470,7 +489,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib)
             ysum += y0_r
             ysump[:nopt] += y0p
-
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d_scale
 
         # The following needs revised.
@@ -667,6 +685,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     # UV beta;
     betas = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    AVs = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
 
     # From random chain;
     for kk in range(0,mmax,1):
@@ -679,6 +698,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 Av_tmp = samples['AV0'][nr]
             except:
                 Av_tmp = samples['AV'][nr]
+        AVs[kk] = Av_tmp
 
         try:
             zmc = samples['zmc'][nr]
@@ -1080,18 +1100,20 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['dust model'] = MB.dust_model_name
         hdr['ndust model'] = MB.dust_model
 
+        # Chi square:
+        hdr['chi2'] = chi2
+        hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
+        hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
         try:
-            # Chi square:
-            hdr['chi2'] = chi2
-            hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
-            hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
             hdr['hierarch Chi2-of-nondetection'] = chi_nd
-            hdr['hierarch No-of-params'] = ndim_eff
-            hdr['hierarch Degree-of-freedom']  = nod
+        except:
+            hdr['hierarch Chi2-of-nondetection'] = 0
+        hdr['hierarch No-of-params'] = ndim_eff
+        hdr['hierarch Degree-of-freedom']  = nod
+        try:
             hdr['hierarch reduced-chi2'] = fin_chi2
         except:
-            print('Chi seems to be wrong...')
-            pass
+            hdr['hierarch reduced-chi2'] = 0
 
         try:
             # Muv
@@ -1114,19 +1136,69 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['UVBETA50'] = betas_med[1]
         hdr['UVBETA84'] = betas_med[2]
 
+        #
         # SFR from attenuation corrected LUV;
+        #
+        C_SFR_Kenn = 1.4 * 1e-28
+        if MB.nimf == 1: # Chabrier
+            C_SFR_Kenn /= 0.63 # Madau&Dickinson+14
+        elif MB.nimf == 2: # Kroupa
+            C_SFR_Kenn /= 0.67 # Madau&Dickinson+14
+
+        # beta correction;
         # Meurer+99, Smit+16;
         A1600 = 4.43 + 1.99 * np.asarray(betas_med)
         A1600[np.where(A1600<0)] = 0
-        SFRUV = 1.4 * 1e-28 * 10**(A1600/2.5) * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
-        SFRUV_UNCOR = 1.4 * 1e-28 * np.asarray([hdr['LUV16'],hdr['LUV50'],hdr['LUV84']]) # Msun / yr
+        SFRUV_BETA = C_SFR_Kenn * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
+        SFRUV_UNCOR = C_SFR_Kenn * np.asarray(Luvs) # Msun / yr
         hdr['SFRUV_ANGS'] = 1600
-        hdr['SFRUV16'] = SFRUV[0]
-        hdr['SFRUV50'] = SFRUV[1]
-        hdr['SFRUV84'] = SFRUV[2]
-        hdr['SFRUV_UNCOR_16'] = SFRUV_UNCOR[0]
-        hdr['SFRUV_UNCOR_50'] = SFRUV_UNCOR[1]
-        hdr['SFRUV_UNCOR_84'] = SFRUV_UNCOR[2]
+
+        # Av-based correction;
+        AVs_med = np.nanpercentile(AVs, [16,50,84])
+        lam = np.asarray([hdr['SFRUV_ANGS']])
+        fl = np.zeros(len(lam),float) + 1
+        nr = np.arange(0,len(lam),1)
+        SFRUV = np.zeros(len(Luvs), float)
+        for ii in range(len(AVs_med)):
+            from .function import apply_dust
+            yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=MB.dust_model)
+            fl_cor = 1/yyd
+            SFRUV[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
+
+        for ii in range(len(percs)):
+
+            if not np.isnan(Muvs[ii]):
+                hdr['MUV%d'%percs[ii]] = Muvs[ii]
+            else:
+                hdr['MUV%d'%percs[ii]] = 99
+
+            if not np.isnan(Luvs[ii]):
+                hdr['LUV%d'%percs[ii]] = Luvs[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV%d'%percs[ii]] = -99
+
+            if not np.isnan(Luvs_noatn[ii]):
+                hdr['LUV_noattn_%d'%percs[ii]] = Luvs_noatn[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV_noattn_%d'%percs[ii]] = -99
+
+            if not np.isnan(betas_med[ii]):
+                hdr['UVBETA%d'%percs[ii]] = betas_med[ii]
+            else:
+                hdr['UVBETA%d'%percs[ii]] = 99
+            
+            hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
+            hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
+
+            # UV beta obs;
+            if ii == 0:
+                hdr['NUVBETA_obs'] = nbeta_obs
+            if not np.isnan(beta_obs_percs[ii]):
+                hdr['UVBETA_obs%d'%percs[ii]] = beta_obs_percs[ii]
+            else:
+                hdr['UVBETA_obs%d'%percs[ii]] = -99
 
         # UVJ
         try:
@@ -1174,7 +1246,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
 
         # ASDF;
-        tree_spec = {}
+        tree_spec = {
+            'id': ID,
+            'redshift': '%.3f'%zbes,
+            'isochrone': '%s'%(isochrone),
+            'library': '%s'%(LIBRARY),
+            'nimf': '%s'%(nimf),
+            'scale': scale,
+            'version_gsf': gsf.__version__
+        }
         tree_spec['model'] = {}
         tree_spec['obs'] = {}
         tree_spec['header'] = {}
@@ -1182,10 +1262,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # Dump physical parameters;
         for key in hdr:
             if key not in tree_spec:
-                if key[:-2] == 'SFRUV':
+                if key[:-3] == 'SFRUV':
                     tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
                 else:
                     tree_spec['header'].update({'%s'%key: hdr[key]})
+
         # BB;
         Cnu_to_Jy = 10**((23.9-m0set)) # fnu_mzpset to microJy. So the final output SED library has uJy.
         # tree_spec['model'].update({'wave_bb': lbb * u.AA})
@@ -1280,6 +1361,38 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # Save;
         af = asdf.AsdfFile(tree_spec)
         af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
+
+    # Make a new dict
+    gsf_dict = {}
+    gsf_dict['primary_params'] = {}
+
+    # a single ASDF;
+    tree_shf = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)))
+    gsf_dict['sfh'] = {}
+    gsf_dict = modify_keys(tree_shf, 'sfh', gsf_dict=gsf_dict)
+
+    tree_sed = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)))
+    gsf_dict['sed'] = {}
+
+    lbls_sed_skip = ['header']
+    lbls_sed_skip = [s.upper() for s in lbls_sed_skip]
+    key_skip = ['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']
+    key_skip += lbls_sed_skip
+
+    label = 'sed'
+    gsf_dict = modify_keys_sed(tree_sed, label, gsf_dict=gsf_dict, key_skip=key_skip)
+
+    keys_param_sed = ['MUV', 'SFRUV', 'SFRUV_BETA', 'SFRUV_UNCOR', 'UVBETA', 'UVBETA_OBS', 'UV', 'VJ']
+    keys_param_sfh = ['ZMC', 'MSTEL', 'SFR', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW', 'AV0']
+    for key in keys_param_sed:
+        for perc in percs:
+            gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sed']['%s_%d'%(key, perc)]
+    for key in keys_param_sfh:
+        for perc in percs:
+            gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sfh']['%s_%d'%(key, perc)]
+
+    af = asdf.AsdfFile(gsf_dict)
+    af.write_to(os.path.join(MB.DIR_OUT, 'gsf_%s.asdf'%(ID)), all_array_compression='zlib')
 
     #
     # SED params in plot
@@ -3282,11 +3395,17 @@ def plot_corner_physparam_summary(MB, fig=None, out_ind=0, DIR_OUT='./', mmax:in
 
         # SFR from attenuation corrected LUV;
         # Meurer+99, Smit+16;
+        C_SFR_Kenn = 1.4 * 1e-28
+        if MB.nimf == 1: # Chabrier
+            C_SFR_Kenn /= 0.63 # Madau&Dickinson+14
+        elif MB.nimf == 2: # Kroupa
+            C_SFR_Kenn /= 0.67 # Madau&Dickinson+14
+
         A1600 = 4.43 + 1.99 * np.asarray(betas[kk])
         if A1600<0:
             A1600 = 0
-        SFRUV[kk] = 1.4 * 1e-28 * 10**(A1600/2.5) * Luv16[kk] # Msun / yr
-        SFRUV_UNCOR[kk] = 1.4 * 1e-28 * Luv16[kk]
+        SFRUV[kk] = C_SFR_Kenn * 10**(A1600/2.5) * Luv1600[kk] # Msun / yr
+        SFRUV_UNCOR[kk] = C_SFR_Kenn * Luv1600[kk]
         MUV[kk] = -2.5 * np.log10(Fuv[kk]) + MB.m0set
 
         # Get RF Color;
