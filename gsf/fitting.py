@@ -33,6 +33,7 @@ from .writing import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
+from .function_igm import get_XI
 
 from .Logger.GsfBase import GsfBase
 try:
@@ -91,7 +92,7 @@ class Mainbody(GsfBase):
         if configurationfile == None:
             configurationfile = f"{GSF}/config/config.yaml"
         super().__init__(configurationfile)
-        self.outdir = pathlib.Path('./output_log/')
+        self.outdir = pathlib.Path('/tmp/logs/')
         self.outdir.mkdir(parents=True, exist_ok=True)
         self.logger = self.logger.getLogger(__name__, "gsf")
         self.logger.info("init class")
@@ -117,7 +118,7 @@ class Mainbody(GsfBase):
                            'SFH_FORM',
                            'AMIN', 'AMAX', 
                            'ADD_NEBULAE', 'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 
-                           'ADD_AGN', 'AGNTAUMIN', 'AGNTAUMAX', 'DELAGNTAU', 'AGNTAUFIX', 
+                           'ADD_AGN', 'AGNTAUMIN', 'AGNTAUMAX', 'DELAGNTAU', 'AGNTAUFIX', 'AAGNMIN', 'AAGNMAX',
                            'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGEFIX',
                            'ZMIN', 'ZMAX', 'DELZ', 'ZFIX', 'ZEVOL', 
                            'AVMIN', 'AVMAX', 'AVFIX', 'AVEVOL', 'AVPRIOR_SIGMA', 'DUST_MODEL', 
@@ -125,13 +126,14 @@ class Mainbody(GsfBase):
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST',
                            'BPASS', 'DIR_BPASS',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
-                           'x_HI'
+                           'XHIFIX'
                            ],
 
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
                          'NTEMP', 'DISP', 'SIG_TEMP', 'VDISP', 
-                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR'],
+                         'FORCE_AGE', 'NORDER_SFH_PRIOR', 'NEBULAE_PRIOR',
+                         'F_XHI'],
 
             'Data' : ['ID', 'MAGZP', 'DIR_TEMP', 
                       'CAT_BB', 'CAT_BB_DUST', 'SNLIM',
@@ -139,7 +141,7 @@ class Mainbody(GsfBase):
                       'SPEC_FILE', 'DIR_EXTR', 'MAGZP_SPEC', 'UNIT_SPEC', 'DIFF_CONV', 
                       'CZ0', 'CZ1', 'CZ2', 'LINE', 'PA', ],
 
-            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER', 'DIR_FILT']
+            'Misc' : ['CONFIG', 'DIR_OUT', 'FILTER', 'SKIPFILT', 'FIR_FILTER', 'DIR_FILT', 'USE_UPLIM']
 
             }
 
@@ -252,9 +254,9 @@ class Mainbody(GsfBase):
             self.cosmo = cosmo
 
         if idman != None:
-            self.ID = idman
+            self.ID = '%s'%idman
         else:
-            self.ID = inputs['ID']
+            self.ID = '%s'%inputs['ID']
         self.logger.info('Fitting target: %s'%self.ID)
 
         # Read catalog;
@@ -374,6 +376,7 @@ class Mainbody(GsfBase):
             inputs['ADD_NEBULAE'] = '0'
 
         # Nebular;
+        self.neb_correlate = False
         if 'ADD_NEBULAE' in self.input_keys:
             if str2bool(inputs['ADD_NEBULAE']):
                 self.fneb = True
@@ -450,7 +453,7 @@ class Mainbody(GsfBase):
                     self.AGNTAUMAX = 15
                 try:
                     self.DELAGNTAU = float(inputs['DELAGNTAU'])
-                    if self.DELAGNTAU<1:
+                    if self.DELAGNTAU<1 and not self.agn_powerlaw:
                         print_err('`DELAGNTAU` cannot have value smaller than 1. Exiting.')
                         sys.exit()
                 except:
@@ -458,14 +461,14 @@ class Mainbody(GsfBase):
                 self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
                 self.nAGNTAU = len(self.AGNTAUs)
 
-                try:
+                if 'AGNTAUFIX' in self.input_keys:
                     self.AGNTAUFIX = float(inputs['AGNTAUFIX'])
                     self.nAGNTAU = 1
                     self.AGNTAUMIN = self.AGNTAUFIX
                     self.AGNTAUMAX = self.AGNTAUFIX
                     self.DELAGNTAU = 0
                     self.AGNTAUs = np.asarray([self.AGNTAUMAX])
-                except:
+                else:
                     self.AGNTAUFIX = None
 
             else:
@@ -691,9 +694,9 @@ class Mainbody(GsfBase):
                     self.ZFIX = None
 
         # N of param:
-        try:
+        if 'AVEVOL' in inputs:
             self.AVEVOL = str2bool(inputs['AVEVOL'])
-        except:
+        else:
             self.AVEVOL = False
 
         try:
@@ -722,12 +725,10 @@ class Mainbody(GsfBase):
                 self.Avmin = 0
                 self.Avmax = 4.0
 
-        try:
+        if 'AVPRIOR_SIGMA' in inputs:
             Av_prior = float(inputs['AVPRIOR_SIGMA'])
             self.key_params_prior.append('AV0')
             self.key_params_prior_sigma.append(Av_prior)
-        except:
-            pass
 
         # Z evolution;
         if self.verbose:
@@ -779,6 +780,19 @@ class Mainbody(GsfBase):
         self.ndim += self.fzmc
         if self.verbose:
             self.logger.info('No. of params are : %d'%(self.ndim))
+
+        # XHI as a param;
+        if 'XHIFIX' in inputs:
+            self.x_HI_input = float(inputs['XHIFIX'])
+            self.fxhi = False
+        else:
+            self.x_HI_input = None
+            if 'F_XHI' in inputs:
+                self.fxhi = str2bool(inputs['F_XHI'])
+                if self.fxhi:
+                    self.ndim += 1
+            else:
+                self.fxhi = False
 
         # Line
         try:
@@ -911,6 +925,12 @@ class Mainbody(GsfBase):
         except:
             self.norder_sfh_prior = None
             self.f_prior_sfh = False
+
+        # include ND;
+        if 'USE_UPLIM' in inputs:
+            self.f_chind = str2bool(inputs['USE_UPLIM'])
+        else:
+            self.f_chind = True
 
         self.logger.info('Complete')
         return True
@@ -1544,16 +1564,28 @@ class Mainbody(GsfBase):
 
         # AGN; ver1.9
         if self.fagn:
-            self.AAGNmin = -3
+
+            self.AAGNmin = -10
             self.AAGNmax = 10
+            if 'AAGNMIN' in self.inputs:
+                self.AAGNmin = float(self.inputs['AAGNMIN'])
+            if 'AAGNMAX' in self.inputs:
+                self.AAGNmax = float(self.inputs['AAGNMAX'])
+
             fit_params.add('Aagn', value=self.Aini, min=self.AAGNmin, max=self.AAGNmax)
-            # fit_params.add('Aagn', value=self.Aini, min=0, max=5)
+            # fit_params.add('Aagn', value=self.Aini, min=-6, max=-5)
             self.ndim += 1
             if not self.AGNTAUFIX == None:
                 fit_params.add('AGNTAU', value=self.AGNTAUFIX, vary=False)
             else:
                 fit_params.add('AGNTAU', value=np.median(self.AGNTAUs), min=self.AGNTAUMIN, max=self.AGNTAUMAX)
                 self.ndim += 1
+            f_add = True
+
+        # xhi
+        if self.fxhi:
+            xhi0 = get_XI(self.zgal)
+            fit_params.add('xhi', value=xhi0, min=0, max=1)
             f_add = True
 
         self.fit_params = fit_params
@@ -1850,7 +1882,7 @@ class Mainbody(GsfBase):
             Check convergence at every certain number.
         f_plot_chain : book
             Plot MC sample chain.
-        '''        
+        '''
         # Call likelihood/prior/posterior function;
         class_post = Post(self)
 
@@ -1875,6 +1907,9 @@ class Mainbody(GsfBase):
         # Initial Z:
         if Zini == None:
             Zini = self.Zall
+
+        # Uplim;
+        f_chind = self.f_chind
 
         ####################################
         # Initial Metallicity Determination
@@ -1941,7 +1976,6 @@ class Mainbody(GsfBase):
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 # showing this is confusing.
                 # print('\nMinimizer refinement;')
-                # print(fit_report(out))
 
                 # Fix params to what we had before.
                 if self.fzmc:
@@ -2309,7 +2343,7 @@ class Mainbody(GsfBase):
 
 
     def quick_fit(self, specplot=1, sigz=1.0, ezmin=0.01, ferr=0, f_move=False, 
-        f_get_templates=False, Zini=None, include_photometry=True):
+        f_get_templates=False, Zini=None, include_photometry=True, f_only_spec=False):
         '''Fits input data with a prepared template library, to get a chi-min result. 
         This function is being used in an example notebook.
 
@@ -2339,7 +2373,7 @@ class Mainbody(GsfBase):
         # Temporarily disable zmc;
         self.fzmc = 0
         out, chidef, Zbest = get_leastsq(self, Zini, self.fneld, self.age, self.fit_params, class_post.residual,\
-            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID)
+            self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.ID, f_only_spec=f_only_spec)
 
         if f_get_templates:
             Av_tmp = out.params['AV0'].value
