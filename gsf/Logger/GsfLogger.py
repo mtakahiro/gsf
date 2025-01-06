@@ -77,7 +77,7 @@ class GsfLogger(metaclass=Singleton):
         It defines a common stream handler for all the loggers. (TODO: think about it in a multiprocessing/multithread context)
         """
         if rootPath is not None:
-            self.rootLogsDir = Path(expandvars(rootPath)).joinpath("/tmp/logs")
+            self.rootLogsDir = Path(expandvars(rootPath)).joinpath("logs")
             self.rootLogsDir.mkdir(parents=True, exist_ok=True)
         
         self.logLevel = GsfLogger.mapLogLevel(logLevel)

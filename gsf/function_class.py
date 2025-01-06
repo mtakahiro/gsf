@@ -281,15 +281,8 @@ class Func:
             nr = lib[:,0]
             xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
             yy = A00 * lib[:,coln]
-        # else:
-        #     yy += A00 * lib[:,coln]
-
-        # if True:#lib_all:
-        #     import matplotlib.pyplot as plt
-        #     plt.close()
-        #     plt.plot(xx, yy, ls='None', marker='o')
-        #     plt.show()
-        #     hoge
+        else:
+            yy += A00 * lib[:,coln]
 
         return nr, xx, yy
 
@@ -322,19 +315,19 @@ class Func:
             logU = self.MB.logUs[0]
             nlogU = 0
 
-        # try:
-        #     Aagn = par['Aagn']
-        #     AGNTAU = par['AGNTAU']
-        #     nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
-        # except: # This is exception for initial minimizing;
-        #     Aagn = -99
-        #     AGNTAU = self.MB.AGNTAUs[0]
-        #     nAGNTAU = 0
+        try:
+            Aagn = par['Aagn']
+            AGNTAU = par['AGNTAU']
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+        except: # This is exception for initial minimizing;
+            Aagn = -99
+            AGNTAU = self.MB.AGNTAUs[0]
+            nAGNTAU = 0
 
         # logU
         NU = self.MB.nlogU
-        # # AGNTAU
-        # NAGNT = self.MB.nAGNTAU
+        # AGNTAU
+        NAGNT = self.MB.nAGNTAU
 
         # Check limit;
         if Aneb < self.MB.Amin:
@@ -342,10 +335,10 @@ class Func:
         if Aneb > self.MB.Amax:
             Aneb = self.MB.Amax
 
-        # if Aagn < self.MB.Amin:
-        #     Aagn = self.MB.Amin
-        # if Aagn > self.MB.Amax:
-        #     Aagn = self.MB.Amax
+        if Aagn < self.MB.Amin:
+            Aagn = self.MB.Amin
+        if Aagn > self.MB.Amax:
+            Aagn = self.MB.Amax
 
         # Z limit:
         if aa == 0 or self.MB.ZEVOL == 1:
@@ -357,10 +350,10 @@ class Func:
         # Is A in logspace?
         if f_Alog:
             A00 = 10**Aneb
-            # Aagn00 = 10**Aagn
+            Aagn00 = 10**Aagn
         else:
             A00 = Aneb
-            # Aagn00 = Aagn
+            Aagn00 = Aagn
 
         coln = int(2 + NZ*NU + nlogU)
 
@@ -368,8 +361,8 @@ class Func:
             nr = lib[:,0]
             xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
             yy = A00 * lib[:,coln]
-        # else:
-        #     yy += A00 * lib[:,coln]
+        else:
+            yy += A00 * lib[:,coln]
 
         return nr, xx, yy
 
@@ -381,11 +374,6 @@ class Func:
         EBVratio : float
             E(B-V)_neb / E(B-V)_st. 
             Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
-
-        Returns
-        -------
-        A00 * yyd_sort, xxd_sort : float arrays
-            Flux (fnu) and wavelength (AA; observed frame)
 
         Notes
         -----
