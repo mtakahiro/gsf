@@ -2,12 +2,15 @@ asdf
 astropy
 colorama
 corner
+dust_extinction
 emcee
 lmfit
 multiprocess
 numpy>=1.21
 pandas
 pytest
+scipy>=1.5.1
+specutils
 sphinx_automodapi
 zeus-mcmc
 # git+https://github.com/dfm/python-fsps

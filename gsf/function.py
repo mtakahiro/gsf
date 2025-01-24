@@ -1,7 +1,10 @@
 # from scipy import asarray as ar,exp
 import numpy as np
 import sys
-from scipy.integrate import simps
+try:
+    from scipy.integrate import simps
+except:
+    from scipy.integrate import simpson as simps
 import pickle as cPickle
 import os
 import scipy.interpolate as interpolate
