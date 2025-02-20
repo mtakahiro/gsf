@@ -210,10 +210,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     use_pickl = False
     use_pickl = True
     if use_pickl:
-        pfile = 'chain_' + ID + '_corner.cpkl'
+        pfile = 'gsf_chain_' + ID + '.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     else:
-        pfile = 'chain_' + ID + '_corner.asdf'
+        pfile = 'gsf_chain_' + ID + '.asdf'
         data = asdf.open(os.path.join(samplepath+'/'+pfile))
 
     try:
@@ -699,7 +699,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             elif key.split('_')[0] == 'Mstel':
                 tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.solMass})
             elif key.split('_')[0] == 'T':
-                tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.Gyr})
+                tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.Gyr})
             elif key.split('_')[0] == 'AV0':
                 tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.mag})
             else:
@@ -812,7 +812,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         return tree_sfh, fig
 
     # Save
-    fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+    fig.savefig(MB.DIR_OUT + 'gsf_sfh_' + ID + '.png', dpi=dpi)
 
     return tree_sfh
 
@@ -1058,7 +1058,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Load Pickle
     ##############################
     samplepath = MB.DIR_OUT 
-    pfile = 'chain_' + ID + '_corner.cpkl'
+    pfile = 'gsf_chain_' + ID + '.cpkl'
 
     niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))

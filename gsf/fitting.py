@@ -2117,7 +2117,7 @@ class Mainbody(GsfBase):
                         axes[-1].set_xlabel("step number")
                     else:
                         axes.set_xlabel("step number")
-                    plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
+                    plt.savefig('%s/gsf_chain_%s.png'%(self.DIR_OUT,self.ID))
                     plt.close()
                     # For memory optimization;
                     del samples, axes
@@ -2241,12 +2241,12 @@ class Mainbody(GsfBase):
             use_pickl = False
             use_pickl = True
             if use_pickl:
-                cpklname = 'chain_' + self.ID + '_corner.cpkl'
+                cpklname = 'gsf_chain_' + self.ID + '.cpkl'
                 savecpkl({'chain':flatchain,
                               'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
                              savepath+cpklname) # Already burn in
             else:
-                cpklname = 'chain_' + self.ID + '_corner.asdf'
+                cpklname = 'gsf_chain_' + self.ID + '.asdf'
                 tree = {'chain':flatchain.to_dict(), 'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim}
                 af = asdf.AsdfFile(tree)
                 af.write_to(savepath+cpklname, all_array_compression='zlib')
@@ -2276,7 +2276,7 @@ class Mainbody(GsfBase):
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=levels, truth_color='gray', color='#4682b4')
 
-                fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_corner.png')
+                fig1.savefig(self.DIR_OUT + 'gsf_corner_' + self.ID + '.png')
                 self.cornerplot_fig = fig1
 
             # Analyze MCMC results.

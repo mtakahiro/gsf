@@ -152,7 +152,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
     f_apply_igm=True, show_noattn=False, percs=[16,50,84],
     x1min=4000, return_figure=False, lcb='#4682b4',
-    lam_b=1350, lam_r=3000
+    lam_b=1350, lam_r=3000,
+    clean_files=True
     ):
     '''
     Parameters
@@ -770,10 +771,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     use_pickl = False
     use_pickl = True
     if use_pickl:
-        pfile = 'chain_' + ID + '_corner.cpkl'
+        pfile = 'gsf_chain_' + ID + '.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     else:
-        pfile = 'chain_' + ID + '_corner.asdf'
+        pfile = 'gsf_chain_' + ID + '.asdf'
         data = asdf.open(os.path.join(samplepath+'/'+pfile))
 
     try:
@@ -1411,6 +1412,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['version'] = gsf.__version__
 
         # Write;
+        # This file will be deleted;
         colspec = fits.ColDefs(col00)
         hdu0 = fits.BinTableHDU.from_columns(colspec, header=hdr)
         hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
@@ -1583,13 +1585,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     #
     if f_label:
         fs_label = 8
-        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
+        fd = gsf_dict['sfh']#fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))#, fin_chi2)
+            %(ID, zbes, np.log10(float(fd['MSTEL_50'].value)), MD50, TD50, float(fd['Z_MW_50']), np.log10(float(fd['T_MW_50'].value)), float(fd['AV0_50'].value))#, fin_chi2)
         else:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))
+            %(ID, zbes, np.log10(float(fd['MSTEL_50'].value)), float(fd['Z_MW_50']), np.log10(float(fd['T_MW_50'].value)), float(fd['AV0_50'].value))
 
         if f_grsm:
             ax1.text(0.02, 0.68, label,\
@@ -1711,15 +1713,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ax1.legend(loc=1, fontsize=11)
 
     if figpdf:
-        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.pdf', dpi=dpi)
     else:
-        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.png', dpi=dpi)
 
     if return_figure:
         return tree_spec, fig
 
     fig.clear()
     plt.close()
+
+    # Clean;
+    if clean_files:
+        os.system('rm %s'%(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID)))
+        os.system('rm %s'%(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID)))
+        os.system('rm %s'%(MB.DIR_OUT + 'SFH_%s.fits'%(ID)))
+        os.system('rm %s'%(MB.DIR_OUT + 'gsf_sfh_%s.asdf'%(ID)))
 
     return tree_spec
 
