@@ -29,7 +29,7 @@ import pathlib
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err, str2bool
 from .zfit import check_redshift,get_chi2
-from .writing import get_param
+from .write_param import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
@@ -1763,13 +1763,13 @@ class Mainbody(GsfBase):
 
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1, orig=True)
         if self.fneb:
             self.lib_neb = self.fnc.open_spec_fits(fall=0, f_neb=True)
-            self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True)
+            self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True, orig=True)
         if self.fagn:
             self.lib_agn = self.fnc.open_spec_fits(fall=0, f_agn=True)
-            self.lib_agn_all = self.fnc.open_spec_fits(fall=1, f_agn=True)
+            self.lib_agn_all = self.fnc.open_spec_fits(fall=1, f_agn=True, orig=True)
 
         if add_fir == None:
             add_fir = self.f_dust

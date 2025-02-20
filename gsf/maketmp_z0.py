@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
+import copy
+# import os
 from astropy.io import ascii,fits
 from astropy.convolution import Gaussian1DKernel, convolve
 
@@ -224,8 +225,14 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                             tage_neb = age[ss]
 
                         ewave0, eflux0 = esp.get_spectrum(tage=tage_neb, peraa=True)
+                        # plt.close()
+                        # plt.plot(ewave0, eflux0)
+                        # plt.xlim(0,10000)
+                        # plt.show()
+
                         if age[ss] != tage_neb:
-                            sp_tmp = sp.copy()
+                            # sp_tmp = sp.copy()
+                            sp_tmp = copy.copy(sp)
                             wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_neb, peraa=True) # Lsun/AA
                             _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
                         else:
@@ -236,6 +243,11 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                         # Eliminate some negatives. Mostly on <912A;
                         con_neg = flux_nebular<0
                         flux_nebular[con_neg] = 0
+
+                        # plt.close()
+                        # plt.plot(ewave0[con], flux_nebular)
+                        # plt.xlim(0,10000)
+                        # plt.show()
 
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                         tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
