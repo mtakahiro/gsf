@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
+# import scipy
 import sys
 import os
-from scipy.integrate import simps
+# from scipy.integrate import simps
 import scipy.interpolate as interpolate
 import asdf
 
 from astropy.io import fits,ascii
-from astropy.modeling.models import Moffat1D
+# from astropy.modeling.models import Moffat1D
 from astropy.convolution import convolve, convolve_fft
 import astropy.units as u
 

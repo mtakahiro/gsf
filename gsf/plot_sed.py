@@ -6,7 +6,10 @@ import asdf
 import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 from numpy import log10
-from scipy.integrate import simps
+try:
+    from scipy.integrate import simps
+except:
+    from scipy.integrate import simpson as simps
 from astropy.io import fits
 from astropy.convolution import convolve
 

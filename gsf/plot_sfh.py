@@ -1,11 +1,11 @@
 import numpy as np
-import sys
+# import sys
 import asdf
 import matplotlib.pyplot as plt
-from numpy import log10
-from scipy.integrate import simps
+# from numpy import log10
+# from scipy.integrate import simps
 import os
-import time
+# import time
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as ticker
 

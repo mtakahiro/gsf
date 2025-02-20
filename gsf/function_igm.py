@@ -1,7 +1,7 @@
 # from scipy import asarray as ar,exp
 import numpy as np
-import sys
-from scipy.integrate import simps
+# import sys
+# from scipy.integrate import simps
 from scipy import integrate
 
 
