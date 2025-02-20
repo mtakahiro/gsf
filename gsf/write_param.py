@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from astropy.io import fits
 from astropy import units as u
@@ -16,7 +17,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     print('##########################')
     print('### Writing parameters ###')
     print('##########################')
-    lib_all = self.lib_all
+    # lib_all = self.lib_all
+    tree = {}
 
     # Those are from redshiftfit;
     zrecom = self.zgal
@@ -169,50 +171,79 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     # Write in Fits table.
     ######################
     # Header
+    # meta
+    tree_meta = {
+        'ID':ID0, 
+        'Cz0':Czrec0,
+        'Cz1':Czrec1,
+        'Cz2':Czrec2,
+        'z':zrecom,
+        'zmc':zmc[1],
+        'SN':SN,
+        'nSN':NSN,
+        'NDIM':ndim,
+        'tcalc':(tcalc, 'in second'),
+        'chi2':fitc[0],
+        'chi2nu':fitc[1],
+        'bic':res.bic,
+        'nmc':nmc,
+        'nwalker':nwalker,
+        'version':gsf.__version__
+        }
+    # fits;
     prihdr = fits.Header()
-    prihdr['ID']     = ID0
-    prihdr['Cz0']    = Czrec0
-    prihdr['Cz1']    = Czrec1
-    prihdr['Cz2']    = Czrec2
-    prihdr['z']      = zrecom
-    prihdr['zmc']    = zmc[1]
-    prihdr['SN']     = SN
-    prihdr['nSN']    = NSN
-    prihdr['NDIM']   = ndim
-    prihdr['tcalc']  = (tcalc, 'in second')
-    prihdr['chi2']   = fitc[0]
-    prihdr['chi2nu'] = fitc[1]
-    prihdr['bic'] = res.bic
-    prihdr['nmc'] = nmc
-    prihdr['nwalker'] = nwalker
-    prihdr['version'] = gsf.__version__
+    for key in tree_meta.keys():
+        prihdr[key] = tree_meta[key]
+    # prihdr['ID']     = ID0
+    # prihdr['Cz0']    = Czrec0
+    # prihdr['Cz1']    = Czrec1
+    # prihdr['Cz2']    = Czrec2
+    # prihdr['z']      = zrecom
+    # prihdr['zmc']    = zmc[1]
+    # prihdr['SN']     = SN
+    # prihdr['nSN']    = NSN
+    # prihdr['NDIM']   = ndim
+    # prihdr['tcalc']  = (tcalc, 'in second')
+    # prihdr['chi2']   = fitc[0]
+    # prihdr['chi2nu'] = fitc[1]
+    # prihdr['bic'] = res.bic
+    # prihdr['nmc'] = nmc
+    # prihdr['nwalker'] = nwalker
+    # prihdr['version'] = gsf.__version__
     prihdu = fits.PrimaryHDU(header=prihdr)
 
     # Data
+    tree_main = {}
     col01 = []
     for aa in range(len(age)):
         col50 = fits.Column(name='A'+str(aa), format='E', unit='', array=Amc[aa][:])
         col01.append(col50)
+        tree_main['A'+str(aa)] = Amc[aa][:]
 
     for aa in range(len(AAvmc)):
         col50 = fits.Column(name='AV'+str(aa), format='E', unit='mag', array=AAvmc[aa][:])
         col01.append(col50)
+        tree_main['AV'+str(aa)] = AAvmc[aa][:]
 
     for aa in range(len(Zmc)):
         col50 = fits.Column(name='Z'+str(aa), format='E', unit='logZsun', array=Zmc[aa][:])
         col01.append(col50)
+        tree_main['Z'+str(aa)] = Zmc[aa][:]
 
     for aa in range(len(AGEmc)):
         col50 = fits.Column(name='AGE'+str(aa), format='E', unit='logGyr', array=AGEmc[aa][:])
         col01.append(col50)
+        tree_main['AGE'+str(aa)] = AGEmc[aa][:]
         
     for aa in range(len(TAUmc)):
         col50 = fits.Column(name='TAU'+str(aa), format='E', unit='logGyr', array=TAUmc[aa][:])
         col01.append(col50)
+        tree_main['TAU'+str(aa)] = TAUmc[aa][:]
 
     if self.fxhi:
         col50 = fits.Column(name='xhi', format='E', unit='', array=np.percentile(res.flatchain['xhi'][burnin:], [16,50,84]))
         col01.append(col50)
+        tree_main['xhi'] = np.percentile(res.flatchain['xhi'][burnin:], [16,50,84])
 
     if self.f_dust:
         Mdust_per_temp = self.af['spec_dust']['Mdust']
@@ -229,6 +260,7 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
         Mdustmc[:] = np.percentile(res.flatchain['MDUST'][burnin:], [16,50,84])
         col50 = fits.Column(name='ADUST', format='E', unit='Msun', array=Mdustmc[:])
         col01.append(col50)
+        tree_main['ADUST'] = Mdustmc[:]
 
         # Then M2Light ratio;
         Mdustmc[0] += np.log10(Mdust_per_temp[int(nTdustmc[0])])
@@ -237,10 +269,13 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
 
         col50 = fits.Column(name='MDUST', format='E', unit='Msun', array=Mdustmc[:])
         col01.append(col50)
+        tree_main['MDUST'] = Mdustmc[:]
         col50 = fits.Column(name='nTDUST', format='E', unit='', array=nTdustmc[:])
         col01.append(col50)
+        tree_main['nTDUST'] = nTdustmc[:]
         col50 = fits.Column(name='TDUST', format='E', unit='K', array=Tdustmc[:])
         col01.append(col50)
+        tree_main['TDUST'] = Tdustmc[:]
 
     if self.fneb:
         Anebmc = np.zeros(3, dtype=float)
@@ -252,8 +287,10 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             logUmc[:] = np.percentile(res.flatchain['logU'][burnin:], [16,50,84])
         col50 = fits.Column(name='Aneb', format='E', unit='', array=Anebmc[:])
         col01.append(col50)
+        tree_main['Aneb'] = Anebmc[:]
         col50 = fits.Column(name='logU', format='E', unit='', array=logUmc[:])
         col01.append(col50)
+        tree_main['logU'] = logUmc[:]
 
     if self.fagn:
         Aagnmc = np.zeros(3, dtype=float)
@@ -265,44 +302,58 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
             AGNTAUmc[:] = np.percentile(res.flatchain['AGNTAU'][burnin:], [16,50,84])
         col50 = fits.Column(name='Aagn', format='E', unit='', array=Anebmc[:])
         col01.append(col50)
+        tree_main['Aagn'] = Anebmc[:]
         col50 = fits.Column(name='AGNTAU', format='E', unit='', array=logUmc[:])
         col01.append(col50)
+        tree_main['AGNTAU'] = logUmc[:]
 
     # zmc
     col50 = fits.Column(name='zmc', format='E', unit='', array=zmc[:])
     col01.append(col50)
+    tree_main['zmc'] = zmc[:]
 
     # Mass
     col50 = fits.Column(name='ms', format='E', unit='Msun', array=msmc[:])
     col01.append(col50)
+    tree_main['ms'] = msmc[:]
 
     # zmc
     col50 = fits.Column(name='z_cz', format='E', unit='', array=z_cz[:])
     col01.append(col50)
+    tree_main['z_cz'] = z_cz[:]
 
     # Chi
     col50 = fits.Column(name='chi', format='E', unit='', array=fitc[:])
     col01.append(col50)
+    tree_main['chi'] = fitc[:]
 
     # C0 scale
     col50 = fits.Column(name='Cscale0', format='E', unit='', array=scl_cz0[:])
     col01.append(col50)
+    tree_main['Cscale0'] = scl_cz0[:]
 
     # C1 scale
     col50 = fits.Column(name='Cscale1', format='E', unit='', array=scl_cz1[:])
     col01.append(col50)
+    tree_main['Cscale1'] = scl_cz1[:]
 
     # C2 scale
     col50 = fits.Column(name='Cscale2', format='E', unit='', array=scl_cz2[:])
     col01.append(col50)
+    tree_main['Cscale2'] = scl_cz2[:]
 
     col50 = fits.Column(name='logf', format='E', unit='', array=logf)
     col01.append(col50)
+    tree_main['logf'] = logf[:]
 
     colms = fits.ColDefs(col01)
     dathdu = fits.BinTableHDU.from_columns(colms)
     hdu = fits.HDUList([prihdu, dathdu])
-    hdu.writeto(self.DIR_OUT + 'summary_' + ID0 + '.fits', overwrite=True)
+    hdu.writeto(self.DIR_OUT + 'gsf_params_' + ID0 + '.fits', overwrite=True)
+
+    tree = {'meta':tree_meta,'main':tree_main}
+    af = asdf.AsdfFile(tree)
+    af.write_to(os.path.join(self.DIR_OUT, 'gsf_params_' + ID0 + '.asdf'), all_array_compression='zlib')
 
 
 def get_index(mmax=300):

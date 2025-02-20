@@ -219,7 +219,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
+    file = MB.DIR_OUT + 'gsf_params_' + ID + '.fits'
     hdul = fits.open(file)
     
     ndim_eff = hdul[0].header['NDIM']

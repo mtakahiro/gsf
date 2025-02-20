@@ -302,7 +302,7 @@ class Func:
         par : library
             contains parameters
         '''
-        if lib == None:
+        if lib is None:
             if lib_all:
                 lib = self.MB.lib_neb_all
             else:

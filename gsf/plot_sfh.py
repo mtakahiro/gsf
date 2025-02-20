@@ -106,7 +106,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
+    file = MB.DIR_OUT + 'gsf_params_' + ID + '.fits'
     hdul = fits.open(file)
     try:
         zbes = hdul[0].header['zmc']
