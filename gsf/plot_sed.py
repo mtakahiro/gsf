@@ -2993,47 +2993,50 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     plt.close()
 
 
-def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
+def plot_filter_core(band, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
                 ind_remove=[], nmax=1000, plot_log=False):
-    '''
-    Add filter response curve to ax1.
+    ''''''
+    filts = []
+    for key0 in band.keys():
+        key = key0.split('_')[0]
+        if key not in filts:
+            filts.append(key)
 
-    '''
-    NUM_COLORS = len(MB.filts)
+    NUM_COLORS = len(filts)
     cm = plt.get_cmap(cmap)
     cols = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
 
-    filt_responses = {}
+    filt_responses = {'colors':[],'filters':{}}
     wavecen = []
-    for ii,filt in enumerate(MB.filts):
-        wave = MB.band['%s_lam'%filt]
-        flux = MB.band['%s_res'%filt]
+    for ii,filt in enumerate(filts):
+        wave = band['%s_lam'%filt]
+        flux = band['%s_res'%filt]
         #wavecen.append(np.median(wave * flux)/np.median(flux))
         con = (flux/flux.max()>0.1)
         wavecen.append(np.min(wave[con]))
     wavecen = np.asarray(wavecen)
     wavecen_sort = np.sort(wavecen)
 
-    for ii,filt in enumerate(MB.filts):
+    for ii,filt in enumerate(filts):
         iix = np.argmin(np.abs(wavecen_sort[:]-wavecen[ii]))
         col = cols[iix]
-        wave = MB.band['%s_lam'%filt]
-        flux = MB.band['%s_res'%filt]
+        wave = band['%s_lam'%filt]
+        flux = band['%s_res'%filt]
         
         if len(wave) > nmax:
             nthin = int(len(wave)/nmax)
         else:
             nthin = 1
 
-        filt_responses[filt] = {}
+        filt_responses['filters'][filt] = {}
         wave_tmp = np.zeros(len(wave[::nthin]), float)
         res_tmp = np.zeros(len(wave[::nthin]), float)
 
         wave_tmp[:] = wave[::nthin]
         res_tmp[:] = flux[::nthin]
 
-        filt_responses[filt]['wave'] = wave_tmp
-        filt_responses[filt]['response'] = res_tmp
+        filt_responses['filters'][filt]['wave'] = wave_tmp
+        filt_responses['filters'][filt]['response'] = res_tmp
 
         # Get fwhm;
         fsum = np.nansum(res_tmp)
@@ -3049,21 +3052,31 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
             if wave_median == 0 and fcum[jj]>0.50:
                 wave_median = wave_tmp[jj]
         fwhm = lam1 - lam0
-        filt_responses[filt]['wave_mean'] = wave_median
-        filt_responses[filt]['fwhm'] = fwhm
+        filt_responses['filters'][filt]['wave_mean'] = wave_median
+        filt_responses['filters'][filt]['fwhm'] = fwhm
 
         if ii in ind_remove:
             continue
 
+        filt_responses['colors'].append(col)
+
         if not plot_log:
-            ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-            ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+            ax.plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+            ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
         else:
-            ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-            ax.fill_between(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+            ax.plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+            ax.fill_between(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
 
+    return ax,filt_responses
+
+def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
+                ind_remove=[], nmax=1000, plot_log=False):
+    '''
+    Add filter response curve to ax1.
+    '''
+    ax, filt_responses = plot_filter_core(MB.band, ax, ymax, scl=scl, cmap=cmap, alp=alp, 
+                ind_remove=ind_remove, nmax=nmax, plot_log=plot_log)
     MB.filt_responses = filt_responses
-
     return ax
 
 
