@@ -295,9 +295,9 @@ class Mainbody(GsfBase):
                     self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
                     self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
-                    self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
-                    self.zmcmin = None
-                    self.zmcmax = None
+                    self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z=%.2f pm 1.0'%(self.zgal))
+                    self.zmcmin = self.zgal-1#None
+                    self.zmcmax = self.zgal+1#None
 
         self.set_zprior(self.zmcmin, self.zmcmax, delzz=0.01, f_eazy=False, eaz_pz=None, zmax=self.zmcmax)
 

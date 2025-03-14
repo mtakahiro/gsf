@@ -3011,7 +3011,6 @@ def plot_filter_core(band, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
     for ii,filt in enumerate(filts):
         wave = band['%s_lam'%filt]
         flux = band['%s_res'%filt]
-        #wavecen.append(np.median(wave * flux)/np.median(flux))
         con = (flux/flux.max()>0.1)
         wavecen.append(np.min(wave[con]))
     wavecen = np.asarray(wavecen)
@@ -3054,11 +3053,10 @@ def plot_filter_core(band, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
         fwhm = lam1 - lam0
         filt_responses['filters'][filt]['wave_mean'] = wave_median
         filt_responses['filters'][filt]['fwhm'] = fwhm
+        filt_responses['colors'].append(col)
 
         if ii in ind_remove:
             continue
-
-        filt_responses['colors'].append(col)
 
         if not plot_log:
             ax.plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
