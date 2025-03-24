@@ -176,7 +176,7 @@ class Func:
             xx is OBSERVED wavelength at z=MB.zgal
         '''
         Mtot:float = 0
-        if lib == None:
+        if lib is None:
             if lib_all:
                 lib = self.MB.lib_all
             else:
@@ -233,7 +233,7 @@ class Func:
         par : library
             contains parameters
         '''
-        if lib == None:
+        if lib is None:
             if lib_all:
                 lib = self.MB.lib_agn_all
             else:
@@ -302,7 +302,7 @@ class Func:
         par : library
             contains parameters
         '''
-        if lib == None:
+        if lib is None:
             if lib_all:
                 lib = self.MB.lib_neb_all
             else:
@@ -987,7 +987,7 @@ class Func_tau:
         Mtot = 0
         pp = 0
 
-        if lib == None:
+        if lib is None:
             if lib_all:
                 lib = self.MB.lib_all
             else:

@@ -29,7 +29,7 @@ import pathlib
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err, str2bool
 from .zfit import check_redshift,get_chi2
-from .writing import get_param
+from .write_param import get_param
 from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
@@ -295,9 +295,9 @@ class Mainbody(GsfBase):
                     self.zmcmin = self.zgal - float(self.fd_cat['ez_l'][iix])
                     self.zmcmax = self.zgal + float(self.fd_cat['ez_u'][iix])
                 except:
-                    self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z pm 1.0')
-                    self.zmcmin = None
-                    self.zmcmax = None
+                    self.logger.warning('ZMCMIN and ZMCMAX cannot be found. z range is set to z=%.2f pm 1.0'%(self.zgal))
+                    self.zmcmin = self.zgal-1#None
+                    self.zmcmax = self.zgal+1#None
 
         self.set_zprior(self.zmcmin, self.zmcmax, delzz=0.01, f_eazy=False, eaz_pz=None, zmax=self.zmcmax)
 
@@ -1763,13 +1763,13 @@ class Mainbody(GsfBase):
 
         if self.f_dust:
             self.lib_dust = self.fnc.open_spec_dust_fits(fall=0)
-            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1)
+            self.lib_dust_all = self.fnc.open_spec_dust_fits(fall=1, orig=True)
         if self.fneb:
             self.lib_neb = self.fnc.open_spec_fits(fall=0, f_neb=True)
-            self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True)
+            self.lib_neb_all = self.fnc.open_spec_fits(fall=1, f_neb=True, orig=True)
         if self.fagn:
             self.lib_agn = self.fnc.open_spec_fits(fall=0, f_agn=True)
-            self.lib_agn_all = self.fnc.open_spec_fits(fall=1, f_agn=True)
+            self.lib_agn_all = self.fnc.open_spec_fits(fall=1, f_agn=True, orig=True)
 
         if add_fir == None:
             add_fir = self.f_dust
@@ -2117,7 +2117,7 @@ class Mainbody(GsfBase):
                         axes[-1].set_xlabel("step number")
                     else:
                         axes.set_xlabel("step number")
-                    plt.savefig('%s/chain_%s.png'%(self.DIR_OUT,self.ID))
+                    plt.savefig('%s/gsf_chain_%s.png'%(self.DIR_OUT,self.ID))
                     plt.close()
                     # For memory optimization;
                     del samples, axes
@@ -2241,12 +2241,12 @@ class Mainbody(GsfBase):
             use_pickl = False
             use_pickl = True
             if use_pickl:
-                cpklname = 'chain_' + self.ID + '_corner.cpkl'
+                cpklname = 'gsf_chain_' + self.ID + '.cpkl'
                 savecpkl({'chain':flatchain,
                               'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim},
                              savepath+cpklname) # Already burn in
             else:
-                cpklname = 'chain_' + self.ID + '_corner.asdf'
+                cpklname = 'gsf_chain_' + self.ID + '.asdf'
                 tree = {'chain':flatchain.to_dict(), 'burnin':burnin, 'nwalkers':self.nwalk,'niter':self.nmc,'ndim':self.ndim}
                 af = asdf.AsdfFile(tree)
                 af.write_to(savepath+cpklname, all_array_compression='zlib')
@@ -2276,7 +2276,7 @@ class Mainbody(GsfBase):
                 plot_datapoints=False, plot_contours=True, no_fill_contours=True, \
                 plot_density=False, levels=levels, truth_color='gray', color='#4682b4')
 
-                fig1.savefig(self.DIR_OUT + 'SPEC_' + self.ID + '_corner.png')
+                fig1.savefig(self.DIR_OUT + 'gsf_corner_' + self.ID + '.png')
                 self.cornerplot_fig = fig1
 
             # Analyze MCMC results.

@@ -152,7 +152,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
     f_apply_igm=True, show_noattn=False, percs=[16,50,84],
     x1min=4000, return_figure=False, lcb='#4682b4',
-    lam_b=1350, lam_r=3000
+    lam_b=1350, lam_r=3000,
+    clean_files=True
     ):
     '''
     Parameters
@@ -218,7 +219,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
+    file = MB.DIR_OUT + 'gsf_params_' + ID + '.fits'
     hdul = fits.open(file)
     
     ndim_eff = hdul[0].header['NDIM']
@@ -770,10 +771,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     use_pickl = False
     use_pickl = True
     if use_pickl:
-        pfile = 'chain_' + ID + '_corner.cpkl'
+        pfile = 'gsf_chain_' + ID + '.cpkl'
         data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     else:
-        pfile = 'chain_' + ID + '_corner.asdf'
+        pfile = 'gsf_chain_' + ID + '.asdf'
         data = asdf.open(os.path.join(samplepath+'/'+pfile))
 
     try:
@@ -1411,6 +1412,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         hdr['version'] = gsf.__version__
 
         # Write;
+        # This file will be deleted;
         colspec = fits.ColDefs(col00)
         hdu0 = fits.BinTableHDU.from_columns(colspec, header=hdr)
         hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
@@ -1583,13 +1585,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     #
     if f_label:
         fs_label = 8
-        fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
+        fd = gsf_dict['sfh']#fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if MB.f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))#, fin_chi2)
+            %(ID, zbes, np.log10(float(fd['MSTEL_50'].value)), MD50, TD50, float(fd['Z_MW_50']), np.log10(float(fd['T_MW_50'].value)), float(fd['AV0_50'].value))#, fin_chi2)
         else:
             label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['AV0_50']))
+            %(ID, zbes, np.log10(float(fd['MSTEL_50'].value)), float(fd['Z_MW_50']), np.log10(float(fd['T_MW_50'].value)), float(fd['AV0_50'].value))
 
         if f_grsm:
             ax1.text(0.02, 0.68, label,\
@@ -1711,15 +1713,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     ax1.legend(loc=1, fontsize=11)
 
     if figpdf:
-        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.pdf', dpi=dpi)
     else:
-        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.png', dpi=dpi)
 
     if return_figure:
         return tree_spec, fig
 
     fig.clear()
     plt.close()
+
+    # Clean;
+    if clean_files:
+        os.system('rm %s'%(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID)))
+        os.system('rm %s'%(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID)))
+        os.system('rm %s'%(MB.DIR_OUT + 'SFH_%s.fits'%(ID)))
+        os.system('rm %s'%(MB.DIR_OUT + 'gsf_sfh_%s.asdf'%(ID)))
 
     return tree_spec
 
@@ -2984,47 +2993,49 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     plt.close()
 
 
-def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
+def plot_filter_core(band, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
                 ind_remove=[], nmax=1000, plot_log=False):
-    '''
-    Add filter response curve to ax1.
+    ''''''
+    filts = []
+    for key0 in band.keys():
+        key = key0.split('_')[0]
+        if key not in filts:
+            filts.append(key)
 
-    '''
-    NUM_COLORS = len(MB.filts)
+    NUM_COLORS = len(filts)
     cm = plt.get_cmap(cmap)
     cols = [cm(1 - 1.*i/NUM_COLORS) for i in range(NUM_COLORS)]
 
-    filt_responses = {}
+    filt_responses = {'colors':[],'filters':{}}
     wavecen = []
-    for ii,filt in enumerate(MB.filts):
-        wave = MB.band['%s_lam'%filt]
-        flux = MB.band['%s_res'%filt]
-        #wavecen.append(np.median(wave * flux)/np.median(flux))
+    for ii,filt in enumerate(filts):
+        wave = band['%s_lam'%filt]
+        flux = band['%s_res'%filt]
         con = (flux/flux.max()>0.1)
         wavecen.append(np.min(wave[con]))
     wavecen = np.asarray(wavecen)
     wavecen_sort = np.sort(wavecen)
 
-    for ii,filt in enumerate(MB.filts):
+    for ii,filt in enumerate(filts):
         iix = np.argmin(np.abs(wavecen_sort[:]-wavecen[ii]))
         col = cols[iix]
-        wave = MB.band['%s_lam'%filt]
-        flux = MB.band['%s_res'%filt]
+        wave = band['%s_lam'%filt]
+        flux = band['%s_res'%filt]
         
         if len(wave) > nmax:
             nthin = int(len(wave)/nmax)
         else:
             nthin = 1
 
-        filt_responses[filt] = {}
+        filt_responses['filters'][filt] = {}
         wave_tmp = np.zeros(len(wave[::nthin]), float)
         res_tmp = np.zeros(len(wave[::nthin]), float)
 
         wave_tmp[:] = wave[::nthin]
         res_tmp[:] = flux[::nthin]
 
-        filt_responses[filt]['wave'] = wave_tmp
-        filt_responses[filt]['response'] = res_tmp
+        filt_responses['filters'][filt]['wave'] = wave_tmp
+        filt_responses['filters'][filt]['response'] = res_tmp
 
         # Get fwhm;
         fsum = np.nansum(res_tmp)
@@ -3040,21 +3051,30 @@ def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4,
             if wave_median == 0 and fcum[jj]>0.50:
                 wave_median = wave_tmp[jj]
         fwhm = lam1 - lam0
-        filt_responses[filt]['wave_mean'] = wave_median
-        filt_responses[filt]['fwhm'] = fwhm
+        filt_responses['filters'][filt]['wave_mean'] = wave_median
+        filt_responses['filters'][filt]['fwhm'] = fwhm
+        filt_responses['colors'].append(col)
 
         if ii in ind_remove:
             continue
 
         if not plot_log:
-            ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-            ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+            ax.plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+            ax.fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
         else:
-            ax.plot(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-            ax.fill_between(wave, ((flux / np.max(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.max(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+            ax.plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+            ax.fill_between(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
 
+    return ax,filt_responses
+
+def plot_filter(MB, ax, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
+                ind_remove=[], nmax=1000, plot_log=False):
+    '''
+    Add filter response curve to ax1.
+    '''
+    ax, filt_responses = plot_filter_core(MB.band, ax, ymax, scl=scl, cmap=cmap, alp=alp, 
+                ind_remove=ind_remove, nmax=nmax, plot_log=plot_log)
     MB.filt_responses = filt_responses
-
     return ax
 
 

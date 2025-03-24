@@ -1,0 +1,45 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "setuptools_scm[toml]>=6.2",
+    "wheel",
+    "cibuildwheel >= 2.0.0",
+    "gitpython",
+]
+build-backend="setuptools.build_meta"
+
+[project]
+name="gsf"
+requires-python=">=3.11"
+authors = [
+    {name = "Morishita Takahiro", email = "takahiro@ipac.caltech.edu"},
+]
+dependencies = [
+    'asdf',
+    'astropy',
+    'colorama',
+    'corner',
+    'dust_extinction',
+    'emcee',
+    'fsps',
+    'lmfit',
+    'multiprocess',
+    'numpy>=1.21',
+    'pandas',
+    'pytest',
+    'scipy>=1.5.1',
+    'specutils',
+    'sphinx_automodapi',
+    'zeus-mcmc'
+]
+
+dynamic=["version","readme"]
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.rst"]}
+
+[tool.setuptools_scm]
+write_to = "gsf/version.py"
+
+[tool.setuptools]
+package-dir = {'gsf'='gsf'}

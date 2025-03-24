@@ -46,13 +46,14 @@ Demonstration
 Pre-requirement
 ~~~~~~~~~~~~~~~
 
+- python 3.11 or newer
 - astropy
 - Pandas
 - multiprocess
 - lmfit (no older than v1.0.0)
 - emcee (no older than v3.0.0)
 - corner
-- python-fsps (v0.3.0)
+- python-fsps (v0.3.0 or newer)
 - fsps
 
 
@@ -71,7 +72,7 @@ If a user prefers to install in a new conda environment, execute the following b
 
 .. code-block:: bash
 
-    conda create -n gsf python=3.10
+    conda create -n gsf python=3.11
     conda activate gsf
 
 Then, make sure to install `fsps <https://github.com/cconroy20/fsps>`__ and `python-fsps <https://github.com/dfm/python-fsps>`__ by following their instruction.
@@ -119,6 +120,7 @@ Execution flag
 
 Release notes
 ~~~~~~~~~~~~~
+- V1.9: Some output files (mostly fits) are underdeprecation warning; Try to use *.asdf files.
 - V1.8: JWST prism spectrum can be fit. Usability in Notebook has been improved. Logger has been implemented (thanks to Antonio Addis).
 - V1.7.4: pytest has been implemented.
 - V1.6: Emission lines can be added to the stellar templates. This is controlled by two parameter, Aneb (amplitude) and logU.

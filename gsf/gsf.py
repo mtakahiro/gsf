@@ -207,7 +207,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
     if fplt <= 3 and flag_suc:
 
         # Use the final redshift;
-        hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'summary_%s.fits'%MB.ID))[0].header
+        hd_sum = fits.open(os.path.join(MB.DIR_OUT, 'gsf_params_%s.fits'%MB.ID))[0].header
         MB.zgal = hd_sum['ZMC']
 
         if not MB.ztemplate:
