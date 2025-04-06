@@ -371,9 +371,9 @@ class Mainbody(GsfBase):
         
         self.check_keys(self)
 
-        if 'BPASS' in self.input_keys and str2bool(inputs['BPASS']):
-            self.logger.warning('Currently, BPASS does not have option of nebular emission.')
-            inputs['ADD_NEBULAE'] = '0'
+        # if 'BPASS' in self.input_keys and str2bool(inputs['BPASS']):
+        #     self.logger.warning('Currently, BPASS does not have option of nebular emission.')
+        #     inputs['ADD_NEBULAE'] = '0'
 
         # Nebular;
         self.neb_correlate = False

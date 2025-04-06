@@ -253,7 +253,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fagn:
         AGNTAU50 = hdul[1].data['AGNTAU'][1]
         Aagn50 = 10**hdul[1].data['Aagn'][1]
-
+    
     aa = 0
     Av16 = hdul[1].data['AV'+str(aa)][0]
     Av50 = hdul[1].data['AV'+str(aa)][1]
@@ -871,7 +871,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
                     mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
-                    # ax1.plot(xm_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
+                    # ax1.plot(xm_tmp_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
 
                     # Make no emission line template;
                     mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
