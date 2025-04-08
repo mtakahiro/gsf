@@ -625,7 +625,10 @@ def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02
 
 
 def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
-                      upmass=300):
+                      upmass=300, 
+                      couple_neb=False, logu_neb=-2.0,
+                      age_neb=0.01,
+                      ):
     '''
     This is for the preparation of default template, with BPASS templates, at z=0.
     Should be run before SED fitting.
@@ -649,6 +652,15 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
 
     Zsun : float, optional
         Metallicity of templates, in units of absolute value (e.g. Zsun=0.02 for BPASS).
+
+    age_neb : float
+        age in Gyr, with which the nebular component is calculated. 
+        if couple_nebular, this is not effective.
+
+    couple_neb: bool
+        if True, it attaches the nebular component to the main flux component. This case, eflux would be 0. Thus, Aneb makes no sense. 
+        This case, logU will be fixed.
+        else, nebular component is calculated assuming the youngest age among the age bin, and will be controlled by Aneb.
     '''
     nimf = MB.nimf
     if nimf == 0: # Salpeter
@@ -747,6 +759,10 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
             logUs_bpass = np.linspace(-4.0,-1.0,7)
             v_blass_neb = '11'
             logUs_bpass_str = ['v%sg'%v_blass_neb, 'v%sf'%v_blass_neb, 'v%se'%v_blass_neb, 'v%sd'%v_blass_neb, 'v%sc'%v_blass_neb, 'v%sb'%v_blass_neb, 'v%sa'%v_blass_neb]
+            if age_neb is not None:
+                iix_age_neb = np.argmin(np.abs(age_neb-age))
+            else:
+                iix_age_neb = 0 # Use the youngest
 
         # 'tau is the width of each age bin.'
         for pp in range(len(tau0)):
@@ -862,64 +878,124 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                     tree_spec.update({'wavelength': wave})
                     flagz = True
 
-                # ASDF
-                tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
+                if not couple_neb:
+                    # ASDF
+                    tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
-                # BPASS neb;
-                if fneb and ss == 0 and pp == 0:
-                    for nlogU, logUtmp in enumerate(MB.logUs):
-                        # Each file has 16 columns and 30,000 rows. The first column lists a wavelength in angstroms, 
-                        # and each remaining column n (n>1) holds the model flux for the population at an age of 10^(6+0.1*(n-2)) years at that wavelength. The range of ages covered is log(age/years)=6.0-7.5
-                        # for nlogU, logUtmp in enumerate(MB.logUs):
-                        # The units of flux are log_10(ergs/s per Angstrom), normalised for a cluster of 1e6 Msun formed in a single instantaneous burst. The total luminosity of the SED can be simply calculated by summing all the rows together
-                        iix = np.argmin(np.abs(logUtmp - logUs_bpass))
-                        logu_str = logUs_bpass_str[iix]
-                        file_sed_emi = '%scloudyspec_imf%s_z%s_%s_%s.sed'%(DIR_LIB_NEB,imf_str,z_str,bin_str,logu_str)
-                        fd_sed_emi = ascii.read(file_sed_emi)
-                        con_emi_data = (fd_sed_emi['col1'] != 'Total_Power')
-                        fd_sed_emi = fd_sed_emi[con_emi_data]
-                        wave0_emi = np.asarray([float(s) for s in fd_sed_emi['col1']])
-                        flux0_emi = np.zeros(len(wave0_emi),'float')
-                        # Repeat the same but for emission;
+                    # BPASS neb;
+                    if fneb and pp == 0 and ss == iix_age_neb:
 
-                        #
-                        # Determining tau for each age bin;
-                        #
-                        # Only ssp available;
-                        iis = np.argmin(np.abs(age[ss] - age_emi[:]/1e9))
-                        if iis+2 < ncols_emi:
-                            flux0_emi = 10**fd_sed_emi['col%d'%(iis+2)]
-                        else:
-                            flux0_emi = flux0_emi[:] * 0
+                        if zz == 0:
+                            MB.logger.info('BPASS nebular component is calculated using age=%.1e'%(age[ss]))
 
-                        # Then. add flux if tau > 0.
-                        # con = (wave0>lammin) & (wave0<lammax)
-                        # wave, flux = wave0[con], flux0[con]
-                        # con_emi = (wave0_emi>lammin) & (wave0_emi<lammax)
-                        # ewave, eflux = wave0_emi[con_emi], flux0_emi[con_emi]
-                        femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
-                        flux_nebular = femi(wave)
-                        emline_luminosity = np.sum(flux0_emi)
+                        for nlogU, logUtmp in enumerate(MB.logUs):
+                            # Each file has 16 columns and 30,000 rows. The first column lists a wavelength in angstroms, 
+                            # and each remaining column n (n>1) holds the model flux for the population at an age of 10^(6+0.1*(n-2)) years at that wavelength. The range of ages covered is log(age/years)=6.0-7.5
+                            # for nlogU, logUtmp in enumerate(MB.logUs):
+                            # The units of flux are log_10(ergs/s per Angstrom), normalised for a cluster of 1e6 Msun formed in a single instantaneous burst. The total luminosity of the SED can be simply calculated by summing all the rows together
+                            iix = np.argmin(np.abs(logUtmp - logUs_bpass))
+                            logu_str = logUs_bpass_str[iix]
+                            file_sed_emi = '%scloudyspec_imf%s_z%s_%s_%s.sed'%(DIR_LIB_NEB,imf_str,z_str,bin_str,logu_str)
+                            fd_sed_emi = ascii.read(file_sed_emi)
+                            con_emi_data = (fd_sed_emi['col1'] != 'Total_Power')
+                            fd_sed_emi = fd_sed_emi[con_emi_data]
+                            wave0_emi = np.asarray([float(s) for s in fd_sed_emi['col1']])
+                            flux0_emi = np.zeros(len(wave0_emi),'float')
+                            # Repeat the same but for emission;
 
-                        flux_nebular_only = flux_nebular/Lunit_emi-flux
-                        con_neg = flux_nebular_only<0
-                        flux_nebular_only[con_neg] = 0
+                            #
+                            # Determining tau for each age bin;
+                            #
+                            # Only ssp available;
+                            iis = np.argmin(np.abs(age[ss] - age_emi[:]/1e9))
+                            if iis+2 < ncols_emi:
+                                flux0_emi = 10**fd_sed_emi['col%d'%(iis+2)]
+                            else:
+                                flux0_emi = flux0_emi[:] * 0
 
-                        # plt.close()
-                        # plt.plot(wave, flux)
-                        # plt.plot(wave, flux_nebular/Lunit_emi)
-                        # plt.xlim(0,10000)
-                        # plt.show()
-                        # hoge
+                            # if zz == 0 and nlogU ==0:
+                            #     for _i in range(5):
+                            #         plt.plot(wave0_emi, 10**fd_sed_emi['col%d'%(_i+2)], ls=':', alpha=0.5, label='%d'%(_i))
 
-                        # ASDF
-                        # tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
-                        tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular_only}) # in Lsun/AA
-                        tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
-                        tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
-                        tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
-                        # print('fspec_nebular_Z%d'%zz+'_logU%d'%nlogU, flux_nebular)
+                            # Then. add flux if tau > 0.
+                            # con = (wave0>lammin) & (wave0<lammax)
+                            # wave, flux = wave0[con], flux0[con]
+                            # con_emi = (wave0_emi>lammin) & (wave0_emi<lammax)
+                            # ewave, eflux = wave0_emi[con_emi], flux0_emi[con_emi]
+                            femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
+                            flux_nebular = femi(wave)
+                            emline_luminosity = np.sum(flux0_emi)
 
+                            flux_nebular_only = flux_nebular/Lunit_emi-flux
+                            con_neg = flux_nebular_only<0
+                            flux_nebular_only[con_neg] = 0
+
+                            # ASDF
+                            # tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
+                            tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular_only}) # in Lsun/AA
+                            tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
+                            tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
+                            tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
+                            # print('fspec_nebular_Z%d'%zz+'_logU%d'%nlogU, flux_nebular)
+
+                else:
+                    MB.logUFIX = logu_neb
+                    MB.nlogU = 1
+                    MB.logUMIN = MB.logUFIX
+                    MB.logUMAX = MB.logUFIX
+                    MB.DELlogU = 0
+                    MB.logUs = np.asarray([MB.logUMAX])
+
+                    iix = np.argmin(np.abs(logu_neb - logUs_bpass))
+                    logu_str = logUs_bpass_str[iix]
+                    file_sed_emi = '%scloudyspec_imf%s_z%s_%s_%s.sed'%(DIR_LIB_NEB,imf_str,z_str,bin_str,logu_str)
+                    fd_sed_emi = ascii.read(file_sed_emi)
+                    con_emi_data = (fd_sed_emi['col1'] != 'Total_Power')
+                    fd_sed_emi = fd_sed_emi[con_emi_data]
+                    wave0_emi = np.asarray([float(s) for s in fd_sed_emi['col1']])
+                    flux0_emi = np.zeros(len(wave0_emi),'float')
+
+                    if pp == 0 and ss == 0 and zz == 0:
+                        MB.logger.info('BPASS nebular component is calculated using logU=%.1f'%(logu_neb))
+
+                    #
+                    # Determining tau for each age bin;
+                    #
+                    # Only ssp available;
+                    iis = np.argmin(np.abs(age[ss] - age_emi[:]/1e9))
+                    if iis+2 < ncols_emi:
+                        flux0_emi = 10**fd_sed_emi['col%d'%(iis+2)]
+                    else:
+                        flux0_emi = flux0_emi[:] * 0
+                    emline_luminosity = np.nansum(flux0_emi)
+
+                    femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
+                    flux_nebular = femi(wave)
+                    con_neg = flux_nebular<0
+                    flux_nebular[con_neg] = 0
+
+                    flux_nebular_only = flux_nebular/Lunit_emi-flux
+                    con_neg = flux_nebular_only<0
+                    flux_nebular_only[con_neg] = 0
+
+                    # ASDF
+                    L_neb_tmp = np.nansum(flux_nebular/Lunit_emi)
+                    tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux_nebular/Lunit_emi * Ls[ss]/L_neb_tmp})
+                    # if zz == 0:
+                    #     plt.close()
+                    #     plt.plot(wave, flux)
+                    #     plt.plot(wave, flux_nebular/Lunit_emi * Ls[ss]/L_neb_tmp)
+                    #     plt.show()
+                    tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%0: flux_nebular_only*0}) # in Lsun/AA
+                    tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%0: wave})
+                    tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%0: emline_luminosity}) # in Lsun
+                    tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%0: mstel_emi}) # in Msun
+
+            # plt.legend(loc=0)
+            # plt.show()
+            # hoge
+
+            # Register M/Ls;
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
                 for ll in range(len(INDICES)):
