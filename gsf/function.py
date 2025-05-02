@@ -827,11 +827,14 @@ def fnutonu(fnu, m0set=25.0, m0input=-48.6, has_unit=False):
     return fnu_new
 
 
-def flamtonu(lam, flam, m0set=25.0, m0=-48.6):
+def flamtonu(lam, flam, m0set=25.0, m0=-48.6, has_unit=False):
     '''
     Converts from Flam to Fnu, with mag zeropoint of m0set.
     
     '''
+    if has_unit:
+        flux_nu = flam.to(u.erg/u.s/u.cm**2/u.Hz, u.spectral_density(lam))
+        return flux_nu
     Ctmp = lam**2/c * 10**((m0set-m0)/2.5) #/ delx_org
     fnu = flam * Ctmp
     return fnu

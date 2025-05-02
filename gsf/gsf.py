@@ -55,7 +55,11 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
             if MB.f_dust:
                 lammax = 2000000 * (1.+MB.zgal) # AA
 
-            if MB.SFH_FORM == -99:
+            if MB.f_general:
+                    from .maketmp_z0 import make_tmp_z0_general
+                    make_tmp_z0_general(MB, lammax=lammax)
+
+            elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
                     from .maketmp_z0 import make_tmp_z0_bpass
                     make_tmp_z0_bpass(MB, lammax=lammax)
@@ -143,7 +147,11 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             if MB.f_dust:
                 lammax = 2000000 * (1.+MB.zgal) # AA
 
-            if MB.SFH_FORM == -99:
+            if MB.f_general:
+                    from .maketmp_z0 import make_tmp_z0_general
+                    make_tmp_z0_general(MB, lammax=lammax)
+
+            elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
                     from .maketmp_z0 import make_tmp_z0_bpass
                     make_tmp_z0_bpass(MB, lammax=lammax)
