@@ -1,6 +1,6 @@
 # from scipy import asarray as ar,exp
 import numpy as np
-import sys
+import sys,glob,asdf
 try:
     from scipy.integrate import simps
 except:
@@ -16,10 +16,10 @@ from datetime import datetime
 from astropy import units as u
 from astropy.cosmology import WMAP9
 from dust_extinction.averages import G03_SMCBar
-from astropy import units as u
 from astropy.modeling.polynomial import Chebyshev1D
 from specutils.fitting import continuum 
 from specutils.spectra.spectrum1d import Spectrum1D
+from astropy.io import ascii
 
 
 ################
@@ -29,6 +29,97 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
+
+
+def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=False):
+    ''''''
+    # New file;
+    # print('%s/gsf_%s.tex'%(dir_out,key_drop))
+    # fw = open('%s/gsf_%s.tex'%(dir_out,key_drop),'w')
+    if file_out is None:
+        file_out = './gsf_properties.txt'
+    fw_asc = open(file_out,'w')
+
+    files_gsf_params = glob.glob('%s/gsf_params_*.asdf'%(dir_gsf_output))
+
+    ids_str = ''
+    ntot = 0
+    header = True
+    for ii, file_gsf_params in enumerate(files_gsf_params):
+
+        idobj = file_gsf_params.split('/')[-1].replace('gsf_params_','').replace('.asdf','')
+        file_gsf = '%s/gsf_%s.asdf'%(dir_gsf_output, idobj)
+
+        if os.path.exists(file_gsf):
+            # gsf;
+            fd_gsf = asdf.open(file_gsf)
+            fd_sed = fd_gsf['sed']
+            fd_sfh = fd_gsf['sfh']
+            TSET_SFR = float(fd_sfh['TSET_SFR']) * 1e3 # Myr
+
+            if header:
+                fw_asc.write('# id z z_err_l z_err_u Muv Muv_err_l Muv_err_u uvbeta uvbeta_err_l uvbeta_err_u logMs logMs_err_l logMs_err_u logSFR%dMyr logSFR%dMyr_err_l logSFR%dMyr_err_u logSFRUV logSFRUV_err_l logSFRUV_err_u logT logT_err_l logT_err_u logZ logZ_err_l logZ_err_u Av Av_err_l Av_err_u\n'%(TSET_SFR,TSET_SFR,TSET_SFR))
+                header = False
+
+            ubbeta50 = fd_sed['UVBETA_50']
+            ubbeta16 = np.abs(fd_sed['UVBETA_16']-fd_sed['UVBETA_50'])
+            ubbeta84 = np.abs(fd_sed['UVBETA_50']-fd_sed['UVBETA_84'])
+            sfruv50 = fd_sed['SFRUV_50'].value
+            sfruv16 = fd_sed['SFRUV_16'].value
+            sfruv84 = fd_sed['SFRUV_84'].value
+
+            # c = SkyCoord(ra[iimas]*u.deg, dec[iimas]*u.deg, frame='icrs', unit='deg')
+            # radec = c.to_string('hmsdms',sep=':', precision=2).split(' ')
+
+            if is_latex:
+                z_str = '$%.1f_{-%.1f}^{+%.1f}$'%(fd_pz['z50'][ii], fd_pz['z50'][ii]-fd_pz['z16'][ii], fd_pz['z84'][ii]-fd_pz['z50'][ii])
+
+                fw.write('%s-%s & %s & %s & $%.1f\pm%.1f$ & %s & $%.1f_{-%.1f}^{+%.1f}$ & $%.1f_{-%.1f}^{+%.1f}$ & $%.1f_{-%.1f}^{+%.1f}$ & $%.1f_{-%.1f}^{+%.1f}$\\\\\n'\
+                    %(fid_new, idmas, radec[0], radec[1], muv, emuv, \
+                    z_str, \
+                    fd_gsf['MUV50'], fd_gsf['MUV16']-fd_gsf['MUV50'], fd_gsf['MUV50']-fd_gsf['MUV84'], \
+                    ubbeta50, ubbeta16, ubbeta84,\
+                    float(fd_sfh['Mstel_50']), float(fd_sfh['Mstel_50'])-float(fd_sfh['Mstel_16']), float(fd_sfh['Mstel_84'])-float(fd_sfh['Mstel_50']),
+                    np.log10(sfruv50), np.log10(sfruv50)-np.log10(sfruv16), np.log10(sfruv84)-np.log10(sfruv50),\
+                    #(float(fd_sfh['T_MW_50'])), (float(fd_sfh['T_MW_50']))-(float(fd_sfh['T_MW_16'])), (float(fd_sfh['T_MW_84']))-(float(fd_sfh['T_MW_50'])),
+                    #float(fd_sfh['Z_MW_50']), float(fd_sfh['Z_MW_50'])-float(fd_sfh['Z_MW_16']), float(fd_sfh['Z_MW_84'])-float(fd_sfh['Z_MW_50']),
+                    #float(fd_sfh['AV_50']), float(fd_sfh['AV_50'])-float(fd_sfh['AV_16']), float(fd_sfh['AV_84'])-float(fd_sfh['AV_50']),
+                    ))
+                # & $%.1f_{-%.1f}^{+%.1f}$ & $%.1f_{-%.1f}^{+%.1f}$ & $%.1f_{-%.1f}^{+%.1f}$
+
+            try:
+                AV50, eAV_l, eAV_u = float(fd_sfh['AV_50'].value), float(fd_sfh['AV_50'].value)-float(fd_sfh['AV_16'].value), float(fd_sfh['AV_84'].value)-float(fd_sfh['AV_50'].value)
+            except:
+                AV50, eAV_l, eAV_u = float(fd_sfh['AV0_50'].value), float(fd_sfh['AV0_50'].value)-float(fd_sfh['AV0_16'].value), float(fd_sfh['AV0_84'].value)-float(fd_sfh['AV0_50'].value),
+
+            fw_asc.write('%s %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'\
+                %(idobj, \
+                float(fd_sfh['ZMC_50']), float(fd_sfh['ZMC_50'])-float(fd_sfh['ZMC_16']), float(fd_sfh['ZMC_84'])-float(fd_sfh['ZMC_50']), \
+                fd_sed['MUV_50'], fd_sed['MUV_16']-fd_sed['MUV_50'], fd_sed['MUV_50']-fd_sed['MUV_84'], \
+                ubbeta50, ubbeta16, ubbeta84,\
+                np.log10(float(fd_sfh['MSTEL_50'].value)), np.log10(float(fd_sfh['MSTEL_50'].value))-np.log10(float(fd_sfh['MSTEL_16'].value)), np.log10(float(fd_sfh['MSTEL_84'].value))-np.log10(float(fd_sfh['MSTEL_50'].value)),
+                float(fd_sfh['SFR_50'].value), float(fd_sfh['SFR_50'].value)-float(fd_sfh['SFR_16'].value), float(fd_sfh['SFR_84'].value)-float(fd_sfh['SFR_50'].value),
+                np.log10(sfruv50), np.log10(sfruv50)-np.log10(sfruv16), np.log10(sfruv84)-np.log10(sfruv50),\
+                (float(fd_sfh['T_MW_50'].value)), (float(fd_sfh['T_MW_50'].value))-(float(fd_sfh['T_MW_16'].value)), (float(fd_sfh['T_MW_84'].value))-(float(fd_sfh['T_MW_50'].value)),
+                float(fd_sfh['Z_MW_50']), float(fd_sfh['Z_MW_50'])-float(fd_sfh['Z_MW_16']), float(fd_sfh['Z_MW_84'])-float(fd_sfh['Z_MW_50']),
+                AV50, eAV_l, eAV_u,
+                #fd_pz['phigh'][ii], 1.
+                ))
+            ids_str+='%s,'%idobj
+            ntot += 1
+
+        else:
+            # if idmas == 14412:
+            # print(idmas, snuv, fd_pz['chi2_peak_high'][ii]-fd_pz['chi2_peak_low'][ii]<-4, fd_pz['z50'][ii], fd_pz['phigh'][ii])
+            None
+
+    print('N source found:',ntot)
+    # print('writing in','%s/gsf_%s.tex'%(dir_out,key_drop))
+
+    # fw.close()
+    fw_asc.close()
+
+    return ascii.read(file_out)
 
 
 def get_sed_plot(file, ax=None, unit='uJy', show_bb=True, show_obs=True,
