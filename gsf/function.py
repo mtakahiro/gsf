@@ -58,7 +58,7 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
             TSET_SFR = float(fd_sfh['TSET_SFR']) * 1e3 # Myr
 
             if header:
-                fw_asc.write('# id z z_err_l z_err_u Muv Muv_err_l Muv_err_u uvbeta uvbeta_err_l uvbeta_err_u logMs logMs_err_l logMs_err_u logSFR%dMyr logSFR%dMyr_err_l logSFR%dMyr_err_u logSFRUV logSFRUV_err_l logSFRUV_err_u logT logT_err_l logT_err_u logZ logZ_err_l logZ_err_u Av Av_err_l Av_err_u\n'%(TSET_SFR,TSET_SFR,TSET_SFR))
+                fw_asc.write('# id z z_err_l z_err_u Muv Muv_err_l Muv_err_u uvbeta uvbeta_err_l uvbeta_err_u uvbetaobs uvbetaobs_err_l uvbetaobs_err_u logMs logMs_err_l logMs_err_u logSFR%dMyr logSFR%dMyr_err_l logSFR%dMyr_err_u logSFRUV logSFRUV_err_l logSFRUV_err_u logT logT_err_l logT_err_u logZ logZ_err_l logZ_err_u Av Av_err_l Av_err_u\n'%(TSET_SFR,TSET_SFR,TSET_SFR))
                 header = False
 
             ubbeta50 = fd_sed['UVBETA_50']
@@ -67,6 +67,9 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
             sfruv50 = fd_sed['SFRUV_50'].value
             sfruv16 = fd_sed['SFRUV_16'].value
             sfruv84 = fd_sed['SFRUV_84'].value
+            ubbetaobs50 = fd_sed['UVBETA_OBS_50']
+            ubbetaobs16 = np.abs(fd_sed['UVBETA_OBS_16']-fd_sed['UVBETA_OBS_50'])
+            ubbetaobs84 = np.abs(fd_sed['UVBETA_OBS_50']-fd_sed['UVBETA_OBS_84'])
 
             # c = SkyCoord(ra[iimas]*u.deg, dec[iimas]*u.deg, frame='icrs', unit='deg')
             # radec = c.to_string('hmsdms',sep=':', precision=2).split(' ')
@@ -92,11 +95,12 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
             except:
                 AV50, eAV_l, eAV_u = float(fd_sfh['AV0_50'].value), float(fd_sfh['AV0_50'].value)-float(fd_sfh['AV0_16'].value), float(fd_sfh['AV0_84'].value)-float(fd_sfh['AV0_50'].value),
 
-            fw_asc.write('%s %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'\
+            fw_asc.write('%s %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f %.3f\n'\
                 %(idobj, \
                 float(fd_sfh['ZMC_50']), float(fd_sfh['ZMC_50'])-float(fd_sfh['ZMC_16']), float(fd_sfh['ZMC_84'])-float(fd_sfh['ZMC_50']), \
                 fd_sed['MUV_50'], fd_sed['MUV_16']-fd_sed['MUV_50'], fd_sed['MUV_50']-fd_sed['MUV_84'], \
                 ubbeta50, ubbeta16, ubbeta84,\
+                ubbetaobs50, ubbetaobs16, ubbetaobs84,\
                 np.log10(float(fd_sfh['MSTEL_50'].value)), np.log10(float(fd_sfh['MSTEL_50'].value))-np.log10(float(fd_sfh['MSTEL_16'].value)), np.log10(float(fd_sfh['MSTEL_84'].value))-np.log10(float(fd_sfh['MSTEL_50'].value)),
                 float(fd_sfh['SFR_50'].value), float(fd_sfh['SFR_50'].value)-float(fd_sfh['SFR_16'].value), float(fd_sfh['SFR_84'].value)-float(fd_sfh['SFR_50'].value),
                 np.log10(sfruv50), np.log10(sfruv50)-np.log10(sfruv16), np.log10(sfruv84)-np.log10(sfruv50),\
