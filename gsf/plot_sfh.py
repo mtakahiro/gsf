@@ -8,6 +8,7 @@ import os
 # import time
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as ticker
+import scipy.interpolate as interpolate
 
 from astropy.io import fits
 
@@ -343,21 +344,23 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             # quantity in log scale;
             AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
             AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
-            SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # / ml
+            SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # log Msun/yr
             ZM[aa, mm] = ZZtmp[aa] + Zrand
             ZMM[aa, mm]= ZZtmp[aa] + AAtmp[aa] + np.log10(mslist[aa]) + Zrand
             ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
 
             # SFR from SED. This will be converted in log later;
-            if age[aa]<=tset_SFR_SED:
-                SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
-                delt_tot += delT[aa]
+            if False:
+                if age[aa]<=tset_SFR_SED:
+                    SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
+                    delt_tot += delT[aa]
 
-        SFR_SED[mm] /= delt_tot
-        if SFR_SED[mm] > 0:
-            SFR_SED[mm] = np.log10(SFR_SED[mm])
-        else:
-            SFR_SED[mm] = -99
+        if False:
+            SFR_SED[mm] /= delt_tot
+            if SFR_SED[mm] > 0:
+                SFR_SED[mm] = np.log10(SFR_SED[mm])
+            else:
+                SFR_SED[mm] = -99
 
         for aa in range(len(age)):
 
@@ -399,6 +402,26 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
                 TL[aa, mm] = np.log10(TL[aa, mm])
             else:
                 TL[aa, mm] = np.nan
+
+        # Get SFR from SFH;
+        if True:
+            # tset_SFR_SED = 0.03
+            fint_sfr = interpolate.interp1d(np.log10(age), 10**SF[:, mm], kind='nearest', fill_value="extrapolate")
+            delt_int = np.nanmin(age)/10 # in Gyr
+            times_int = np.arange(0,np.nanmax(age),delt_int)
+            sfr_int = fint_sfr(np.log10(times_int))
+            # con = (~np.isinf(sfr_int))
+            # con2 = (~np.isinf(10**SF[:, mm]))
+            # print(np.nansum(sfr_int[con])*delt_int, np.nansum(10**SF[:, mm][con2]))
+            # hoge
+            con_sfr = (times_int<tset_SFR_SED)
+            SFR_SED[mm] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int))
+            # plt.close()
+            # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
+            # ax1.set_xscale('log')
+            # ax1.set_ylim(-3, 3)
+            # plt.savefig('tmp.png')
+            # hoge
 
         # Do stuff...
         # time.sleep(0.01)

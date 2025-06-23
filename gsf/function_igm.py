@@ -94,7 +94,7 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 	'''
 	Purpose
 	-------
-	Apply IMG-attenuation of Dijikstra (2014).
+	Apply IMG-attenuation of Dijikstra (2014). Sec.6.2 Inhomogeneous reionisation & its impact on Lya.
 	https://www.cambridge.org/core/services/aop-cambridge-core/content/view/S1323358014000332
 
 	Parameters
@@ -107,6 +107,8 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 		target redshift of IGM application
 	R_b1 : float
 		Bubble size, in Mpc
+	delta_v_0: 
+		Lya photons emitted by a galaxy at redshift zg with some velocity off-set delta_v_0
 
 	Returns
 	-------
@@ -136,11 +138,11 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 	delta_lam_fine = (np.linspace(900,2000,1000) - xLL) * (zin + 1)
 
 	delta_v = ckms * delta_lam_fine / (xLL * (1.+zin))
-	delta_v_b1 = delta_v
+	delta_v_b1 = delta_v # 
 	if R_b1>0:
 		delta_v_b1 += cosmo.H(zin).value * R_b1 / (1.+zin) # km / (Mpc s) * Mpc
 
-	tau_fine = 2.3 * x_D * (delta_v_b1/delta_v_0)**(-1) * ((1+zin)/10)**(3/2)
+	tau_fine = 2.3 * x_D * (delta_v_b1/delta_v_0)**(-1) * ((1+zin)/10)**(3/2) # Eq.(30)
 	con_tau = (tau_fine < 0) | (delta_v_b1 == 0)
 	tau_fine[con_tau] = 100
 
