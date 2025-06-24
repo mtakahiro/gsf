@@ -106,8 +106,8 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
                 ubbeta50, ubbeta16, ubbeta84,\
                 ubbetaobs50, ubbetaobs16, ubbetaobs84,\
                 np.log10(float(fd_sfh['MSTEL_50'].value)), np.log10(float(fd_sfh['MSTEL_50'].value))-np.log10(float(fd_sfh['MSTEL_16'].value)), np.log10(float(fd_sfh['MSTEL_84'].value))-np.log10(float(fd_sfh['MSTEL_50'].value)),
-                # float(fd_sfh['SFR_50'].value), float(fd_sfh['SFR_50'].value)-float(fd_sfh['SFR_16'].value), float(fd_sfh['SFR_84'].value)-float(fd_sfh['SFR_50'].value),
-                np.log10(float(fd_sfh['SFR_50'].value)), np.log10(float(fd_sfh['SFR_50'].value))-np.log10(float(fd_sfh['SFR_16'].value)), np.log10(float(fd_sfh['SFR_84'].value))-np.log10(float(fd_sfh['SFR_50'].value)),\
+                float(fd_sfh['SFR_50'].value), float(fd_sfh['SFR_50'].value)-float(fd_sfh['SFR_16'].value), float(fd_sfh['SFR_84'].value)-float(fd_sfh['SFR_50'].value),
+                # np.log10(float(fd_sfh['SFR_50'].value)), np.log10(float(fd_sfh['SFR_50'].value))-np.log10(float(fd_sfh['SFR_16'].value)), np.log10(float(fd_sfh['SFR_84'].value))-np.log10(float(fd_sfh['SFR_50'].value)),\
                 np.log10(sfruv50), np.log10(sfruv50)-np.log10(sfruv16), np.log10(sfruv84)-np.log10(sfruv50),\
                 (float(fd_sfh['T_MW_50'].value)), (float(fd_sfh['T_MW_50'].value))-(float(fd_sfh['T_MW_16'].value)), (float(fd_sfh['T_MW_84'].value))-(float(fd_sfh['T_MW_50'].value)),
                 float(fd_sfh['Z_MW_50']), float(fd_sfh['Z_MW_50'])-float(fd_sfh['Z_MW_16']), float(fd_sfh['Z_MW_84'])-float(fd_sfh['Z_MW_50']),
