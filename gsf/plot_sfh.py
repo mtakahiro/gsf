@@ -21,7 +21,7 @@ from .function_igm import *
 
 def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tsets_SFR_SED=[0.001,0.003,0.01,0.03,0.1,0.3], tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
     return_figure=False):
     '''
     Purpose
@@ -290,6 +290,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     #####################
     f_SFRSED_plot = False
     SFR_SED = np.zeros(mmax,dtype=float)
+    SFRs_SED = np.zeros((mmax,len(tsets_SFR_SED)),dtype=float)
 
     # ASDF;
     af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
@@ -416,8 +417,12 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             # hoge
             con_sfr = (times_int<tset_SFR_SED)
             SFR_SED_tmp = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
-            # print(SFR_SED[mm], SFR_SED_tmp, delt_int)
             SFR_SED[mm] = SFR_SED_tmp
+
+            for t in range(len(tsets_SFR_SED)):
+                con_sfr = (times_int<tsets_SFR_SED[t])
+                SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
+            # print(SFR_SED[mm], SFR_SED_tmp, tset_SFR_SED, delt_int, len(sfr_int[con_sfr]))
             # plt.close()
             # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
             # ax1.set_xscale('log')
@@ -637,7 +642,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     prihdr['t_quen'] = t_quench
     prihdr['t_rejuv'] = t_rejuv
     # SFR
-    prihdr['tset_SFR'] = tset_SFR_SED
+    # prihdr['tset_SFR'] = tset_SFR_SED
+    prihdr['tsets_SFR'] = ','.join(['%s'%s for s in tsets_SFR_SED])
     # Version;
     import gsf
     prihdr['version'] = gsf.__version__
@@ -655,8 +661,12 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
     for ii in range(len(percs)):
         prihdr['HIERARCH Mstel_%d'%percs[ii]] = ('%.3f'%ACP[ii], 'Stellar mass, logMsun')
-    for ii in range(len(percs)):
-        prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    # for ii in range(len(percs)):
+    #     prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    for t in range(len(tsets_SFR_SED)):
+        SFR_SED_med_tmp = np.nanpercentile(SFRs_SED[:,t],[16,50,84])
+        for ii in range(len(percs)):
+            prihdr['HIERARCH SFR_%dMyr_%d'%(tsets_SFR_SED[t]*1e3, percs[ii])] = ('%.3f'%SFR_SED_med_tmp[ii], 'SFR, logMsun/yr')
     for ii in range(len(percs)):
         prihdr['HIERARCH Z_MW_%d'%percs[ii]] = ('%.3f'%ZCP[ii], 'Mass-weighted metallicity, logZsun')
     for ii in range(len(percs)):
