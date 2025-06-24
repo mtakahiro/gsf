@@ -802,6 +802,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10 = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv = np.zeros(mmax, dtype='float') # For Muv
+    wl_Luv_min = 1500
+    wl_Luv_max = 2800
     Luv1600 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Luv1600_noatn = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Fuv2800 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
@@ -977,9 +979,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Lir[kk] = 0
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
-        Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
         fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
-        Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc, lam_blue=lam_b, lam_red=lam_r)
 
         # Get RF Color;
@@ -1303,6 +1305,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         for ii in range(3):
             if np.isinf(Muvs[ii]):
                 Muvs[ii] = 99
+
+        # Luv1600 is RF UV flux density, erg/s/Hz
         Luvs = np.nanpercentile(Luv1600, percs) 
         Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
@@ -1322,7 +1326,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         A1600[np.where(A1600<0)] = 0
         SFRUV_BETA = C_SFR_Kenn * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
         SFRUV_UNCOR = C_SFR_Kenn * np.asarray(Luvs) # Msun / yr
-        hdr['SFRUV_ANGS'] = 1600
+        hdr['SFRUV_ANGS'] = (wl_Luv_min + wl_Luv_max)/2.
 
         # Av-based correction;
         AVs_med = np.nanpercentile(AVs, [16,50,84])
