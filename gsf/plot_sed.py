@@ -805,6 +805,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     wl_Luv_min = 1500
     wl_Luv_max = 2800
     Luv1600 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv1600_nl = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Luv1600_noatn = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Fuv2800 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir = np.zeros(mmax, dtype='float') # For L(8-1000um)
@@ -979,7 +980,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Lir[kk] = 0
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
+        fnu_nl_tmp = flamtonu(x1_tot, ytmp_nl[kk,:]*scale, m0set=-48.6, m0=-48.6)
         Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+        Luv1600_nl[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_nl_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+
         fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
         Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc, lam_blue=lam_b, lam_red=lam_r)
@@ -1308,6 +1312,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
         # Luv1600 is RF UV flux density, erg/s/Hz
         Luvs = np.nanpercentile(Luv1600, percs) 
+        Luvs_nl = np.nanpercentile(Luv1600_nl, percs) 
         Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
 
@@ -1334,11 +1339,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         fl = np.zeros(len(lam),float) + 1
         nr = np.arange(0,len(lam),1)
         SFRUV = np.zeros(len(Luvs), float)
+        SFRUV_NL = np.zeros(len(Luvs), float)
         for ii in range(len(AVs_med)):
             from .function import apply_dust
             yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=MB.dust_model)
             fl_cor = 1/yyd
             SFRUV[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            SFRUV_NL[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs_nl[ii]) # Msun / yr
             # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
 
         for ii in range(len(percs)):
@@ -1365,6 +1372,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             
             hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
             hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_STEL_%d'%percs[ii]] = SFRUV_NL[ii]
             hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
 
             # UV beta obs;
