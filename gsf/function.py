@@ -56,6 +56,8 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
             fd_sed = fd_gsf['sed']
             fd_sfh = fd_gsf['sfh']
             TSET_SFR = float(fd_sfh['TSET_SFR']) * 1e3 # Myr
+            if TSET_SFR > 30:
+                continue
 
             if header:
                 fw_asc.write('# id z z_err_l z_err_u Muv Muv_err_l Muv_err_u uvbeta uvbeta_err_l uvbeta_err_u uvbetaobs uvbetaobs_err_l uvbetaobs_err_u logMs logMs_err_l logMs_err_u logSFR%dMyr logSFR%dMyr_err_l logSFR%dMyr_err_u logSFRUV logSFRUV_err_l logSFRUV_err_u logT logT_err_l logT_err_u logZ logZ_err_l logZ_err_u Av Av_err_l Av_err_u chi2 chi2red\n'%(TSET_SFR,TSET_SFR,TSET_SFR))
@@ -104,7 +106,8 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
                 ubbeta50, ubbeta16, ubbeta84,\
                 ubbetaobs50, ubbetaobs16, ubbetaobs84,\
                 np.log10(float(fd_sfh['MSTEL_50'].value)), np.log10(float(fd_sfh['MSTEL_50'].value))-np.log10(float(fd_sfh['MSTEL_16'].value)), np.log10(float(fd_sfh['MSTEL_84'].value))-np.log10(float(fd_sfh['MSTEL_50'].value)),
-                float(fd_sfh['SFR_50'].value), float(fd_sfh['SFR_50'].value)-float(fd_sfh['SFR_16'].value), float(fd_sfh['SFR_84'].value)-float(fd_sfh['SFR_50'].value),
+                # float(fd_sfh['SFR_50'].value), float(fd_sfh['SFR_50'].value)-float(fd_sfh['SFR_16'].value), float(fd_sfh['SFR_84'].value)-float(fd_sfh['SFR_50'].value),
+                np.log10(float(fd_sfh['SFR_50'].value)), np.log10(float(fd_sfh['SFR_50'].value))-np.log10(float(fd_sfh['SFR_16'].value)), np.log10(float(fd_sfh['SFR_84'].value))-np.log10(float(fd_sfh['SFR_50'].value)),\
                 np.log10(sfruv50), np.log10(sfruv50)-np.log10(sfruv16), np.log10(sfruv84)-np.log10(sfruv50),\
                 (float(fd_sfh['T_MW_50'].value)), (float(fd_sfh['T_MW_50'].value))-(float(fd_sfh['T_MW_16'].value)), (float(fd_sfh['T_MW_84'].value))-(float(fd_sfh['T_MW_50'].value)),
                 float(fd_sfh['Z_MW_50']), float(fd_sfh['Z_MW_50'])-float(fd_sfh['Z_MW_16']), float(fd_sfh['Z_MW_84'])-float(fd_sfh['Z_MW_50']),
