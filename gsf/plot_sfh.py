@@ -350,12 +350,12 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
 
             # SFR from SED. This will be converted in log later;
-            if False:
+            if True:
                 if age[aa]<=tset_SFR_SED:
                     SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
                     delt_tot += delT[aa]
 
-        if False:
+        if True:
             SFR_SED[mm] /= delt_tot
             if SFR_SED[mm] > 0:
                 SFR_SED[mm] = np.log10(SFR_SED[mm])
@@ -415,7 +415,9 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             # print(np.nansum(sfr_int[con])*delt_int, np.nansum(10**SF[:, mm][con2]))
             # hoge
             con_sfr = (times_int<tset_SFR_SED)
-            SFR_SED[mm] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int))
+            SFR_SED_tmp = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
+            # print(SFR_SED[mm], SFR_SED_tmp, delt_int)
+            SFR_SED[mm] = SFR_SED_tmp
             # plt.close()
             # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
             # ax1.set_xscale('log')
