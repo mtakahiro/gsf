@@ -60,7 +60,7 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
             if header:
                 fw_asc.write('# id z z_err_l z_err_u Muv Muv_err_l Muv_err_u uvbeta uvbeta_err_l uvbeta_err_u uvbetaobs uvbetaobs_err_l uvbetaobs_err_u logMs logMs_err_l logMs_err_u logSFRUV logSFRUV_err_l logSFRUV_err_u logSFRUV_STEL logSFRUV_STEL_err_l logSFRUV_STEL_err_u logT logT_err_l logT_err_u logZ logZ_err_l logZ_err_u Av Av_err_l Av_err_u chi2 chi2red')
                 for t in range(len(TSETs_SFR)):
-                    fw_asc.write(' logSFR%dMYR logSFR%dMYR_err_l logSFR%dMYR_err_u'%(TSETs_SFR[t],TSETs_SFR[t],TSETs_SFR[t]))
+                    fw_asc.write(' logSFR_%dMYR logSFR_%dMYR_err_l logSFR_%dMYR_err_u'%(TSETs_SFR[t],TSETs_SFR[t],TSETs_SFR[t]))
                 fw_asc.write('\n')
                 header = False
 

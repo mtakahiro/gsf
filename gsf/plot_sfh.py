@@ -21,7 +21,8 @@ from .function_igm import *
 
 def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tsets_SFR_SED=[0.001,0.003,0.01,0.03,0.1,0.3], tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, 
+    tsets_SFR_SED=[0.001,0.003,0.01,0.03,0.1,0.3], tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
     return_figure=False):
     '''
     Purpose
@@ -288,8 +289,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     #####################
     # Get SED based SFR
     #####################
-    f_SFRSED_plot = False
-    SFR_SED = np.zeros(mmax,dtype=float)
+    # f_SFRSED_plot = False
+    # SFR_SED = np.zeros(mmax,dtype=float)
     SFRs_SED = np.zeros((mmax,len(tsets_SFR_SED)),dtype=float)
 
     # ASDF;
@@ -351,17 +352,17 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
 
             # SFR from SED. This will be converted in log later;
-            if True:
-                if age[aa]<=tset_SFR_SED:
-                    SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
-                    delt_tot += delT[aa]
+            # if True:
+            #     if age[aa]<=tset_SFR_SED:
+            #         SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
+            #         delt_tot += delT[aa]
 
-        if True:
-            SFR_SED[mm] /= delt_tot
-            if SFR_SED[mm] > 0:
-                SFR_SED[mm] = np.log10(SFR_SED[mm])
-            else:
-                SFR_SED[mm] = -99
+        # if True:
+        #     SFR_SED[mm] /= delt_tot
+        #     if SFR_SED[mm] > 0:
+        #         SFR_SED[mm] = np.log10(SFR_SED[mm])
+        #     else:
+        #         SFR_SED[mm] = -99
 
         for aa in range(len(age)):
 
@@ -415,13 +416,13 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             # con2 = (~np.isinf(10**SF[:, mm]))
             # print(np.nansum(sfr_int[con])*delt_int, np.nansum(10**SF[:, mm][con2]))
             # hoge
-            con_sfr = (times_int<tset_SFR_SED)
-            SFR_SED_tmp = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
-            SFR_SED[mm] = SFR_SED_tmp
+            # con_sfr = (times_int<tset_SFR_SED)
+            # SFR_SED_tmp = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
+            # SFR_SED[mm] = SFR_SED_tmp
 
             for t in range(len(tsets_SFR_SED)):
                 con_sfr = (times_int<tsets_SFR_SED[t])
-                SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
+                SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tsets_SFR_SED[t]))
             # print(SFR_SED[mm], SFR_SED_tmp, tset_SFR_SED, delt_int, len(sfr_int[con_sfr]))
             # plt.close()
             # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
@@ -454,11 +455,11 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
        ZLp[aa,:] = np.nanpercentile(ZL[aa,:], [16,50,84])
        SFp[aa,:] = np.nanpercentile(SF[aa,:], [16,50,84])
 
-    SFR_SED_med = np.nanpercentile(SFR_SED[:],[16,50,84])
-    if f_SFRSED_plot:
-        ax1.errorbar(delt_tot/2./1e9, SFR_SED_med[1], xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
-        yerr=[[SFR_SED_med[1]-SFR_SED_med[0]],[SFR_SED_med[2]-SFR_SED_med[1]]], \
-        linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
+    # SFR_SED_med = np.nanpercentile(SFR_SED[:],[16,50,84])
+    # if f_SFRSED_plot:
+    #     ax1.errorbar(delt_tot/2./1e9, SFR_SED_med[1], xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
+    #     yerr=[[SFR_SED_med[1]-SFR_SED_med[0]],[SFR_SED_med[2]-SFR_SED_med[1]]], \
+    #     linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
 
     ###################
     msize = np.zeros(len(age), dtype=float)
