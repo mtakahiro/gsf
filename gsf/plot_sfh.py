@@ -408,10 +408,16 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         # Get SFR from SFH;
         if True:
             # tset_SFR_SED = 0.03
-            fint_sfr = interpolate.interp1d(np.log10(age), 10**SF[:, mm], kind='nearest', fill_value="extrapolate")
+            SFH_for_interp = np.asarray([s for s in 10**SF[:, mm]] + [0])
+            age_for_interp = np.asarray([s for s in np.log10(age)] + [np.nanmax(np.log10(age+delT[aa]/1e9*2))])
+            fint_sfr = interpolate.interp1d(age_for_interp, SFH_for_interp, kind='nearest', fill_value="extrapolate")
             delt_int = np.nanmin(age)/10 # in Gyr
             times_int = np.arange(0,np.nanmax(age),delt_int)
             sfr_int = fint_sfr(np.log10(times_int))
+
+            fint_delt = interpolate.interp1d(np.log10(age), delT, kind='nearest', fill_value="extrapolate")
+            delt_interp = fint_delt(np.log10(times_int))
+
             # con = (~np.isinf(sfr_int))
             # con2 = (~np.isinf(10**SF[:, mm]))
             # print(np.nansum(sfr_int[con])*delt_int, np.nansum(10**SF[:, mm][con2]))
@@ -421,13 +427,15 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             # SFR_SED[mm] = SFR_SED_tmp
 
             for t in range(len(tsets_SFR_SED)):
-                con_sfr = (times_int<tsets_SFR_SED[t])
+                iix = np.argmin(np.abs(times_int-tsets_SFR_SED[t]))
+                # print(tsets_SFR_SED[t], delt_interp[iix]/1e9/2.)
+                con_sfr = (times_int<tsets_SFR_SED[t]+delt_interp[iix]/1e9/2.)
                 SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tsets_SFR_SED[t]))
             # print(SFR_SED[mm], SFR_SED_tmp, tset_SFR_SED, delt_int, len(sfr_int[con_sfr]))
             # plt.close()
             # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
             # ax1.set_xscale('log')
-            # ax1.set_ylim(-3, 3)
+            # # ax1.set_ylim(-3, 3)
             # plt.savefig('tmp.png')
             # hoge
 

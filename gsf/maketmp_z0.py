@@ -209,6 +209,12 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 wave, flux = wave0[con], flux0[con]
                 mlost[ss] = sp.stellar_mass / sp.formed_mass
 
+                # Check UV based SFR?
+                # from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv,get_uvbeta,print_err
+                # fnu = flamtonu(wave, flux, m0set=-48.6)
+                # Luv = get_Fuv(wave, fnu, lmin=1600, lmax=2800) # Lsun / delta_wl
+                # print(sp.stellar_mass, age[ss], Z[zz], Luv)
+
                 if fneb and pp == 0 and ss == 0:
 
                     esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
@@ -743,7 +749,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
 
         wave0 = fd_sed['col1']
         age_stm = fd_stm['col1']
-        mass_formed = fd_stm['col2'][0]
+        mass_formed = fd_stm['col2'][0] # i.e. 1e6 Msun formed at t=1e6yr.
 
         ncols = 52
         nage_temp = np.arange(2,ncols+1,1)
@@ -846,7 +852,13 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
 
                 # Then. add flux if tau > 0.
                 con = (wave0>lammin) & (wave0<lammax)
-                wave, flux = wave0[con], flux0[con]
+                wave, flux = wave0[con], flux0[con] # flux is Lsun / AA
+
+                # # Check UV based SFR?
+                # from .function import flamtonu,fnutolam,check_line_man,loadcpkl,get_Fuv,filconv_fast,printProgressBar,filconv,get_uvbeta,print_err
+                # fnu = flamtonu(wave, flux, m0set=-48.6)
+                # Luv = get_Fuv(wave, fnu, lmin=1450, lmax=1650) # Lsun / delta_wl
+                # print(mass_formed_tot, age[ss], Z[zz], Luv)
 
                 # Temp
                 mlost[ss] = ms[ss] / mass_formed_tot
