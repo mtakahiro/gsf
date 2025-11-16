@@ -55,6 +55,8 @@ def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=F
             fd_gsf = asdf.open(file_gsf)
             fd_sed = fd_gsf['sed']
             fd_sfh = fd_gsf['sfh']
+            if 'TSETS_SFR' not in fd_sfh:
+                continue
             TSETs_SFR = [float(s)*1e3 for s in fd_sfh['TSETS_SFR'].split(',')] #* 1e3 # Myr
 
             if header:
@@ -409,7 +411,7 @@ def str2bool(v):
 
 def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, 
                elam=[],
-               return_results=False):
+               return_results=False, get_error=False):
     '''
     Purpose
     -------
@@ -425,10 +427,30 @@ def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300,
     con_uv = (lm/(1.+zbes)>lam_blue) & (lm/(1.+zbes)<lam_red)
     try:
         if len(elam) == len(flam):
-            fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1, w=1/np.square(elam[con_uv]))
+
+            if get_error:
+                import random
+                nmc = 1000
+                betas = np.zeros(nmc, float)
+                flam_err = np.zeros((len((flam)), nmc), float)
+                for ii in range(len((flam))):
+                    if not con_uv[ii]:
+                        continue
+                    for n in range(nmc):
+                        flam_err[:,n][ii] = random.gauss(flam[ii], elam[ii])
+
+                for n in range(nmc):
+                    fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam_err[:,n])[con_uv], 1)#, w=1/np.square(elam[con_uv]))
+                    betas[n] = fit_results[0]
+                return betas
+
+            else:
+                fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1, w=1/np.square(elam[con_uv]))
+                beta = fit_results[0]
         else:
             fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1) #, w=flam[con_uv])
-        beta = fit_results[0]
+            beta = fit_results[0]
+
         if np.isnan(beta):
             beta = -99
     except:
