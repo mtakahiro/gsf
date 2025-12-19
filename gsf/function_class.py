@@ -63,8 +63,8 @@ class Func:
         lib : float array
             
         '''
-        ID0 = self.MB.ID
-        DIR_TMP = self.DIR_TMP
+        # ID0 = self.MB.ID
+        # DIR_TMP = self.DIR_TMP
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -73,10 +73,10 @@ class Func:
 
         # ASDF;
         if fall == 0:
-            app = ''
+            # app = ''
             hdu0 = self.MB.af['spec']
         elif fall == 1:
-            app = 'all_'
+            # app = 'all_'
             hdu0 = self.MB.af['spec_full']
 
         if f_neb:
@@ -691,21 +691,16 @@ class Func_tau:
         '''
         Loads template in obs range.
         '''
-        ID0 = self.MB.ID
         ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
+        NZ = len(ZZ)
 
         # ASDF;
         if fall == 0:
-            app = ''
+            # app = ''
             hdu0 = self.MB.af['spec']
         elif fall == 1:
-            app = 'all_'
+            # app = 'all_'
             hdu0 = self.MB.af['spec_full']
-
-        DIR_TMP = self.DIR_TMP
-        NZ = len(ZZ)
 
         if f_neb:
             NU = len(self.MB.logUs)
@@ -883,9 +878,15 @@ class Func_tau:
             return nr, xx, yy
 
 
-    def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
+    def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, lib=None, f_get_Mtot=False, f_check_limit=True):
         '''
         '''
+        if lib is None:
+            if lib_all:
+                lib = self.MB.lib_neb_all
+            else:
+                lib = self.MB.lib_neb
+
         Mtot = 0
         try:
             Aneb = par['Aneb']
@@ -969,9 +970,10 @@ class Func_tau:
 
         return yy_s, xx_s
 
-  
-    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
-        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_apply_igm=True, xhi=None, f_neb=False, deltaz_lim=0.1):
+
+    def get_template(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, 
+        f_apply_dust:bool=True, f_apply_igm=True, xhi=None, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27, f_agn=False,
+        check_bound=False):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -987,11 +989,11 @@ class Func_tau:
         Mtot = 0
         pp = 0
 
-        if lib is None:
-            if lib_all:
-                lib = self.MB.lib_all
-            else:
-                lib = self.MB.lib
+        # if lib is None:
+        #     if lib_all:
+        #         lib = self.MB.lib_all
+        #     else:
+        #         lib = self.MB.lib
 
         if f_val:
             par = par.params
@@ -1013,11 +1015,15 @@ class Func_tau:
         Av = par['AV0']
 
         if f_neb:
+            # Dust attenuation to nebulae
+            Av *= EBVratio
+
+        if f_neb:
             # @@@ Not clear why f_check_limit cannot work
-            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
+            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
         else:
             # @@@ Not clear why f_check_limit cannot work
-            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
+            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
 
         # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
@@ -1030,9 +1036,9 @@ class Func_tau:
                     nr_full, xx_full, yy_full = nr, xx, yy
                 else:
                     if f_neb:
-                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True, lib=lib)
+                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True)
                     else:
-                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True, lib=lib)
+                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True)
 
                 xx_s, yy_s = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
                 

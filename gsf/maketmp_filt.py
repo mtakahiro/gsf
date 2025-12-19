@@ -376,13 +376,13 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         ####################################
         for zz in range(len(Z)):
             for pp in range(len(tau0)):
-                Zbest = Z[zz]
+                # Zbest = Z[zz]
                 Na = len(age)
                 Ntmp = 1
 
                 for nzz, zbest in enumerate(MB.zbests):
 
-                    age_univ= MB.cosmo.age(zbest).value
+                    # age_univ= MB.cosmo.age(zbest).value
 
                     if zz == 0 and pp == 0:
                         if delwave>0:
@@ -394,10 +394,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             con_wave = (lm0 * (zbest+1) < lammax)
                             lm0 = lm0[con_wave]
 
-                    lmbest = np.zeros((Ntmp, len(lm0)), dtype=float)
-                    fbest = np.zeros((Ntmp, len(lm0)), dtype=float)
-                    lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
-                    fbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
+                    # lmbest = np.zeros((Ntmp, len(lm0)), dtype=float)
+                    # fbest = np.zeros((Ntmp, len(lm0)), dtype=float)
+                    # lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
+                    # fbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
 
                     spec_mul = np.zeros((Na, len(lm0)), dtype=float)
                     spec_mul_nu = np.zeros((Na, len(lm0)), dtype=float)
@@ -675,10 +675,10 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         Na = len(age)
 
         for zz in range(len(Z)):
-            Zbest = Z[zz]
+            # Zbest = Z[zz]
             Na = len(age)
             Ntmp = 1
-            age_univ= MB.cosmo.age(zbest).value
+            # age_univ= MB.cosmo.age(zbest).value
 
             for tt in range(len(tau)): # tau
                 if zz == 0 and tt == 0:
@@ -691,11 +691,6 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         con_wave = (lm0 * (zbest+1) < lammax)
                         lm0 = lm0[con_wave]
                     wave = lm0
-
-                lmbest = np.zeros((Ntmp, len(lm0)), dtype=float)
-                fbest = np.zeros((Ntmp, len(lm0)), dtype=float)
-                lmbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
-                fbestbb = np.zeros((Ntmp, len(SFILT)), dtype=float)
 
                 spec_mul = np.zeros((Na, len(lm0)), dtype=float)
                 spec_mul_nu = np.zeros((Na, len(lm0)), dtype=float)
@@ -730,7 +725,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     ##################
                     if f_IGM:
                         # spec_av_tmp = madau_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo)
-                        spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
+                        spec_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul[ss,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
                     else:
                         spec_av_tmp = spec_mul[ss,:]
 
@@ -806,7 +801,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             
                             if f_IGM:
                                 # spec_neb_av_tmp = madau_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo)
-                                spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=x_HI_input)
+                                spec_neb_av_tmp, x_HI = dijkstra_igm_abs(wave, spec_mul_neb[zz,uu,:], zbest, cosmo=MB.cosmo, x_HI=MB.x_HI_input)
                                 spec_mul_neb[zz,uu,:] = spec_neb_av_tmp
 
                             spec_mul_neb_nu[zz,uu,:] = flamtonu(wave, spec_mul_neb[zz,uu,:], m0set=MB.m0set)

@@ -784,18 +784,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     MB.sfh_zfr50 = ZCp[:,1]
     MB.sfh_zfr84 = ZCp[:,2]
 
-    # SFH
-    zzall = np.arange(1.,12,0.01)
-
-    dely2 = 0.1
-    while (y2max-y2min)/dely2>7:
-        dely2 *= 2.
-
-    y2ticks = np.arange(y2min, y2max, dely2)
-    ax2.set_yticks(y2ticks)
-    ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
-
-    ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax1, ax1t, ax2, ax2t = get_sfh_figure_format(ax1, ax1t, ax2, ax2t, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax)
 
     if not skip_zhist:
 
@@ -827,6 +816,21 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
         ax4t.set_xlim(Txmin, Txmax)
 
+
+    if return_figure:
+        return tree_sfh, fig
+
+    # Save
+    fig.savefig(MB.DIR_OUT + 'gsf_sfh_' + ID + '.png', dpi=dpi)
+
+    return tree_sfh
+
+    # fig.clear()
+    # plt.close()
+
+
+def get_sfh_figure_format(ax1, ax1t, ax2, ax2t, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax):
+    """"""
     ax1.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
     ax2.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
 
@@ -852,17 +856,16 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     ax1.legend(loc=0, fontsize=9)
 
-    if return_figure:
-        return tree_sfh, fig
+    dely2 = 0.1
+    while (y2max-y2min)/dely2>7:
+        dely2 *= 2.
 
-    # Save
-    fig.savefig(MB.DIR_OUT + 'gsf_sfh_' + ID + '.png', dpi=dpi)
+    y2ticks = np.arange(y2min, y2max, dely2)
+    ax2.set_yticks(y2ticks)
+    ax2.set_yticklabels(np.arange(y2min, y2max, dely2), minor=False)
+    ax2.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
-    return tree_sfh
-
-    # fig.clear()
-    # plt.close()
-
+    return ax1, ax1t, ax2, ax2t
 
 def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
     sfrllim=1e-20):
@@ -916,7 +919,7 @@ def sfr_tau(t0, tau0, Z=0.0, sfh=0, tt=np.arange(0,13,0.1), Mtot=1.,
 
 def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tset_SFR_SED=0.1, return_figure=False):
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tsets_SFR_SED=[0.001,0.003,0.01,0.03,0.1,0.3], tset_SFR_SED=0.1, return_figure=False):
     '''
     Purpose
     -------
@@ -1006,7 +1009,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
+    file = MB.DIR_OUT + 'gsf_params_' + ID + '.fits'
     hdul = fits.open(file) # open a FITS file
     try:
         zbes = hdul[0].header['zmc']
@@ -1026,7 +1029,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         ###########################
         # Get SN of Spectra
         ###########################
-        file = 'templates/spec_obs_' + ID + '.cat'
+        file = os.path.join(DIR_TMP, 'spec_obs_' + ID + '.cat')
         fds  = np.loadtxt(file, comments='#')
         nrs  = fds[:,0]
         lams = fds[:,1]
@@ -1092,8 +1095,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
                     delTu[aa] = Tuni-age[aa]
                 delT[aa] = delTu[aa] + delTl[aa]
 
-    con_delt = (delT<=0)
-    delT[con_delt] = 1e10
+    mask_age = (delT<=0) # For those age_template > age_universe
+    delT[mask_age] = np.inf
     delT[:] *= 1e9 # Gyr to yr
     delTl[:] *= 1e9 # Gyr to yr
     delTu[:] *= 1e9 # Gyr to yr
@@ -1116,7 +1119,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         #    Nburn  = 500
         samples = data['chain'][:]
     except:
-        print(' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values')
+        msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
+        print_err(msg, exit=False)
         return -1
 
     ######################
@@ -1140,18 +1144,43 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     # Add simulated scatter in quad
     # if files are available.
     # ##############################
-    f_zev = int(MB.inputs['ZEVOL'])
+    try:
+        f_zev = int(MB.inputs['ZEVOL'])
+    except:
+        f_zev = 1
 
     eZ_mean = 0
+    try:
+        meanfile = './sim_SFH_mean.cat'
+        dfile = np.loadtxt(meanfile, comments='#')
+        eA = dfile[:,2]
+        eZ = dfile[:,4]
+        eAv= np.mean(dfile[:,6])
+        if f_zev == 0:
+            eZ_mean = np.mean(eZ[:])
+            eZ[:] = age * 0 #+ eZ_mean
+        else:
+            try:
+                f_zev = int(prihdr['ZEVOL'])
+                if f_zev == 0:
+                    eZ_mean = np.mean(eZ[:])
+                    eZ = age * 0
+            except:
+                pass
+    except:
+        if verbose:
+            MB.logger.warning('No simulation file (%s).\nError may be underestimated.' % meanfile)
+        eA = age * 0
+        eZ = age * 0
+        eAv = 0
 
     #####################
     # Get SED based SFR
     #####################
-    f_SFRSED_plot = False
-    SFR_SED = np.zeros(mmax,dtype=float)
+    SFRs_SED = np.zeros((mmax,len(tsets_SFR_SED)),dtype=float)
 
     # ASDF;
-    af = asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
+    af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
     af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
     sedpar = af['ML'] # For M/L
     sedpar0 = af0['ML'] # For mass loss frac.
@@ -1175,10 +1204,13 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     plot_each = True
     while mm<mmax:
         mtmp = np.random.randint(len(samples))# + Nburn
-        if MB.nAV != 0:
-            Av_tmp = samples['AV0'][mtmp]
-        else:
+        if MB.has_AVFIX:
             Av_tmp = MB.AVFIX
+        else:
+            try:
+                Av_tmp = samples['AV0'][mtmp]
+            except:
+                Av_tmp = samples['AV'][mtmp]
 
         for aa in range(MB.npeak):
             AAtmp = samples['A%d'%aa][mtmp]
@@ -1196,26 +1228,30 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
             nZtmp,nttmp,natmp = bfnc.Z2NZ(ZZtmp, ltautmp, lagetmp)
             mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
+            # f_m_sur = sedpar0['frac_mass_survive_%d'%nZtmp][natmp]
 
             xSF[:,mm], ySF_each[aa,:,mm], yMS_each[aa,:,mm] = sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=MB.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
             ySF[:,mm] += ySF_each[aa,:,mm]
             yMS[:,mm] += yMS_each[aa,:,mm]
 
             # SFR from SED. This will be converted in log later;
-            con_sfr = (xSF[:,mm] <= tset_SFR_SED)
-            SFR_SED[mm] += np.mean(ySF_each[aa,:,mm][con_sfr])
-
+            for t in range(len(tsets_SFR_SED)):
+                iix = np.argmin(np.abs(tt-tsets_SFR_SED[t]))
+                con_sfr = (tt<tsets_SFR_SED[t])
+                if len(ySF_each[aa,:,mm][con_sfr])>0:
+                    SFRs_SED[mm,t] += np.sum(ySF_each[aa,:,mm][con_sfr])
 
         Av[mm] = Av_tmp
         if plot_each:
             ax1.plot(xSF[:,mm], np.log10(ySF[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
             ax2.plot(xSF[:,mm], np.log10(yMS[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
 
-        if SFR_SED[mm] > 0:
-            SFR_SED[mm] = np.log10(SFR_SED[mm])
-        else:
-            SFR_SED[mm] = -99
-
+        # Convert SFRs_SED to log
+        for t in range(len(tsets_SFR_SED)):
+            if SFRs_SED[mm,t] > 0:
+                SFRs_SED[mm,t] = np.log10(SFRs_SED[mm,t])
+            else:
+                SFRs_SED[mm,t] = -99
 
         mm += 1
 
@@ -1248,8 +1284,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     SFp = np.zeros((len(tt),3),float)
     ACp[:] = np.log10(yMSp[:,:])
     SFp[:] = np.log10(ySFp[:,:])
-
-    SFR_SED_med = np.percentile(SFR_SED[:],[16,50,84])
 
     ###################
     msize = np.zeros(len(age), dtype=float)
@@ -1286,7 +1320,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     if False:
         f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
     else:
-        print('Failed to call rejuvenation module.')
+        if verbose:
+            MB.logger.warning('Failed to call rejuvenation module.')
         f_rejuv,t_quench,t_rejuv = 0,0,0
 
     # Plot MS?
@@ -1350,15 +1385,15 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     lsfru = 2.8
     if np.max(SFp[:,2])>2.8:
         lsfru = np.max(SFp[:,2])+0.1
+    if np.min(SFp[:,2])>lsfrl:
+        lsfrl = np.min(SFp[:,2])+0.1
 
     if f_log_sfh:
         ax1.set_ylim(lsfrl, lsfru)
         ax1.set_ylabel('$\log \dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-        #ax1.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
     else:
         ax1.set_ylim(0, 10**lsfru)
         ax1.set_ylabel('$\dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-        #ax1.plot(Tzz, Tzz*0+10**lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
 
     ax1.set_xlim(Txmin, Txmax)
     ax1.set_xscale('log')
@@ -1385,7 +1420,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     prihdr['t_quen'] = t_quench
     prihdr['t_rejuv'] = t_rejuv
     # SFR
-    prihdr['tset_SFR'] = tset_SFR_SED
+    prihdr['tsets_SFR'] = ','.join(['%s'%s for s in tsets_SFR_SED])
     # SFH
     prihdr['SFH_FORM'] = MB.SFH_FORM
     # Version;
@@ -1404,8 +1439,10 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
     for ii in range(len(percs)):
         prihdr['HIERARCH Mstel_%d'%percs[ii]] = ('%.3f'%ACP[ii], 'Stellar mass, logMsun')
-    for ii in range(len(percs)):
-        prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    for t in range(len(tsets_SFR_SED)):
+        SFR_SED_med_tmp = np.nanpercentile(SFRs_SED[:,t],[16,50,84])
+        for ii in range(len(percs)):
+            prihdr['HIERARCH SFR_%dMyr_%d'%(tsets_SFR_SED[t]*1e3, percs[ii])] = ('%.3f'%SFR_SED_med_tmp[ii], 'SFR, logMsun/yr')
     for ii in range(len(percs)):
         prihdr['HIERARCH Z_MW_%d'%percs[ii]] = ('%.3f'%ZCP[ii], 'Mass-weighted metallicity, logZsun')
     for ii in range(len(percs)):
@@ -1454,10 +1491,59 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     file_sfh = MB.DIR_OUT + 'SFH_' + ID + '.fits'
     hdu.writeto(file_sfh, overwrite=True)
 
+    # ASDF;
+    from astropy import units as u
+
+    # ASDF;
+    tree_sfh = {}
+    #     'id': ID,
+    #     'redshift': '%.3f'%zbes,
+    #     'nimf': '%s'%(IMF),
+    #     'version_gsf': gsf.__version__
+    # }
+    tree_sfh['header'] = {}
+    tree_sfh['sfh'] = {}
+
+    # Dump physical parameters;
+    for key in prihdu.header:
+        if key not in tree_sfh:
+            if key.split('_')[0] == 'SFR':
+                tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.solMass / u.yr})
+            elif key.split('_')[0] == 'Mstel':
+                tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.solMass})
+            elif key.split('_')[0] == 'T':
+                tree_sfh['header'].update({'%s'%key: 10**float(prihdu.header[key]) * u.Gyr})
+            elif key.split('_')[0] == 'AV0':
+                tree_sfh['header'].update({'%s'%key: float(prihdu.header[key]) * u.mag})
+            else:
+                tree_sfh['header'].update({'%s'%key: prihdu.header[key]})
+
+    # Mask values when age>age_uni;
+    mask_age = xSFp[:,1] > Tuni
+    arrays = [SFp[:,0],SFp[:,1],SFp[:,2],ACp[:,0],ACp[:,1],ACp[:,2]]#,ZCp[:,0],ZCp[:,1],ZCp[:,2]]
+    for arr in arrays:
+        arr[mask_age] = np.nan
+
+    tree_sfh['sfh'].update({'time': xSFp[:,1] * u.Gyr})
+    tree_sfh['sfh'].update({'time_l': xSFp[:,0] * u.Gyr})
+    tree_sfh['sfh'].update({'time_u': xSFp[:,2] * u.Gyr})
+    tree_sfh['sfh'].update({'SFR16': 10**SFp[:,0] * u.Msun / u.yr})
+    tree_sfh['sfh'].update({'SFR50': 10**SFp[:,1] * u.Msun / u.yr})
+    tree_sfh['sfh'].update({'SFR84': 10**SFp[:,2] * u.Msun / u.yr})
+    tree_sfh['sfh'].update({'Mstel16': 10**ACp[:,0] * u.Msun})
+    tree_sfh['sfh'].update({'Mstel50': 10**ACp[:,1] * u.Msun})
+    tree_sfh['sfh'].update({'Mstel84': 10**ACp[:,2] * u.Msun})
+    tree_sfh['sfh'].update({'logZ16': ZCp[:,0]})
+    tree_sfh['sfh'].update({'logZ50': ZCp[:,1]})
+    tree_sfh['sfh'].update({'logZ84': ZCp[:,2]})
+
+    af = asdf.AsdfFile(tree_sfh)
+    af.write_to(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)), all_array_compression='zlib')
+
     # Attach to MB;
     MB.sfh_tlook = age
-    MB.sfh_tlookl= delTl[:][conA]/1e9
-    MB.sfh_tlooku= delTu[:][conA]/1e9
+    MB.sfh_tlookl= delTl[:]/1e9
+    MB.sfh_tlooku= delTu[:]/1e9
     MB.sfh_sfr16 = SFp[:,0]
     MB.sfh_sfr50 = SFp[:,1]
     MB.sfh_sfr84 = SFp[:,2]
@@ -1504,37 +1590,21 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
         ax4t.set_xlim(Txmin, Txmax)
 
-    ax1.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
-    ax2.set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
-
-    # This has to come before set_xticks;
-    ax1t.set_xscale('log')
-    ax2t.set_xscale('log')
-
-    ax1t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
-    ax1t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
-    ax1t.tick_params(axis='x', labelcolor='k')
-    ax1t.xaxis.set_ticks_position('none')
-    ax1t.plot(Tzz, Tzz*0+lsfru+(lsfru-lsfrl)*.00, marker='|', color='k', ms=3, linestyle='None')
-
-    ax2t.xaxis.set_major_locator(ticker.FixedLocator(Tzz[:]))
-    ax2t.xaxis.set_major_formatter(ticker.FixedFormatter(zredl[:]))
-    ax2t.tick_params(axis='x', labelcolor='k')
-    ax2t.xaxis.set_ticks_position('none')
-    ax2t.plot(Tzz, Tzz*0+y2max+(y2max-y2min)*.00, marker='|', color='k', ms=3, linestyle='None')
-
-    # This has to come after set_xticks;
-    ax1t.set_xlim(Txmin, Txmax)
-    ax2t.set_xlim(Txmin, Txmax)
+    ax1, ax1t, ax2, ax2t = get_sfh_figure_format(ax1, ax1t, ax2, ax2t, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax)
 
     # Save
-    fig.savefig(MB.DIR_OUT + 'SFH_' + ID + '_pcl.png', dpi=dpi)
+    fig.savefig(MB.DIR_OUT + 'gsf_sfh_' + ID + '_pcl.png', dpi=dpi)
 
     if return_figure:
         return fig
 
     fig.clear()
     plt.close()
+
+    if return_figure:
+        return tree_sfh, fig
+
+    return tree_sfh
 
 
 def get_evolv(MB, ID, Z=np.arange(-1.2,0.4249,0.05), age=[0.01, 0.1, 0.3, 0.7, 1.0, 3.0], f_comp=0, fil_path='./FILT/', \

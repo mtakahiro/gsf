@@ -80,7 +80,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
         if MB.SFH_FORM == -99:
             maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
         else:
-            maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
+            maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave, f_IGM=f_IGM)
 
     return MB
 
@@ -177,7 +177,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
         if MB.SFH_FORM == -99:
             flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
         else:
-            flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
+            flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
 
         if not flag_suc:
             return False
@@ -199,7 +199,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             if MB.SFH_FORM == -99:
                 flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
             else:
-                flag_suc = maketemp_tau(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
+                flag_suc = maketemp(MB, tau_lim=MB.tau_lim, nthin=MB.nthin, delwave=MB.delwave)
 
             print('\n\n')
             print('Going into another round with updated templates and redshift.')
@@ -225,7 +225,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             if MB.SFH_FORM == -99:
                 flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
             else:
-                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
             if not flag_suc:
                 return False
 
@@ -256,7 +256,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             if MB.SFH_FORM == -99:
                 flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
             else:
-                flag_suc = maketemp_tau(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
+                flag_suc = maketemp(MB, tau_lim=tau_lim, nthin=nthin, delwave=delwave)
 
         if MB.SFH_FORM == -99:
             from .plot_sed import plot_corner_physparam_summary

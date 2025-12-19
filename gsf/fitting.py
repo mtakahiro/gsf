@@ -629,7 +629,7 @@ class Mainbody(GsfBase):
                     self.delage = 0.0001
                     self.agemax = self.agemin + self.delage
 
-                self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
+                self.ageparam = 10**np.arange(self.agemin, self.agemax, self.delage)
                 self.nage = len(self.ageparam)
 
                 self.taumax = float(inputs['TAUMAX'])

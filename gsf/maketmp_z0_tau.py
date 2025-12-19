@@ -6,6 +6,7 @@ import sys
 from astropy.io import ascii
 
 from .function import get_ind
+from .utils_maketmp import get_nebular_template
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
@@ -72,9 +73,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
     print('#######################################')
-    col01 = [] # For M/L ratio.
-    col02 = [] # For templates
-    col05 = [] # For spectral indices.
 
     tree_spec = {}
     tree_ML = {}
@@ -148,22 +146,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
 
                     # Loop within logU;
                     for nlogU, logUtmp in enumerate(MB.logUs):
+
                         esptmp.params['gas_logu'] = logUtmp
-                        esp = esptmp
-
-                        if age[ss]>0.01:
-                            tage_neb = 0.01
-                            MB.logger.info('Nebular component is calculabed with %.2f Gyr'%tage_neb)
-                        else:
-                            tage_neb = age[tt]
-
-                        ewave0, eflux0 = esp.get_spectrum(tage=age[tt], peraa=True)
-                        con = (ewave0>lammin) & (ewave0<lammax)
-                        flux_nebular = eflux0[con]-flux
-
-                        # Eliminate some negatives. Mostly on <912A;
-                        con_neg = flux_nebular<0
-                        flux_nebular[con_neg] = 0
+                        esp, flux_nebular = get_nebular_template(wave, flux, sp, esptmp, age[ss], lammin, lammax)
 
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                         tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})

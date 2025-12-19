@@ -10,6 +10,7 @@ from astropy.convolution import Gaussian1DKernel, convolve
 
 import gsf
 from .function import get_ind,get_imf_str
+from .utils_maketmp import get_nebular_template
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
@@ -222,39 +223,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
 
                     # Loop within logU;
                     for nlogU, logUtmp in enumerate(MB.logUs):
+
                         esptmp.params['gas_logu'] = logUtmp
-                        esp = esptmp
-
-                        if age[ss]>0.01:
-                            tage_neb = 0.01
-                            MB.logger.info('Nebular component is calculabed with %.2f Gyr'%tage_neb)
-                        else:
-                            tage_neb = age[ss]
-
-                        ewave0, eflux0 = esp.get_spectrum(tage=tage_neb, peraa=True)
-                        # plt.close()
-                        # plt.plot(ewave0, eflux0)
-                        # plt.xlim(0,10000)
-                        # plt.show()
-
-                        if age[ss] != tage_neb:
-                            # sp_tmp = sp.copy()
-                            sp_tmp = copy.copy(sp)
-                            wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_neb, peraa=True) # Lsun/AA
-                            _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
-                        else:
-                            _, flux_tmp = wave, flux
-
-                        con = (ewave0>lammin) & (ewave0<lammax)
-                        flux_nebular = eflux0[con] - flux_tmp
-                        # Eliminate some negatives. Mostly on <912A;
-                        con_neg = flux_nebular<0
-                        flux_nebular[con_neg] = 0
-
-                        # plt.close()
-                        # plt.plot(ewave0[con], flux_nebular)
-                        # plt.xlim(0,10000)
-                        # plt.show()
+                        esp, flux_nebular = get_nebular_template(wave, flux, sp, esptmp, age[ss], lammin, lammax)
 
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                         tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
@@ -925,15 +896,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                             else:
                                 flux0_emi = flux0_emi[:] * 0
 
-                            # if zz == 0 and nlogU ==0:
-                            #     for _i in range(5):
-                            #         plt.plot(wave0_emi, 10**fd_sed_emi['col%d'%(_i+2)], ls=':', alpha=0.5, label='%d'%(_i))
-
-                            # Then. add flux if tau > 0.
-                            # con = (wave0>lammin) & (wave0<lammax)
-                            # wave, flux = wave0[con], flux0[con]
-                            # con_emi = (wave0_emi>lammin) & (wave0_emi<lammax)
-                            # ewave, eflux = wave0_emi[con_emi], flux0_emi[con_emi]
                             femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
                             flux_nebular = femi(wave)
                             emline_luminosity = np.sum(flux0_emi)
