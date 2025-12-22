@@ -125,6 +125,7 @@ class Mainbody(GsfBase):
                            'ZMC', 'ZMCMIN', 'ZMCMAX', 'F_ZMC', 
                            'TDUSTMIN', 'TDUSTMAX', 'DELTDUST', 'TDUSTFIX', 'DUST_NUMAX', 'DUST_NMODEL', 'DIR_DUST',
                            'BPASS', 'DIR_BPASS',
+                           'LIST_TEMP',
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
                            'XHIFIX'
                            ],
@@ -352,15 +353,56 @@ class Mainbody(GsfBase):
             self.Cz1 = 1
             self.Cz2 = 1
 
-        # BPASS Binary template
-        try:
-            self.f_bpass = int(inputs['BPASS'])
-            try:
-                self.f_bin = int(inputs['BINARY'])
-            except:
-                self.f_bin = 1
-        except:
+        # Template selection;
+        self.f_general = False
+        if 'LIST_TEMP' in inputs:
+            self.file_temp = inputs['LIST_TEMP']
+            fd_temp = ascii.read(self.file_temp)
+            logUs_temp = fd_temp['logU']
+            con = (logUs_temp==-99)
+            logZs_temp = np.sort(np.unique(fd_temp['logZ'][con]))
+            ages_temp = np.sort(np.unique(fd_temp['logT'][con]))
+            self.f_general = True
             self.f_bpass = 0
+
+            # Age
+            self.age = 10**ages_temp
+            self.agemax = np.nanmax(self.age)
+            self.agemin = np.nanmin(self.age)
+            self.delage = 0.1
+            self.npeak = len(self.age)
+            self.nage = np.arange(0,len(self.age),1)
+            aamin = []
+            for nn,age_tmp in enumerate(self.age):
+                aamin.append(nn)
+            self.aamin = aamin
+
+            # Z
+            self.Zall = logZs_temp
+            # self.ZFIX = logZs_temp[0]
+            self.Zmin, self.Zmax = np.nanmin(self.Zall), np.nanmax(self.Zall)
+            if self.Zmax == self.Zmin:
+                self.delZ = 0.0
+                self.ZFIX = self.Zmin
+                self.Zall = np.asarray([self.ZFIX])
+                self.has_ZFIX = True
+            else:
+                self.delZ = np.nanmedian(np.abs(np.diff(self.Zall)))
+
+            # Others;
+            self.neb_correlate = False
+
+
+        if not self.f_general:
+            # BPASS Binary template
+            try:
+                self.f_bpass = int(inputs['BPASS'])
+                try:
+                    self.f_bin = int(inputs['BINARY'])
+                except:
+                    self.f_bin = 1
+            except:
+                self.f_bpass = 0
 
         # Nebular emission;
         # Becuase of force_no_neb, add logUs regardless of `ADD_NEBULAE` flag.
@@ -371,121 +413,123 @@ class Mainbody(GsfBase):
         
         self.check_keys(self)
 
-        if 'BPASS' in self.input_keys and str2bool(inputs['BPASS']):
-            self.logger.warning('Currently, BPASS does not have option of nebular emission.')
-            inputs['ADD_NEBULAE'] = '0'
+        # if 'BPASS' in self.input_keys and str2bool(inputs['BPASS']):
+        #     self.logger.warning('Currently, BPASS does not have option of nebular emission.')
+        #     inputs['ADD_NEBULAE'] = '0'
+        if not self.f_general:
+            # @@@ For now, no support for general template with AGN and Nebular;
 
-        # Nebular;
-        self.neb_correlate = False
-        if 'ADD_NEBULAE' in self.input_keys:
-            if str2bool(inputs['ADD_NEBULAE']):
-                self.fneb = True
-                try:
-                    # Correlation between Aneb and LW age? May add some time; see posterior_flexible
-                    if inputs['NEBULAE_PRIOR'] == '1':
-                        self.neb_correlate = True 
-                    else:
+            # Nebular;
+            self.neb_correlate = False
+            if 'ADD_NEBULAE' in self.input_keys:
+                if str2bool(inputs['ADD_NEBULAE']):
+                    self.fneb = True
+                    try:
+                        # Correlation between Aneb and LW age? May add some time; see posterior_flexible
+                        if inputs['NEBULAE_PRIOR'] == '1':
+                            self.neb_correlate = True 
+                        else:
+                            self.neb_correlate = False
+                    except:
                         self.neb_correlate = False
-                except:
-                    self.neb_correlate = False
-                    
-                try:
-                    self.logUMIN = float(inputs['logUMIN'])
-                except:
+                        
+                    try:
+                        self.logUMIN = float(inputs['logUMIN'])
+                    except:
+                        self.logUMIN = -2.5
+                    try:
+                        self.logUMAX = float(inputs['logUMAX'])
+                    except:
+                        self.logUMAX = -2.0
+                    try:
+                        self.DELlogU = float(inputs['DELlogU'])
+                        if self.DELlogU<0.1:
+                            print_err('`DELlogU` cannot have value smaller than 0.1. Exiting.')
+                            sys.exit()
+                    except:
+                        self.DELlogU = 0.5
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
+                    self.nlogU = len(self.logUs)
+
+                    try:
+                        self.logUFIX = float(inputs['logUFIX'])
+                        self.nlogU = 1
+                        self.logUMIN = self.logUFIX
+                        self.logUMAX = self.logUFIX
+                        self.DELlogU = 0
+                        self.logUs = np.asarray([self.logUMAX])
+                    except:
+                        self.logUFIX = None
+
+                    try:
+                        nfneb_tied = str(inputs['NEBULAE_TIED'])
+                    except:
+                        nfneb_tied = '0'
+                    self.fneb_tied = str2bool(nfneb_tied)
+
+                else:
+                    self.fneb = False                
                     self.logUMIN = -2.5
-                try:
-                    self.logUMAX = float(inputs['logUMAX'])
-                except:
                     self.logUMAX = -2.0
-                try:
-                    self.DELlogU = float(inputs['DELlogU'])
-                    if self.DELlogU<0.1:
-                        print_err('`DELlogU` cannot have value smaller than 0.1. Exiting.')
-                        sys.exit()
-                except:
                     self.DELlogU = 0.5
-                self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
-                self.nlogU = len(self.logUs)
-
-                try:
-                    self.logUFIX = float(inputs['logUFIX'])
-                    self.nlogU = 1
-                    self.logUMIN = self.logUFIX
-                    self.logUMAX = self.logUFIX
-                    self.DELlogU = 0
-                    self.logUs = np.asarray([self.logUMAX])
-                except:
-                    self.logUFIX = None
-
-                try:
-                    nfneb_tied = str(inputs['NEBULAE_TIED'])
-                except:
-                    nfneb_tied = '0'
-                self.fneb_tied = str2bool(nfneb_tied)
-
+                    self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
             else:
-                self.fneb = False                
+                if self.verbose:
+                    print_err('Some error in nebular setup; No nebular added.')
+                self.fneb = False
                 self.logUMIN = -2.5
                 self.logUMAX = -2.0
                 self.DELlogU = 0.5
                 self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
-        else:
-            if self.verbose:
-                print_err('Some error in nebular setup; No nebular added.')
-            self.fneb = False
-            self.logUMIN = -2.5
-            self.logUMAX = -2.0
-            self.DELlogU = 0.5
-            self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
-            pass
+                pass
 
-        # AGN;
-        if 'ADD_AGN' in self.input_keys:
-            if str2bool(inputs['ADD_AGN']):
-                self.fagn = True
-                try:
-                    self.AGNTAUMIN = float(inputs['AGNTAUMIN'])
-                except:
-                    self.AGNTAUMIN = 5
-                try:
-                    self.AGNTAUMAX = float(inputs['AGNTAUMAX'])
-                except:
-                    self.AGNTAUMAX = 15
-                try:
-                    self.DELAGNTAU = float(inputs['DELAGNTAU'])
-                    if self.DELAGNTAU<1 and not self.agn_powerlaw:
-                        print_err('`DELAGNTAU` cannot have value smaller than 1. Exiting.')
-                        sys.exit()
-                except:
-                    self.DELAGNTAU = 1.0
-                self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
-                self.nAGNTAU = len(self.AGNTAUs)
+            # AGN;
+            if 'ADD_AGN' in self.input_keys:
+                if str2bool(inputs['ADD_AGN']):
+                    self.fagn = True
+                    try:
+                        self.AGNTAUMIN = float(inputs['AGNTAUMIN'])
+                    except:
+                        self.AGNTAUMIN = 5
+                    try:
+                        self.AGNTAUMAX = float(inputs['AGNTAUMAX'])
+                    except:
+                        self.AGNTAUMAX = 15
+                    try:
+                        self.DELAGNTAU = float(inputs['DELAGNTAU'])
+                        if self.DELAGNTAU<1 and not self.agn_powerlaw:
+                            print_err('`DELAGNTAU` cannot have value smaller than 1. Exiting.')
+                            sys.exit()
+                    except:
+                        self.DELAGNTAU = 1.0
+                    self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
+                    self.nAGNTAU = len(self.AGNTAUs)
 
-                if 'AGNTAUFIX' in self.input_keys:
-                    self.AGNTAUFIX = float(inputs['AGNTAUFIX'])
-                    self.nAGNTAU = 1
-                    self.AGNTAUMIN = self.AGNTAUFIX
-                    self.AGNTAUMAX = self.AGNTAUFIX
-                    self.DELAGNTAU = 0
-                    self.AGNTAUs = np.asarray([self.AGNTAUMAX])
+                    if 'AGNTAUFIX' in self.input_keys:
+                        self.AGNTAUFIX = float(inputs['AGNTAUFIX'])
+                        self.nAGNTAU = 1
+                        self.AGNTAUMIN = self.AGNTAUFIX
+                        self.AGNTAUMAX = self.AGNTAUFIX
+                        self.DELAGNTAU = 0
+                        self.AGNTAUs = np.asarray([self.AGNTAUMAX])
+                    else:
+                        self.AGNTAUFIX = None
+
                 else:
-                    self.AGNTAUFIX = None
-
+                    self.fagn = False                
+                    self.AGNTAUMIN = 10
+                    self.AGNTAUMAX = 15
+                    self.DELAGNTAU = 5
+                    self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
             else:
-                self.fagn = False                
+                if self.verbose:
+                    print_err('Some error in agn setup; No agn added.')
+                self.fagn = False
                 self.AGNTAUMIN = 10
                 self.AGNTAUMAX = 15
                 self.DELAGNTAU = 5
                 self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
-        else:
-            if self.verbose:
-                print_err('Some error in agn setup; No agn added.')
-            self.fagn = False
-            self.AGNTAUMIN = 10
-            self.AGNTAUMAX = 15
-            self.DELAGNTAU = 5
-            self.AGNTAUs = np.arange(self.AGNTAUMIN, self.AGNTAUMAX, self.DELAGNTAU)
-            pass
+                pass
 
         # Output directory;
         try:
@@ -525,81 +569,86 @@ class Mainbody(GsfBase):
             self.band_rf['%s_lam'%(self.filts_rf[ii])] = fd[:,1]
             self.band_rf['%s_res'%(self.filts_rf[ii])] = fd[:,2] / np.max(fd[:,2])
 
-        # Check if func model for SFH;
-        try:
-            self.SFH_FORM = int(inputs['SFH_FORM'])
-        except:
-            self.SFH_FORM = -99
+        # Age
+        self.SFH_FORM = -99
+        if not self.f_general:
+            # For general templates, age/logZ has been set already.
 
-        # This is for non-functional form for SFH;
-        if self.SFH_FORM == -99:
-            # Age
+            # Check if func model for SFH;
             try:
-                self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
+                self.SFH_FORM = int(inputs['SFH_FORM'])
             except:
-                try:
-                    self.delage = float(inputs['DELAGE'])
-                except:
-                    self.delage = 0.1
-                try:
-                    self.agemax = float(inputs['AGEMAX'])
-                    self.agemin = float(inputs['AGEMIN'])
-                except:
-                    self.agemax = 14.0
-                    self.agemin = 0.003
-                logage = np.arange(np.log10(self.agemin), np.log10(self.agemax), self.delage)
-                self.age = 10**logage
+                self.SFH_FORM = -99
 
-            try:
-                self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
-                aamin = []
-                print('\n')
-                print('##########################')
-                self.logger.info('AGEFIX is found.\nAge will be fixed to:')
-                for age_tmp in self.age_fix:
-                    ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
-                    aamin.append(ageind)
-                    print('%6s Gyr'%(self.age[ageind]))
-                print('##########################')
-                self.aamin = aamin
-            except:
+            # This is for non-functional form for SFH;
+            if self.SFH_FORM == -99:
+                # Age
+                try:
+                    self.age = np.asarray([float(x.strip()) for x in inputs['AGE'].split(',')])
+                except:
+                    try:
+                        self.delage = float(inputs['DELAGE'])
+                    except:
+                        self.delage = 0.1
+                    try:
+                        self.agemax = float(inputs['AGEMAX'])
+                        self.agemin = float(inputs['AGEMIN'])
+                    except:
+                        self.agemax = 14.0
+                        self.agemin = 0.003
+                    logage = np.arange(np.log10(self.agemin), np.log10(self.agemax), self.delage)
+                    self.age = 10**logage
+
+                try:
+                    self.age_fix = [float(x.strip()) for x in inputs['AGEFIX'].split(',')]
+                    aamin = []
+                    print('\n')
+                    print('##########################')
+                    self.logger.info('AGEFIX is found.\nAge will be fixed to:')
+                    for age_tmp in self.age_fix:
+                        ageind = np.argmin(np.abs(age_tmp-np.asarray(self.age[:])))
+                        aamin.append(ageind)
+                        print('%6s Gyr'%(self.age[ageind]))
+                    print('##########################')
+                    self.aamin = aamin
+                except:
+                    aamin = []
+                    for nn,age_tmp in enumerate(self.age):
+                        aamin.append(nn)
+                    self.aamin = aamin
+
+                self.npeak = len(self.age)
+                self.nage = np.arange(0,len(self.age),1)
+                
+            else: # This is for functional form for SFH;
+                self.agemax = float(inputs['AGEMAX'])
+                self.agemin = float(inputs['AGEMIN'])
+                self.delage = float(inputs['DELAGE'])
+
+                if self.agemax-self.agemin<self.delage:
+                    self.delage = 0.0001
+                    self.agemax = self.agemin + self.delage
+
+                self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
+                self.nage = len(self.ageparam)
+
+                self.taumax = float(inputs['TAUMAX'])
+                self.taumin = float(inputs['TAUMIN'])
+                self.deltau = float(inputs['DELTAU'])
+
+                if self.taumax-self.taumin<self.deltau:
+                    self.deltau = 0.0001
+                    self.taumax = self.taumin + self.deltau
+
+                self.tau = np.arange(self.taumin, self.taumax, self.deltau)
+                self.ntau = len(self.tau)
+
+                self.npeak = int(inputs['NPEAK'])
+                self.age = np.arange(0,self.npeak,1) # This is meaningless.
                 aamin = []
                 for nn,age_tmp in enumerate(self.age):
                     aamin.append(nn)
                 self.aamin = aamin
-
-            self.npeak = len(self.age)
-            self.nage = np.arange(0,len(self.age),1)
-            
-        else: # This is for functional form for SFH;
-            self.agemax = float(inputs['AGEMAX'])
-            self.agemin = float(inputs['AGEMIN'])
-            self.delage = float(inputs['DELAGE'])
-
-            if self.agemax-self.agemin<self.delage:
-                self.delage = 0.0001
-                self.agemax = self.agemin + self.delage
-
-            self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
-            self.nage = len(self.ageparam)
-
-            self.taumax = float(inputs['TAUMAX'])
-            self.taumin = float(inputs['TAUMIN'])
-            self.deltau = float(inputs['DELTAU'])
-
-            if self.taumax-self.taumin<self.deltau:
-                self.deltau = 0.0001
-                self.taumax = self.taumin + self.deltau
-
-            self.tau = np.arange(self.taumin, self.taumax, self.deltau)
-            self.ntau = len(self.tau)
-
-            self.npeak = int(inputs['NPEAK'])
-            self.age = np.arange(0,self.npeak,1) # This is meaningless.
-            aamin = []
-            for nn,age_tmp in enumerate(self.age):
-                aamin.append(nn)
-            self.aamin = aamin
 
         # SNlimit;
         try:
@@ -615,83 +664,85 @@ class Mainbody(GsfBase):
             self.logger.warning('Cannot find F_ZMC. Set to %d.'%(self.fzmc))
 
         # Metallicity
-        self.has_ZFIX = False
-        try:
-            self.ZFIX = float(inputs['ZFIX'])
+        if not self.f_general:
+
+            self.has_ZFIX = False
             try:
-                self.delZ = float(inputs['DELZ'])
-                self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-            except:
-                self.delZ = 0.0001
-                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
-            self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
-
-            if self.verbose:
-                self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
-
-            self.has_ZFIX = True
-
-        except:
-            self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-            self.delZ = float(inputs['DELZ'])
-            if self.Zmax == self.Zmin or self.delZ == 0:
-                self.delZ = 0.0
-                self.ZFIX = self.Zmin
-                self.Zall = np.asarray([self.ZFIX])
-                self.has_ZFIX = True
-            elif np.abs(self.Zmax - self.Zmin) <= self.delZ:
-                self.ZFIX = self.Zmin
-                self.Zall = np.asarray([self.ZFIX])
-                self.has_ZFIX = True
-            else:
+                self.ZFIX = float(inputs['ZFIX'])
+                try:
+                    self.delZ = float(inputs['DELZ'])
+                    self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                except:
+                    self.delZ = 0.0001
+                    self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
                 self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
 
-        # If BPASS;
-        if self.f_bpass == 1:
-            try:
-                self.DIR_BPASS = inputs['DIR_BPASS']
-            except:
-                self.logger.warning('DIR_BPASS is not found. Using default.')
-                self.DIR_BPASS = '/astro/udfcen3/Takahiro/BPASS/'
-                if not os.path.exists(self.DIR_BPASS):
-                    msg = 'BPASS directory, %s, not found.'%self.DIR_BPASS
-                    print_err(msg, exit=True)
+                if self.verbose:
+                    self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
 
-            self.BPASS_ver = 'v2.2.1'
-            self.Zsun = 0.020
-            Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
-            Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
-
-            try: # If ZFIX is found;
-                iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
-                if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
-                    self.logger.warning('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
-                self.ZFIX = Zbpass[iiz]
-                self.delZ = 0.0001
-                self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
-                self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
-                self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
                 self.has_ZFIX = True
+
             except:
-                self.logger.warning('ZFIX is not found.')
-                self.logger.warning('Metallicities available in BPASS are limited and discrete. ZFIX is recommended : ')
-                self.logger.warning(self.Zall)
                 self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
-                con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
-                self.Zall = Zbpass[con_z]
+                self.delZ = float(inputs['DELZ'])
+                if self.Zmax == self.Zmin or self.delZ == 0:
+                    self.delZ = 0.0
+                    self.ZFIX = self.Zmin
+                    self.Zall = np.asarray([self.ZFIX])
+                    self.has_ZFIX = True
+                elif np.abs(self.Zmax - self.Zmin) <= self.delZ:
+                    self.ZFIX = self.Zmin
+                    self.Zall = np.asarray([self.ZFIX])
+                    self.has_ZFIX = True
+                else:
+                    self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ)
 
-                if len(self.Zall) == 0:
-                    self.logger.warning('No metallicity can be found. Available Zs are:')
-                    self.logger.info(Zbpass)
-                    sys.exit()
+            # If BPASS;
+            if self.f_bpass == 1:
+                try:
+                    self.DIR_BPASS = inputs['DIR_BPASS']
+                except:
+                    self.logger.warning('DIR_BPASS is not found. Using default.')
+                    self.DIR_BPASS = '/astro/udfcen3/Takahiro/BPASS/'
+                    if not os.path.exists(self.DIR_BPASS):
+                        msg = 'BPASS directory, %s, not found.'%self.DIR_BPASS
+                        print_err(msg, exit=True)
 
-                self.delZ = 0.0001
-                self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
-                self.logger.info('Final list for log(Z_BPASS/Zsun) is : ')
-                self.logger.info(self.Zall)
-                if len(self.Zall)>1:
-                    self.has_ZFIX = False
-                    self.ZFIX = None
+                self.BPASS_ver = 'v2.2.1'
+                self.Zsun = 0.020
+                Zbpass = [1e-5, 1e-4, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.010, 0.020, 0.030, 0.040]
+                Zbpass = np.log10(np.asarray(Zbpass)/self.Zsun)
+
+                try: # If ZFIX is found;
+                    iiz = np.argmin(np.abs(Zbpass[:] - float(inputs['ZFIX']) ) )
+                    if Zbpass[iiz] - float(inputs['ZFIX']) != 0:
+                        self.logger.warning('%.2f is not found in BPASS Z list. %.2f is used instead.'%(float(inputs['ZFIX']),Zbpass[iiz]))
+                    self.ZFIX = Zbpass[iiz]
+                    self.delZ = 0.0001
+                    self.Zmin, self.Zmax = self.ZFIX, self.ZFIX + self.delZ
+                    self.Zall = np.arange(self.Zmin, self.Zmax, self.delZ) # in logZsun
+                    self.logger.info('ZFIX is found.\nZ will be fixed to: %.2f'%(self.ZFIX))
+                    self.has_ZFIX = True
+                except:
+                    self.logger.warning('ZFIX is not found.')
+                    self.logger.warning('Metallicities available in BPASS are limited and discrete. ZFIX is recommended : ')
+                    self.logger.warning(self.Zall)
+                    self.Zmax, self.Zmin = float(inputs['ZMAX']), float(inputs['ZMIN'])
+                    con_z = np.where((Zbpass >= self.Zmin) & (Zbpass <= self.Zmax))
+                    self.Zall = Zbpass[con_z]
+
+                    if len(self.Zall) == 0:
+                        self.logger.warning('No metallicity can be found. Available Zs are:')
+                        self.logger.info(Zbpass)
+                        sys.exit()
+
+                    self.delZ = 0.0001
+                    self.Zmax,self.Zmin = np.max(self.Zall), np.min(self.Zall)
+                    self.logger.info('Final list for log(Z_BPASS/Zsun) is : ')
+                    self.logger.info(self.Zall)
+                    if len(self.Zall)>1:
+                        self.has_ZFIX = False
+                        self.ZFIX = None
 
         # N of param:
         if 'AVEVOL' in inputs:

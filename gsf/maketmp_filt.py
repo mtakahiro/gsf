@@ -390,8 +390,9 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             lm0 = np.arange(lm0_orig.min(), lm0_orig.max(), delwave)
                         else:
                             lm0 = spechdu['wavelength'][::nthin]
-                        if not lammax == None and not MB.f_dust:
-                            lm0 = lm0[(lm0 * (zbest+1) < lammax)]
+                        if lammax is not None and not MB.f_dust:
+                            con_wave = (lm0 * (zbest+1) < lammax)
+                            lm0 = lm0[con_wave]
 
                     lmbest = np.zeros((Ntmp, len(lm0)), dtype=float)
                     fbest = np.zeros((Ntmp, len(lm0)), dtype=float)
@@ -427,7 +428,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin], kind='nearest', fill_value="extrapolate")
                             spec_mul[ss,:] = fint(lm0)
                         else:
-                            spec_mul[ss,:] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin] # Lsun/A
+                            spec_mul[ss,:] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin][con_wave] # Lsun/A
 
                         ###################
                         # IGM attenuation.
@@ -496,7 +497,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                         # For nebular library;
                         # For every Z, but not for ss and pp.
-                        if fneb == 1 and MB.f_bpass==0 and ss==0 and pp==0:
+                        if fneb == 1 and ss==0 and pp==0:
                             if zz==0:
                                 spec_mul_neb = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
                                 spec_mul_neb_nu = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
@@ -511,8 +512,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                     fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
                                     spec_mul_neb[zz,uu,:] = fint(lm0)
                                 else:
-                                    spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin]
-                                
+                                    spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin][con_wave]
+
                                 con_neb = (spec_mul_neb[zz,uu,:]<0)
                                 spec_mul_neb[zz,uu,:][con_neb] = 0
                                 
@@ -567,7 +568,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                         fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
                                         spec_mul_agn[zz,uu,:] = fint(lm0)
                                     else:
-                                        spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin]
+                                        spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin][con_wave]
                                     
                                     con_agn = (spec_mul_agn[zz,uu,:]<0)
                                     spec_mul_agn[zz,uu,:][con_agn] = 0
@@ -687,7 +688,8 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                     else:
                         lm0 = spechdu['wavelength'][::nthin]
                     if not lammax == None and not MB.f_dust:
-                        lm0 = lm0[(lm0 * (zbest+1) < lammax)]
+                        con_wave = (lm0 * (zbest+1) < lammax)
+                        lm0 = lm0[con_wave]
                     wave = lm0
 
                 lmbest = np.zeros((Ntmp, len(lm0)), dtype=float)
@@ -721,7 +723,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                         fint = interpolate.interp1d(lm0_orig, spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin], kind='nearest', fill_value="extrapolate")
                         spec_mul[ss] = fint(lm0)
                     else:
-                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin]
+                        spec_mul[ss] = spechdu['fspec_'+str(zz)+'_'+str(tt)+'_'+str(ss)][::nthin][con_wave]
 
                     ##################
                     # IGM attenuation.
@@ -797,7 +799,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
                                 spec_mul_neb[zz,uu,:] = fint(lm0)
                             else:
-                                spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin]
+                                spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin][con_wave]
                             
                             con_neb = (spec_mul_neb[zz,uu,:]<0)
                             spec_mul_neb[zz,uu,:][con_neb] = 0
@@ -842,7 +844,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                                 fint = interpolate.interp1d(lm0_orig, spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
                                 spec_mul_agn[zz,uu,:] = fint(lm0)
                             else:
-                                spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin]
+                                spec_mul_agn[zz,uu,:] = spechdu['flux_agn_Z%d_AGNTAU%d'%(zz,uu)][::nthin][con_wave]
                             
                             con_agn = (spec_mul_agn[zz,uu,:]<0)
                             spec_mul_agn[zz,uu,:][con_agn] = 0

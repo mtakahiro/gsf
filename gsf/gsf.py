@@ -55,7 +55,11 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
             if MB.f_dust:
                 lammax = 2000000 * (1.+MB.zgal) # AA
 
-            if MB.SFH_FORM == -99:
+            if MB.f_general:
+                    from .maketmp_z0 import make_tmp_z0_general
+                    make_tmp_z0_general(MB, lammax=lammax)
+
+            elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
                     from .maketmp_z0 import make_tmp_z0_bpass
                     make_tmp_z0_bpass(MB, lammax=lammax)
@@ -88,7 +92,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
     f_shuffle=False, amp_shuffle=1e-2, Zini=None, tau_lim=0.001,
     skip_sfh=False, f_fancyplot=False, skip_zhist=False, f_sfh_yaxis_force=True, tset_SFR_SED=0.1, 
     nthin=1, delwave=1, f_plot_resid=False, scale=None, f_plot_filter=True,
-    mmax_param:int=1000
+    mmax_param:int=1000, verbose=False,
     ):
     '''
     Purpose
@@ -101,6 +105,9 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
         If >0, the input templates get smoothing to delwave. 
         For fsps, this seems to be critical, so it has the same delwave over the template wavelength range.
     '''
+    if not verbose:
+        import warnings
+        warnings.filterwarnings('ignore')
 
     ######################
     # Read from Input file
@@ -143,7 +150,11 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             if MB.f_dust:
                 lammax = 2000000 * (1.+MB.zgal) # AA
 
-            if MB.SFH_FORM == -99:
+            if MB.f_general:
+                    from .maketmp_z0 import make_tmp_z0_general
+                    make_tmp_z0_general(MB, lammax=lammax)
+
+            elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
                     from .maketmp_z0 import make_tmp_z0_bpass
                     make_tmp_z0_bpass(MB, lammax=lammax)

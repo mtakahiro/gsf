@@ -8,6 +8,7 @@ import os
 # import time
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as ticker
+import scipy.interpolate as interpolate
 
 from astropy.io import fits
 
@@ -20,7 +21,8 @@ from .function_igm import *
 
 def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
-    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
+    f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, 
+    tsets_SFR_SED=[0.001,0.003,0.01,0.03,0.1,0.3], tset_SFR_SED=0.1, f_sfh_yaxis_force=True,
     return_figure=False):
     '''
     Purpose
@@ -287,8 +289,9 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     #####################
     # Get SED based SFR
     #####################
-    f_SFRSED_plot = False
-    SFR_SED = np.zeros(mmax,dtype=float)
+    # f_SFRSED_plot = False
+    # SFR_SED = np.zeros(mmax,dtype=float)
+    SFRs_SED = np.zeros((mmax,len(tsets_SFR_SED)),dtype=float)
 
     # ASDF;
     af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
@@ -343,21 +346,23 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             # quantity in log scale;
             AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
             AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
-            SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # / ml
+            SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # log Msun/yr
             ZM[aa, mm] = ZZtmp[aa] + Zrand
             ZMM[aa, mm]= ZZtmp[aa] + AAtmp[aa] + np.log10(mslist[aa]) + Zrand
             ZML[aa, mm]= ZMM[aa,mm] - np.log10(mslist[aa])
 
             # SFR from SED. This will be converted in log later;
-            if age[aa]<=tset_SFR_SED:
-                SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
-                delt_tot += delT[aa]
+            # if True:
+            #     if age[aa]<=tset_SFR_SED:
+            #         SFR_SED[mm] += 10**SF[aa, mm] * delT[aa]
+            #         delt_tot += delT[aa]
 
-        SFR_SED[mm] /= delt_tot
-        if SFR_SED[mm] > 0:
-            SFR_SED[mm] = np.log10(SFR_SED[mm])
-        else:
-            SFR_SED[mm] = -99
+        # if True:
+        #     SFR_SED[mm] /= delt_tot
+        #     if SFR_SED[mm] > 0:
+        #         SFR_SED[mm] = np.log10(SFR_SED[mm])
+        #     else:
+        #         SFR_SED[mm] = -99
 
         for aa in range(len(age)):
 
@@ -400,6 +405,40 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
             else:
                 TL[aa, mm] = np.nan
 
+        # Get SFR from SFH;
+        if True:
+            # tset_SFR_SED = 0.03
+            SFH_for_interp = np.asarray([s for s in 10**SF[:, mm]] + [0])
+            age_for_interp = np.asarray([s for s in np.log10(age)] + [np.nanmax(np.log10(age+delT[aa]/1e9*2))])
+            fint_sfr = interpolate.interp1d(age_for_interp, SFH_for_interp, kind='nearest', fill_value="extrapolate")
+            delt_int = np.nanmin(age)/10 # in Gyr
+            times_int = np.arange(0,np.nanmax(age),delt_int)
+            sfr_int = fint_sfr(np.log10(times_int))
+
+            fint_delt = interpolate.interp1d(np.log10(age), delT, kind='nearest', fill_value="extrapolate")
+            delt_interp = fint_delt(np.log10(times_int))
+
+            # con = (~np.isinf(sfr_int))
+            # con2 = (~np.isinf(10**SF[:, mm]))
+            # print(np.nansum(sfr_int[con])*delt_int, np.nansum(10**SF[:, mm][con2]))
+            # hoge
+            # con_sfr = (times_int<tset_SFR_SED)
+            # SFR_SED_tmp = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
+            # SFR_SED[mm] = SFR_SED_tmp
+
+            for t in range(len(tsets_SFR_SED)):
+                iix = np.argmin(np.abs(times_int-tsets_SFR_SED[t]))
+                # print(tsets_SFR_SED[t], delt_interp[iix]/1e9/2.)
+                con_sfr = (times_int<tsets_SFR_SED[t]+delt_interp[iix]/1e9/2.)
+                SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tsets_SFR_SED[t]))
+            # print(SFR_SED[mm], SFR_SED_tmp, tset_SFR_SED, delt_int, len(sfr_int[con_sfr]))
+            # plt.close()
+            # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
+            # ax1.set_xscale('log')
+            # # ax1.set_ylim(-3, 3)
+            # plt.savefig('tmp.png')
+            # hoge
+
         # Do stuff...
         # time.sleep(0.01)
         # Update Progress Bar
@@ -424,11 +463,11 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
        ZLp[aa,:] = np.nanpercentile(ZL[aa,:], [16,50,84])
        SFp[aa,:] = np.nanpercentile(SF[aa,:], [16,50,84])
 
-    SFR_SED_med = np.nanpercentile(SFR_SED[:],[16,50,84])
-    if f_SFRSED_plot:
-        ax1.errorbar(delt_tot/2./1e9, SFR_SED_med[1], xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
-        yerr=[[SFR_SED_med[1]-SFR_SED_med[0]],[SFR_SED_med[2]-SFR_SED_med[1]]], \
-        linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
+    # SFR_SED_med = np.nanpercentile(SFR_SED[:],[16,50,84])
+    # if f_SFRSED_plot:
+    #     ax1.errorbar(delt_tot/2./1e9, SFR_SED_med[1], xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
+    #     yerr=[[SFR_SED_med[1]-SFR_SED_med[0]],[SFR_SED_med[2]-SFR_SED_med[1]]], \
+    #     linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
 
     ###################
     msize = np.zeros(len(age), dtype=float)
@@ -612,7 +651,8 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     prihdr['t_quen'] = t_quench
     prihdr['t_rejuv'] = t_rejuv
     # SFR
-    prihdr['tset_SFR'] = tset_SFR_SED
+    # prihdr['tset_SFR'] = tset_SFR_SED
+    prihdr['tsets_SFR'] = ','.join(['%s'%s for s in tsets_SFR_SED])
     # Version;
     import gsf
     prihdr['version'] = gsf.__version__
@@ -630,8 +670,12 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
     for ii in range(len(percs)):
         prihdr['HIERARCH Mstel_%d'%percs[ii]] = ('%.3f'%ACP[ii], 'Stellar mass, logMsun')
-    for ii in range(len(percs)):
-        prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    # for ii in range(len(percs)):
+    #     prihdr['HIERARCH SFR_%d'%percs[ii]] = ('%.3f'%SFR_SED_med[ii], 'SFR, logMsun/yr')
+    for t in range(len(tsets_SFR_SED)):
+        SFR_SED_med_tmp = np.nanpercentile(SFRs_SED[:,t],[16,50,84])
+        for ii in range(len(percs)):
+            prihdr['HIERARCH SFR_%dMyr_%d'%(tsets_SFR_SED[t]*1e3, percs[ii])] = ('%.3f'%SFR_SED_med_tmp[ii], 'SFR, logMsun/yr')
     for ii in range(len(percs)):
         prihdr['HIERARCH Z_MW_%d'%percs[ii]] = ('%.3f'%ZCP[ii], 'Mass-weighted metallicity, logZsun')
     for ii in range(len(percs)):

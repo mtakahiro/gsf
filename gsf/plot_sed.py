@@ -253,7 +253,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     if MB.fagn:
         AGNTAU50 = hdul[1].data['AGNTAU'][1]
         Aagn50 = 10**hdul[1].data['Aagn'][1]
-
+    
     aa = 0
     Av16 = hdul[1].data['AV'+str(aa)][0]
     Av50 = hdul[1].data['AV'+str(aa)][1]
@@ -802,7 +802,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
     DL10 = Mpc_cm/1e6 * 10 # 10pc in cm
     Fuv = np.zeros(mmax, dtype='float') # For Muv
+    wl_Luv_min = 1500
+    wl_Luv_max = 2800
     Luv1600 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
+    Luv1600_nl = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Luv1600_noatn = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Fuv2800 = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir = np.zeros(mmax, dtype='float') # For L(8-1000um)
@@ -871,7 +874,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
                     mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
-                    # ax1.plot(xm_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
+                    # ax1.plot(xm_tmp_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
 
                     # Make no emission line template;
                     mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
@@ -977,9 +980,12 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         Lir[kk] = 0
 
         fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
-        Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        fnu_nl_tmp = flamtonu(x1_tot, ytmp_nl[kk,:]*scale, m0set=-48.6, m0=-48.6)
+        Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+        Luv1600_nl[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_nl_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+
         fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
-        Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=1550, lmax=1650)
+        Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
         betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc, lam_blue=lam_b, lam_red=lam_r)
 
         # Get RF Color;
@@ -1303,7 +1309,10 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         for ii in range(3):
             if np.isinf(Muvs[ii]):
                 Muvs[ii] = 99
+
+        # Luv1600 is RF UV flux density, erg/s/Hz
         Luvs = np.nanpercentile(Luv1600, percs) 
+        Luvs_nl = np.nanpercentile(Luv1600_nl, percs) 
         Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
 
@@ -1322,7 +1331,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         A1600[np.where(A1600<0)] = 0
         SFRUV_BETA = C_SFR_Kenn * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
         SFRUV_UNCOR = C_SFR_Kenn * np.asarray(Luvs) # Msun / yr
-        hdr['SFRUV_ANGS'] = 1600
+        hdr['SFRUV_ANGS'] = (wl_Luv_min + wl_Luv_max)/2.
 
         # Av-based correction;
         AVs_med = np.nanpercentile(AVs, [16,50,84])
@@ -1330,11 +1339,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         fl = np.zeros(len(lam),float) + 1
         nr = np.arange(0,len(lam),1)
         SFRUV = np.zeros(len(Luvs), float)
+        SFRUV_NL = np.zeros(len(Luvs), float)
         for ii in range(len(AVs_med)):
             from .function import apply_dust
             yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=MB.dust_model)
             fl_cor = 1/yyd
             SFRUV[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            SFRUV_NL[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs_nl[ii]) # Msun / yr
             # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
 
         for ii in range(len(percs)):
@@ -1361,6 +1372,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             
             hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
             hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_STEL_%d'%percs[ii]] = SFRUV_NL[ii]
             hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
 
             # UV beta obs;
@@ -1556,6 +1568,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     tree_shf = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)))
     gsf_dict['sfh'] = {}
     gsf_dict = modify_keys(tree_shf, 'sfh', gsf_dict=gsf_dict)
+    tsets_SFR = tree_shf['header']['tsets_SFR'].split(',')
+    tsets_SFR = [float(s) for s in tsets_SFR]
 
     tree_sed = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)))
     gsf_dict['sed'] = {}
@@ -1568,14 +1582,19 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     label = 'sed'
     gsf_dict = modify_keys_sed(tree_sed, label, gsf_dict=gsf_dict, key_skip=key_skip)
 
-    keys_param_sed = ['MUV', 'SFRUV', 'SFRUV_BETA', 'SFRUV_UNCOR', 'UVBETA', 'UVBETA_OBS', 'UV', 'VJ']
-    keys_param_sfh = ['ZMC', 'MSTEL', 'SFR', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW', 'AV0']
+    keys_param_sed = ['MUV', 'SFRUV', 'SFRUV_STEL', 'SFRUV_BETA', 'SFRUV_UNCOR', 'UVBETA', 'UVBETA_OBS', 'UV', 'VJ']
+    keys_param_sfh = ['ZMC', 'MSTEL', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW', 'AV0']
     for key in keys_param_sed:
         for perc in percs:
             gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sed']['%s_%d'%(key, perc)]
     for key in keys_param_sfh:
         for perc in percs:
             gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sfh']['%s_%d'%(key, perc)]
+
+    key = 'SFR'
+    for t in range(len(tsets_SFR)):
+        for perc in percs:
+            gsf_dict['primary_params']['%s_%dMYR_%d'%(key, tsets_SFR[t]*1e3, perc)] = gsf_dict['sfh']['%s_%dMYR_%d'%(key, tsets_SFR[t]*1e3, perc)]
 
     af = asdf.AsdfFile(gsf_dict)
     af.write_to(os.path.join(MB.DIR_OUT, 'gsf_%s.asdf'%(ID)), all_array_compression='zlib')

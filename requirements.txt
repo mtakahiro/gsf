@@ -5,6 +5,7 @@ corner
 dust_extinction
 emcee
 lmfit
+numdifftools
 multiprocess
 numpy>=1.21
 pandas
