@@ -718,6 +718,9 @@ class PLOT(object):
             prihdr['HIERARCH T_LW_%d'%percs[ii]] = ('%.3f'%TLW[ii], 'Light-weighted age, logGyr')
         for ii in range(len(percs)):
             prihdr['AV0_%d'%percs[ii]] = ('%.3f'%self.Avtmp[ii], 'Dust attenuation, mag')
+        if taumodel:
+            for ii in range(len(percs)):
+                prihdr['HIERARCH TAU_%d'%percs[ii]] = ('%.3f'%self.TAW[ii], 'Tau, logGyr')
         prihdu = fits.PrimaryHDU(header=prihdr)
 
         # For SFH plot;

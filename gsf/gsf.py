@@ -249,7 +249,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
                 dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, 
                 f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
                 tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
-                hoge
 
         plot_sed(MB, fil_path=MB.DIR_FILT,
         figpdf=figpdf, save_sed=save_sed, mmax=mmax_sfh,
