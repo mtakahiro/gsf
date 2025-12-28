@@ -12,8 +12,8 @@ INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 
 
 
 def get_lognorm(t, ltau0, T0=-10):
-    A   = 1
-    tau0= 10**ltau0
+    A = 1
+    tau0 = 10**ltau0
     SFR = t * 0 + 1e-20
     conlogn = (t>0)
     SFR[conlogn] = A / np.sqrt(2*np.pi*tau0**2) * np.exp(-(np.log(t[conlogn])-T0)**2/(2*tau0**2)) / t[conlogn]
@@ -119,7 +119,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                     MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
 
                 if sfh==6: # Tabular SFH.
-                    tuniv_hr  = np.arange(0,age_univ,0.01) # in Gyr
+                    tuniv_hr = np.arange(0,age_univ,0.01) # in Gyr
                     T0 = np.log(10**age[tt])
                     sfh_hr_in = get_lognorm(tuniv_hr, tau[ss], T0) # tau in log Gyr
                     zh_hr_in  = tuniv_hr*0 + 10**Z[zz] # metallicity is constant
@@ -132,7 +132,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
                 wave, flux = wave0[con], flux0[con]
                 ms[tt] = sp.stellar_mass
                 if np.isnan(ms[tt]):
-                    print('Error at tau element at',tt)
+                    print('Error at age %.3f and tau %.3f'%(age[tt], tau[ss]))
                     sys.exit()
 
                 Ls[tt] = 10**sp.log_lbol
