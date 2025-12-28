@@ -18,6 +18,7 @@ from .function_class import Func
 from .basic_func import Basic
 from .function_igm import *
 
+# Try defining a class;
 
 def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
     dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
@@ -46,13 +47,10 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     MB.logger.info('Running plot_sfh')
 
-    fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
     Z = MB.Zall
     age = MB.age
-    nage = MB.nage
-    tau0 = MB.tau0
     age = np.asarray(age)
 
     try:
@@ -67,15 +65,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow_r')
     col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
-
-    ################
-    # RF colors.
-    home = os.path.expanduser('~')
-    c = MB.c
-    chimax = 1.
-    m0set = MB.m0set
-    Mpc_cm = MB.Mpc_cm
-    d = MB.d
 
     #############
     # Plot.
@@ -114,7 +103,7 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         zbes = hdul[0].header['zmc']
     except:
         zbes = hdul[0].header['z']
-    chinu = hdul[1].data['chi']
+    # chinu = hdul[1].data['chi']
 
     try:
         RA = hdul[0].header['RA']
@@ -150,8 +139,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     ####################
     # For cosmology
     ####################
-    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
-
     Tuni = MB.cosmo.age(zbes).value
     Tuni0 = (Tuni - age[:])
 
@@ -219,11 +206,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         data = asdf.open(os.path.join(samplepath+'/'+pfile))
 
     try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin
         if use_pickl:
             samples = data['chain'][:]
         else:
@@ -249,7 +231,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     SF = np.zeros((len(age), mmax), dtype=float) # SFR
     Av = np.zeros(mmax, dtype=float) # SFR
 
-
     # ##############################
     # Add simulated scatter in quad
     # if files are available.
@@ -259,7 +240,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     except:
         f_zev = 1
 
-    eZ_mean = 0
     try:
         meanfile = './sim_SFH_mean.cat'
         dfile = np.loadtxt(meanfile, comments='#')
@@ -267,13 +247,11 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         eZ = dfile[:,4]
         eAv= np.mean(dfile[:,6])
         if f_zev == 0:
-            eZ_mean = np.mean(eZ[:])
             eZ[:] = age * 0 #+ eZ_mean
         else:
             try:
                 f_zev = int(prihdr['ZEVOL'])
                 if f_zev == 0:
-                    eZ_mean = np.mean(eZ[:])
                     eZ = age * 0
             except:
                 pass
@@ -727,11 +705,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
 
     # ASDF;
     tree_sfh = {}
-    #     'id': ID,
-    #     'redshift': '%.3f'%zbes,
-    #     'nimf': '%s'%(IMF),
-    #     'version_gsf': gsf.__version__
-    # }
     tree_sfh['header'] = {}
     tree_sfh['sfh'] = {}
 
@@ -816,7 +789,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
         ax4t.plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
         ax4t.set_xlim(Txmin, Txmax)
 
-
     if return_figure:
         return tree_sfh, fig
 
@@ -824,9 +796,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     fig.savefig(MB.DIR_OUT + 'gsf_sfh_' + ID + '.png', dpi=dpi)
 
     return tree_sfh
-
-    # fig.clear()
-    # plt.close()
 
 
 def get_sfh_figure_format(ax1, ax1t, ax2, ax2t, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax):
@@ -945,15 +914,10 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         import matplotlib
 
     print('\n### Running plot_sfh_tau ###\n')
-
-    fnc = MB.fnc
     bfnc = MB.bfnc
     ID = MB.ID
     Z = MB.Zall
     age = MB.age
-    nage = MB.nage
-    tau0 = MB.tau0
-    ageparam = MB.ageparam
 
     try:
         if not MB.ZFIX == None:
@@ -964,15 +928,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     NUM_COLORS = len(age)
     cm = plt.get_cmap('gist_rainbow_r')
     col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
-
-    ################
-    # RF colors.
-    home = os.path.expanduser('~')
-    c = MB.c
-    chimax = 1.
-    m0set = MB.m0set
-    Mpc_cm = MB.Mpc_cm
-    d = MB.d
 
     #############
     # Plot.
@@ -1002,12 +957,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ax1t = ax1.twiny()
     ax2t = ax2.twiny()
 
-    ##################
-    # Fitting Results
-    ##################
-    SNlim = 3 # avobe which SN line is shown.
-
-
     ###########################
     # Open result file
     ###########################
@@ -1017,7 +966,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         zbes = hdul[0].header['zmc']
     except:
         zbes = hdul[0].header['z']
-    chinu= hdul[1].data['chi']
 
     try:
         RA   = hdul[0].header['RA']
@@ -1053,12 +1001,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     ####################
     # For cosmology
     ####################
-    DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
-    Cons = (4.*np.pi*DL**2/(1.+zbes))
-
     Tuni = MB.cosmo.age(zbes).value #, use_flat=True, **cosmo)
-    Tuni0 = (Tuni - age[:])
-
     delT  = np.zeros(len(age),dtype=float)
     delTl = np.zeros(len(age),dtype=float)
     delTu = np.zeros(len(age),dtype=float)
@@ -1109,16 +1052,8 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     samplepath = MB.DIR_OUT 
     pfile = 'gsf_chain_' + ID + '.cpkl'
 
-    niter = 0
     data = loadcpkl(os.path.join(samplepath+'/'+pfile))
     try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin #* nwalk/10/2 # I think this takes 3/4 of samples
-        #if nmc>1000:
-        #    Nburn  = 500
         samples = data['chain'][:]
     except:
         msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
@@ -1151,7 +1086,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
     except:
         f_zev = 1
 
-    eZ_mean = 0
     try:
         meanfile = './sim_SFH_mean.cat'
         dfile = np.loadtxt(meanfile, comments='#')
@@ -1159,13 +1093,11 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
         eZ = dfile[:,4]
         eAv= np.mean(dfile[:,6])
         if f_zev == 0:
-            eZ_mean = np.mean(eZ[:])
             eZ[:] = age * 0 #+ eZ_mean
         else:
             try:
                 f_zev = int(prihdr['ZEVOL'])
                 if f_zev == 0:
-                    eZ_mean = np.mean(eZ[:])
                     eZ = age * 0
             except:
                 pass
@@ -1349,7 +1281,6 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
             if msize[aa]>0:
                 ax4.errorbar(age[aa], ZCp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]], yerr=[[ZCp[aa,1]-ZCp[aa,0]],[ZCp[aa,2]-ZCp[aa,1]]], linestyle='-', color=col[aa], lw=1, zorder=1)
                 ax4.scatter(age[aa], ZCp[aa,1], marker='.', c=[col[aa]], edgecolor='k', s=msize[aa], zorder=2)
-
 
     #############
     # Axis
@@ -1541,6 +1472,7 @@ def plot_sfh_tau(MB, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax
 
     af = asdf.AsdfFile(tree_sfh)
     af.write_to(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)), all_array_compression='zlib')
+    # Done writing.
 
     # Attach to MB;
     MB.sfh_tlook = age
