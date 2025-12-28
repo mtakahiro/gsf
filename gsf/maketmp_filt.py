@@ -497,7 +497,7 @@ def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                         # For nebular library;
                         # For every Z, but not for ss and pp.
-                        if fneb == 1 and ss==0 and pp==0:
+                        if fneb and ss==0 and pp==0:
                             if zz==0:
                                 spec_mul_neb = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)
                                 spec_mul_neb_nu = np.zeros((len(Z), len(MB.logUs), len(lm0)), dtype=float)

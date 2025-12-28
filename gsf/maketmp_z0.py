@@ -656,7 +656,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     Z = MB.Zall
     age = MB.age
     tau0 = MB.tau0
-    fneb = MB.fneb
     DIR_TMP= MB.DIR_TMP
 
     # binary?
@@ -667,16 +666,17 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
         bin_str = 'str'
     DIR_LIB = MB.DIR_BPASS + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
 
-    if fneb:
-        MB.logger.warning('Currently, BPASS nebular emission is only available for imf135_300 bin.')
+    if MB.fneb:
         if bin_str == 'bin' and imf_str == '135_300':
-            print('nebular is on')
-            fneb = True
+            MB.logger.info('nebular is on')
+            MB.fneb = True
             DIR_LIB_NEB = MB.DIR_BPASS + 'BPASS%s-Cloudy/cloudyspec_outputs/'%(MB.BPASS_ver)
         else:
-            print('nebular is off')
+            MB.logger.error('Currently, BPASS nebular emission is only available for imf135_300 bin.')
+            MB.logger.error('Turn `ADD_NEBULAE` off')
             print(bin_str, imf_str)
-            fneb = False
+            MB.fneb = False
+            return False
 
     NZ = len(Z)
     Na = len(age)
@@ -727,7 +727,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
         lage_temp = (6+0.1*(nage_temp-2))
         age_temp = 10**(6+0.1*(nage_temp-2)) # in yr
 
-        if fneb:
+        if MB.fneb:
             mstel_emi = 1e6
             ncols_emi = 15
             Lunit_emi = 3.848e33
@@ -848,7 +848,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
 
                     tree.update({'age': MB.age})
                     tree.update({'Z': MB.Zall})
-                    if fneb:
+                    if MB.fneb:
                         tree.update({'logUMIN': MB.logUMIN})
                         tree.update({'logUMAX': MB.logUMAX})
                         tree.update({'DELlogU': MB.DELlogU})
@@ -866,7 +866,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                     tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
                     # BPASS neb;
-                    if fneb and pp == 0 and ss == iix_age_neb:
+                    if MB.fneb and pp == 0 and ss == iix_age_neb:
 
                         if zz == 0:
                             MB.logger.info('BPASS nebular component is calculated using age=%.1e'%(age[ss]))
@@ -910,7 +910,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                             tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
                             tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
                             tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
-                            # print('fspec_nebular_Z%d'%zz+'_logU%d'%nlogU, flux_nebular)
 
                 else:
                     MB.logUFIX = logu_neb
@@ -1072,14 +1071,6 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     tau0 = MB.tau0
     fneb = MB.fneb
     DIR_TMP= MB.DIR_TMP
-
-    # binary?
-    # f_bin = MB.f_bin
-    # if f_bin==1:
-    #     bin_str = 'bin'
-    # else:
-    #     bin_str = 'str'
-    # DIR_LIB = MB.DIR_BPASS + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
 
     if fneb:
         MB.logger.warning('Currently, BPASS nebular emission is only available for imf135_300 bin.')

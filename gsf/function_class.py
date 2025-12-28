@@ -937,6 +937,70 @@ class Func_tau:
             return nr, xx, yy
 
 
+    def get_template_single(self, A00, Av, tau, age, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
+                            f_apply_igm=True, xhi=None):
+        '''
+        Parameters
+        ----------
+        EBVratio : float
+            E(B-V)_neb / E(B-V)_st. 
+            Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
+
+        Returns
+        -------
+        A00 * yyd_sort, xxd_sort : float arrays
+            Flux (fnu) and wavelength (AA; observed frame)
+
+        Notes
+        -----
+        This function is only used in plot_sed.py.
+        Common function for mebular and nonnebular temlates.
+        '''
+        NZ, NT, NA = self.MB.bfnc.Z2NZ(Z,tau,age)
+
+        if logU != None:
+            NU = len(self.MB.logUs)
+            # Dust attenuation to nebulae
+            Av *= EBVratio
+            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
+            coln = int(2 + NZ*NU + nlogU)
+        elif AGNTAU != None:
+            NU = len(self.MB.AGNTAUs)
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+            coln = int(2 + NZ*NU + nAGNTAU)
+        else:
+            coln = int(2 + NZ*self.MB.ntau*self.MB.npeak + NT*self.MB.npeak + NA)
+
+        nr = lib[:,0]
+        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        yy = lib[:,coln]
+
+        if f_apply_igm:
+            if xhi == None:
+                xhi = self.MB.x_HI_input
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=xhi)
+            self.MB.x_HI = x_HI
+
+        if f_apply_dust:
+            yyd, xxd, nrd = apply_dust(yy, xx/(1+zgal), nr, Av, dust_model=self.dust_model)
+        else:
+            yyd, xxd, nrd = yy, xx/(1+zgal), nr
+
+        xxd *= (1.+zgal)
+
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+        nrd_yyd[:,0] = nrd[:]
+        nrd_yyd[:,1] = yyd[:]
+        nrd_yyd[:,2] = xxd[:]
+
+        b = nrd_yyd
+        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
+
+        return A00 * yyd_sort, xxd_sort
+
+
     def tmp04_dust(self, par, nprec=1):
         '''
         Makes model template with a given param setself.

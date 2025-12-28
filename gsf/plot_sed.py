@@ -427,13 +427,9 @@ def get_sed_figure_format(MB, ax1, x1min, x1max, ymax, scale, ey, wht3, f_plot_f
 
     ax1.set_xlim(x1min, x1max)
     ax1.set_xscale('log')
-    if f_plot_filter:
-        scl_yaxis = 0.2
-    else:
-        scl_yaxis = 0.1
 
     if not ymax == None:
-        ax1.set_ylim(-ymax*scl_yaxis,ymax)
+        ax1.set_ylim(-ymax*MB.scl_yaxis,ymax)
 
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xlabels)
@@ -447,7 +443,7 @@ def get_sed_figure_format(MB, ax1, x1min, x1max, ymax, scale, ey, wht3, f_plot_f
     # Filters
     ind_remove = np.where((wht3<=0) | (ey<=0))[0]
     if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
+        ax1 = plot_filter(MB, ax1, ymax, scl=MB.scl_yaxis, ind_remove=ind_remove)
 
     xx = np.arange(100,400000)
     yy = xx * 0
@@ -499,6 +495,12 @@ def initiate_figure_sed(MB, f_grsm=False, f_plot_filter=True):
                 fig = plt.figure(figsize=(5.5,1.8))
             fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
             ax1 = fig.add_subplot(111)
+
+    if f_plot_filter:
+        MB.scl_yaxis = 0.2
+    else:
+        MB.scl_yaxis = 0.1
+
     return fig, axes, ax1, ax2t, ax3t
 
 
@@ -897,6 +899,9 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     f_exclude = False
     col_ex = 'lawngreen'
     x_ex = []
+    fy_ex = []
+    ex_ex = []
+    ey_ex = []
     try:
         # Currently, this file is made after FILTER_SKIP;
         x_ex, fy_ex, ey_ex, ex_ex = MB.data['bb_obs_removed']['x'], MB.data['bb_obs_removed']['fy'], MB.data['bb_obs_removed']['ey'], MB.data['bb_obs_removed']['ex']
@@ -1148,11 +1153,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
             if ss == MB.aamin[0]:
 
-                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
+                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
 
-                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
 
                 # Each;
                 ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -1165,16 +1170,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     else:
                         logU_tmp = samples['logU'][nr]
 
-                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
                     # ax1.plot(xm_tmp_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp_nl += mod0_tmp_nl
 
                     # Make attenuation free template;
-                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
                 if MB.fagn:
@@ -1183,22 +1188,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         AGNTAU_tmp = MB.AGNTAUFIX
                     else:
                         AGNTAU_tmp = samples['AGNTAU'][nr]
-                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp_nl += mod0_tmp_nl
 
                     # Make attenuation free template;
-                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
             else:
-                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
+                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
-                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                 fm_tmp_noatn += mod0_tmp_noatn
 
                 # Each;
@@ -1373,7 +1378,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     # Filters
     ind_remove = np.where((wht3<=0) | (ey<=0))[0]
     if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
+        ax1 = plot_filter(MB, ax1, ymax, scl=MB.scl_yaxis, ind_remove=ind_remove)
 
     if save_sed:
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
