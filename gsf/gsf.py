@@ -242,19 +242,20 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
 
         if not skip_sfh:
             if MB.SFH_FORM == -99:
-                # plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax_sfh,
-                # dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
-                # f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
-                # tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
                 clsplot.plot_sfh(fil_path=MB.DIR_FILT, mmax=mmax_sfh,
                 dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, 
                 f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
                 tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
 
-                plot_sed(MB, fil_path=MB.DIR_FILT,
+                clsplot.plot_sed(fil_path=MB.DIR_FILT,
                 figpdf=figpdf, save_sed=save_sed, mmax=mmax_sfh,
                 dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
                 f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
+
+                # plot_sed(MB, fil_path=MB.DIR_FILT,
+                # figpdf=figpdf, save_sed=save_sed, mmax=mmax_sfh,
+                # dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
+                # f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
 
             else:
                 clsplot.plot_sfh_tau(fil_path=MB.DIR_FILT, mmax=mmax_sfh,

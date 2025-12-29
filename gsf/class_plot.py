@@ -49,6 +49,31 @@ class PLOT(object):
         return 
 
 
+    def get_uvbeta_obs(self, zp50, lam_b=1250, lam_r=1600, snlim=2, d_scale=1, percs=[16,50,84]):
+        ''''''
+        xbb = self.mb.dict['xbb']
+        fybb = self.mb.dict['fybb']
+        eybb = self.mb.dict['eybb']
+        con_bet = (fybb/eybb>snlim) & (xbb/(1+zp50)>lam_b) & (xbb/(1+zp50)<lam_r)
+        nbeta_obs = len(con_bet)
+        if nbeta_obs>1:
+            nmc_uv = 3000
+            betas_obs = np.zeros(nmc_uv,float)
+            y = fybb[con_bet]*c/np.square(xbb[con_bet])/d_scale
+            yerr = eybb[con_bet]*c/np.square(xbb[con_bet])/d_scale
+            noise = np.zeros((nmc_uv,len(xbb[con_bet])),float)
+            for nn in range(len(xbb[con_bet])):
+                noise[:,nn] = np.random.normal(0,yerr[nn],nmc_uv)
+
+            for nn in range(nmc_uv):
+                betas_obs[nn] = get_uvbeta(xbb[con_bet], y+noise[nn,:], zp50, #elam=yerr,
+                                        lam_blue=lam_b, lam_red=lam_r)
+            beta_obs_percs = np.nanpercentile(betas_obs,percs)
+        else:
+            beta_obs_percs = [np.nan,np.nan,np.nan]
+        return beta_obs_percs,nbeta_obs
+    
+
     def get_sfh_figure_format(self, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax):
         """"""
         self.axes['ax1'].set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
@@ -1408,14 +1433,1183 @@ class PLOT(object):
         return self.axes
 
 
+    def plot_sed(self, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
+        mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
+        f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
+        f_apply_igm=True, show_noattn=False, percs=[16,50,84],
+        x1min=4000, return_figure=False, lcb='#4682b4', col_dat='r', col_dia='blue',
+        sigma=1.0,
+        lam_b=1350, lam_r=3000,
+        clean_files=True,
+        use_pickl=True,
+        ):
+        '''
+        Parameters
+        ----------
+        MB.SNlim : float
+            SN limit to show flux or up lim in SED.
+        f_chind : bool
+            If include non-detection in chi2 calculation, using Sawicki12.
+        mmax : int
+            Number of mcmc realization for plot. Not for calculation.
+        f_fancy : bool
+            plot each SED component.
+        f_fill: bool
+            if True, and so is f_fancy, fill each SED component.
+
+        Returns
+        -------
+        plots
+        '''
+        MB = self.mb
+        MB.logger.info('Running plot_sed')
+
+        print('\n### Running plot_sed_tau ###\n')
+
+        fnc  = self.mb.fnc
+        bfnc = self.mb.bfnc
+        age  = self.mb.age
+        nage = self.mb.nage 
+        self.f_plot_resid = f_plot_resid
+        ID = MB.ID
+        
+        nstep_plot = 1
+        if False and self.mb.f_bpass:
+            nstep_plot = 30
+
+        SNlim = self.mb.SNlim
+        
+        ################
+        # RF colors.
+        c = MB.c
+        m0set = MB.m0set
+        Mpc_cm = MB.Mpc_cm
+
+        ##################
+        # Fitting Results
+        ##################
+        DIR_FILT = MB.DIR_FILT
+        SFILT = MB.filts
+
+        ###########################
+        # Open result file
+        ###########################
+        file = MB.DIR_OUT + 'gsf_params_' + ID + '.fits'
+        hdul = fits.open(file)
+        
+        ndim_eff = hdul[0].header['NDIM']
+
+        # Redshift MC
+        zp16  = hdul[1].data['zmc'][0]
+        zp50  = hdul[1].data['zmc'][1]
+        zp84  = hdul[1].data['zmc'][2]
+
+        # Stellar mass MC
+        M16 = hdul[1].data['ms'][0]
+        M50 = hdul[1].data['ms'][1]
+        M84 = hdul[1].data['ms'][2]
+        if verbose:
+            MB.logger.info('Total stellar mass is %.2e'%(M50))
+
+        # Amplitude MC
+        A50 = np.zeros(len(age), dtype=float)
+        A16 = np.zeros(len(age), dtype=float)
+        A84 = np.zeros(len(age), dtype=float)
+        for aa in range(len(age)):
+            A16[aa] = 10**hdul[1].data['A'+str(aa)][0]
+            A50[aa] = 10**hdul[1].data['A'+str(aa)][1]
+            A84[aa] = 10**hdul[1].data['A'+str(aa)][2]
+
+        Asum  = np.sum(A50)
+
+        if MB.fneb:
+            logU50 = hdul[1].data['logU'][1]
+            Aneb50 = 10**hdul[1].data['Aneb'][1]
+        if MB.fagn:
+            AGNTAU50 = hdul[1].data['AGNTAU'][1]
+            Aagn50 = 10**hdul[1].data['Aagn'][1]
+        
+        aa = 0
+        Av16 = hdul[1].data['AV'+str(aa)][0]
+        Av50 = hdul[1].data['AV'+str(aa)][1]
+        Av84 = hdul[1].data['AV'+str(aa)][2]
+        AAv = [Av50]
+
+        Z50 = np.zeros(len(age), dtype=float)
+        Z16 = np.zeros(len(age), dtype=float)
+        Z84 = np.zeros(len(age), dtype=float)
+        NZbest = np.zeros(len(age), dtype='int')
+        for aa in range(len(age)):
+            Z16[aa] = hdul[1].data['Z'+str(aa)][0]
+            Z50[aa] = hdul[1].data['Z'+str(aa)][1]
+            Z84[aa] = hdul[1].data['Z'+str(aa)][2]
+            NZbest[aa]= bfnc.Z2NZ(Z50[aa])
+
+        # Light weighted Z.
+        ZZ50 = np.sum(Z50*A50)/np.sum(A50)
+
+        # FIR Dust;
+        if MB.f_dust:
+            MD16 = hdul[1].data['MDUST'][0]
+            MD50 = hdul[1].data['MDUST'][1]
+            MD84 = hdul[1].data['MDUST'][2]
+            AD16 = hdul[1].data['ADUST'][0]
+            AD50 = hdul[1].data['ADUST'][1]
+            AD84 = hdul[1].data['ADUST'][2]
+            TD16 = hdul[1].data['TDUST'][0]
+            TD50 = hdul[1].data['TDUST'][1]
+            TD84 = hdul[1].data['TDUST'][2]
+            nTD16 = hdul[1].data['nTDUST'][0]
+            nTD50 = hdul[1].data['nTDUST'][1]
+            nTD84 = hdul[1].data['nTDUST'][2]
+            DFILT = MB.inputs['FIR_FILTER'] # filter band string.
+            DFILT = [x.strip() for x in DFILT.split(',')]
+            # DFWFILT = fil_fwhm(DFILT, DIR_FILT)
+            if verbose:
+                MB.logger.info('Total dust mass is %.2e'%(MD50))
+        else:
+            DFILT = []
+
+        if MB.fxhi:
+            # xhi16 = hdul[1].data['xhi'][0]
+            xhi50 = hdul[1].data['xhi'][1]
+            # xhi84 = hdul[1].data['xhi'][2]
+        else:
+            xhi50 = None
+
+        chi = hdul[1].data['chi'][0]
+        chin = hdul[1].data['chi'][1]
+        fitc = chin
+
+        Cz0 = hdul[0].header['Cz0']
+        Cz1 = hdul[0].header['Cz1']
+        Cz2 = hdul[0].header['Cz2']
+        zbes = zp50 
+        zscl = (1.+zbes)
+
+        ###############################
+        # Data taken from
+        ###############################
+        if MB.f_dust:
+            MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes, add_fir=True)
+        else:
+            MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
+
+        NR = MB.dict['NR']
+        x = MB.dict['x']
+        fy = MB.dict['fy']
+        ey = MB.dict['ey']
+        data_len = MB.data['meta']['data_len']
+
+        con0 = (NR<data_len[0])
+        xg0  = x[con0]
+        fg0  = fy[con0]
+        eg0  = ey[con0]
+        con1 = (NR>=data_len[0]) & (NR<data_len[1]+data_len[0])
+        xg1  = x[con1]
+        fg1  = fy[con1]
+        eg1  = ey[con1]
+        con2 = (NR>=data_len[1]+data_len[0]) & (NR<MB.NRbb_lim)
+        xg2  = x[con2]
+        fg2  = fy[con2]
+        eg2  = ey[con2]
+        con_spec = (NR<MB.NRbb_lim)
+
+        if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
+            f_grsm = True
+            wave_spec_max = np.max(x[con_spec])
+        else:
+            f_grsm = False
+
+        wht = fy * 0
+        con_wht = (ey>0)
+        wht[con_wht] = 1./np.square(ey[con_wht])
+
+        # BB data points;
+        NRbb = MB.dict['NRbb']
+        xbb  = MB.dict['xbb']
+        fybb = MB.dict['fybb']
+        eybb = MB.dict['eybb']
+        exbb = MB.dict['exbb']
+        snbb = fybb/eybb
+
+        ######################
+        # Weight by line
+        ######################
+        wh0  = 1./np.square(eg0)
+        LW0  = []
+        model = fg0
+        wht3 = check_line_man(fy, x, wht, fy, zbes, LW0)
+
+        ######################
+        # Mass-to-Light ratio.
+        ######################
+        ms = np.zeros(len(age), dtype=float)
+        af = MB.af
+        sedpar = af['ML']
+
+        for aa in range(len(age)):
+            ms[aa] = sedpar['ML_' +  str(int(NZbest[aa]))][aa]
+        
+        try:
+            isochrone = af['isochrone']
+            LIBRARY = af['library']
+            nimf = af['nimf']
+        except:
+            isochrone = ''
+            LIBRARY = ''
+            nimf = ''
+
+        # Initiate figure;
+        _ = self.define_axis_sed(f_grsm=f_grsm, f_dust=self.mb.f_dust, f_plot_filter=f_plot_filter)
+
+        # Determine scale here;
+        if scale == None:
+            conbb_hs = (fybb/eybb > SNlim)
+            if len(fybb[conbb_hs])>0:
+                scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / self.mb.d))) / 10
+            else:
+                scale = 1e-19
+                self.mb.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
+        d_scale = self.mb.d * scale
+
+        # Plot BB data points;
+        _, leng = self.plot_bb_sed(xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma=sigma)
+
+        # Get beta from obs;
+        # Detection and rest-frame;
+        beta_obs_percs,nbeta_obs = self.get_uvbeta_obs(zp50, lam_b=lam_b, lam_r=lam_r, snlim=SNlim, d_scale=d_scale, percs=percs)
+
+        # For any data removed fron fit (i.e. IRAC excess):
+        f_exclude = False
+        col_ex = 'lawngreen'
+        x_ex = []
+        fy_ex = []
+        ex_ex = []
+        ey_ex = []
+        try:
+            # Currently, this file is made after FILTER_SKIP;
+            x_ex, fy_ex, ey_ex, ex_ex = MB.data['bb_obs_removed']['x'], MB.data['bb_obs_removed']['fy'], MB.data['bb_obs_removed']['ey'], MB.data['bb_obs_removed']['ex']
+            self.axes['ax1'].errorbar(
+                x_ex, fy_ex * c / np.square(x_ex) /d_scale,
+                xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d_scale, color='k', linestyle='', linewidth=0.5, zorder=5
+                )
+            self.axes['ax1'].scatter(
+                x_ex, fy_ex * c / np.square(x_ex) /d_scale, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30
+                )
+            f_exclude = True
+        except:
+            pass
+
+        #####################################
+        # Open ascii file and stock to array.
+        _ = self.setup_sed_library()
+
+        if self.mb.f_dust:
+            _, _, y0d_cut, y0d, x0d = self.plot_dust_sed(AD50, nTD50, zp50, c=c, d_scale=d_scale, SNlim=SNlim)
+
+        #
+        # This is for UVJ color time evolution.
+        #
+        Asum = np.sum(A50[:])
+        for jj in range(len(age)):
+            ii = int(len(nage) - jj - 1) # from old to young templates.
+            if jj == 0:
+                y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib_all, xhi=xhi50)
+                y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib, xhi=xhi50)
+
+                ysum = y0
+                ysump = y0p
+                nopt = len(ysump)
+
+                f_50_comp = np.zeros((len(age),len(y0)),float) 
+                # Keep each component;
+                f_50_comp[ii,:] = y0[:] * c / np.square(x0) /d_scale
+
+                if MB.f_dust:
+                    ysump[:] += y0d_cut[:nopt]
+                    ysump = np.append(ysump,y0d_cut[nopt:])
+                    # Keep each component;
+                    f_50_comp_dust = y0d * c / np.square(x0d) /d_scale
+
+                if MB.fneb: 
+                    # Only at one age pixel;
+                    y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, MB.lib_neb_all, logU=logU50, xhi=xhi50)
+                    y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, MB.lib_neb, logU=logU50, xhi=xhi50)
+                    ysum += y0_r
+                    ysump[:nopt] += y0p
+
+                if MB.fagn: 
+                    # Only at one age pixel;
+                    y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, MB.lib_agn_all, AGNTAU=AGNTAU50, xhi=xhi50)
+                    y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, MB.lib_agn, AGNTAU=AGNTAU50, xhi=xhi50)
+                    ysum += y0_r
+                    ysump[:nopt] += y0p
+
+            else:
+                y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib_all, xhi=xhi50)
+                y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib, xhi=xhi50)
+                ysum += y0_r
+                ysump[:nopt] += y0p
+                f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d_scale
+
+            # The following needs revised.
+            f_uvj = False
+            if f_uvj:
+                if jj == 0:
+                    fwuvj = open(MB.DIR_OUT + ID + '_uvj.txt', 'w')
+                    fwuvj.write('# age uv vj\n')
+                ysum_wid = ysum * 0
+                for kk in range(0,ii+1,1):
+                    tt = int(len(nage) - kk - 1)
+                    nn = int(len(nage) - ii - 1)
+
+                    nZ = bfnc.Z2NZ(Z50[tt])
+                    y0_wid, x0_wid = fnc.open_spec_fits_dir(tt, nZ, nn, AAv[0], zbes, A50[tt])
+                    ysum_wid += y0_wid
+
+                lmrest_wid = x0_wid/(1.+zbes)
+                band0 = ['u','v','j']
+                _,fconv = filconv(band0, lmrest_wid, ysum_wid, fil_path) # f0 in fnu
+                fu_t = fconv[0]
+                fv_t = fconv[1]
+                fj_t = fconv[2]
+                uvt = -2.5*np.log10(fu_t/fv_t)
+                vjt = -2.5*np.log10(fv_t/fj_t)
+                fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
+                fwuvj.close()
+
+        #############
+        # Main result
+        #############
+        if MB.has_photometry:
+            conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
+            if len(fybb[conbb_ymax]):
+                ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
+            else:
+                ymax = np.nanmax(fybb*c/np.square(xbb)/d_scale) * 1.6
+        else:
+            ymax = None
+
+        x1max = 100000
+        if MB.has_photometry:
+            if x1max < np.nanmax(xbb):
+                x1max = np.nanmax(xbb) * 1.5
+            if len(fybb[conbb_ymax]):
+                if x1min > np.nanmin(xbb[conbb_ymax]):
+                    x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+        else:
+            x1min = 2000
+
+        #############
+        # Plot
+        #############
+        eAAl = np.zeros(len(age),dtype=float)
+        eAAu = np.zeros(len(age),dtype=float)
+        eAMl = np.zeros(len(age),dtype=float)
+        eAMu = np.zeros(len(age),dtype=float)
+        MSsum = np.sum(ms)
+        Asum = np.sum(A50)
+        A50 /= Asum
+        A16 /= Asum
+        A84 /= Asum
+
+        AM50 = A50 * M50 * ms / MSsum
+        CM = M50/np.sum(AM50)
+
+        AM50 = A50 * M50 * ms / MSsum * CM
+        AM16 = A16 * M50 * ms / MSsum * CM
+        AM84 = A84 * M50 * ms / MSsum * CM
+
+        AC50 = A50 * 0 # Cumulative
+        for ii in range(len(A50)):
+            eAAl[ii] = A50[ii] - A16[ii]
+            eAAu[ii] = A84[ii] - A50[ii]
+            eAMl[ii] = AM50[ii] - AM16[ii]
+            eAMu[ii] = AM84[ii] - AM50[ii]
+            AC50[ii] = np.sum(AM50[ii:])
+
+        ####################
+        # For cosmology
+        ####################
+        DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm #, **cosmo) # Luminositydistance in cm
+        if f_grsm:
+            MB.logger.warning('This function (write_lines) needs to be revised.')
+            PLOT.write_lines(self.mb.ID, zbes, DIR_OUT=self.mb.DIR_OUT)
+
+        ##########################
+        # Zoom in Line regions
+        ##########################
+        if f_grsm:
+            self.axes['ax2t'].errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+            self.axes['ax2t'].errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
+            self.axes['ax2t'].errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+
+            xgrism = np.concatenate([xg0,xg1,xg2])
+            fgrism = np.concatenate([fg0,fg1,fg2])
+            egrism = np.concatenate([eg0,eg1,eg2])
+            con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
+            con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
+
+            MB.logger.info('Median SN at 3400-3800 is; %.1f'%np.median((fgrism/egrism)[con4000b]))
+            MB.logger.info('Median SN at 4200-5000 is; %.1f'%np.median((fgrism/egrism)[con4000r]))
+
+            if MB.has_spectrum and not MB.has_photometry:
+                con_spec = (eg2 < 1000)
+                self.axes['ax1'].errorbar(xg2[con_spec], (fg2 * c/np.square(xg2)/d_scale)[con_spec], yerr=(eg2 * c/np.square(xg2)/d_scale)[con_spec], lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+                con_spec = (eg1 < 1000)
+                self.axes['ax1'].errorbar(xg1[con_spec], (fg1 * c/np.square(xg1)/d_scale)[con_spec], yerr=(eg1 * c/np.square(xg1)/d_scale)[con_spec], lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
+                con_spec = (eg0 < 1000)
+                self.axes['ax1'].errorbar(xg0[con_spec], (fg0 * c/np.square(xg0)/d_scale)[con_spec], yerr=(eg0 * c/np.square(xg0)/d_scale)[con_spec], lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+
+        #
+        # From MCMC chain
+        #
+        ndim, Nburn, samples = PLOT.read_mcmc_chain(self.mb.ID, samplepath=self.mb.DIR_OUT, use_pickl=use_pickl)
+
+        # Saved template;
+        ytmp = np.zeros((mmax,len(ysum)), dtype=float)
+        ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype=float)
+        ytmp_nl = np.zeros((mmax,len(ysum)), dtype=float) # no line
+        ytmp_noatn = np.zeros((mmax,len(ysum)), dtype=float) # no attenuation
+
+        # MUV;
+        DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
+        DL10 = Mpc_cm/1e6 * 10 # 10pc in cm
+        Fuv = np.zeros(mmax, dtype=float) # For Muv
+        wl_Luv_min = 1500
+        wl_Luv_max = 2800
+        Luv1600 = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Luv1600_nl = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Luv1600_noatn = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Fuv2800 = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Lir = np.zeros(mmax, dtype=float) # For L(8-1000um)
+        UVJ = np.zeros((mmax,4), dtype=float) # For UVJ color;
+        Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
+
+        # UV beta;
+        betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+
+        # From random chain;
+        for kk in range(0,mmax,1):
+            nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
+
+            if MB.fxhi:
+                xhi = samples['xhi'][nr]
+            else:
+                xhi = MB.x_HI_input
+
+            if MB.has_AVFIX:
+                Av_tmp = MB.AVFIX
+            else:
+                try:
+                    Av_tmp = samples['AV0'][nr]
+                except:
+                    Av_tmp = samples['AV'][nr]
+            AVs[kk] = Av_tmp
+
+            try:
+                zmc = samples['zmc'][nr]
+            except:
+                zmc = zbes
+
+            for ss in MB.aamin:
+                try:
+                    AA_tmp = 10**samples['A'+str(ss)][nr]
+                except:
+                    AA_tmp = 0
+                    pass
+                try:
+                    ZZ_tmp = samples['Z'+str(ss)][nr]
+                except:
+                    try:
+                        ZZ_tmp = samples['Z0'][nr]
+                    except:
+                        ZZ_tmp = MB.ZFIX
+
+                if ss == MB.aamin[0]:
+
+                    mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
+                    fm_tmp = mod0_tmp.copy()
+                    fm_tmp_nl = mod0_tmp.copy()
+
+                    fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+
+                    # Each;
+                    ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+
+                    if MB.fneb:
+                        Aneb_tmp = 10**samples['Aneb'][nr]
+
+                        if not MB.logUFIX == None:
+                            logU_tmp = MB.logUFIX
+                        else:
+                            logU_tmp = samples['logU'][nr]
+
+                        mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                        fm_tmp += mod0_tmp
+
+                        # Make no emission line template;
+                        mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                        fm_tmp_nl += mod0_tmp_nl
+
+                        # Make attenuation free template;
+                        mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                        fm_tmp_noatn += mod0_tmp_noatn
+
+                    if MB.fagn:
+                        Aagn_tmp = 10**samples['Aagn'][nr]
+                        if not MB.AGNTAUFIX == None:
+                            AGNTAU_tmp = MB.AGNTAUFIX
+                        else:
+                            AGNTAU_tmp = samples['AGNTAU'][nr]
+                        mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                        fm_tmp += mod0_tmp
+
+                        # Make no emission line template;
+                        mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                        fm_tmp_nl += mod0_tmp_nl
+
+                        # Make attenuation free template;
+                        mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                        fm_tmp_noatn += mod0_tmp_noatn
+
+                else:
+                    mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
+                    fm_tmp += mod0_tmp
+                    fm_tmp_nl += mod0_tmp
+                    mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                    fm_tmp_noatn += mod0_tmp_noatn
+
+                    # Each;
+                    ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+
+            #
+            # Dust component;
+            # @@@ Why so slow?
+            if MB.f_dust:
+                if kk == 0:
+                    par = Parameters()
+                    par.add('MDUST',value=samples['MDUST'][nr])
+                    try:
+                        par.add('TDUST',value=samples['TDUST'][nr])
+                    except:
+                        par.add('TDUST',value=0)
+
+                par['MDUST'].value = samples['MDUST'][nr]
+                if not MB.TDUSTFIX == None:
+                    par['TDUST'].value = MB.NTDUST
+                else:
+                    par['TDUST'].value = samples['TDUST'][nr]
+                
+                model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
+                model_dust_full, x1_dust_full = fnc.tmp04_dust(par.valuesdict(), return_full=True)
+                # print(par['MDUST'].value, samples['MDUST'][nr], np.nanmax(model_dust_full * c/np.square(x1_dust_full)/d_scale))
+
+                if kk == 0:
+                    deldt = (x1_dust[1] - x1_dust[0])
+                    x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
+                    # Redefine??
+                    ytmp = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp_noatn = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype=float)
+                    ytmp_dust_full = np.zeros((mmax,len(model_dust_full)), dtype=float)
+
+                ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d_scale
+                ytmp_dust_full[kk,:] = model_dust_full * c/np.square(x1_dust_full)/d_scale # flambda * 1e-20
+
+                fint = interpolate.interp1d(x1_dust, model_dust, kind='nearest', fill_value="extrapolate")
+                flux_dust_tmp = fint(x1_tot)
+                # flux_dust_tmp = np.interp(x1_tot,x1_dust,model_dust)
+
+                fint = interpolate.interp1d(xx_tmp,fm_tmp, kind='nearest', fill_value="extrapolate")
+                flux_stel_tmp = fint(x1_tot)
+                model_tot = flux_stel_tmp + flux_dust_tmp
+
+                fint = interpolate.interp1d(xx_tmp,fm_tmp_nl, kind='nearest', fill_value="extrapolate")
+                flux_stel_tmp = fint(x1_tot)
+                model_tot_nl = flux_stel_tmp + flux_dust_tmp
+                # model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + flux_dust_tmp
+
+                fint = interpolate.interp1d(xx_tmp,fm_tmp_noatn, kind='nearest', fill_value="extrapolate")
+                flux_stel_tmp = fint(x1_tot)
+                model_tot_noatn = flux_stel_tmp + flux_dust_tmp
+                # model_tot_noatn = np.interp(x1_tot,xx_tmp,fm_tmp_noatn) + flux_dust_tmp
+
+                ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d_scale
+                ytmp_nl[kk,:] = model_tot_nl[:] * c/np.square(x1_tot[:])/d_scale
+                ytmp_noatn[kk,:] = model_tot_noatn[:] * c/np.square(x1_tot[:])/d_scale
+
+            else:
+                x1_tot = xm_tmp
+                ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+                ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
+                ytmp_noatn[kk,:] = fm_tmp_noatn[:] * c / np.square(xm_tmp[:]) /d_scale
+
+            # Get FUV flux density at 10pc;
+            Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
+            Fuv2800[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
+            Lir[kk] = 0
+
+            fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
+            fnu_nl_tmp = flamtonu(x1_tot, ytmp_nl[kk,:]*scale, m0set=-48.6, m0=-48.6)
+            Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+            Luv1600_nl[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_nl_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+
+            fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
+            Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+            betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc, lam_blue=lam_b, lam_red=lam_r)
+
+            # Get RF Color;
+            _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
+            indb = [0,1,2,4]
+            indr = [2,2,3,3]
+            for ii in range(len(indr)):
+                if fconv[indb[ii]]>0 and fconv[indr[ii]]>0:
+                    UVJ[kk,ii] = -2.5*np.log10(fconv[indb[ii]]/fconv[indr[ii]])
+                else:
+                    UVJ[kk,ii] = np.nan
+
+            # Do stuff...
+            # time.sleep(0.01)
+            # Update Progress Bar
+            printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
+
+        #
+        # Plot Median SED;
+        #
+        ytmp16 = np.nanpercentile(ytmp[:,:],16,axis=0)
+        ytmp50 = np.nanpercentile(ytmp[:,:],50,axis=0)
+        ytmp84 = np.nanpercentile(ytmp[:,:],84,axis=0)
+        ytmps_nl = [np.nanpercentile(ytmp_nl[:,:],perc,axis=0) for perc in percs]
+        ytmps_noatn = [np.nanpercentile(ytmp_noatn[:,:],perc,axis=0) for perc in percs]
+        
+        if MB.f_dust:
+            ytmp_dust50 = np.nanpercentile(ytmp_dust[:,:],50, axis=0)
+            ytmp_dust50_full = np.nanpercentile(ytmp_dust_full[:,:], 50, axis=0)
+            ytmps_dust_full = [np.nanpercentile(ytmp_dust_full[:,:],perc,axis=0) for perc in percs]
+
+        #if not f_fill:
+        self.axes['ax1'].fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
+        self.axes['ax1'].plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+        if show_noattn:#True:#
+            # self.axes['ax1'].plot(x1_tot[::nstep_plot], ytmps_nl[1][::nstep_plot], '--', lw=.5, color='yellow', zorder=-1, alpha=1.)
+            self.axes['ax1'].plot(x1_tot[::nstep_plot], ytmps_noatn[1][::nstep_plot], '--', lw=.5, color='cyan', zorder=-1, alpha=1.)
+
+        # For grism;
+        if f_grsm:
+            LSF = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
+            try:
+                spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+                spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+                spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+            except:
+                spec_grsm16 = ytmp16[:]
+                spec_grsm50 = ytmp50[:]
+                spec_grsm84 = ytmp84[:]
+
+            if True:
+                self.axes['ax2t'].plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+            else:
+                self.axes['ax2t'].plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+
+        # Attach the data point in MB;
+        MB.sed_wave_obs = xbb
+        MB.sed_flux_obs = fybb * c / np.square(xbb) /d_scale
+        MB.sed_eflux_obs = eybb * c / np.square(xbb) /d_scale
+        # Attach the best SED to MB;
+        MB.sed_wave = x1_tot
+        MB.sed_flux16 = ytmp16
+        MB.sed_flux50 = ytmp50
+        MB.sed_flux84 = ytmp84
+
+        if f_fancyplot:
+            alp_fancy = 0.5
+            #self.axes['ax1'].plot(x1_tot[::nstep_plot], np.nanpercentile(ytmp[:, ::nstep_plot], 50, axis=0), '-', lw=.5, color='gray', zorder=-1, alpha=1.)
+            ysumtmp = ytmp[0, ::nstep_plot] * 0
+            ysumtmp2 = ytmp[:, ::nstep_plot] * 0
+            ysumtmp2_prior = ytmp[0, ::nstep_plot] * 0
+
+            for ss in range(len(age)):
+                ii = int(len(nage) - ss - 1)
+                # !! Take median after summation;
+                ysumtmp2[:,:len(xm_tmp)] += ytmp_each[:, ::nstep_plot, ii]
+                if f_fill:
+                    self.axes['ax1'].fill_between(x1_tot[::nstep_plot], ysumtmp2_prior,  np.nanpercentile(ysumtmp2[:,:], 50, axis=0), linestyle='None', lw=0., color=self.col[ii], alpha=alp_fancy, zorder=-3)
+                else:
+                    self.axes['ax1'].plot(x1_tot[::nstep_plot], np.nanpercentile(ysumtmp2[:, ::nstep_plot], 50, axis=0), linestyle='--', lw=.5, color=self.col[ii], alpha=alp_fancy, zorder=1)
+                ysumtmp2_prior[:] = np.nanpercentile(ysumtmp2[:, :], 50, axis=0)
+
+        elif f_fill:
+            MB.logger.info('f_fancyplot is False. f_fill is set to False.')
+
+        # Calculate non-det chi2
+        chi2, conw, con_up, chi_nd, nod, fin_chi2 = PLOT.show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=x_ex, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
+
+        # plot BB model from best template (blue squares)
+        lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, x1_tot, ytmp16, ytmp50, ytmp84, 
+                                                                                                                                           SFILT, DFILT, DIR_FILT, scale, d_scale, DL, leng, sigma, 
+                                                                                                                                           SNlim=SNlim, c=c, col_dat=col_dat, col_dia=col_dia)
+
+        # Save files
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
+        fbb_nu = flamtonu(lbb, fbb*scale, m0set=m0set)
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=m0set)
+
+        # Then save full spectrum;
+        col00  = []
+        col1  = fits.Column(name='wave_model', format='E', unit='AA', array=x1_tot)
+        col00.append(col1)
+        col2  = fits.Column(name='f_model_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16[:])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50[:])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
+        col00.append(col4)
+        col2  = fits.Column(name='f_model_noline_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_nl[0])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_noline_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_nl[1])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_noline_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_nl[2])
+        col00.append(col4)
+        col2  = fits.Column(name='f_model_noattn_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_noatn[0])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_noattn_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_noatn[1])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_noattn_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmps_noatn[2])
+        col00.append(col4)
+
+        # Each component
+        # Stellar
+        col1 = fits.Column(name='wave_model_stel', format='E', unit='AA', array=x0)
+        col00.append(col1)
+        for aa in range(len(age)):
+            col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
+            col00.append(col1)
+        if MB.f_dust:
+            col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust_full)
+            col00.append(col1)
+            col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50_full)
+            col00.append(col1)
+            
+        # Grism;
+        if f_grsm:
+            col2 = fits.Column(name='f_model_conv_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm16)
+            col00.append(col2)
+            col3 = fits.Column(name='f_model_conv_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm50)
+            col00.append(col3)
+            col4 = fits.Column(name='f_model_conv_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=spec_grsm84)
+            col00.append(col4)
+
+        # BB for dust
+        if MB.f_dust:
+            xbb = np.append(xbb,xbbd)
+            fybb = np.append(fybb,fybbd)
+            eybb = np.append(eybb,eybbd)
+
+        col5 = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
+        col00.append(col5)
+        col6 = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) /d_scale)
+        col00.append(col6)
+        col7 = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) /d_scale)
+        col00.append(col7)
+
+        hdr = fits.Header()
+        hdr['redshift'] = zbes
+        hdr['id'] = ID
+        hdr['hierarch isochrone'] = isochrone
+        hdr['library'] = LIBRARY
+        hdr['nimf'] = nimf
+        hdr['scale'] = scale
+        hdr['dust model'] = MB.dust_model_name
+        hdr['ndust model'] = MB.dust_model
+
+        # Chi square:
+        hdr['chi2'] = chi2
+        hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
+        hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
+        try:
+            hdr['hierarch Chi2-of-nondetection'] = chi_nd
+        except:
+            hdr['hierarch Chi2-of-nondetection'] = 0
+        hdr['hierarch No-of-params'] = ndim_eff
+        hdr['hierarch Degree-of-freedom']  = nod
+        try:
+            hdr['hierarch reduced-chi2'] = fin_chi2
+        except:
+            hdr['hierarch reduced-chi2'] = 0
+
+        # Write parameters;
+        # Muv
+        Muvs = -2.5 * np.log10(np.nanpercentile(Fuv[:],percs)) + MB.m0set
+        for ii in range(3):
+            if np.isinf(Muvs[ii]):
+                Muvs[ii] = 99
+
+        # Luv1600 is RF UV flux density, erg/s/Hz
+        Luvs = np.nanpercentile(Luv1600, percs) 
+        Luvs_nl = np.nanpercentile(Luv1600_nl, percs) 
+        Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
+        betas_med = np.nanpercentile(betas, [16,50,84])
+
+        #
+        # SFR from attenuation corrected LUV;
+        #
+        C_SFR_Kenn = 1.4 * 1e-28
+        if MB.nimf == 1: # Chabrier
+            C_SFR_Kenn /= 0.63 # Madau&Dickinson+14
+        elif MB.nimf == 2: # Kroupa
+            C_SFR_Kenn /= 0.67 # Madau&Dickinson+14
+
+        # beta correction;
+        # Meurer+99, Smit+16;
+        A1600 = 4.43 + 1.99 * np.asarray(betas_med)
+        A1600[np.where(A1600<0)] = 0
+        SFRUV_BETA = C_SFR_Kenn * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
+        SFRUV_UNCOR = C_SFR_Kenn * np.asarray(Luvs) # Msun / yr
+        hdr['SFRUV_ANGS'] = (wl_Luv_min + wl_Luv_max)/2.
+
+        # Av-based correction;
+        AVs_med = np.nanpercentile(AVs, [16,50,84])
+        lam = np.asarray([hdr['SFRUV_ANGS']])
+        fl = np.zeros(len(lam),float) + 1
+        nr = np.arange(0,len(lam),1)
+        SFRUV = np.zeros(len(Luvs), float)
+        SFRUV_NL = np.zeros(len(Luvs), float)
+        for ii in range(len(AVs_med)):
+            from .function import apply_dust
+            yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=MB.dust_model)
+            fl_cor = 1/yyd
+            SFRUV[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            SFRUV_NL[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs_nl[ii]) # Msun / yr
+            # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
+
+        for ii in range(len(percs)):
+
+            if not np.isnan(Muvs[ii]):
+                hdr['MUV%d'%percs[ii]] = Muvs[ii]
+            else:
+                hdr['MUV%d'%percs[ii]] = 99
+
+            if not np.isnan(Luvs[ii]):
+                hdr['LUV%d'%percs[ii]] = Luvs[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV%d'%percs[ii]] = -99
+
+            if not np.isnan(Luvs_noatn[ii]):
+                hdr['LUV_noattn_%d'%percs[ii]] = Luvs_noatn[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV_noattn_%d'%percs[ii]] = -99
+
+            if not np.isnan(betas_med[ii]):
+                hdr['UVBETA%d'%percs[ii]] = betas_med[ii]
+            else:
+                hdr['UVBETA%d'%percs[ii]] = 99
+            
+            hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
+            hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_STEL_%d'%percs[ii]] = SFRUV_NL[ii]
+            hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
+
+            # UV beta obs;
+            if ii == 0:
+                hdr['NUVBETA_obs'] = nbeta_obs
+            if not np.isnan(beta_obs_percs[ii]):
+                hdr['UVBETA_obs%d'%percs[ii]] = beta_obs_percs[ii]
+            else:
+                hdr['UVBETA_obs%d'%percs[ii]] = -99
+
+        # UVJ
+        try:
+            hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
+            hdr['uv50'] = np.nanpercentile(UVJ[:,0],50)
+            hdr['uv84'] = np.nanpercentile(UVJ[:,0],84)
+            hdr['bv16'] = np.nanpercentile(UVJ[:,1],16)
+            hdr['bv50'] = np.nanpercentile(UVJ[:,1],50)
+            hdr['bv84'] = np.nanpercentile(UVJ[:,1],84)
+            hdr['vj16'] = np.nanpercentile(UVJ[:,2],16)
+            hdr['vj50'] = np.nanpercentile(UVJ[:,2],50)
+            hdr['vj84'] = np.nanpercentile(UVJ[:,2],84)
+            hdr['zj16'] = np.nanpercentile(UVJ[:,3],16)
+            hdr['zj50'] = np.nanpercentile(UVJ[:,3],50)
+            hdr['zj84'] = np.nanpercentile(UVJ[:,3],84)
+        except:
+            print('\nError when writinf UVJ colors;\n')
+            pass
+
+        # EW;
+        try:
+            for ii in range(len(EW50)):
+                hdr['EW_%s_16'%(ew_label[ii])] = EW16[ii]
+                hdr['EW_%s_50'%(ew_label[ii])] = EW50[ii]
+                hdr['EW_%s_84'%(ew_label[ii])] = EW84[ii]
+                hdr['EW_%s_e1'%(ew_label[ii])] = EW50_er1[ii]
+                hdr['EW_%s_e2'%(ew_label[ii])] = EW50_er2[ii]
+                hdr['HIERARCH cnt_%s_16'%(ew_label[ii])]= cnt16[ii]
+                hdr['HIERARCH cnt_%s_50'%(ew_label[ii])]= cnt50[ii]
+                hdr['HIERARCH cnt_%s_84'%(ew_label[ii])]= cnt84[ii]
+                hdr['L_%s_16'%(ew_label[ii])] = L16[ii]
+                hdr['L_%s_50'%(ew_label[ii])] = L50[ii]
+                hdr['L_%s_84'%(ew_label[ii])] = L84[ii]
+        except:
+            pass
+
+        # Version;
+        import gsf
+        from astropy import units as u
+        hdr['version'] = gsf.__version__
+
+        # Write;
+        # This file will be deleted;
+        colspec = fits.ColDefs(col00)
+        hdu0 = fits.BinTableHDU.from_columns(colspec, header=hdr)
+        hdu0.writeto(MB.DIR_OUT + 'gsf_spec_%s.fits'%(ID), overwrite=True)
+
+        # ASDF;
+        tree_spec = {
+            'id': ID,
+            'redshift': '%.3f'%zbes,
+            'isochrone': '%s'%(isochrone),
+            'library': '%s'%(LIBRARY),
+            'nimf': '%s'%(nimf),
+            'scale': scale,
+            'version_gsf': gsf.__version__
+        }
+        tree_spec['model'] = {}
+        tree_spec['obs'] = {}
+        tree_spec['header'] = {}
+
+        # Dump physical parameters;
+        for key in hdr:
+            if key not in tree_spec:
+                if key[:-3] == 'SFRUV':
+                    tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
+                else:
+                    tree_spec['header'].update({'%s'%key: hdr[key]})
+
+        # BB;
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fbb50_nu = flamtonu(lbb, fbb*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=23.9, m0=-48.6) * u.uJy
+        tree_spec['model'].update({'wave_bb': lbb * u.AA})
+        tree_spec['model'].update({'fnu_bb_16': fbb16_nu})
+        tree_spec['model'].update({'fnu_bb_50': fbb50_nu})
+        tree_spec['model'].update({'fnu_bb_84': fbb84_nu})
+
+        # full spectrum;
+        tree_spec['model'].update({'wave': x1_tot * u.AA})        
+        # Get fnu in uJy;
+        fnu_16 = flamtonu(x1_tot, ytmp16*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fnu_50 = flamtonu(x1_tot, ytmp50*scale, m0set=23.9, m0=-48.6) * u.uJy
+        fnu_84 = flamtonu(x1_tot, ytmp84*scale, m0set=23.9, m0=-48.6) * u.uJy
+        tree_spec['model'].update({'fnu_16': fnu_16})
+        tree_spec['model'].update({'fnu_50': fnu_50})
+        tree_spec['model'].update({'fnu_84': fnu_84})
+        for ii in range(len(percs)):
+            fnus_noln = flamtonu(x1_tot, ytmps_nl[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_noline_%d'%percs[ii]: fnus_noln})
+        for ii in range(len(percs)):
+            fnus_noatn = flamtonu(x1_tot, ytmps_noatn[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_noattn_%d'%percs[ii]: fnus_noatn})
+
+        if MB.f_dust:
+            tree_spec['model'].update({'wave_fir': x1_dust_full})
+            for ii in range(len(percs)):
+                # fnus_fir = flamtonu(x1_tot, ytmps_noatn[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+                # tree_spec['model'].update({'fnu_fir_%d'%percs[ii]: fnus_fir})
+                fnus_fir = flamtonu(x1_dust_full, ytmps_dust_full[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
+                tree_spec['model'].update({'fnu_fir_%d'%percs[ii]: fnus_fir})
+
+        # EW;
+        try:
+            for ii in range(len(EW50)):
+                tree_spec['model'].update({'EW_%s_16'%(ew_label[ii]): EW16[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_50'%(ew_label[ii]): EW50[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_84'%(ew_label[ii]): EW84[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii] * u.AA})
+                tree_spec['model'].update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii] * u.AA})
+                tree_spec['model'].update({'cnt_%s_16'%(ew_label[ii]): flamtonu(x1_tot, cnt16[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy})
+                tree_spec['model'].update({'cnt_%s_50'%(ew_label[ii]): flamtonu(x1_tot, cnt50[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy})
+                tree_spec['model'].update({'cnt_%s_84'%(ew_label[ii]): flamtonu(x1_tot, cnt84[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy})
+                tree_spec['model'].update({'L_%s_16'%(ew_label[ii]): L16[ii] * u.erg / u.s})
+                tree_spec['model'].update({'L_%s_50'%(ew_label[ii]): L50[ii] * u.erg / u.s})
+                tree_spec['model'].update({'L_%s_84'%(ew_label[ii]): L84[ii] * u.erg / u.s})
+        except:
+            pass
+
+        # Each component
+        # Stellar
+        tree_spec['model'].update({'wave_stel': x0 * u.AA})
+        for aa in range(len(age)):
+            fnu_tmp = flamtonu(x0, f_50_comp[aa,:]*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            if aa == 0:
+                f_nu_stel = fnu_tmp
+            else:
+                f_nu_stel += fnu_tmp
+            tree_spec['model'].update({'fnu_stel_%d'%aa: fnu_tmp})
+        tree_spec['model'].update({'fnu_stel': f_nu_stel})
+
+        if MB.f_dust:
+            # dust
+            # tree_spec['model'].update({'wave_dust': x1_dust * u.AA})
+            # fnu_tmp = flamtonu(x1_dust, ytmp_dust50*scale,  m0set=23.9, m0=-48.6) * u.uJy
+            # tree_spec['model'].update({'fnu_dust': fnu_tmp})
+            tree_spec['model'].update({'wave_dust': x1_dust_full * u.AA})
+            fnu_tmp = flamtonu(x1_dust_full, ytmp_dust50_full * scale, m0set=23.9, m0=-48.6) * u.uJy
+            tree_spec['model'].update({'fnu_dust': fnu_tmp})
+
+        # Obs BB
+        fybb_lam = fybb * c / np.square(xbb) / d_scale
+        eybb_lam = eybb * c / np.square(xbb) / d_scale
+        tree_spec['obs'].update({'wave_bb': xbb * u.AA})
+        # tree_spec['obs'].update({'fnu_bb': fybb[:] * Cnu_to_Jy * u.uJy})
+        # tree_spec['obs'].update({'enu_bb': eybb[:] * Cnu_to_Jy * u.uJy})
+        tree_spec['obs'].update({'fnu_bb': flamtonu(xbb, fybb_lam * scale, m0set=23.9, m0=-48.6) * u.uJy})
+        tree_spec['obs'].update({'enu_bb': flamtonu(xbb, eybb_lam * scale, m0set=23.9, m0=-48.6) * u.uJy})
+
+        # grism:
+        if f_grsm:
+            fs = [fg0,fg1,fg2]
+            es = [eg0,eg1,eg2]
+            xs = [xg0,xg1,xg2]
+            for ff in range(len(fs)):
+                flam_tmp = fs[ff] * c / np.square(xs[ff]) / d_scale
+                elam_tmp = es[ff] * c / np.square(xs[ff]) / d_scale
+                fnu_tmp = flamtonu(xs[ff], flam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                enu_tmp = flamtonu(xs[ff], elam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                tree_spec['obs'].update({'fg%d'%ff: fnu_tmp})
+                tree_spec['obs'].update({'eg%d'%ff: enu_tmp})
+                tree_spec['obs'].update({'wg%d'%ff: xs[ff] * u.AA})
+
+        # Figure configure;
+        _ = self.update_axis_sed(x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=f_plot_filter)
+
+        # Filts;
+        tree_spec['filters'] = self.mb.filts
+        if f_plot_filter:
+            tree_spec['filter_response'] = self.mb.filt_responses
+
+        # Save;
+        af = asdf.AsdfFile(tree_spec)
+        af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
+
+        # Make a new dict
+        gsf_dict = self.save_files_sed(percs=percs)
+
+        #
+        # SED params in plot
+        #
+        if f_label:
+            fs_label = 8
+            fd = gsf_dict['sfh']#fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
+            if MB.f_dust:
+                label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+                %(ID, zbes, np.log10(float(fd['MSTEL_50'].value)), MD50, TD50, float(fd['Z_MW_50']), np.log10(float(fd['T_MW_50'].value)), float(fd['AV0_50'].value))#, fin_chi2)
+            else:
+                label = 'ID: %s\n$z:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+                %(ID, zbes, np.log10(float(fd['MSTEL_50'].value)), float(fd['Z_MW_50']), np.log10(float(fd['T_MW_50'].value)), float(fd['AV0_50'].value))
+
+            if f_grsm:
+                self.axes['ax1'].text(0.02, 0.68, label,\
+                fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
+                ha='left', va='center', transform=self.axes['ax1'].transAxes)
+            else:
+                self.axes['ax1'].text(0.02, 0.68, label,\
+                fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
+                ha='left', va='center', transform=self.axes['ax1'].transAxes)
+
+        if f_grsm:
+            if wave_spec_max<23000:
+                # E.g. WFC3, NIRISS grisms
+                conlim = (x0>10000) & (x0<25000)
+                xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
+                self.axes['ax2t'].set_xlabel('')
+                self.axes['ax2t'].set_xlim(xgmin, xgmax)
+
+                conaa = (x0>xgmin-50) & (x0<xgmax+50)
+                ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d_scale) * 1.15
+                yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d_scale) / 1.15
+
+                self.axes['ax2t'].set_ylim(yminzoom, ymaxzoom)
+                self.axes['ax2t'].xaxis.labelpad = -2
+                if xgmax>20000:
+                    self.axes['ax2t'].set_xticks([8000, 12000, 16000, 20000, 24000])
+                    self.axes['ax2t'].set_xticklabels(['0.8', '1.2', '1.6', '2.0', '2.4'])
+                else:
+                    self.axes['ax2t'].set_xticks([8000, 10000, 12000, 14000, 16000])
+                    self.axes['ax2t'].set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
+            else:
+                # NIRSPEC spectrum;
+                conlim = (x0>10000) & (x0<54000) 
+                xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
+                self.axes['ax2t'].set_xlabel('')
+                self.axes['ax2t'].set_xlim(xgmin, xgmax)
+
+                conaa = (x0>xgmin-50) & (x0<xgmax+50)
+                ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d_scale) * 1.15
+                yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d_scale) / 1.15
+
+                self.axes['ax2t'].set_ylim(yminzoom, ymaxzoom)
+                self.axes['ax2t'].xaxis.labelpad = -2
+                if xgmax>40000:
+                    self.axes['ax2t'].set_xticks([8000, 20000, 32000, 44000, 56000])
+                    self.axes['ax2t'].set_xticklabels(['0.8', '2.0', '3.2', '4.4', '5.6'])
+                else:
+                    self.axes['ax2t'].set_xticks([8000, 20000, 32000, 44000])
+                    self.axes['ax2t'].set_xticklabels(['0.8', '2.0', '3.2', '4.4'])
+
+        if MB.f_dust:
+            try:
+                contmp = (x1_tot>1e4) #& (fybbd/eybbd>SNlim)
+                y3min, y3max = -.2*np.max((model_tot * c/ np.square(x1_tot) /d_scale)[contmp]), np.max((model_tot * c/ np.square(x1_tot) /d_scale)[contmp])*2.0
+                self.axes['ax3t'].set_ylim(y3min, y3max)
+            except:
+                if verbose:
+                    print('y3 limit is not specified.')
+                pass
+
+        ####################
+        ## Save
+        ####################
+        if figpdf:
+            self.axes['fig'].savefig(self.mb.DIR_OUT + 'gsf_spec_' + self.mb.ID + '.pdf', dpi=dpi)
+        else:
+            self.axes['fig'].savefig(self.mb.DIR_OUT + 'gsf_spec_' + self.mb.ID + '.png', dpi=dpi)
+
+        if return_figure:
+            return self.axes['fig']
+
+        self.axes['fig'].clear()
+        plt.close()
+
+        # Clean;
+        if clean_files:
+            self._clean_files()
+
+        return tree_spec
+
+
+    def _clean_files(self):
+        ''''''
+        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_spec_%s.fits'%(self.mb.ID)))
+        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_spec_%s.asdf'%(self.mb.ID)))
+        os.system('rm %s'%(self.mb.DIR_OUT + 'SFH_%s.fits'%(self.mb.ID)))
+        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_sfh_%s.asdf'%(self.mb.ID)))
+        return
+
+
     def plot_sed_tau(self, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
         mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
         f_apply_igm=True,
+        lam_b=1350, lam_r=3000,
         return_figure=False, percs=[16,50,84], 
         col_dat='r', col_dia='blue',
         lcb = '#4682b4', # line color, blue
         sigma=1.0, use_pickl=True,
+        clean_files=True,
         ):
         '''
         Parameters
@@ -1482,9 +2676,9 @@ class PLOT(object):
             print('Total stellar mass is %.2e'%(M50))
 
         # Amplitude MC
-        A50 = np.zeros(len(age), dtype='float')
-        A16 = np.zeros(len(age), dtype='float')
-        A84 = np.zeros(len(age), dtype='float')
+        A50 = np.zeros(len(age), dtype=float)
+        A16 = np.zeros(len(age), dtype=float)
+        A84 = np.zeros(len(age), dtype=float)
         for aa in range(len(age)):
             A16[aa] = 10**hdul[1].data['A'+str(aa)][0]
             A50[aa] = 10**hdul[1].data['A'+str(aa)][1]
@@ -1495,12 +2689,12 @@ class PLOT(object):
 
         # TAU MC
         # AGE MC
-        TAU50 = np.zeros(len(age), dtype='float')
-        TAU16 = np.zeros(len(age), dtype='float')
-        TAU84 = np.zeros(len(age), dtype='float')
-        AGE50 = np.zeros(len(age), dtype='float')
-        AGE16 = np.zeros(len(age), dtype='float')
-        AGE84 = np.zeros(len(age), dtype='float')
+        TAU50 = np.zeros(len(age), dtype=float)
+        TAU16 = np.zeros(len(age), dtype=float)
+        TAU84 = np.zeros(len(age), dtype=float)
+        AGE50 = np.zeros(len(age), dtype=float)
+        AGE16 = np.zeros(len(age), dtype=float)
+        AGE84 = np.zeros(len(age), dtype=float)
         for aa in range(len(age)):
             TAU16[aa] = 10**hdul[1].data['TAU'+str(aa)][0]
             TAU50[aa] = 10**hdul[1].data['TAU'+str(aa)][1]
@@ -1522,9 +2716,9 @@ class PLOT(object):
         AAv = [Av50]
         vals['AV0'] = Av50
 
-        Z50 = np.zeros(len(age), dtype='float')
-        Z16 = np.zeros(len(age), dtype='float')
-        Z84 = np.zeros(len(age), dtype='float')
+        Z50 = np.zeros(len(age), dtype=float)
+        Z16 = np.zeros(len(age), dtype=float)
+        Z84 = np.zeros(len(age), dtype=float)
         for aa in range(len(age)):
             Z16[aa] = hdul[1].data['Z'+str(aa)][0]
             Z50[aa] = hdul[1].data['Z'+str(aa)][1]
@@ -1643,7 +2837,11 @@ class PLOT(object):
         d_scale = self.mb.d * scale
 
         # Plot BB data points;
-        _, leng = self.plot_bb_sed(xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat='r', f_bbbox=f_bbbox, sigma = sigma)
+        _, leng = self.plot_bb_sed(xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma=sigma)
+
+        # Get beta from obs;
+        # Detection and rest-frame;
+        beta_obs_percs,nbeta_obs = self.get_uvbeta_obs(zp50, lam_b=lam_b, lam_r=lam_r, snlim=SNlim, d_scale=d_scale, percs=percs)
 
         # For any data removed fron fit (i.e. IRAC excess):
         f_exclude = False
@@ -1745,14 +2943,14 @@ class PLOT(object):
         #############
         # Plot
         #############
-        ms = np.zeros(len(age), dtype='float')
+        ms = np.zeros(len(age), dtype=float)
         af = self.mb.af
         sedpar = af['ML']
 
-        eAAl = np.zeros(len(age),dtype='float')
-        eAAu = np.zeros(len(age),dtype='float')
-        eAMl = np.zeros(len(age),dtype='float')
-        eAMu = np.zeros(len(age),dtype='float')
+        eAAl = np.zeros(len(age),dtype=float)
+        eAAu = np.zeros(len(age),dtype=float)
+        eAMl = np.zeros(len(age),dtype=float)
+        eAMu = np.zeros(len(age),dtype=float)
         MSsum = np.sum(ms)
         Asum = np.sum(A50)
         A50 /= Asum
@@ -1811,16 +3009,16 @@ class PLOT(object):
         ndim, Nburn, samples = PLOT.read_mcmc_chain(self.mb.ID, samplepath=self.mb.DIR_OUT, use_pickl=use_pickl)
 
         # Saved template;
-        ytmp = np.zeros((mmax,len(ysum)), dtype='float')
-        ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
+        ytmp = np.zeros((mmax,len(ysum)), dtype=float)
+        ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype=float)
 
         # MUV;
         DL      = self.mb.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
         DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-        Fuv     = np.zeros(mmax, dtype='float') # For Muv
-        Fuv2800   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
-        Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
-        UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
+        Fuv     = np.zeros(mmax, dtype=float) # For Muv
+        Fuv2800   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Lir     = np.zeros(mmax, dtype=float) # For L(8-1000um)
+        UVJ     = np.zeros((mmax,4), dtype=float) # For UVJ color;
         Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
         # From random chain;
@@ -1909,8 +3107,8 @@ class PLOT(object):
                     deldt  = (x1_dust[1] - x1_dust[0])
                     x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
                     # Redefine??
-                    ytmp = np.zeros((mmax,len(x1_tot)), dtype='float')
-                    ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype='float')
+                    ytmp = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype=float)
 
                 ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d_scale
                 model_tot = np.interp(x1_tot,xm_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
@@ -1997,225 +3195,233 @@ class PLOT(object):
         # plot BB model from best template (blue squares)
         lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, x1_tot, ytmp16, ytmp50, ytmp84, 
                                                                                                                                            SFILT, DFILT, DIR_FILT, scale, d_scale, DL, leng, sigma, 
-                                                                                                                                           SNlim=SNlim, c=c, col_dat=col_dat, col_dia=col_dat)
+                                                                                                                                           SNlim=SNlim, c=c, col_dat=col_dat, col_dia=col_dia)
 
-        if save_sed:
-            fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
-            fbb_nu = flamtonu(lbb, fbb*scale, m0set=m0set)
-            fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=m0set)
+        # Save files;
+        fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
+        fbb_nu = flamtonu(lbb, fbb*scale, m0set=m0set)
+        fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=m0set)
 
-            # Then save full spectrum;
-            col00  = []
-            col1  = fits.Column(name='wave_model', format='E', unit='AA', array=x1_tot)
-            col00.append(col1)
-            col2  = fits.Column(name='f_model_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16[:])
-            col00.append(col2)
-            col3  = fits.Column(name='f_model_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50[:])
-            col00.append(col3)
-            col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
-            col00.append(col4)
+        # Then save full spectrum;
+        col00  = []
+        col1  = fits.Column(name='wave_model', format='E', unit='AA', array=x1_tot)
+        col00.append(col1)
+        col2  = fits.Column(name='f_model_16', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp16[:])
+        col00.append(col2)
+        col3  = fits.Column(name='f_model_50', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp50[:])
+        col00.append(col3)
+        col4  = fits.Column(name='f_model_84', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp84[:])
+        col00.append(col4)
 
-            f_sed_each = False
-            if f_sed_each:
-                # Each component
-                # Stellar
-                col1 = fits.Column(name='wave_model_stel', format='E', unit='AA', array=x0)
-                col00.append(col1)
-                for aa in range(len(age)):
-                    col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
-                    col00.append(col1)
-                if f_dust:
-                    col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust)
-                    col00.append(col1)
-                    col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50)
-                    col00.append(col1)
-                
-            # BB for dust
-            if f_dust:
-                xbb = np.append(xbb,xbbd)
-                fybb = np.append(fybb,fybbd)
-                eybb = np.append(eybb,eybbd)
-
-            col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
-            col00.append(col5)
-            col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) /d_scale)
-            col00.append(col6)
-            col7  = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) /d_scale)
-            col00.append(col7)
-
-            hdr = fits.Header()
-            hdr['redshift'] = zbes
-            hdr['id'] = self.mb.ID
-            hdr['hierarch isochrone'] = isochrone
-            hdr['library'] = LIBRARY
-            hdr['nimf'] = nimf
-            hdr['scale'] = scale
-
-            try:
-                # Chi square:
-                hdr['chi2'] = chi2
-                hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
-                hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
-                hdr['hierarch Chi2-of-nondetection'] = chi_nd
-                hdr['hierarch No-of-params'] = ndim_eff
-                hdr['hierarch Degree-of-freedom']  = nod
-                hdr['hierarch reduced-chi2'] = fin_chi2
-            except:
-                print('Chi seems to be wrong...')
-                pass
-
-            try:
-                # Muv
-                MUV = -2.5 * np.log10(Fuv[:]) + self.mb.m0set
-                hdr['MUV16'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],16)) + self.mb.m0set
-                hdr['MUV50'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],50)) + self.mb.m0set
-                hdr['MUV84'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],84)) + self.mb.m0set
-
-                # Fuv (!= flux of Muv)
-                hdr['FUV16'] = np.nanpercentile(Fuv2800[:],16)
-                hdr['FUV50'] = np.nanpercentile(Fuv2800[:],50)
-                hdr['FUV84'] = np.nanpercentile(Fuv2800[:],84)
-
-                # LIR
-                hdr['LIR16'] = np.nanpercentile(Lir[:],16)
-                hdr['LIR50'] = np.nanpercentile(Lir[:],50)
-                hdr['LIR84'] = np.nanpercentile(Lir[:],84)
-            except:
-                pass
-
-            # UV beta;
-            beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
-            beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
-            beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
-            hdr['UVBETA16'] = beta_16
-            hdr['UVBETA50'] = beta_50
-            hdr['UVBETA84'] = beta_84
-
-            # UVJ
-            try:
-                hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
-                hdr['uv50'] = np.nanpercentile(UVJ[:,0],50)
-                hdr['uv84'] = np.nanpercentile(UVJ[:,0],84)
-                hdr['bv16'] = np.nanpercentile(UVJ[:,1],16)
-                hdr['bv50'] = np.nanpercentile(UVJ[:,1],50)
-                hdr['bv84'] = np.nanpercentile(UVJ[:,1],84)
-                hdr['vj16'] = np.nanpercentile(UVJ[:,2],16)
-                hdr['vj50'] = np.nanpercentile(UVJ[:,2],50)
-                hdr['vj84'] = np.nanpercentile(UVJ[:,2],84)
-                hdr['zj16'] = np.nanpercentile(UVJ[:,3],16)
-                hdr['zj50'] = np.nanpercentile(UVJ[:,3],50)
-                hdr['zj84'] = np.nanpercentile(UVJ[:,3],84)
-            except:
-                print('\nError when writinf UVJ colors;\n')
-                pass
-
-            # EW;
-            try:
-                for ii in range(len(EW50)):
-                    hdr['EW_%s_16'%(ew_label[ii])] = EW16[ii]
-                    hdr['EW_%s_50'%(ew_label[ii])] = EW50[ii]
-                    hdr['EW_%s_84'%(ew_label[ii])] = EW84[ii]
-                    hdr['EW_%s_e1'%(ew_label[ii])] = EW50_er1[ii]
-                    hdr['EW_%s_e2'%(ew_label[ii])] = EW50_er2[ii]
-                    hdr['HIERARCH cnt_%s_16'%(ew_label[ii])]= cnt16[ii]
-                    hdr['HIERARCH cnt_%s_50'%(ew_label[ii])]= cnt50[ii]
-                    hdr['HIERARCH cnt_%s_84'%(ew_label[ii])]= cnt84[ii]
-                    hdr['L_%s_16'%(ew_label[ii])] = L16[ii]
-                    hdr['L_%s_50'%(ew_label[ii])] = L50[ii]
-                    hdr['L_%s_84'%(ew_label[ii])] = L84[ii]
-            except:
-                pass
-
-            # Version;
-            import gsf
-            from astropy import units as u
-            hdr['version'] = gsf.__version__
-
-            # Write;
-            colspec = fits.ColDefs(col00)
-            hdu0 = fits.BinTableHDU.from_columns(colspec, header=hdr)
-            hdu0.writeto(self.mb.DIR_OUT + 'gsf_spec_%s.fits'%(self.mb.ID), overwrite=True)
-
-            # ASDF;
-            tree_spec = {
-                'id': self.mb.ID,
-                'redshift': '%.3f'%zbes,
-                'isochrone': '%s'%(isochrone),
-                'library': '%s'%(LIBRARY),
-                'nimf': '%s'%(nimf),
-                'scale': scale,
-                'version_gsf': gsf.__version__
-            }
-            tree_spec['model'] = {}
-            tree_spec['obs'] = {}
-            tree_spec['header'] = {}
-
-            # Dump physical parameters;
-            for key in hdr:
-                if key not in tree_spec:
-                    if key[:-3] == 'SFRUV':
-                        tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
-                    else:
-                        tree_spec['header'].update({'%s'%key: hdr[key]})
-
-            # BB;
-            tree_spec.update({'wave': lbb})
-            tree_spec.update({'fnu_16': fbb16_nu})
-            tree_spec.update({'fnu_50': fbb_nu})
-            tree_spec.update({'fnu_84': fbb84_nu})
-            # full spectrum;
-            tree_spec.update({'wave_model': x1_tot})
-            tree_spec.update({'f_model_16': ytmp16})
-            tree_spec.update({'f_model_50': ytmp50})
-            tree_spec.update({'f_model_84': ytmp84})
-
-            # EW;
-            try:
-                for ii in range(len(EW50)):
-                    tree_spec.update({'EW_%s_16'%(ew_label[ii]): EW16[ii]})
-                    tree_spec.update({'EW_%s_50'%(ew_label[ii]): EW50[ii]})
-                    tree_spec.update({'EW_%s_84'%(ew_label[ii]): EW84[ii]})
-                    tree_spec.update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii]})
-                    tree_spec.update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii]})
-                    tree_spec.update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii]})
-                    tree_spec.update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii]})
-                    tree_spec.update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii]})
-                    tree_spec.update({'L_%s_16'%(ew_label[ii]): L16[ii]})
-                    tree_spec.update({'L_%s_50'%(ew_label[ii]): L50[ii]})
-                    tree_spec.update({'L_%s_84'%(ew_label[ii]): L84[ii]})
-            except:
-                pass
-
+        f_sed_each = False
+        if f_sed_each:
             # Each component
             # Stellar
-            tree_spec.update({'wave_model_stel': x0})
-
-            if f_sed_each:
-                for aa in range(len(age)):
-                    tree_spec.update({'f_model_stel_%d'%aa: f_50_comp[aa,:]})
-
+            col1 = fits.Column(name='wave_model_stel', format='E', unit='AA', array=x0)
+            col00.append(col1)
+            for aa in range(len(age)):
+                col1 = fits.Column(name='f_model_stel_%d'%aa, format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=f_50_comp[aa,:])
+                col00.append(col1)
             if f_dust:
-                # dust
-                tree_spec.update({'wave_model_dust': x1_dust})
-                tree_spec.update({'f_model_dust': ytmp_dust50})            
-            # BB for dust
-            tree_spec.update({'wave_obs': xbb})
-            tree_spec.update({'f_obs': fybb[:] * c / np.square(xbb[:]) /d_scale})
-            tree_spec.update({'e_obs': eybb[:] * c / np.square(xbb[:]) /d_scale})
-            # grism:
-            if f_grsm:
-                tree_spec.update({'fg0_obs': fg0 * c/np.square(xg0)/d_scale})
-                tree_spec.update({'eg0_obs': eg0 * c/np.square(xg0)/d_scale})
-                tree_spec.update({'wg0_obs': xg0})
-                tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d_scale})
-                tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d_scale})
-                tree_spec.update({'wg1_obs': xg1})
-                tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d_scale})
-                tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d_scale})
-                tree_spec.update({'wg2_obs': xg2})
+                col1 = fits.Column(name='wave_model_dust', format='E', unit='AA', array=x1_dust)
+                col00.append(col1)
+                col1 = fits.Column(name='f_model_dust', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=ytmp_dust50)
+                col00.append(col1)
+            
+        # BB for dust
+        if f_dust:
+            xbb = np.append(xbb,xbbd)
+            fybb = np.append(fybb,fybbd)
+            eybb = np.append(eybb,eybbd)
 
-            af = asdf.AsdfFile(tree_spec)
-            af.write_to(self.mb.DIR_OUT + 'gsf_spec_%s.asdf'%(self.mb.ID), all_array_compression='zlib')
+        col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
+        col00.append(col5)
+        col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) /d_scale)
+        col00.append(col6)
+        col7  = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) /d_scale)
+        col00.append(col7)
+
+        hdr = fits.Header()
+        hdr['redshift'] = zbes
+        hdr['id'] = self.mb.ID
+        hdr['hierarch isochrone'] = isochrone
+        hdr['library'] = LIBRARY
+        hdr['nimf'] = nimf
+        hdr['scale'] = scale
+
+        try:
+            # Chi square:
+            hdr['chi2'] = chi2
+            hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
+            hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
+            hdr['hierarch Chi2-of-nondetection'] = chi_nd
+            hdr['hierarch No-of-params'] = ndim_eff
+            hdr['hierarch Degree-of-freedom']  = nod
+            hdr['hierarch reduced-chi2'] = fin_chi2
+        except:
+            print('Chi seems to be wrong...')
+            pass
+
+        try:
+            # Muv
+            MUV = -2.5 * np.log10(Fuv[:]) + self.mb.m0set
+            hdr['MUV16'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],16)) + self.mb.m0set
+            hdr['MUV50'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],50)) + self.mb.m0set
+            hdr['MUV84'] = -2.5 * np.log10(np.nanpercentile(Fuv[:],84)) + self.mb.m0set
+
+            # Fuv (!= flux of Muv)
+            hdr['FUV16'] = np.nanpercentile(Fuv2800[:],16)
+            hdr['FUV50'] = np.nanpercentile(Fuv2800[:],50)
+            hdr['FUV84'] = np.nanpercentile(Fuv2800[:],84)
+
+            # LIR
+            hdr['LIR16'] = np.nanpercentile(Lir[:],16)
+            hdr['LIR50'] = np.nanpercentile(Lir[:],50)
+            hdr['LIR84'] = np.nanpercentile(Lir[:],84)
+        except:
+            pass
+
+        # UV beta;
+        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
+        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
+        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
+        hdr['UVBETA16'] = beta_16
+        hdr['UVBETA50'] = beta_50
+        hdr['UVBETA84'] = beta_84
+
+        # UVJ
+        try:
+            hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
+            hdr['uv50'] = np.nanpercentile(UVJ[:,0],50)
+            hdr['uv84'] = np.nanpercentile(UVJ[:,0],84)
+            hdr['bv16'] = np.nanpercentile(UVJ[:,1],16)
+            hdr['bv50'] = np.nanpercentile(UVJ[:,1],50)
+            hdr['bv84'] = np.nanpercentile(UVJ[:,1],84)
+            hdr['vj16'] = np.nanpercentile(UVJ[:,2],16)
+            hdr['vj50'] = np.nanpercentile(UVJ[:,2],50)
+            hdr['vj84'] = np.nanpercentile(UVJ[:,2],84)
+            hdr['zj16'] = np.nanpercentile(UVJ[:,3],16)
+            hdr['zj50'] = np.nanpercentile(UVJ[:,3],50)
+            hdr['zj84'] = np.nanpercentile(UVJ[:,3],84)
+        except:
+            print('\nError when writinf UVJ colors;\n')
+            pass
+
+        # EW;
+        try:
+            for ii in range(len(EW50)):
+                hdr['EW_%s_16'%(ew_label[ii])] = EW16[ii]
+                hdr['EW_%s_50'%(ew_label[ii])] = EW50[ii]
+                hdr['EW_%s_84'%(ew_label[ii])] = EW84[ii]
+                hdr['EW_%s_e1'%(ew_label[ii])] = EW50_er1[ii]
+                hdr['EW_%s_e2'%(ew_label[ii])] = EW50_er2[ii]
+                hdr['HIERARCH cnt_%s_16'%(ew_label[ii])]= cnt16[ii]
+                hdr['HIERARCH cnt_%s_50'%(ew_label[ii])]= cnt50[ii]
+                hdr['HIERARCH cnt_%s_84'%(ew_label[ii])]= cnt84[ii]
+                hdr['L_%s_16'%(ew_label[ii])] = L16[ii]
+                hdr['L_%s_50'%(ew_label[ii])] = L50[ii]
+                hdr['L_%s_84'%(ew_label[ii])] = L84[ii]
+        except:
+            pass
+
+        # Version;
+        import gsf
+        from astropy import units as u
+        hdr['version'] = gsf.__version__
+
+        # Write;
+        colspec = fits.ColDefs(col00)
+        hdu0 = fits.BinTableHDU.from_columns(colspec, header=hdr)
+        hdu0.writeto(self.mb.DIR_OUT + 'gsf_spec_%s.fits'%(self.mb.ID), overwrite=True)
+
+        # ASDF;
+        tree_spec = {
+            'id': self.mb.ID,
+            'redshift': '%.3f'%zbes,
+            'isochrone': '%s'%(isochrone),
+            'library': '%s'%(LIBRARY),
+            'nimf': '%s'%(nimf),
+            'scale': scale,
+            'version_gsf': gsf.__version__
+        }
+        tree_spec['model'] = {}
+        tree_spec['obs'] = {}
+        tree_spec['header'] = {}
+
+        # Dump physical parameters;
+        for key in hdr:
+            if key not in tree_spec:
+                if key[:-3] == 'SFRUV':
+                    tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
+                else:
+                    tree_spec['header'].update({'%s'%key: hdr[key]})
+
+        # BB;
+        tree_spec.update({'wave': lbb})
+        tree_spec.update({'fnu_16': fbb16_nu})
+        tree_spec.update({'fnu_50': fbb_nu})
+        tree_spec.update({'fnu_84': fbb84_nu})
+        # full spectrum;
+        tree_spec.update({'wave_model': x1_tot})
+        tree_spec.update({'f_model_16': ytmp16})
+        tree_spec.update({'f_model_50': ytmp50})
+        tree_spec.update({'f_model_84': ytmp84})
+
+        # EW;
+        try:
+            for ii in range(len(EW50)):
+                tree_spec.update({'EW_%s_16'%(ew_label[ii]): EW16[ii]})
+                tree_spec.update({'EW_%s_50'%(ew_label[ii]): EW50[ii]})
+                tree_spec.update({'EW_%s_84'%(ew_label[ii]): EW84[ii]})
+                tree_spec.update({'EW_%s_e1'%(ew_label[ii]): EW50_er1[ii]})
+                tree_spec.update({'EW_%s_e2'%(ew_label[ii]): EW50_er2[ii]})
+                tree_spec.update({'cnt_%s_16'%(ew_label[ii]): cnt16[ii]})
+                tree_spec.update({'cnt_%s_50'%(ew_label[ii]): cnt50[ii]})
+                tree_spec.update({'cnt_%s_84'%(ew_label[ii]): cnt84[ii]})
+                tree_spec.update({'L_%s_16'%(ew_label[ii]): L16[ii]})
+                tree_spec.update({'L_%s_50'%(ew_label[ii]): L50[ii]})
+                tree_spec.update({'L_%s_84'%(ew_label[ii]): L84[ii]})
+        except:
+            pass
+
+        # Each component
+        # Stellar
+        tree_spec.update({'wave_model_stel': x0})
+
+        if f_sed_each:
+            for aa in range(len(age)):
+                tree_spec.update({'f_model_stel_%d'%aa: f_50_comp[aa,:]})
+
+        if f_dust:
+            # dust
+            tree_spec.update({'wave_model_dust': x1_dust})
+            tree_spec.update({'f_model_dust': ytmp_dust50})            
+        # BB for dust
+        tree_spec.update({'wave_obs': xbb})
+        tree_spec.update({'f_obs': fybb[:] * c / np.square(xbb[:]) /d_scale})
+        tree_spec.update({'e_obs': eybb[:] * c / np.square(xbb[:]) /d_scale})
+        # grism:
+        if f_grsm:
+            tree_spec.update({'fg0_obs': fg0 * c/np.square(xg0)/d_scale})
+            tree_spec.update({'eg0_obs': eg0 * c/np.square(xg0)/d_scale})
+            tree_spec.update({'wg0_obs': xg0})
+            tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d_scale})
+            tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d_scale})
+            tree_spec.update({'wg1_obs': xg1})
+            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d_scale})
+            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d_scale})
+            tree_spec.update({'wg2_obs': xg2})
+
+        # Figure configure;
+        _ = self.update_axis_sed(x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=f_plot_filter)
+
+        # Filts;
+        tree_spec['filters'] = self.mb.filts
+        if f_plot_filter:
+            tree_spec['filter_response'] = self.mb.filt_responses
+
+        af = asdf.AsdfFile(tree_spec)
+        af.write_to(self.mb.DIR_OUT + 'gsf_spec_%s.asdf'%(self.mb.ID), all_array_compression='zlib')
 
         # Make a new dict
         gsf_dict = self.save_files_sed(percs=percs)
@@ -2272,9 +3478,6 @@ class PLOT(object):
                     print('y3 limit is not specified.')
                 pass
 
-        # Figure configure;
-        ax1 = self.update_axis_sed(x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=False)
-
         ####################
         ## Save
         ####################
@@ -2288,6 +3491,12 @@ class PLOT(object):
 
         self.axes['fig'].clear()
         plt.close()
+
+        # Clean;
+        if clean_files:
+            self._clean_files()
+
+        return tree_spec
 
 
     def plot_bb_sed(self, xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=3e5, col_dat = 'r', f_bbbox=False, sigma=1.0):
@@ -2820,7 +4029,7 @@ class PLOT(object):
         # Filters
         ind_remove = np.where((wht3<=0) | (ey<=0))[0]
         if f_plot_filter:
-            _ = PLOT.plot_filter(ymax, scl=scl_yaxis, ind_remove=ind_remove)
+            _ = self.plot_filter(ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
         xx = np.arange(100,400000)
         yy = xx * 0
@@ -2835,6 +4044,7 @@ class PLOT(object):
             self.axes['ax3t'].set_xticklabels(['1', '100', '1000'])
 
         return self.axes['ax1'] #ax1t, ax2, ax2t
+
 
     def plot_filter(self, ymax, scl=0.3, cmap='gist_rainbow', alp=0.4, 
                     ind_remove=[], nmax=1000, plot_log=False):
@@ -2913,10 +4123,10 @@ class PLOT(object):
                 continue
 
             if not plot_log:
-                self.mb.axes['ax1'].plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-                self.mb.axes['ax1'].fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+                self.axes['ax1'].plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+                self.axes['ax1'].fill_between(wave, (wave*0 - ymax)*scl, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
             else:
-                self.mb.axes['ax1'].plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
-                self.mb.axes['ax1'].fill_between(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
+                self.axes['ax1'].plot(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', color='k', lw=0.2)
+                self.axes['ax1'].fill_between(wave, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl * 0.001, ((flux / np.nanmax(flux))*0.8 - 1) * ymax * scl, linestyle='-', lw=0, color=col, alpha=alp)
 
-        return self.mb.axes['ax1'],filt_responses
+        return self.axes['ax1'],filt_responses
