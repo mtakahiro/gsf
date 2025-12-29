@@ -5,9 +5,9 @@ import asdf
 from astropy.io import fits
 
 from .function import *
-from .basic_func import Basic
+# from .basic_func import Basic
 from .function_igm import dijkstra_igm_abs
-from .maketmp_filt import maketemp,maketemp_tau
+# from .maketmp_filt import maketemp
 
 
 class Func:
