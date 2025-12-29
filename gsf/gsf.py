@@ -230,18 +230,24 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
                 return False
 
         if MB.SFH_FORM == -99:
-            from .plot_sfh import plot_sfh
+            # from .plot_sfh import plot_sfh
             from .plot_sed import plot_sed            
+            from .class_plot import PLOT
+            clsplot = PLOT(MB, f_silence=True)
         else:
             # from .plot_sfh import plot_sfh_tau as plot_sfh
             from .class_plot import PLOT
             clsplot = PLOT(MB, f_silence=True)
-            from .plot_sed import plot_sed_tau as plot_sed            
+            # from .plot_sed import plot_sed_tau as plot_sed            
 
         if not skip_sfh:
             if MB.SFH_FORM == -99:
-                plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax_sfh,
-                dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
+                # plot_sfh(MB, fil_path=MB.DIR_FILT, mmax=mmax_sfh,
+                # dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_silence=True, 
+                # f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
+                # tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
+                clsplot.plot_sfh(fil_path=MB.DIR_FILT, mmax=mmax_sfh,
+                dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, 
                 f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
                 tau_lim=tau_lim, tset_SFR_SED=tset_SFR_SED, f_sfh_yaxis_force=f_sfh_yaxis_force)
 

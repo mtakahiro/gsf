@@ -667,7 +667,6 @@ def plot_sfh(MB, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, f
     prihdu = fits.PrimaryHDU(header=prihdr)
 
     # For SFH plot;
-    t0 = Tuni - age[:]
     col02 = []
     col50 = fits.Column(name='time', format='E', unit='Gyr', array=age[:])
     col02.append(col50)
