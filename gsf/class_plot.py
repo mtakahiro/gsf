@@ -448,30 +448,6 @@ class PLOT(object):
         except:
             f_zev = 1
 
-        try:
-            meanfile = './sim_SFH_mean.cat'
-            dfile = np.loadtxt(meanfile, comments='#')
-            eA = dfile[:,2]
-            eZ = dfile[:,4]
-            eAv= np.mean(dfile[:,6])
-            if f_zev == 0:
-                eZ[:] = age * 0 #+ eZ_mean
-            else:
-                try:
-                    f_zev = int(prihdr['ZEVOL'])
-                    if f_zev == 0:
-                        eZ = age * 0
-                except:
-                    pass
-        except:
-            if verbose:
-                MB.logger.warning('No simulation file (%s).\nError may be underestimated.' % meanfile)
-            eA = age * 0
-            eZ = age * 0
-            eAv = 0
-
-        mm = 0
-
         #####################
         # Get SED based SFR
         #####################
@@ -489,6 +465,8 @@ class PLOT(object):
         ZZtmp = np.zeros(len(age), dtype=float)
         mslist= np.zeros(len(age), dtype=float)
 
+        eAv = 0
+        mm = 0
         for mm in range(mmax):
             delt_tot = 0
             mtmp  = np.random.randint(len(samples))# + Nburn
@@ -980,28 +958,6 @@ class PLOT(object):
             f_zev = int(self.mb.inputs['ZEVOL'])
         except:
             f_zev = 1
-
-        try:
-            meanfile = './sim_SFH_mean.cat'
-            dfile = np.loadtxt(meanfile, comments='#')
-            eA = dfile[:,2]
-            eZ = dfile[:,4]
-            eAv= np.mean(dfile[:,6])
-            if f_zev == 0:
-                eZ[:] = self.mb.age * 0 #+ eZ_mean
-            else:
-                try:
-                    f_zev = int(prihdr['ZEVOL'])
-                    if f_zev == 0:
-                        eZ = self.mb.age * 0
-                except:
-                    pass
-        except:
-            if verbose:
-                self.mb.logger.warning('No simulation file (%s).\nError may be underestimated.' % meanfile)
-            eA = self.mb.age * 0
-            eZ = self.mb.age * 0
-            eAv = 0
 
         ##################
         # Define axis

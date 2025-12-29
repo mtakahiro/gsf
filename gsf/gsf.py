@@ -229,19 +229,13 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             if not flag_suc:
                 return False
 
-        if MB.SFH_FORM == -99:
-            # from .plot_sfh import plot_sfh
-            from .plot_sed import plot_sed            
-            from .class_plot import PLOT
-            clsplot = PLOT(MB, f_silence=True)
-        else:
-            # from .plot_sfh import plot_sfh_tau as plot_sfh
-            from .class_plot import PLOT
-            clsplot = PLOT(MB, f_silence=True)
-            # from .plot_sed import plot_sed_tau as plot_sed            
+        from .class_plot import PLOT
+        clsplot = PLOT(MB, f_silence=True)
 
         if not skip_sfh:
             if MB.SFH_FORM == -99:
+                # from .plot_sfh import plot_sfh
+                # from .plot_sed import plot_sed            
                 clsplot.plot_sfh(fil_path=MB.DIR_FILT, mmax=mmax_sfh,
                 dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, 
                 f_SFMS=f_SFMS, f_symbol=f_symbol, skip_zhist=skip_zhist, 
@@ -267,7 +261,6 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
                 figpdf=figpdf, save_sed=save_sed, mmax=mmax_sfh,
                 dust_model=MB.dust_model, DIR_TMP=MB.DIR_TMP, f_label=f_label, f_fill=f_fill, 
                 f_fancyplot=f_fancyplot, f_plot_resid=f_plot_resid, scale=scale, f_plot_filter=f_plot_filter)
-
 
     if fplt == 6:
         # Use the final redshift;
