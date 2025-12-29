@@ -9,7 +9,7 @@ import asdf
 
 # From gsf
 from .fitting import Mainbody
-from .maketmp_filt import maketemp,maketemp_tau
+from .maketmp_filt import maketemp#,maketemp_tau
 from .function_class import Func,Func_tau
 from .basic_func import Basic,Basic_tau
 from .function import read_input

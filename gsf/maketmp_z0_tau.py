@@ -45,7 +45,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
     import gsf
     
     nimf = MB.nimf
-    age = MB.ageparam
+    age = MB.ageparam # in linear.
     fneb = MB.fneb
     DIR_TMP = MB.DIR_TMP
     Na = len(age)
@@ -115,18 +115,18 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, Zforce=None):
 
             for tt in range(len(age)):
 
-                if zz == 0 and ss == 0 and tt == 0 and 10**age[tt]<0.01:
+                if zz == 0 and ss == 0 and tt == 0 and age[tt]<0.01:
                     MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
 
                 if sfh==6: # Tabular SFH.
                     tuniv_hr = np.arange(0,age_univ,0.01) # in Gyr
-                    T0 = np.log(10**age[tt])
+                    T0 = np.log(age[tt])
                     sfh_hr_in = get_lognorm(tuniv_hr, tau[ss], T0) # tau in log Gyr
                     zh_hr_in  = tuniv_hr*0 + 10**Z[zz] # metallicity is constant
                     sp.set_tabular_sfh(tuniv_hr, sfh_hr_in, zh_hr_in)
                     wave0, flux0 = sp.get_spectrum(tage=age_univ, peraa=True) # if peraa=True, in unit of L/AA
                 else:
-                    wave0, flux0 = sp.get_spectrum(tage=10**age[tt], peraa=True) # if peraa=True, in unit of L/AA
+                    wave0, flux0 = sp.get_spectrum(tage=age[tt], peraa=True) # if peraa=True, in unit of L/AA
 
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
