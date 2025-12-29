@@ -460,7 +460,7 @@ def get_sed_figure_format(MB, ax1, x1min, x1max, ymax, scale, ey, wht3, f_plot_f
     return ax1 #ax1t, ax2, ax2t
 
 
-def initiate_figure_sed(MB, f_grsm=False, f_plot_filter=True):
+def initiate_figure_sed(MB, f_grsm=False, f_plot_filter=True, f_plot_resid=True):
     """"""
     axes = None
     ax3t = None
@@ -860,7 +860,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         nimf = ''
 
     # Initiate figure;
-    fig, axes, ax1, ax2t, ax3t = initiate_figure_sed(MB, f_grsm=f_grsm, f_plot_filter=f_plot_filter)
+    fig, axes, ax1, ax2t, ax3t = initiate_figure_sed(MB, f_grsm=f_grsm, f_plot_filter=f_plot_filter, f_plot_resid=f_plot_resid)
 
     # Determine scale here;
     if scale == None:
@@ -2065,7 +2065,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         nimf = ''
 
     # Initiate figure;
-    fig, axes, ax1, ax2t, ax3t = initiate_figure_sed(MB, f_grsm=f_grsm, f_plot_filter=f_plot_filter)
+    fig, axes, ax1, ax2t, ax3t = initiate_figure_sed(MB, f_grsm=f_grsm, f_plot_filter=f_plot_filter, f_plot_resid=f_plot_resid)
 
     # Determine scale here;
     if scale == None:
