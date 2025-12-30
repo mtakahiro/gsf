@@ -34,19 +34,29 @@ class PLOT(object):
         else:
             import matplotlib
 
-        print('\n### Running plot_sfh_tau ###\n')
-
-        try:
-            if not self.mb.ZFIX == None:
-                skip_zhist = True
-        except:
-            pass
+        self.skip_zhist = False
+        if self.mb.has_ZFIX:
+            self.skip_zhist = True
+        if not self.mb.ZEVOL:
+            self.skip_zhist = True
 
         NUM_COLORS = len(self.mb.age)
         cm = plt.get_cmap('gist_rainbow_r')
         self.col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
 
         return 
+
+
+    def add_sfms(self, tt, mass, f_log_sfh=True):
+        """"""
+        conA = ()
+        IMF = int(self.mb.inputs['NIMF'])
+        # SFMS_16 = get_SFMS(self.zbes,tt,10**ACp[:,0],IMF=IMF)
+        SFMS_50 = get_SFMS(self.zbes,tt,mass,IMF=IMF)
+        # SFMS_84 = get_SFMS(self.zbes,tt,10**ACp[:,2],IMF=IMF)
+        if f_log_sfh:
+            self.axes['ax1'].fill_between(tt[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2)
+            self.axes['ax1'].plot(tt[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
 
 
     def get_uvbeta_obs(self, zp50, lam_b=1250, lam_r=1600, snlim=2, d_scale=1, percs=[16,50,84]):
@@ -112,7 +122,7 @@ class PLOT(object):
         return 
 
 
-    def define_axis(self, f_log_sfh=True, skip_zhist=True):
+    def define_axis_sfh(self, f_log_sfh=True, skip_zhist=True):
         ''''''
         self.axes = {'ax1':None, 'ax1t':None, 'ax2':None, 'ax2t':None, 'ax4':None, 'ax4t':None}
         if f_log_sfh:
@@ -144,7 +154,6 @@ class PLOT(object):
 
     def update_axis_sfh(self, f_log_sfh=True, skip_zhist=True, lsfrl=-1):
         ''''''
-        # For redshift
         if self.zbes<4:
             if self.zbes<2:
                 zred  = [self.zbes, 2, 3, 6]
@@ -175,10 +184,10 @@ class PLOT(object):
                 Tzz[zz] = self.Txmin
         
         lsfru = 2.8
-        if np.max(self.SFp[:,2])>2.8:
-            lsfru = np.max(self.SFp[:,2])+0.1
-        if np.min(self.SFp[:,2])>lsfrl:
-            lsfrl = np.min(self.SFp[:,2])+0.1
+        if np.nanmax(self.SFp[:,2])>2.8:
+            lsfru = np.nanmax(self.SFp[:,2])+0.1
+        if np.nanmin(self.SFp[:,2])>lsfrl:
+            lsfrl = np.nanmin(self.SFp[:,2])+0.1
 
         if f_log_sfh:
             self.axes['ax1'].set_ylim(lsfrl, lsfru)
@@ -186,7 +195,6 @@ class PLOT(object):
         else:
             self.axes['ax1'].set_ylim(0, 10**lsfru)
             self.axes['ax1'].set_ylabel('$\dot{M}_*/M_\odot$yr$^{-1}$', fontsize=12)
-
         self.axes['ax1'].set_xlim(self.Txmin, self.Txmax)
         self.axes['ax1'].set_xscale('log')
 
@@ -194,12 +202,10 @@ class PLOT(object):
         self.axes['ax2'].set_xlim(self.Txmin, self.Txmax)
         self.axes['ax2'].set_ylim(self.y2min, self.y2max)
         self.axes['ax2'].set_xscale('log')
-        self.axes['ax2'].text(np.min(self.mb.age*1.05), self.y2min + 0.07*(self.y2max-self.y2min), 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-            %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), self.Avtmp[1]), fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
-
-        # SFH
-        # zzall = np.arange(1.,12,0.01)
-        # Tall = self.mb.cosmo.age(zzall).value # , use_flat=True, **cosmo)
+        self.axes['ax2'].text(self.Txmin*1.1, self.y2min+0.07*(self.y2max-self.y2min), 
+                              'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+                                %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), self.Avtmp[1]), 
+                                fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
 
         dely2 = 0.1
         while (self.y2max-self.y2min)/dely2>7:
@@ -217,9 +223,6 @@ class PLOT(object):
             self.axes['ax4'].set_xscale('log')
             self.axes['ax4'].set_yticks([-0.8, -0.4, 0., 0.4])
             self.axes['ax4'].set_yticklabels(['-0.8', '-0.4', '0', '0.4'])
-            
-            #self.axes['ax4'].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-            #ax3.yaxis.labelpad = -2
             self.axes['ax4'].yaxis.labelpad = -2
             self.axes['ax4'].set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
             self.axes['ax4'].set_ylabel('$\log Z_*/Z_\odot$', fontsize=12)
@@ -287,6 +290,58 @@ class PLOT(object):
         return tt, yy, yyms
 
 
+    def get_delt(self, tau_lim=0.001):
+        """"""
+        delT  = np.zeros(len(self.mb.age),dtype=float)
+        delTl = np.zeros(len(self.mb.age),dtype=float)
+        delTu = np.zeros(len(self.mb.age),dtype=float)
+        if len(self.mb.age) == 1:
+            for aa in range(len(self.mb.age)):
+                try:
+                    tau_ssp = float(self.mb.inputs['TAU_SSP'])
+                except:
+                    tau_ssp = tau_lim
+                delTl[aa] = tau_ssp/2.
+                delTu[aa] = tau_ssp/2.
+                if self.mb.age[aa] < tau_lim:
+                    # This is because fsps has the minimum tau = tau_lim
+                    delT[aa] = tau_lim
+                else:
+                    delT[aa] = delTu[aa] + delTl[aa]
+        else: 
+            # @@@ Note: This is only true when CSP...?
+            for aa in range(len(self.mb.age)):
+                if aa == 0:
+                    delTl[aa] = self.mb.age[aa]
+                    delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
+                    delT[aa] = delTu[aa] + delTl[aa]
+                elif self.Tuni < self.mb.age[aa]:
+                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
+                    delTu[aa] = self.Tuni-self.mb.age[aa] #delTl[aa] #10.
+                    delT[aa]  = delTu[aa] + delTl[aa]
+                elif aa == len(self.mb.age)-1:
+                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
+                    delTu[aa] = self.Tuni - self.mb.age[aa]
+                    delT[aa]  = delTu[aa] + delTl[aa]
+                else:
+                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
+                    delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
+                    if self.mb.age[aa]+delTu[aa]>self.Tuni:
+                        delTu[aa] = self.Tuni-self.mb.age[aa]
+                    delT[aa] = delTu[aa] + delTl[aa]
+
+                if delTu[aa]<0:
+                    delTu[aa] = 1e3
+
+        mask_age = (delT<=0) # For those age_template > age_universe
+        delT[mask_age] = np.inf
+        delT[:] *= 1e9 # Gyr to yr
+        delTl[:] *= 1e9 # Gyr to yr
+        delTu[:] *= 1e9 # Gyr to yr
+
+        return delT, delTl, delTu
+
+
     def plot_sfh(self, flim=0.01, lsfrl=-3, mmax=1000, Txmin=0.08, Txmax=4, lmmin=5, fil_path='./FILT/',
         dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, f_silence=True, DIR_TMP=None,
         f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=False, 
@@ -308,6 +363,7 @@ class PLOT(object):
         tset_SFR_SED : float
             in Gyr. Time scale over which SFR estimate is averaged.
         '''
+        print('\n### Running plot_sfh ###\n')
         MB = self.mb
         MB.logger.info('Running plot_sfh')
 
@@ -317,19 +373,13 @@ class PLOT(object):
         age = MB.age
         age = np.asarray(age)
 
-        try:
-            if not MB.ZFIX == None:
-                skip_zhist = True
-        except:
-            pass
-
         if Txmin > np.min(age):
             Txmin = np.min(age) * 0.8
 
         ###########################
         # Open result file
         ###########################
-        self.open_result_file(DIR_TMP=DIR_TMP,)
+        self.open_result_file()
 
         file = self.mb.DIR_OUT + 'gsf_params_' + self.mb.ID + '.fits'
         hdul = fits.open(file) # open a FITS file
@@ -345,60 +395,15 @@ class PLOT(object):
         ####################
         self.Tuni = self.mb.cosmo.age(self.zbes).value #, use_flat=True, **cosmo)
         Tuni0 = (self.Tuni - age[:])
-        delT  = np.zeros(len(age),dtype=float)
-        delTl = np.zeros(len(age),dtype=float)
-        delTu = np.zeros(len(age),dtype=float)
 
-        if len(age) == 1:
-            for aa in range(len(age)):
-                try:
-                    tau_ssp = float(MB.inputs['TAU_SSP'])
-                except:
-                    tau_ssp = tau_lim
-                delTl[aa] = tau_ssp/2.
-                delTu[aa] = tau_ssp/2.
-                if age[aa] < tau_lim:
-                    # This is because fsps has the minimum tau = tau_lim
-                    delT[aa] = tau_lim
-                else:
-                    delT[aa] = delTu[aa] + delTl[aa]
-        else: 
-            # @@@ Note: This is only true when CSP...?
-            for aa in range(len(age)):
-                if aa == 0:
-                    delTl[aa] = age[aa]
-                    delTu[aa] = (age[aa+1]-age[aa])/2.
-                    delT[aa] = delTu[aa] + delTl[aa]
-                elif self.Tuni < age[aa]:
-                    delTl[aa] = (age[aa]-age[aa-1])/2.
-                    delTu[aa] = self.Tuni-age[aa] #delTl[aa] #10.
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                elif aa == len(age)-1:
-                    delTl[aa] = (age[aa]-age[aa-1])/2.
-                    delTu[aa] = self.Tuni - age[aa]
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                else:
-                    delTl[aa] = (age[aa]-age[aa-1])/2.
-                    delTu[aa] = (age[aa+1]-age[aa])/2.
-                    if age[aa]+delTu[aa]>self.Tuni:
-                        delTu[aa] = self.Tuni-age[aa]
-                    delT[aa] = delTu[aa] + delTl[aa]
-
-                if delTu[aa]<0:
-                    delTu[aa] = 1e3
-
-        mask_age = (delT<=0) # For those age_template > age_universe
-        delT[mask_age] = np.inf
-        delT[:] *= 1e9 # Gyr to yr
-        delTl[:] *= 1e9 # Gyr to yr
-        delTu[:] *= 1e9 # Gyr to yr
+        # get delt
+        delT, delTl, delTu = self.get_delt(tau_lim=tau_lim)
 
         ##############################
         # Load Pickle
         ##############################
         samplepath = MB.DIR_OUT 
 
-        niter = 0
         use_pickl = False
         use_pickl = True
         if use_pickl:
@@ -437,7 +442,7 @@ class PLOT(object):
         ##################
         # Define axis
         ##################
-        _ = self.define_axis(f_log_sfh=f_log_sfh, skip_zhist=skip_zhist)
+        _ = self.define_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=self.skip_zhist)
 
         # ##############################
         # Add simulated scatter in quad
@@ -466,8 +471,9 @@ class PLOT(object):
         mslist= np.zeros(len(age), dtype=float)
 
         eAv = 0
+        eA = eZ = np.zeros(len(age), dtype=float)
         mm = 0
-        for mm in range(mmax):
+        while mm<mmax:
             delt_tot = 0
             mtmp  = np.random.randint(len(samples))# + Nburn
 
@@ -570,49 +576,39 @@ class PLOT(object):
                     TL[aa, mm] = np.nan
 
             # Get SFR from SFH;
-            if True:
-                # tset_SFR_SED = 0.03
-                SFH_for_interp = np.asarray([s for s in 10**SF[:, mm]] + [0])
-                age_for_interp = np.asarray([s for s in np.log10(age)] + [np.nanmax(np.log10(age+delT[aa]/1e9*2))])
-                fint_sfr = interpolate.interp1d(age_for_interp, SFH_for_interp, kind='nearest', fill_value="extrapolate")
-                delt_int = np.nanmin(age)/10 # in Gyr
-                times_int = np.arange(0,np.nanmax(age),delt_int)
-                sfr_int = fint_sfr(np.log10(times_int))
+            # tset_SFR_SED = 0.03
+            SFH_for_interp = np.asarray([s for s in 10**SF[:, mm]] + [0])
+            age_for_interp = np.asarray([s for s in np.log10(age)] + [np.nanmax(np.log10(age+delT[aa]/1e9*2))])
+            fint_sfr = interpolate.interp1d(age_for_interp, SFH_for_interp, kind='nearest', fill_value="extrapolate")
+            delt_int = np.nanmin(age)/10 # in Gyr
+            times_int = np.arange(0,np.nanmax(age),delt_int)
+            sfr_int = fint_sfr(np.log10(times_int))
 
-                fint_delt = interpolate.interp1d(np.log10(age), delT, kind='nearest', fill_value="extrapolate")
-                delt_interp = fint_delt(np.log10(times_int))
+            fint_delt = interpolate.interp1d(np.log10(age), delT, kind='nearest', fill_value="extrapolate")
+            delt_interp = fint_delt(np.log10(times_int))
 
-                # con = (~np.isinf(sfr_int))
-                # con2 = (~np.isinf(10**SF[:, mm]))
-                # print(np.nansum(sfr_int[con])*delt_int, np.nansum(10**SF[:, mm][con2]))
-                # hoge
-                # con_sfr = (times_int<tset_SFR_SED)
-                # SFR_SED_tmp = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tset_SFR_SED))
-                # SFR_SED[mm] = SFR_SED_tmp
-
-                for t in range(len(tsets_SFR_SED)):
-                    iix = np.argmin(np.abs(times_int-tsets_SFR_SED[t]))
-                    # print(tsets_SFR_SED[t], delt_interp[iix]/1e9/2.)
-                    con_sfr = (times_int<tsets_SFR_SED[t]+delt_interp[iix]/1e9/2.)
-                    SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tsets_SFR_SED[t]))
-                # print(SFR_SED[mm], SFR_SED_tmp, tset_SFR_SED, delt_int, len(sfr_int[con_sfr]))
-                # plt.close()
-                # ax1.plot(times_int, np.log10(sfr_int), color='green', alpha=0.1)
-                # ax1.set_xscale('log')
-                # # ax1.set_ylim(-3, 3)
-                # plt.savefig('tmp.png')
-                # hoge
+            for t in range(len(tsets_SFR_SED)):
+                iix = np.argmin(np.abs(times_int-tsets_SFR_SED[t]))
+                # print(tsets_SFR_SED[t], delt_interp[iix]/1e9/2.)
+                con_sfr = (times_int<tsets_SFR_SED[t]+delt_interp[iix]/1e9/2.)
+                SFRs_SED[mm,t] = np.log10(np.nansum(sfr_int[con_sfr]*delt_int)/(tsets_SFR_SED[t]))
 
             # Do stuff...
             # time.sleep(0.01)
             # Update Progress Bar
             printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
+            mm += 1
+
         self.Avtmp = np.percentile(Av[:],[16,50,84])
 
         #############
         # Plot
         #############
+
+        #
+        # SFH
+        #
         AMp = np.zeros((len(age),3), dtype=float)
         ACp = np.zeros((len(age),3), dtype=float)
         ZMp = np.zeros((len(age),3), dtype=float)
@@ -627,13 +623,6 @@ class PLOT(object):
             ZLp[aa,:] = np.nanpercentile(ZL[aa,:], [16,50,84])
             SFp[aa,:] = np.nanpercentile(SF[aa,:], [16,50,84])
 
-        # SFR_SED_med = np.nanpercentile(SFR_SED[:],[16,50,84])
-        # if f_SFRSED_plot:
-        #     ax1.errorbar(delt_tot/2./1e9, SFR_SED_med[1], xerr=[[delt_tot/2./1e9],[delt_tot/2./1e9]], \
-        #     yerr=[[SFR_SED_med[1]-SFR_SED_med[0]],[SFR_SED_med[2]-SFR_SED_med[1]]], \
-        #     linestyle='', color='orange', lw=1., marker='*',ms=8,zorder=-2)
-
-        ###################
         msize = np.zeros(len(age), dtype=float)
         for aa in range(len(age)):
             if A50[aa]/Asum>flim: # if >1%
@@ -648,10 +637,7 @@ class PLOT(object):
             self.axes['ax1'].errorbar(age, 10**SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
 
         if f_symbol:
-            tbnd = 0.0001
             for aa in range(len(age)):
-                agebin = np.arange(age[aa]-delTl[aa]/1e9, age[aa]+delTu[aa]/1e9, delTu[aa]/1e10)
-                tbnd = age[aa]+delT[aa]/2./1e9
                 
                 if f_log_sfh:
                     self.axes['ax1'].errorbar(age[aa], SFp[aa,1], xerr=[[delTl[aa]/1e9], [delTu[aa]/1e9]], \
@@ -664,14 +650,6 @@ class PLOT(object):
                     if msize[aa]>0:
                         self.axes['ax1'].scatter(age[aa], 10**SFp[aa,1], marker='.', color=self.col[aa], edgecolor='k', s=msize[aa], zorder=1)
 
-        #############
-        # Get SFMS in log10;
-        #############
-        IMF = int(MB.inputs['NIMF'])
-        SFMS_16 = get_SFMS(self.zbes,age,10**ACp[:,0],IMF=IMF)
-        SFMS_50 = get_SFMS(self.zbes,age,10**ACp[:,1],IMF=IMF)
-        SFMS_84 = get_SFMS(self.zbes,age,10**ACp[:,2],IMF=IMF)
-
         #try:
         if False:
             f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
@@ -680,14 +658,11 @@ class PLOT(object):
                 MB.logger.warning('Failed to call rejuvenation module.')
             self.f_rejuv,self.t_quench,self.t_rejuv = 0,0,0
 
-        # Plot MS?
+        #############
+        # Get SFMS in log10;
+        #############
         if f_SFMS:
-            if f_log_sfh:
-                self.axes['ax1'].fill_between(age[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2, label='SFMS')
-                self.axes['ax1'].plot(age[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
-            else:
-                self.axes['ax1'].fill_between(age[conA], 10**(SFMS_50[conA]-0.2), 10**(SFMS_50[conA]+0.2), linestyle='-', color='b', alpha=0.3, zorder=-2, label='SFMS')
-                self.axes['ax1'].plot(age[conA], 10**SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
+            self.add_sfms(age, 10**ACp[:,1])
 
         #
         # Mass in each bin
@@ -698,15 +673,12 @@ class PLOT(object):
             yerr=[ACp[:,1][conA]-ACp[:,0][conA],ACp[:,2][conA]-ACp[:,1][conA]], linestyle='-', color='k', lw=0.5, label=ax2label, zorder=1)
 
         if f_symbol:
-            tbnd = 0.0001
             mtmp = 0
             for ii in range(len(age)):
                 aa = len(age) -1 - ii
-                agebin = np.arange(0, age[aa], delTu[aa]/1e10)
                 self.axes['ax2'].errorbar(age[aa], ACp[aa,1], xerr=[[delTl[aa]/1e9],[delTu[aa]/1e9]],
                     yerr=[[ACp[aa,1]-ACp[aa,0]],[ACp[aa,2]-ACp[aa,1]]], linestyle='-', color=self.col[aa], lw=1, zorder=2)
 
-                tbnd = age[aa]+delT[aa]/2./1e9
                 mtmp = ACp[aa,1]
                 if msize[aa]>0:
                     self.axes['ax2'].scatter(age[aa], ACp[aa,1], marker='.', c=[self.col[aa]], edgecolor='k', s=msize[aa], zorder=2)
@@ -719,7 +691,7 @@ class PLOT(object):
         #
         # Total Metal
         #
-        if not skip_zhist:
+        if not self.skip_zhist:
             self.axes['ax4'].fill_between(age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.5)
             self.axes['ax4'].errorbar(age[conA], ZCp[:,1][conA], linestyle='-', color='k', lw=0.5, zorder=1)
             
@@ -770,7 +742,7 @@ class PLOT(object):
         self.y2max = y2max
 
         # Update axis
-        self.update_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=skip_zhist, lsfrl=lsfrl)
+        self.update_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=self.skip_zhist, lsfrl=lsfrl)
 
         # Write files
         tree_sfh = self.save_files_sfh(tsets_SFR_SED=tsets_SFR_SED, taumodel=False)
@@ -804,45 +776,10 @@ class PLOT(object):
         return tree_sfh
     
 
-    def open_result_file(self, DIR_TMP=''):
-        ''''''
-        file = self.mb.DIR_OUT + 'gsf_params_' + self.mb.ID + '.fits'
-        hdul = fits.open(file) # open a FITS file
-        try:
-            self.zbes = hdul[0].header['zmc']
-        except:
-            self.zbes = hdul[0].header['z']
-        try:
-            self.RA   = hdul[0].header['RA']
-            self.DEC  = hdul[0].header['DEC']
-        except:
-            self.RA  = 0
-            self.DEC = 0
-        try:
-            self.SN = hdul[0].header['SN']
-        except:
-            ###########################
-            # Get SN of Spectra
-            ###########################
-            file = os.path.join(DIR_TMP, 'spec_obs_' + self.mb.ID + '.cat')
-            fds  = np.loadtxt(file, comments='#')
-            nrs  = fds[:,0]
-            lams = fds[:,1]
-            fsp  = fds[:,2]
-            esp  = fds[:,3]
-
-            consp = (nrs<10000) & (lams/(1.+self.zbes)>3600) & (lams/(1.+self.zbes)<4200)
-            if len((fsp/esp)[consp]>10):
-                self.SN = np.median((fsp/esp)[consp])
-            else:
-                self.SN = 1
-        return 
-    
-
     def plot_sfh_tau(self, f_comp=0, flim=0.01, lsfrl=-1, mmax=1000, Txmin=0.08, Txmax=4, lmmin=8.5, fil_path='./FILT/',
         dust_model=0, f_SFMS=False, f_symbol=True, verbose=False, DIR_TMP=None,
         f_log_sfh=True, dpi=250, TMIN=0.0001, tau_lim=0.01, skip_zhist=True, tsets_SFR_SED=[0.001,0.003,0.01,0.03,0.1,0.3], tset_SFR_SED=0.1, return_figure=False,
-        f_sfh_yaxis_force=True):
+        f_sfh_yaxis_force=True, plot_each=True, alpha_sfh=0.02):
         '''
         Purpose
         -------
@@ -859,10 +796,11 @@ class PLOT(object):
         tset_SFR_SED : float
             in Gyr. Time scale over which SFR estimate is averaged.
         '''
+        print('\n### Running plot_sfh_tau ###\n')
         ###########################
         # Open result file
         ###########################
-        self.open_result_file(DIR_TMP=DIR_TMP,)
+        self.open_result_file()
 
         file = self.mb.DIR_OUT + 'gsf_params_' + self.mb.ID + '.fits'
         hdul = fits.open(file) # open a FITS file
@@ -876,49 +814,9 @@ class PLOT(object):
         # For cosmology
         ####################
         self.Tuni = self.mb.cosmo.age(self.zbes).value #, use_flat=True, **cosmo)
-        delT  = np.zeros(len(self.mb.age),dtype=float)
-        delTl = np.zeros(len(self.mb.age),dtype=float)
-        delTu = np.zeros(len(self.mb.age),dtype=float)
 
-        if len(self.mb.age) == 1:
-        #if tau0[0] < 0: # SSP;
-            for aa in range(len(self.mb.age)):
-                try:
-                    tau_ssp = float(self.mb.inputs['TAU_SSP'])
-                except:
-                    tau_ssp = tau_lim
-                delTl[aa] = tau_ssp/2
-                delTu[aa] = tau_ssp/2
-                if self.mb.age[aa] < tau_lim:
-                    delT[aa] = tau_lim
-                else:
-                    delT[aa] = delTu[aa] + delTl[aa]
-        else: # This is only true when CSP...
-            for aa in range(len(self.mb.age)):
-                if aa == 0:
-                    delTl[aa] = self.mb.age[aa]
-                    delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                elif self.Tuni < self.mb.age[aa]:
-                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
-                    delTu[aa] = self.Tuni-self.mb.age[aa] #delTl[aa] #10.
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                elif aa == len(self.mb.age)-1:
-                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
-                    delTu[aa] = self.Tuni - self.mb.age[aa]
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                else:
-                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
-                    delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
-                    if self.mb.age[aa]+delTu[aa]>self.Tuni:
-                        delTu[aa] = self.Tuni-self.mb.age[aa]
-                    delT[aa] = delTu[aa] + delTl[aa]
-
-        mask_age = (delT<=0) # For those age_template > age_universe
-        delT[mask_age] = np.inf
-        delT[:] *= 1e9 # Gyr to yr
-        delTl[:] *= 1e9 # Gyr to yr
-        delTu[:] *= 1e9 # Gyr to yr
+        # get delt
+        delT, delTl, delTu = self.get_delt(tau_lim=tau_lim)
 
         ##############################
         # Load Pickle
@@ -950,19 +848,10 @@ class PLOT(object):
         SF = np.zeros((len(self.mb.age), mmax), dtype=float) # SFR
         Av = np.zeros(mmax, dtype=float) # SFR
 
-        # ##############################
-        # Add simulated scatter in quad
-        # if files are available.
-        # ##############################
-        try:
-            f_zev = int(self.mb.inputs['ZEVOL'])
-        except:
-            f_zev = 1
-
         ##################
         # Define axis
         ##################
-        _ = self.define_axis(f_log_sfh=f_log_sfh, skip_zhist=skip_zhist)
+        _ = self.define_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=self.skip_zhist)
 
         #####################
         # Get SED based SFR
@@ -970,19 +859,19 @@ class PLOT(object):
         SFRs_SED = np.zeros((mmax,len(tsets_SFR_SED)),dtype=float)
 
         # ASDF;
-        af = self.mb.af #asdf.open(self.mb.DIR_TMP + 'spec_all_' + self.mb.ID + '.asdf')
+        af = self.mb.af 
         af0 = asdf.open(self.mb.DIR_TMP + 'spec_all.asdf')
         sedpar = af['ML'] # For M/L
         sedpar0 = af0['ML'] # For mass loss frac.
 
-        ttmin = 0.001
-        tt = np.arange(ttmin,self.Tuni+0.5,ttmin/10)
+        ttmin = 0.0001
+        deltt = 0.0001
+        tt = np.arange(ttmin,self.Tuni+0.5,deltt)
         xSF = np.zeros((len(tt), mmax), dtype=float) # SFR
         ySF = np.zeros((len(tt), mmax), dtype=float) # SFR
         yMS = np.zeros((len(tt), mmax), dtype=float) # MFR
         ySF_each = np.zeros((self.mb.npeak, len(tt), mmax), dtype=float) # SFR
         yMS_each = np.zeros((self.mb.npeak, len(tt), mmax), dtype=float) # MFR
-
         ZZmc = np.zeros((self.mb.npeak, mmax), dtype=float) 
         TTmc = np.zeros((self.mb.npeak, mmax), dtype=float) 
         TAmc = np.zeros((self.mb.npeak, mmax), dtype=float) 
@@ -991,7 +880,6 @@ class PLOT(object):
             Txmin = np.min(tt) * 0.8
 
         mm = 0
-        plot_each = True
         while mm<mmax:
             mtmp = np.random.randint(len(samples))# + Nburn
             if self.mb.has_AVFIX:
@@ -1026,23 +914,23 @@ class PLOT(object):
 
                 # SFR from SED. This will be converted in log later;
                 for t in range(len(tsets_SFR_SED)):
-                    iix = np.argmin(np.abs(tt-tsets_SFR_SED[t]))
                     con_sfr = (tt<tsets_SFR_SED[t])
                     if len(ySF_each[aa,:,mm][con_sfr])>0:
-                        SFRs_SED[mm,t] += np.sum(ySF_each[aa,:,mm][con_sfr])
+                        SFRs_SED[mm,t] += np.nanmean(ySF_each[aa,:,mm][con_sfr])
 
             Av[mm] = Av_tmp
             if plot_each:
-                self.axes['ax1'].plot(xSF[:,mm], np.log10(ySF[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
-                self.axes['ax2'].plot(xSF[:,mm], np.log10(yMS[:,mm]), linestyle='-', color='k', alpha=0.01, zorder=-1, lw=0.5)
+                self.axes['ax1'].plot(xSF[:,mm], np.log10(ySF[:,mm]), linestyle='-', color='k', alpha=alpha_sfh, zorder=-1, lw=0.5)
+                self.axes['ax2'].plot(xSF[:,mm], np.log10(yMS[:,mm]), linestyle='-', color='k', alpha=alpha_sfh, zorder=-1, lw=0.5)
 
             # Convert SFRs_SED to log
             for t in range(len(tsets_SFR_SED)):
                 if SFRs_SED[mm,t] > 0:
-                    SFRs_SED[mm,t] = np.log10(SFRs_SED[mm,t])
+                    SFRs_SED[mm,t] = np.log10(SFRs_SED[mm,t]/self.mb.npeak)
                 else:
                     SFRs_SED[mm,t] = -99
 
+            printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
             mm += 1
 
         self.Avtmp = np.percentile(Av[:],[16,50,84])
@@ -1050,6 +938,10 @@ class PLOT(object):
         #############
         # Plot
         #############
+
+        #
+        # SFH and MFH
+        #
         xSFp = np.zeros((len(tt),3), dtype=float)
         ySFp = np.zeros((len(tt),3), dtype=float)
         yMSp = np.zeros((len(tt),3), dtype=float)
@@ -1063,6 +955,11 @@ class PLOT(object):
                 ySFp_each[aa,ii,:] = np.percentile(ySF_each[aa,ii,:], [16,50,84])
                 yMSp_each[aa,ii,:] = np.percentile(yMS_each[aa,ii,:], [16,50,84])
 
+        msize = np.zeros(len(self.mb.age), dtype=float)
+        for aa in range(len(self.mb.age)):
+            if A50[aa]/Asum>flim: # if >1%
+                msize[aa] = 200 * A50[aa]/Asum
+
         for aa in range(self.mb.npeak):
             self.axes['ax1'].plot(xSFp[:,1], np.log10(ySFp_each[aa,:,1]), linestyle='-', color=self.col[aa], alpha=1., zorder=-1, lw=0.5)
             self.axes['ax2'].plot(xSFp[:,1], np.log10(ySFp_each[aa,:,1]), linestyle='-', color=self.col[aa], alpha=1., zorder=-1, lw=0.5)
@@ -1075,38 +972,18 @@ class PLOT(object):
         ACp[:] = np.log10(yMSp[:,:])
         SFp[:] = np.log10(ySFp[:,:])
 
-        ###################
-        msize = np.zeros(len(self.mb.age), dtype=float)
-        # Metal
-        ZCp = np.zeros((self.mb.npeak,3),float)
-        TCp = np.zeros((self.mb.npeak,3),float)
-        TTp = np.zeros((self.mb.npeak,3),float)
-        for aa in range(len(self.mb.age)):
-            if A50[aa]/Asum>flim: # if >1%
-                msize[aa] = 200 * A50[aa]/Asum
+        conA = ()
+        if f_log_sfh:
+            self.axes['ax1'].fill_between(xSFp[:,1][conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+            self.axes['ax1'].errorbar(xSFp[:,1], SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
+            self.axes['ax2'].fill_between(xSFp[:,1][conA], ACp[:,0][conA], ACp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+            self.axes['ax2'].errorbar(xSFp[:,1], ACp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
+        else:
+            self.axes['ax1'].fill_between(xSFp[:,1][conA], 10**SFp[:,0][conA], 10**SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+            self.axes['ax1'].errorbar(xSFp[:,1], 10**SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
+            self.axes['ax2'].fill_between(xSFp[:,1][conA], 10**ACp[:,0][conA], 10**ACp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
+            self.axes['ax2'].errorbar(xSFp[:,1], 10**ACp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
 
-            ZCp[aa,:] = np.percentile(ZZmc[aa,:], [16,50,84])
-            TCp[aa,:] = np.percentile(TTmc[aa,:], [16,50,84])
-            TTp[aa,:] = np.percentile(TAmc[aa,:], [16,50,84])
-
-        if False:
-            conA = (msize>=0)
-            if f_log_sfh:
-                self.axes['ax1'].fill_between(age[conA], SFp[:,0][conA], SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
-                self.axes['ax1'].errorbar(age, SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
-            else:
-                self.axes['ax1'].fill_between(age[conA], 10**SFp[:,0][conA], 10**SFp[:,2][conA], linestyle='-', color='k', alpha=0.5, zorder=-1)
-                self.axes['ax1'].errorbar(age, 10**SFp[:,1], linestyle='-', color='k', marker='', zorder=-1, lw=.5)
-
-        #############
-        # Get SFMS in log10;
-        #############
-        IMF = int(self.mb.inputs['NIMF'])
-        SFMS_16 = get_SFMS(self.zbes,tt,10**ACp[:,0],IMF=IMF)
-        SFMS_50 = get_SFMS(self.zbes,tt,10**ACp[:,1],IMF=IMF)
-        SFMS_84 = get_SFMS(self.zbes,tt,10**ACp[:,2],IMF=IMF)
-
-        #try:
         if False:
             f_rejuv,t_quench,t_rejuv = check_rejuv(age,SFp[:,:],ACp[:,:],SFMS_50)
         else:
@@ -1114,12 +991,11 @@ class PLOT(object):
                 self.mb.logger.warning('Failed to call rejuvenation module.')
             self.f_rejuv,self.t_quench,self.t_rejuv = 0,0,0
 
-        # Plot MS?
-        conA = ()
+        #############
+        # Get SFMS in log10;
+        #############
         if f_SFMS:
-            if f_log_sfh:
-                self.axes['ax1'].fill_between(tt[conA], SFMS_50[conA]-0.2, SFMS_50[conA]+0.2, linestyle='-', color='b', alpha=0.3, zorder=-2)
-                self.axes['ax1'].plot(tt[conA], SFMS_50[conA], linestyle='--', color='k', alpha=0.5, zorder=-2)
+            self.add_sfms(tt, 10**ACp[:,1])
 
         # Plot limit;
         y2min = np.nanmax([lmmin,np.min(np.log10(yMSp[:,1]))])
@@ -1128,7 +1004,17 @@ class PLOT(object):
             y2min -= 0.2
 
         # Total Metal
-        if not skip_zhist:
+        ZCp = np.zeros((self.mb.npeak,3),float)
+        TCp = np.zeros((self.mb.npeak,3),float)
+        TTp = np.zeros((self.mb.npeak,3),float)
+        for aa in range(len(self.mb.age)):
+            if A50[aa]/Asum>flim: # if >1%
+                msize[aa] = 200 * A50[aa]/Asum
+            ZCp[aa,:] = np.percentile(ZZmc[aa,:], [16,50,84])
+            TCp[aa,:] = np.percentile(TTmc[aa,:], [16,50,84])
+            TTp[aa,:] = np.percentile(TAmc[aa,:], [16,50,84])
+
+        if not self.skip_zhist:
             self.axes['ax4'].fill_between(self.mb.age[conA], ZCp[:,0][conA], ZCp[:,2][conA], linestyle='-', color='k', alpha=0.5)
             self.axes['ax4'].errorbar(self.mb.age[conA], ZCp[:,1][conA], linestyle='-', color='k', lw=0.5, zorder=1)
             
@@ -1164,7 +1050,7 @@ class PLOT(object):
         self.y2max = y2max
 
         # Update axis
-        self.update_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=skip_zhist, lsfrl=lsfrl)
+        self.update_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=self.skip_zhist, lsfrl=lsfrl)
 
         # Write files
         tree_sfh = self.save_files_sfh(tsets_SFR_SED=tsets_SFR_SED, taumodel=True)
@@ -1196,6 +1082,41 @@ class PLOT(object):
             return tree_sfh, self.axes['fig']
 
         return tree_sfh
+    
+
+    def open_result_file(self):
+        ''''''
+        file = self.mb.DIR_OUT + 'gsf_params_' + self.mb.ID + '.fits'
+        hdul = fits.open(file) # open a FITS file
+        try:
+            self.zbes = hdul[0].header['zmc']
+        except:
+            self.zbes = hdul[0].header['z']
+        try:
+            self.RA   = hdul[0].header['RA']
+            self.DEC  = hdul[0].header['DEC']
+        except:
+            self.RA  = 0
+            self.DEC = 0
+        try:
+            self.SN = hdul[0].header['SN']
+        except:
+            ###########################
+            # Get SN of Spectra
+            ###########################
+            file = os.path.join(self.mb.DIR_TMP, 'spec_obs_' + self.mb.ID + '.cat')
+            fds  = np.loadtxt(file, comments='#')
+            nrs  = fds[:,0]
+            lams = fds[:,1]
+            fsp  = fds[:,2]
+            esp  = fds[:,3]
+
+            consp = (nrs<10000) & (lams/(1.+self.zbes)>3600) & (lams/(1.+self.zbes)<4200)
+            if len((fsp/esp)[consp]>10):
+                self.SN = np.median((fsp/esp)[consp])
+            else:
+                self.SN = 1
+        return 
     
 
     def save_files_sfh(self, tsets_SFR_SED=[], taumodel=False):
@@ -1387,6 +1308,41 @@ class PLOT(object):
 
         self.axes['fig'] = fig
         return self.axes
+    
+
+    def get_rf_sed(self, x1_tot, ytmp, ytmp_nl, ytmp_noatn, scale, d_scale, Cmznu,
+                   lam_b=1300, lam_r=3000, wl_Luv_min=1300, wl_Luv_max=3000,):
+        """"""
+        MB = self.mb
+        zmc = self.zbes
+        DL = MB.cosmo.luminosity_distance(zmc).value * self.mb.Mpc_cm # Luminositydistance in cm
+        DL10 = self.mb.Mpc_cm/1e6 * 10 # 10pc in cm
+
+        # Get FUV flux density at 10pc;
+        _Fuv = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
+        _Fuv2800 = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
+        _Lir = 0
+
+        fnu_tmp = flamtonu(x1_tot, ytmp[:]*scale, m0set=-48.6, m0=-48.6)
+        fnu_nl_tmp = flamtonu(x1_tot, ytmp_nl[:]*scale, m0set=-48.6, m0=-48.6)
+        _Luv1600 = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+        _Luv1600_nl = get_Fuv(x1_tot[:]/(1.+zmc), fnu_nl_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+
+        fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[:]*scale, m0set=-48.6, m0=-48.6)
+        _Luv1600_noatn = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
+        _betas = get_uvbeta(x1_tot, ytmp[:], zmc, lam_blue=lam_b, lam_red=lam_r)
+
+        # Get RF Color;
+        indb = [0,1,2,4]
+        indr = [2,2,3,3]
+        _UVJ = np.zeros(len(indr), float)
+        _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[:]/(c/np.square(x1_tot)/d_scale)))
+        for ii in range(len(indr)):
+            if fconv[indb[ii]]>0 and fconv[indr[ii]]>0:
+                _UVJ[ii] = -2.5*np.log10(fconv[indb[ii]]/fconv[indr[ii]])
+            else:
+                _UVJ[ii] = np.nan
+        return _Fuv, _Fuv2800, _Lir, _Luv1600, _Luv1600_nl, _Luv1600_noatn, _betas, _UVJ
 
 
     def plot_sed(self, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
@@ -1831,7 +1787,6 @@ class PLOT(object):
 
         # MUV;
         DL = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
-        DL10 = Mpc_cm/1e6 * 10 # 10pc in cm
         Fuv = np.zeros(mmax, dtype=float) # For Muv
         wl_Luv_min = 1500
         wl_Luv_max = 2800
@@ -1842,8 +1797,6 @@ class PLOT(object):
         Lir = np.zeros(mmax, dtype=float) # For L(8-1000um)
         UVJ = np.zeros((mmax,4), dtype=float) # For UVJ color;
         Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
-
-        # UV beta;
         betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
 
@@ -1888,14 +1841,14 @@ class PLOT(object):
 
                     mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp = mod0_tmp.copy()
-                    fm_tmp_nl = mod0_tmp.copy()
+                    fm_tmp_nl = mod0_tmp.copy() # no emission line template;
+                    fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi) # no dust attenuation, no igm
 
-                    fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
-
-                    # Each;
+                    # Each age template; continuum model
                     ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
 
                     if MB.fneb:
+                        # Add nebular component;
                         Aneb_tmp = 10**samples['Aneb'][nr]
 
                         if not MB.logUFIX == None:
@@ -1903,14 +1856,15 @@ class PLOT(object):
                         else:
                             logU_tmp = samples['logU'][nr]
 
+                        # full model;
                         mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                         fm_tmp += mod0_tmp
 
-                        # Make no emission line template;
+                        # Make no emission line template; @@@ this does nothing???
                         mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                         fm_tmp_nl += mod0_tmp_nl
 
-                        # Make attenuation free template;
+                        # Nebular, attenuation free template;
                         mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                         fm_tmp_noatn += mod0_tmp_noatn
 
@@ -1932,13 +1886,14 @@ class PLOT(object):
                         fm_tmp_noatn += mod0_tmp_noatn
 
                 else:
+                    # add only continuum model;
                     mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
                     fm_tmp_nl += mod0_tmp
                     mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
-                    # Each;
+                    # Each age template; continuum model
                     ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
 
             #
@@ -2004,29 +1959,11 @@ class PLOT(object):
                 ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
                 ytmp_noatn[kk,:] = fm_tmp_noatn[:] * c / np.square(xm_tmp[:]) /d_scale
 
-            # Get FUV flux density at 10pc;
-            Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zmc)) / (DL10**2), lmin=1250, lmax=1650)
-            Fuv2800[kk] = get_Fuv(x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zmc))*Cmznu, lmin=1500, lmax=2800)
-            Lir[kk] = 0
-
-            fnu_tmp = flamtonu(x1_tot, ytmp[kk,:]*scale, m0set=-48.6, m0=-48.6)
-            fnu_nl_tmp = flamtonu(x1_tot, ytmp_nl[kk,:]*scale, m0set=-48.6, m0=-48.6)
-            Luv1600[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
-            Luv1600_nl[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_nl_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
-
-            fnu_noatn_tmp = flamtonu(x1_tot, ytmp_noatn[kk,:]*scale, m0set=-48.6, m0=-48.6)
-            Luv1600_noatn[kk] = get_Fuv(x1_tot[:]/(1.+zmc), fnu_noatn_tmp / (1+zmc) * (4 * np.pi * DL**2), lmin=wl_Luv_min, lmax=wl_Luv_max)
-            betas[kk] = get_uvbeta(x1_tot, ytmp[kk,:], zmc, lam_blue=lam_b, lam_red=lam_r)
-
-            # Get RF Color;
-            _,fconv = filconv_fast(MB.filts_rf, MB.band_rf, x1_tot[:]/(1.+zmc), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
-            indb = [0,1,2,4]
-            indr = [2,2,3,3]
-            for ii in range(len(indr)):
-                if fconv[indb[ii]]>0 and fconv[indr[ii]]>0:
-                    UVJ[kk,ii] = -2.5*np.log10(fconv[indb[ii]]/fconv[indr[ii]])
-                else:
-                    UVJ[kk,ii] = np.nan
+            # Get FUV and etc;
+            Fuv[kk], Fuv2800[kk], Lir[kk], Luv1600[kk], Luv1600_nl[kk], Luv1600_noatn[kk], betas[kk], UVJ[kk,:] = self.get_rf_sed(
+                x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
+                lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
+                )
 
             # Do stuff...
             # time.sleep(0.01)
@@ -2547,15 +2484,6 @@ class PLOT(object):
         return tree_spec
 
 
-    def _clean_files(self):
-        ''''''
-        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_spec_%s.fits'%(self.mb.ID)))
-        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_spec_%s.asdf'%(self.mb.ID)))
-        os.system('rm %s'%(self.mb.DIR_OUT + 'SFH_%s.fits'%(self.mb.ID)))
-        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_sfh_%s.asdf'%(self.mb.ID)))
-        return
-
-
     def plot_sed_tau(self, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
         mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
@@ -2967,15 +2895,23 @@ class PLOT(object):
         # Saved template;
         ytmp = np.zeros((mmax,len(ysum)), dtype=float)
         ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype=float)
+        ytmp_nl = np.zeros((mmax,len(ysum)), dtype=float) # no line
+        ytmp_noatn = np.zeros((mmax,len(ysum)), dtype=float) # no attenuation
 
         # MUV;
-        DL      = self.mb.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
-        DL10    = Mpc_cm/1e6 * 10 # 10pc in cm
-        Fuv     = np.zeros(mmax, dtype=float) # For Muv
-        Fuv2800   = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
-        Lir     = np.zeros(mmax, dtype=float) # For L(8-1000um)
-        UVJ     = np.zeros((mmax,4), dtype=float) # For UVJ color;
-        Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
+        DL = self.mb.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
+        Fuv = np.zeros(mmax, dtype=float) # For Muv
+        wl_Luv_min = 1500
+        wl_Luv_max = 2800
+        Luv1600 = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Luv1600_nl = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Luv1600_noatn = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Fuv2800 = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Lir = np.zeros(mmax, dtype=float) # For L(8-1000um)
+        UVJ = np.zeros((mmax,4), dtype=float) # For UVJ color;
+        Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
+        betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
 
         # From random chain;
         for kk in range(0,mmax,1):
@@ -2986,11 +2922,15 @@ class PLOT(object):
             else:
                 xhi = self.mb.x_HI_input
 
-            try:
-                Av_tmp = samples['AV0'][nr]
-            except:
+            if self.mb.has_AVFIX:
                 Av_tmp = self.mb.AVFIX
+            else:
+                try:
+                    Av_tmp = samples['AV0'][nr]
+                except:
+                    Av_tmp = samples['AV'][nr]
             vals['AV0'] = Av_tmp
+            AVs[kk] = Av_tmp
 
             try:
                 zmc = samples['zmc'][nr]
@@ -3017,9 +2957,10 @@ class PLOT(object):
                     vals['Z%d'%ss] = ZZtmp
 
             mod0_tmp, xm_tmp = self.mb.fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True)
-            fm_tmp = mod0_tmp
+            fm_tmp = mod0_tmp.copy()
+            fm_tmp_nl = mod0_tmp.copy()
+            fm_tmp_noatn, _ = self.mb.fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True, f_apply_igm=False)
 
-            # @@@ Something is wrong here, or wrong with the nebular templates.
             if self.mb.fneb:
                 Aneb_tmp = 10**samples['Aneb'][nr]
                 if not self.mb.logUFIX == None:
@@ -3030,20 +2971,19 @@ class PLOT(object):
                 mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, vals['TAU0'], vals['AGE0'], ZZtmp, zmc, self.mb.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
 
                 fm_tmp += mod0_tmp
-                # # Make no emission line template;
-                # mod0_tmp_nl, xm_tmp_nl = fnc.get_template(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp)
-                # fm_tmp_nl += mod0_tmp_nl
+                # Make no emission line template;
+                mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, vals['TAU0'], vals['AGE0'], ZZtmp, zmc, self.mb.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                fm_tmp_nl += mod0_tmp_nl
 
-            if False:
-                # Each;
-                ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
-                #if kk == 100:
-                #    self.axes['ax1'].plot(xm_tmp[:], ytmp_each[kk,:,ss], color=col[ss], linestyle='--')
+                # Nebular, attenuation free template;
+                mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, vals['TAU0'], vals['AGE0'], ZZtmp, zmc, self.mb.lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                fm_tmp_noatn += mod0_tmp_noatn
 
             #
             # Dust component;
             #
             if f_dust:
+                # TBD; can this be a function?
                 if kk == 0:
                     par = Parameters()
                     par.add('MDUST',value=samples['MDUST'][nr])
@@ -3058,44 +2998,61 @@ class PLOT(object):
                 else:
                     par['TDUST'].value = samples['TDUST'][nr]
 
-                model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+                model_dust, x1_dust = fnc.tmp04_dust(par.valuesdict())
+                model_dust_full, x1_dust_full = fnc.tmp04_dust(par.valuesdict(), return_full=True)
+                # print(par['MDUST'].value, samples['MDUST'][nr], np.nanmax(model_dust_full * c/np.square(x1_dust_full)/d_scale))
+
                 if kk == 0:
-                    deldt  = (x1_dust[1] - x1_dust[0])
-                    x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust),deldt))
+                    deldt = (x1_dust[1] - x1_dust[0])
+                    x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
                     # Redefine??
                     ytmp = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp_noatn = np.zeros((mmax,len(x1_tot)), dtype=float)
                     ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype=float)
+                    ytmp_dust_full = np.zeros((mmax,len(model_dust_full)), dtype=float)
 
                 ytmp_dust[kk,:] = model_dust * c/np.square(x1_dust)/d_scale
-                model_tot = np.interp(x1_tot,xm_tmp,fm_tmp) + np.interp(x1_tot,x1_dust,model_dust)
+                ytmp_dust_full[kk,:] = model_dust_full * c/np.square(x1_dust_full)/d_scale # flambda * 1e-20
+
+                fint = interpolate.interp1d(x1_dust, model_dust, kind='nearest', fill_value="extrapolate")
+                flux_dust_tmp = fint(x1_tot)
+                # flux_dust_tmp = np.interp(x1_tot,x1_dust,model_dust)
+
+                fint = interpolate.interp1d(xx_tmp,fm_tmp, kind='nearest', fill_value="extrapolate")
+                flux_stel_tmp = fint(x1_tot)
+                model_tot = flux_stel_tmp + flux_dust_tmp
+
+                fint = interpolate.interp1d(xx_tmp,fm_tmp_nl, kind='nearest', fill_value="extrapolate")
+                flux_stel_tmp = fint(x1_tot)
+                model_tot_nl = flux_stel_tmp + flux_dust_tmp
+                # model_tot_nl = np.interp(x1_tot,xx_tmp,fm_tmp_nl) + flux_dust_tmp
+
+                fint = interpolate.interp1d(xx_tmp,fm_tmp_noatn, kind='nearest', fill_value="extrapolate")
+                flux_stel_tmp = fint(x1_tot)
+                model_tot_noatn = flux_stel_tmp + flux_dust_tmp
+                # model_tot_noatn = np.interp(x1_tot,xx_tmp,fm_tmp_noatn) + flux_dust_tmp
 
                 ytmp[kk,:] = model_tot[:] * c/np.square(x1_tot[:])/d_scale
+                ytmp_nl[kk,:] = model_tot_nl[:] * c/np.square(x1_tot[:])/d_scale
+                ytmp_noatn[kk,:] = model_tot_noatn[:] * c/np.square(x1_tot[:])/d_scale
 
             else:
                 x1_tot = xm_tmp
                 ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
+                ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
+                ytmp_noatn[kk,:] = fm_tmp_noatn[:] * c / np.square(xm_tmp[:]) /d_scale
 
             # plot random sed;
             plot_mc = True
             if plot_mc:
                 self.axes['ax1'].plot(x1_tot, ytmp[kk,:], '-', lw=1, color='gray', zorder=-2, alpha=0.02)
 
-            # Grism plot + Fuv flux + LIR.
-            #if f_grsm:
-            #    self.axes['ax2t'].plot(x1_tot, ytmp[kk,:], '-', lw=0.5, color='gray', zorder=3., alpha=0.02)
-
-            if True:
-                # Get FUV flux;
-                Fuv[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (DL**2/(1.+zbes)) / (DL10**2), lmin=1250, lmax=1650)
-                Fuv2800[kk] = get_Fuv(x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)) * (4*np.pi*DL**2/(1.+zbes))*Cmznu, lmin=1500, lmax=2800)
-                Lir[kk] = 0
-
-                # Get UVJ Color;
-                lmconv,fconv = filconv_fast(self.mb.filts_rf, self.mb.band_rf, x1_tot[:]/(1.+zbes), (ytmp[kk,:]/(c/np.square(x1_tot)/d_scale)))
-                UVJ[kk,0] = -2.5*np.log10(fconv[0]/fconv[2])
-                UVJ[kk,1] = -2.5*np.log10(fconv[1]/fconv[2])
-                UVJ[kk,2] = -2.5*np.log10(fconv[2]/fconv[3])
-                UVJ[kk,3] = -2.5*np.log10(fconv[4]/fconv[3])
+            # Get FUV and etc;
+            Fuv[kk], Fuv2800[kk], Lir[kk], Luv1600[kk], Luv1600_nl[kk], Luv1600_noatn[kk], betas[kk], UVJ[kk,:] = self.get_rf_sed(
+                x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
+                lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
+                )
 
             # Do stuff...
             # time.sleep(0.01)
@@ -3237,13 +3194,84 @@ class PLOT(object):
         except:
             pass
 
-        # UV beta;
-        beta_16 = get_uvbeta(x1_tot, ytmp16, zbes)
-        beta_50 = get_uvbeta(x1_tot, ytmp50, zbes)
-        beta_84 = get_uvbeta(x1_tot, ytmp84, zbes)
-        hdr['UVBETA16'] = beta_16
-        hdr['UVBETA50'] = beta_50
-        hdr['UVBETA84'] = beta_84
+        # Write parameters;
+        # Muv
+        Muvs = -2.5 * np.log10(np.nanpercentile(Fuv[:],percs)) + self.mb.m0set
+        for ii in range(3):
+            if np.isinf(Muvs[ii]):
+                Muvs[ii] = 99
+
+        # Luv1600 is RF UV flux density, erg/s/Hz
+        Luvs = np.nanpercentile(Luv1600, percs) 
+        Luvs_nl = np.nanpercentile(Luv1600_nl, percs) 
+        Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
+        betas_med = np.nanpercentile(betas, [16,50,84])
+
+        #
+        # SFR from attenuation corrected LUV;
+        #
+        C_SFR_Kenn = 1.4 * 1e-28
+        if self.mb.nimf == 1: # Chabrier
+            C_SFR_Kenn /= 0.63 # Madau&Dickinson+14
+        elif self.mb.nimf == 2: # Kroupa
+            C_SFR_Kenn /= 0.67 # Madau&Dickinson+14
+
+        # beta correction;
+        # Meurer+99, Smit+16;
+        A1600 = 4.43 + 1.99 * np.asarray(betas_med)
+        A1600[np.where(A1600<0)] = 0
+        SFRUV_BETA = C_SFR_Kenn * 10**(A1600/2.5) * np.asarray(Luvs) # Msun / yr
+        SFRUV_UNCOR = C_SFR_Kenn * np.asarray(Luvs) # Msun / yr
+        hdr['SFRUV_ANGS'] = (wl_Luv_min + wl_Luv_max)/2.
+
+        # Av-based correction;
+        AVs_med = np.nanpercentile(AVs, [16,50,84])
+        lam = np.asarray([hdr['SFRUV_ANGS']])
+        fl = np.zeros(len(lam),float) + 1
+        nr = np.arange(0,len(lam),1)
+        SFRUV = np.zeros(len(Luvs), float)
+        SFRUV_NL = np.zeros(len(Luvs), float)
+        for ii in range(len(AVs_med)):
+            from .function import apply_dust
+            yyd, _, _ = apply_dust(fl, lam, nr, AVs_med[ii], dust_model=self.mb.dust_model)
+            fl_cor = 1/yyd
+            SFRUV[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs[ii]) # Msun / yr
+            SFRUV_NL[ii] = C_SFR_Kenn * fl_cor * np.asarray(Luvs_nl[ii]) # Msun / yr
+
+        for ii in range(len(percs)):
+
+            if not np.isnan(Muvs[ii]):
+                hdr['MUV%d'%percs[ii]] = Muvs[ii]
+            else:
+                hdr['MUV%d'%percs[ii]] = 99
+
+            if not np.isnan(Luvs[ii]):
+                hdr['LUV%d'%percs[ii]] = Luvs[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV%d'%percs[ii]] = -99
+
+            if not np.isnan(Luvs_noatn[ii]):
+                hdr['LUV_noattn_%d'%percs[ii]] = Luvs_noatn[ii] #10**(-0.4*hdr['MUV16']) * MB.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LUV_noattn_%d'%percs[ii]] = -99
+
+            if not np.isnan(betas_med[ii]):
+                hdr['UVBETA%d'%percs[ii]] = betas_med[ii]
+            else:
+                hdr['UVBETA%d'%percs[ii]] = 99
+            
+            hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
+            hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
+            hdr['SFRUV_STEL_%d'%percs[ii]] = SFRUV_NL[ii]
+            hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
+
+            # UV beta obs;
+            if ii == 0:
+                hdr['NUVBETA_obs'] = nbeta_obs
+            if not np.isnan(beta_obs_percs[ii]):
+                hdr['UVBETA_obs%d'%percs[ii]] = beta_obs_percs[ii]
+            else:
+                hdr['UVBETA_obs%d'%percs[ii]] = -99
 
         # UVJ
         try:
@@ -3485,7 +3513,7 @@ class PLOT(object):
             try:
                 # For any data removed fron fit (i.e. IRAC excess):
                 #data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
-                NR_ex = MB.data['bb_obs_removed']['NR']# data_ex['col1']
+                NR_ex = self.mb.data['bb_obs_removed']['NR']# data_ex['col1']
             except:
                 NR_ex = []
 
@@ -3890,6 +3918,15 @@ class PLOT(object):
         af = asdf.AsdfFile(gsf_dict)
         af.write_to(os.path.join(self.mb.DIR_OUT, 'gsf_%s.asdf'%(self.mb.ID)), all_array_compression='zlib')
         return gsf_dict
+
+
+    def _clean_files(self):
+        ''''''
+        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_spec_%s.fits'%(self.mb.ID)))
+        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_spec_%s.asdf'%(self.mb.ID)))
+        os.system('rm %s'%(self.mb.DIR_OUT + 'SFH_%s.fits'%(self.mb.ID)))
+        os.system('rm %s'%(self.mb.DIR_OUT + 'gsf_sfh_%s.asdf'%(self.mb.ID)))
+        return
 
 
     @staticmethod

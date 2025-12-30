@@ -1047,18 +1047,6 @@ class Func_tau:
         nprec : int
             Precision when redshift is refined. 
         '''
-        ZZ = self.ZZ
-        AA = self.AA 
-        bfnc = self.MB.bfnc
-        Mtot = 0
-        pp = 0
-
-        # if lib is None:
-        #     if lib_all:
-        #         lib = self.MB.lib_all
-        #     else:
-        #         lib = self.MB.lib
-
         if f_val:
             par = par.params
 
