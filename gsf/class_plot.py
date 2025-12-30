@@ -2066,40 +2066,7 @@ class PLOT(object):
         else:
             MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
-        NR = MB.dict['NR']
-        x = MB.dict['x']
-        fy = MB.dict['fy']
-        ey = MB.dict['ey']
-        data_len = MB.data['meta']['data_len']
-
-        con0 = (NR<data_len[0])
-        xg0  = x[con0]
-        fg0  = fy[con0]
-        eg0  = ey[con0]
-        con1 = (NR>=data_len[0]) & (NR<data_len[1]+data_len[0])
-        xg1  = x[con1]
-        fg1  = fy[con1]
-        eg1  = ey[con1]
-        con2 = (NR>=data_len[1]+data_len[0]) & (NR<MB.NRbb_lim)
-        xg2  = x[con2]
-        fg2  = fy[con2]
-        eg2  = ey[con2]
-        con_spec = (NR<MB.NRbb_lim)
-
-        if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
-            f_grsm = True
-            wave_spec_max = np.max(x[con_spec])
-        else:
-            f_grsm = False
-            wave_spec_max = None
-
-        # BB data points;
-        NRbb = MB.dict['NRbb']
-        xbb  = MB.dict['xbb']
-        fybb = MB.dict['fybb']
-        eybb = MB.dict['eybb']
-        exbb = MB.dict['exbb']
-        snbb = fybb/eybb
+        f_grsm = self.check_grism(NRbb_lim=NRbb_lim)
 
         # Weight is set to zero for those no data (ey<0).
         _, wht3 = self.get_weight(zbes)
@@ -2128,9 +2095,9 @@ class PLOT(object):
 
         # Determine scale here;
         if scale == None:
-            conbb_hs = (fybb/eybb > SNlim)
-            if len(fybb[conbb_hs])>0:
-                scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / self.mb.d))) / 10
+            conbb_hs = (self.mb.dict['fybb']/self.mb.dict['eybb'] > SNlim)
+            if len(self.mb.dict['fybb'][conbb_hs])>0:
+                scale = 10**(int(np.log10(np.nanmax(self.mb.dict['fybb'][conbb_hs] * c / np.square(self.mb.dict['xbb'][conbb_hs])) / self.mb.d))) / 10
             else:
                 scale = 1e-19
                 self.mb.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
@@ -2228,21 +2195,21 @@ class PLOT(object):
         # Main result
         #############
         if MB.has_photometry:
-            conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
-            if len(fybb[conbb_ymax]):
-                ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
+            conbb_ymax = (self.mb.dict['xbb']>0) & (self.mb.dict['fybb']>0) & (self.mb.dict['eybb']>0) & (self.mb.dict['fybb']/self.mb.dict['eybb']>SNlim)
+            if len(self.mb.dict['fybb'][conbb_ymax]):
+                ymax = np.nanmax(self.mb.dict['fybb'][conbb_ymax]*c/np.square(self.mb.dict['xbb'][conbb_ymax])/d_scale) * 1.6
             else:
-                ymax = np.nanmax(fybb*c/np.square(xbb)/d_scale) * 1.6
+                ymax = np.nanmax(self.mb.dict['fybb']*c/np.square(self.mb.dict['xbb'])/d_scale) * 1.6
         else:
             ymax = None
 
         x1max = 100000
         if MB.has_photometry:
-            if x1max < np.nanmax(xbb):
-                x1max = np.nanmax(xbb) * 1.5
-            if len(fybb[conbb_ymax]):
-                if x1min > np.nanmin(xbb[conbb_ymax]):
-                    x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+            if x1max < np.nanmax(self.mb.dict['xbb']):
+                x1max = np.nanmax(self.mb.dict['xbb']) * 1.5
+            if len(self.mb.dict['fybb'][conbb_ymax]):
+                if x1min > np.nanmin(self.mb.dict['xbb'][conbb_ymax]):
+                    x1min = np.nanmin(self.mb.dict['xbb'][conbb_ymax]) / 1.5
         else:
             x1min = 2000
         self.mb.dict['x1min'], self.mb.dict['x1max'], self.mb.dict['ymax'] = x1min, x1max, ymax
@@ -2287,26 +2254,7 @@ class PLOT(object):
         # Zoom in Line regions
         ##########################
         if f_grsm:
-            self.axes['ax2t'].errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-            self.axes['ax2t'].errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
-            self.axes['ax2t'].errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
-
-            xgrism = np.concatenate([xg0,xg1,xg2])
-            fgrism = np.concatenate([fg0,fg1,fg2])
-            egrism = np.concatenate([eg0,eg1,eg2])
-            con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
-            con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
-
-            MB.logger.info('Median SN at 3400-3800 is; %.1f'%np.median((fgrism/egrism)[con4000b]))
-            MB.logger.info('Median SN at 4200-5000 is; %.1f'%np.median((fgrism/egrism)[con4000r]))
-
-            if MB.has_spectrum and not MB.has_photometry:
-                con_spec = (eg2 < 1000)
-                self.axes['ax1'].errorbar(xg2[con_spec], (fg2 * c/np.square(xg2)/d_scale)[con_spec], yerr=(eg2 * c/np.square(xg2)/d_scale)[con_spec], lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-                con_spec = (eg1 < 1000)
-                self.axes['ax1'].errorbar(xg1[con_spec], (fg1 * c/np.square(xg1)/d_scale)[con_spec], yerr=(eg1 * c/np.square(xg1)/d_scale)[con_spec], lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
-                con_spec = (eg0 < 1000)
-                self.axes['ax1'].errorbar(xg0[con_spec], (fg0 * c/np.square(xg0)/d_scale)[con_spec], yerr=(eg0 * c/np.square(xg0)/d_scale)[con_spec], lw=0.5, color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+            self.plot_sed_grism(zscl, d_scale, NRbb_lim=NRbb_lim)
 
         #
         # From MCMC chain
@@ -2554,20 +2502,12 @@ class PLOT(object):
     def check_grism(self, NRbb_lim=100000):
         """"""
         x    = self.mb.dict['x']
-        fy   = self.mb.dict['fy']
-        ey   = self.mb.dict['ey']
         con0 = (self.mb.dict['NR']<1000)
         xg0  = x[con0]
-        fg0  = fy[con0]
-        eg0  = ey[con0]
         con1 = (self.mb.dict['NR']>=1000) & (self.mb.dict['NR']<2000) #& (fy/ey>SNlim)
         xg1  = x[con1]
-        fg1  = fy[con1]
-        eg1  = ey[con1]
         con2 = (self.mb.dict['NR']>=2000) & (self.mb.dict['NR']<NRbb_lim) #& (fy/ey>SNlim)
         xg2  = x[con2]
-        fg2  = fy[con2]
-        eg2  = ey[con2]
         if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
             self.f_grsm = True
             con_spec = (self.mb.dict['NR']<self.mb.NRbb_lim)
@@ -2575,7 +2515,6 @@ class PLOT(object):
         else:
             self.f_grsm = False
             self.wave_spec_max = None
-
         return self.f_grsm, self.wave_spec_max
 
 
