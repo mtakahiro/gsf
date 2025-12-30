@@ -1952,12 +1952,6 @@ class PLOT(object):
         m0set = MB.m0set
         Mpc_cm = MB.Mpc_cm
 
-        ##################
-        # Fitting Results
-        ##################
-        # DIR_FILT = MB.DIR_FILT
-        # SFILT = MB.filts
-
         ###########################
         # Open result file
         ###########################
@@ -2013,9 +2007,6 @@ class PLOT(object):
             Z84[aa] = hdul[1].data['Z'+str(aa)][2]
             NZbest[aa]= bfnc.Z2NZ(Z50[aa])
 
-        # Light weighted Z.
-        ZZ50 = np.sum(Z50*A50)/np.sum(A50)
-
         # FIR Dust;
         if MB.f_dust:
             MD16 = hdul[1].data['MDUST'][0]
@@ -2048,10 +2039,6 @@ class PLOT(object):
         else:
             xhi50 = None
 
-        chi = hdul[1].data['chi'][0]
-        chin = hdul[1].data['chi'][1]
-        fitc = chin
-
         Cz0 = hdul[0].header['Cz0']
         Cz1 = hdul[0].header['Cz1']
         Cz2 = hdul[0].header['Cz2']
@@ -2069,7 +2056,7 @@ class PLOT(object):
         f_grsm = self.check_grism(NRbb_lim=NRbb_lim)
 
         # Weight is set to zero for those no data (ey<0).
-        _, wht3 = self.get_weight(zbes)
+        self.get_weight(zbes)
 
         ######################
         # Mass-to-Light ratio.
@@ -2623,12 +2610,6 @@ class PLOT(object):
         m0set = self.mb.m0set
         Mpc_cm = self.mb.Mpc_cm
         
-        ##################
-        # Fitting Results
-        ##################
-        DIR_FILT = self.mb.DIR_FILT
-        SFILT = self.mb.filts
-
         ###########################
         # Open result file
         ###########################
@@ -2742,7 +2723,7 @@ class PLOT(object):
         f_grsm = self.check_grism(NRbb_lim=NRbb_lim)
 
         # Weight is set to zero for those no data (ey<0).
-        _, wht3 = self.get_weight(zbes)
+        self.get_weight(zbes)
 
         ######################
         # Mass-to-Light ratio.
