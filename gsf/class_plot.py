@@ -27,6 +27,7 @@ class PLOT(object):
     def __init__(self, mb, f_silence=True):
         ''''''
         self.mb = mb
+        self.f_grsm = False
 
         if f_silence:
             import matplotlib
@@ -597,8 +598,9 @@ class PLOT(object):
             # time.sleep(0.01)
             # Update Progress Bar
             printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
-
             mm += 1
+
+        print('')
 
         self.Avtmp = np.percentile(Av[:],[16,50,84])
 
@@ -932,6 +934,8 @@ class PLOT(object):
 
             printProgressBar(mm, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
             mm += 1
+
+        print('')
 
         self.Avtmp = np.percentile(Av[:],[16,50,84])
 
@@ -1345,6 +1349,31 @@ class PLOT(object):
         return _Fuv, _Fuv2800, _Lir, _Luv1600, _Luv1600_nl, _Luv1600_noatn, _betas, _UVJ
 
 
+    def plot_flux_excess(self, d_scale, col_ex='lawngreen'):
+        """"""
+        f_exclude = False
+        x_ex = []
+        fy_ex = []
+        ex_ex = []
+        ey_ex = []
+        if 'bb_obs_removed' in self.mb.data:
+            # Currently, this file is made after FILTER_SKIP;
+            x_ex, fy_ex, ey_ex, ex_ex = self.mb.data['bb_obs_removed']['x'], self.mb.data['bb_obs_removed']['fy'], self.mb.data['bb_obs_removed']['ey'], self.mb.data['bb_obs_removed']['ex']
+            self.axes['ax1'].errorbar(
+                x_ex, fy_ex * c / np.square(x_ex) /d_scale,
+                xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d_scale, color='k', linestyle='', linewidth=0.5, zorder=5
+                )
+            self.axes['ax1'].scatter(
+                x_ex, fy_ex * c / np.square(x_ex) /d_scale, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30
+                )
+            f_exclude = True
+        self.mb.dict['x_ex'] = x_ex
+        self.mb.dict['fy_ex'] = fy_ex
+        self.mb.dict['ey_ex'] = ey_ex
+        self.mb.dict['ex_ex'] = ex_ex
+        return f_exclude
+
+
     def plot_sed(self, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
         mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
@@ -1533,10 +1562,6 @@ class PLOT(object):
         else:
             f_grsm = False
 
-        wht = fy * 0
-        con_wht = (ey>0)
-        wht[con_wht] = 1./np.square(ey[con_wht])
-
         # BB data points;
         NRbb = MB.dict['NRbb']
         xbb  = MB.dict['xbb']
@@ -1545,13 +1570,8 @@ class PLOT(object):
         exbb = MB.dict['exbb']
         snbb = fybb/eybb
 
-        ######################
-        # Weight by line
-        ######################
-        wh0  = 1./np.square(eg0)
-        LW0  = []
-        model = fg0
-        wht3 = check_line_man(fy, x, wht, fy, zbes, LW0)
+        # Weight is set to zero for those no data (ey<0).
+        _, wht3 = self.get_weight(zbes)
 
         ######################
         # Mass-to-Light ratio.
@@ -1586,32 +1606,14 @@ class PLOT(object):
         d_scale = self.mb.d * scale
 
         # Plot BB data points;
-        _, leng = self.plot_bb_sed(xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma=sigma)
+        _, leng = self.plot_bb_sed(d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma=sigma)
 
         # Get beta from obs;
         # Detection and rest-frame;
         beta_obs_percs,nbeta_obs = self.get_uvbeta_obs(zp50, lam_b=lam_b, lam_r=lam_r, snlim=SNlim, d_scale=d_scale, percs=percs)
 
         # For any data removed fron fit (i.e. IRAC excess):
-        f_exclude = False
-        col_ex = 'lawngreen'
-        x_ex = []
-        fy_ex = []
-        ex_ex = []
-        ey_ex = []
-        try:
-            # Currently, this file is made after FILTER_SKIP;
-            x_ex, fy_ex, ey_ex, ex_ex = MB.data['bb_obs_removed']['x'], MB.data['bb_obs_removed']['fy'], MB.data['bb_obs_removed']['ey'], MB.data['bb_obs_removed']['ex']
-            self.axes['ax1'].errorbar(
-                x_ex, fy_ex * c / np.square(x_ex) /d_scale,
-                xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d_scale, color='k', linestyle='', linewidth=0.5, zorder=5
-                )
-            self.axes['ax1'].scatter(
-                x_ex, fy_ex * c / np.square(x_ex) /d_scale, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30
-                )
-            f_exclude = True
-        except:
-            pass
+        f_exclude = self.plot_flux_excess(d_scale)
 
         #####################################
         # Open ascii file and stock to array.
@@ -1970,6 +1972,8 @@ class PLOT(object):
             # Update Progress Bar
             printProgressBar(kk, mmax, prefix = 'Progress:', suffix = 'Complete', length = 40)
 
+        print('')
+
         #
         # Plot Median SED;
         #
@@ -2039,10 +2043,10 @@ class PLOT(object):
             MB.logger.info('f_fancyplot is False. f_fill is set to False.')
 
         # Calculate non-det chi2
-        chi2, conw, con_up, chi_nd, nod, fin_chi2 = PLOT.show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=x_ex, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
+        chi2, conw, con_up, chi_nd, nod, fin_chi2 = self.show_chi2(hdul, ysump, wht3, ndim_eff, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
 
         # plot BB model from best template (blue squares)
-        lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, x1_tot, ytmp16, ytmp50, ytmp84, 
+        lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, x1_tot, ytmp16, ytmp50, ytmp84, 
                                                                                                                                            SFILT, DFILT, DIR_FILT, scale, d_scale, DL, leng, sigma, 
                                                                                                                                            SNlim=SNlim, c=c, col_dat=col_dat, col_dia=col_dia)
 
@@ -2364,20 +2368,17 @@ class PLOT(object):
 
         # grism:
         if f_grsm:
-            fs = [fg0,fg1,fg2]
-            es = [eg0,eg1,eg2]
-            xs = [xg0,xg1,xg2]
-            for ff in range(len(fs)):
-                flam_tmp = fs[ff] * c / np.square(xs[ff]) / d_scale
-                elam_tmp = es[ff] * c / np.square(xs[ff]) / d_scale
-                fnu_tmp = flamtonu(xs[ff], flam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
-                enu_tmp = flamtonu(xs[ff], elam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
-                tree_spec['obs'].update({'fg%d'%ff: fnu_tmp})
-                tree_spec['obs'].update({'eg%d'%ff: enu_tmp})
-                tree_spec['obs'].update({'wg%d'%ff: xs[ff] * u.AA})
+            for ii in range(3):
+                flam_tmp = self.mb.data['fg%d'%ii] * c / np.square(self.mb.data['xg%d'%ii]) / d_scale
+                elam_tmp = self.mb.data['eg%d'%ii] * c / np.square(self.mb.data['xg%d'%ii]) / d_scale
+                fnu_tmp = flamtonu(self.mb.data['xg%d'%ii], flam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                enu_tmp = flamtonu(self.mb.data['xg%d'%ii], elam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                tree_spec['obs'].update({'fg%d'%ii: fnu_tmp})
+                tree_spec['obs'].update({'eg%d'%ii: enu_tmp})
+                tree_spec['obs'].update({'wg%d'%ii: self.mb.data['xg%d'%ii] * u.AA})
 
         # Figure configure;
-        _ = self.update_axis_sed(x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=f_plot_filter)
+        _ = self.update_axis_sed(x1min, x1max, ymax, scale, d_scale, wht3, f_plot_filter=f_plot_filter)
 
         # Filts;
         tree_spec['filters'] = self.mb.filts
@@ -2482,6 +2483,86 @@ class PLOT(object):
             self._clean_files()
 
         return tree_spec
+    
+    
+    def check_grism(self, NRbb_lim=100000):
+        """"""
+        x    = self.mb.dict['x']
+        fy   = self.mb.dict['fy']
+        ey   = self.mb.dict['ey']
+        con0 = (self.mb.dict['NR']<1000)
+        xg0  = x[con0]
+        fg0  = fy[con0]
+        eg0  = ey[con0]
+        con1 = (self.mb.dict['NR']>=1000) & (self.mb.dict['NR']<2000) #& (fy/ey>SNlim)
+        xg1  = x[con1]
+        fg1  = fy[con1]
+        eg1  = ey[con1]
+        con2 = (self.mb.dict['NR']>=2000) & (self.mb.dict['NR']<NRbb_lim) #& (fy/ey>SNlim)
+        xg2  = x[con2]
+        fg2  = fy[con2]
+        eg2  = ey[con2]
+        if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
+            self.f_grsm = True
+        else:
+            self.f_grsm = False
+        return self.f_grsm
+
+
+    def plot_sed_grism(self, zscl, d_scale, NRbb_lim=10000):
+        """"""
+        x    = self.mb.dict['x']
+        fy   = self.mb.dict['fy']
+        ey   = self.mb.dict['ey']
+        con0 = (self.mb.dict['NR']<1000)
+        xg0  = x[con0]
+        fg0  = fy[con0]
+        eg0  = ey[con0]
+        con1 = (self.mb.dict['NR']>=1000) & (self.mb.dict['NR']<2000) #& (fy/ey>SNlim)
+        xg1  = x[con1]
+        fg1  = fy[con1]
+        eg1  = ey[con1]
+        con2 = (self.mb.dict['NR']>=2000) & (self.mb.dict['NR']<NRbb_lim) #& (fy/ey>SNlim)
+        xg2  = x[con2]
+        fg2  = fy[con2]
+        eg2  = ey[con2]
+
+        self.axes['ax2t'].errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        self.axes['ax2t'].errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
+        self.axes['ax2t'].errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+
+        xgrism = np.concatenate([xg0,xg1,xg2])
+        fgrism = np.concatenate([fg0,fg1,fg2])
+        egrism = np.concatenate([eg0,eg1,eg2])
+        con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
+        con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
+        print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
+        print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
+
+        # TEST;
+        self.axes['ax1'].errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        self.axes['ax1'].errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
+        self.axes['ax1'].errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+
+        self.mb.data['xg0'] = xg0
+        self.mb.data['fg0'] = fg0
+        self.mb.data['eg0'] = eg0
+        self.mb.data['xg1'] = xg1
+        self.mb.data['fg1'] = fg1
+        self.mb.data['eg1'] = eg1
+        self.mb.data['xg2'] = xg2
+        self.mb.data['fg2'] = fg2
+        self.mb.data['eg2'] = eg2
+        return
+    
+
+    def get_weight(self, zbes, LW0=[]):
+        """"""
+        wht = self.mb.dict['fy'] * 0
+        con_wht = (self.mb.dict['ey']>0)
+        wht[con_wht] = 1./np.square(self.mb.dict['ey'][con_wht])
+        wht3 = check_line_man(self.mb.dict['fy'], self.mb.dict['x'], wht, self.mb.dict['fy'], zbes, LW0)
+        return wht, wht3
 
 
     def plot_sed_tau(self, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
@@ -2589,10 +2670,6 @@ class PLOT(object):
             vals['TAU'+str(aa)] = np.log10(TAU50[aa])
             vals['AGE'+str(aa)] = np.log10(AGE50[aa])
 
-        if self.mb.fneb:
-            logU50 = hdul[1].data['logU'][1]
-            Aneb50 = 10**hdul[1].data['Aneb'][1]
-
         aa = 0
         Av16 = hdul[1].data['AV'+str(aa)][0]
         Av50 = hdul[1].data['AV'+str(aa)][1]
@@ -2608,9 +2685,6 @@ class PLOT(object):
             Z50[aa] = hdul[1].data['Z'+str(aa)][1]
             Z84[aa] = hdul[1].data['Z'+str(aa)][2]
             vals['Z'+str(aa)] = Z50[aa]
-
-        # Light weighted Z.
-        ZZ50 = np.sum(Z50*A50)/np.sum(A50)
 
         # FIR Dust;
         if self.mb.f_dust:
@@ -2649,49 +2723,11 @@ class PLOT(object):
             self.mb.dict = self.mb.read_data(Cz0, Cz1, Cz2, zbes, add_fir=True)
         else:
             self.mb.dict = self.mb.read_data(Cz0, Cz1, Cz2, zbes)
-
-        NR   = self.mb.dict['NR']
-        x    = self.mb.dict['x']
-        fy   = self.mb.dict['fy']
-        ey   = self.mb.dict['ey']
         
-        con0 = (NR<1000)
-        xg0  = x[con0]
-        fg0  = fy[con0]
-        eg0  = ey[con0]
-        con1 = (NR>=1000) & (NR<2000) #& (fy/ey>SNlim)
-        xg1  = x[con1]
-        fg1  = fy[con1]
-        eg1  = ey[con1]
-        con2 = (NR>=2000) & (NR<NRbb_lim) #& (fy/ey>SNlim)
-        xg2  = x[con2]
-        fg2  = fy[con2]
-        eg2  = ey[con2]
-        if len(xg0)>0 or len(xg1)>0 or len(xg2)>0:
-            f_grsm = True
-        else:
-            f_grsm = False
+        f_grsm = self.check_grism(NRbb_lim=NRbb_lim)
 
         # Weight is set to zero for those no data (ey<0).
-        wht = fy * 0
-        con_wht = (ey>0)
-        wht[con_wht] = 1./np.square(ey[con_wht])
-
-        # BB data points;
-        NRbb = self.mb.dict['NRbb']
-        xbb  = self.mb.dict['xbb']
-        fybb = self.mb.dict['fybb']
-        eybb = self.mb.dict['eybb']
-        exbb = self.mb.dict['exbb']
-        snbb = fybb/eybb
-
-        ######################
-        # Weight by line
-        ######################
-        wh0  = 1./np.square(eg0)
-        LW0  = []
-        model = fg0
-        wht3 = check_line_man(fy, x, wht, fy, zbes, LW0)
+        _, wht3 = self.get_weight(zbes)
 
         ######################
         # Mass-to-Light ratio.
@@ -2712,43 +2748,23 @@ class PLOT(object):
 
         # Determine scale here;
         if scale == None:
-            conbb_hs = (fybb/eybb > SNlim)
-            if len(fybb[conbb_hs])>0:
-                scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / self.mb.d))) / 10
+            conbb_hs = (self.mb.dict['fybb']/self.mb.dict['eybb'] > SNlim)
+            if len(self.mb.dict['fybb'][conbb_hs])>0:
+                scale = 10**(int(np.log10(np.nanmax(self.mb.dict['fybb'][conbb_hs] * c / np.square(self.mb.dict['xbb'][conbb_hs])) / self.mb.d))) / 10
             else:
                 scale = 1e-19
                 self.mb.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
         d_scale = self.mb.d * scale
 
         # Plot BB data points;
-        _, leng = self.plot_bb_sed(xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma=sigma)
+        _, leng = self.plot_bb_sed(d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma=sigma)
 
         # Get beta from obs;
         # Detection and rest-frame;
         beta_obs_percs,nbeta_obs = self.get_uvbeta_obs(zp50, lam_b=lam_b, lam_r=lam_r, snlim=SNlim, d_scale=d_scale, percs=percs)
 
         # For any data removed fron fit (i.e. IRAC excess):
-        f_exclude = False
-        col_ex = 'lawngreen'
-        x_ex = []
-        fy_ex = []
-        ey_ex = []
-        try:
-            #col_ex = 'limegreen'
-            #col_ex = 'r'
-            # Currently, this file is made after FILTER_SKIP;
-            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + self.mb.ID + '_removed.cat')
-            x_ex = data_ex['col2']
-            fy_ex = data_ex['col3']
-            ey_ex = data_ex['col4']
-            ex_ex = data_ex['col5']
-
-            self.axes['ax1'].errorbar(x_ex, fy_ex * c / np.square(x_ex) /d_scale, \
-            xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d_scale, color='k', linestyle='', linewidth=0.5, zorder=5)
-            self.axes['ax1'].scatter(x_ex, fy_ex * c / np.square(x_ex) /d_scale, marker='s', color=col_ex, edgecolor='k', zorder=5, s=30)
-            f_exclude = True
-        except:
-            pass
+        f_exclude = self.plot_flux_excess(d_scale)
 
         #####################################
         # Open ascii file and stock to array.
@@ -2761,7 +2777,6 @@ class PLOT(object):
         # This is for UVJ color time evolution.
         #
         Asum = np.sum(A50[:])
-        # alp = .5
 
         # Get total templates
         y0p, _ = self.mb.fnc.get_template(vals, f_val=False, check_bound=False)
@@ -2806,21 +2821,21 @@ class PLOT(object):
         # Main result
         #############
         if self.mb.has_photometry:
-            conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
-            if len(fybb[conbb_ymax]):
-                ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
+            conbb_ymax = (self.mb.dict['xbb']>0) & (self.mb.dict['fybb']>0) & (self.mb.dict['eybb']>0) & (self.mb.dict['fybb']/self.mb.dict['eybb']>SNlim)
+            if len(self.mb.dict['fybb'][conbb_ymax]):
+                ymax = np.nanmax(self.mb.dict['fybb'][conbb_ymax]*c/np.square(self.mb.dict['xbb'][conbb_ymax])/d_scale) * 1.6
             else:
-                ymax = np.nanmax(fybb*c/np.square(xbb)/d_scale) * 1.6
+                ymax = np.nanmax(self.mb.dict['fybb']*c/np.square(self.mb.dict['xbb'])/d_scale) * 1.6
         else:
             ymax = None
 
         x1max = 100000
         if self.mb.has_photometry:
-            if x1max < np.nanmax(xbb):
-                x1max = np.nanmax(xbb) * 1.5
-            if len(fybb[conbb_ymax]):
-                if x1min > np.nanmin(xbb[conbb_ymax]):
-                    x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+            if x1max < np.nanmax(self.mb.dict['xbb']):
+                x1max = np.nanmax(self.mb.dict['xbb']) * 1.5
+            if len(self.mb.dict['fybb'][conbb_ymax]):
+                if x1min > np.nanmin(self.mb.dict['xbb'][conbb_ymax]):
+                    x1min = np.nanmin(self.mb.dict['xbb'][conbb_ymax]) / 1.5
         else:
             x1min = 2000
 
@@ -2860,7 +2875,6 @@ class PLOT(object):
         # For cosmology
         ####################
         DL = self.mb.cosmo.luminosity_distance(zbes).value * Mpc_cm
-
         if f_grsm:
             print('This function (write_lines) needs to be revised.')
             PLOT.write_lines(self.mb.ID, zbes, DIR_OUT=self.mb.DIR_OUT)
@@ -2869,23 +2883,7 @@ class PLOT(object):
         # Zoom in Line regions
         ##########################
         if f_grsm:
-            conspec = (NR<10000) #& (fy/ey>1)
-            self.axes['ax2t'].errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-            self.axes['ax2t'].errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
-            self.axes['ax2t'].errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
-
-            xgrism = np.concatenate([xg0,xg1,xg2])
-            fgrism = np.concatenate([fg0,fg1,fg2])
-            egrism = np.concatenate([eg0,eg1,eg2])
-            con4000b = (xgrism/zscl>3400) & (xgrism/zscl<3800) & (fgrism>0) & (egrism>0)
-            con4000r = (xgrism/zscl>4200) & (xgrism/zscl<5000) & (fgrism>0) & (egrism>0)
-            print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
-            print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
-
-            # TEST;
-            self.axes['ax1'].errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
-            self.axes['ax1'].errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
-            self.axes['ax1'].errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
+            self.plot_sed_grism(zscl, d_scale, NRbb_lim=NRbb_lim)
 
         #
         # From MCMC chain
@@ -3073,29 +3071,17 @@ class PLOT(object):
 
         # For grism;
         if f_grsm:
-            LSF = get_LSF(self.mb.inputs, self.mb.DIR_EXTR, self.mb.ID, x1_tot[:]/(1.+zbes), c=3e18)
-            try:
-                spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
-                spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
-                spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
-            except:
-                spec_grsm16 = ytmp16[:]
-                spec_grsm50 = ytmp50[:]
-                spec_grsm84 = ytmp84[:]
-
-            if True:
-                self.axes['ax2t'].plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
-            else:
-                self.axes['ax2t'].plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
+            # LSF = get_LSF(self.mb.inputs, self.mb.DIR_EXTR, self.mb.ID, x1_tot[:]/(1.+zbes), c=3e18)
+            self.axes['ax2t'].plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
 
         #if not f_fill:
         self.axes['ax1'].fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
         self.axes['ax1'].plot(x1_tot[::nstep_plot], ytmp50[::nstep_plot], '-', lw=.5, color='gray', zorder=-1, alpha=1.)
 
         # Attach the data point in self.mb;
-        self.mb.sed_wave_obs = xbb
-        self.mb.sed_flux_obs = fybb * c / np.square(xbb) /d_scale
-        self.mb.sed_eflux_obs = eybb * c / np.square(xbb) /d_scale
+        self.mb.sed_wave_obs = self.mb.dict['xbb']
+        self.mb.sed_flux_obs = self.mb.dict['fybb'] * c / np.square(self.mb.dict['xbb']) /d_scale
+        self.mb.sed_eflux_obs = self.mb.dict['eybb'] * c / np.square(self.mb.dict['xbb']) /d_scale
         # Attach the best SED to self.mb;
         self.mb.sed_wave = x1_tot
         self.mb.sed_flux16 = ytmp16
@@ -3103,12 +3089,15 @@ class PLOT(object):
         self.mb.sed_flux84 = ytmp84
 
         # Calculate non-det chi2
-        chi2, conw, con_up, chi_nd, nod, fin_chi2 = PLOT.show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=x_ex, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
+        chi2, conw, con_up, chi_nd, nod, fin_chi2 = self.show_chi2(hdul, ysump, wht3, ndim_eff, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
 
         # plot BB model from best template (blue squares)
-        lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, x1_tot, ytmp16, ytmp50, ytmp84, 
+        lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, x1_tot, ytmp16, ytmp50, ytmp84, 
                                                                                                                                            SFILT, DFILT, DIR_FILT, scale, d_scale, DL, leng, sigma, 
                                                                                                                                            SNlim=SNlim, c=c, col_dat=col_dat, col_dia=col_dia)
+
+        # Get model dict;
+        self.dict_model = {'ysum':ysum, 'x0':x0}
 
         # Save files;
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
@@ -3143,15 +3132,19 @@ class PLOT(object):
             
         # BB for dust
         if f_dust:
-            xbb = np.append(xbb,xbbd)
-            fybb = np.append(fybb,fybbd)
-            eybb = np.append(eybb,eybbd)
+            _xbb = np.append(self.mb.dict['xbb'],xbbd)
+            _fybb = np.append(self.mb.dict['fybb'],fybbd)
+            _eybb = np.append(self.mb.dict['eybb'],eybbd)
+        else:
+            _xbb = self.mb.dict['xbb']
+            _fybb = self.mb.dict['fybb']
+            _eybb = self.mb.dict['eybb']
 
-        col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=xbb)
+        col5  = fits.Column(name='wave_obs', format='E', unit='AA', array=_xbb)
         col00.append(col5)
-        col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=fybb[:] * c / np.square(xbb[:]) /d_scale)
+        col6  = fits.Column(name='f_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=_fybb * c / np.square(_xbb[:]) /d_scale)
         col00.append(col6)
-        col7  = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=eybb[:] * c / np.square(xbb[:]) /d_scale)
+        col7  = fits.Column(name='e_obs', format='E', unit='1e%derg/s/cm2/AA'%(np.log10(scale)), array=_eybb * c / np.square(_xbb[:]) /d_scale)
         col00.append(col7)
 
         hdr = fits.Header()
@@ -3166,7 +3159,7 @@ class PLOT(object):
             # Chi square:
             hdr['chi2'] = chi2
             hdr['hierarch No-of-effective-data-points'] = len(wht3[conw])
-            hdr['hierarch No-of-nondetectioin'] = len(ey[con_up])
+            hdr['hierarch No-of-nondetectioin'] = len(self.mb.dict['ey'][con_up])
             hdr['hierarch Chi2-of-nondetection'] = chi_nd
             hdr['hierarch No-of-params'] = ndim_eff
             hdr['hierarch Degree-of-freedom']  = nod
@@ -3380,24 +3373,27 @@ class PLOT(object):
             # dust
             tree_spec.update({'wave_model_dust': x1_dust})
             tree_spec.update({'f_model_dust': ytmp_dust50})            
-        # BB for dust
-        tree_spec.update({'wave_obs': xbb})
-        tree_spec.update({'f_obs': fybb[:] * c / np.square(xbb[:]) /d_scale})
-        tree_spec.update({'e_obs': eybb[:] * c / np.square(xbb[:]) /d_scale})
+
+        # Obs BB
+        fybb_lam = _fybb * c / np.square(_xbb) / d_scale
+        eybb_lam = _eybb * c / np.square(_xbb) / d_scale
+        tree_spec['obs'].update({'wave_bb': _xbb * u.AA})
+        tree_spec['obs'].update({'fnu_bb': flamtonu(_xbb, fybb_lam * scale, m0set=23.9, m0=-48.6) * u.uJy})
+        tree_spec['obs'].update({'enu_bb': flamtonu(_xbb, eybb_lam * scale, m0set=23.9, m0=-48.6) * u.uJy})
+
         # grism:
         if f_grsm:
-            tree_spec.update({'fg0_obs': fg0 * c/np.square(xg0)/d_scale})
-            tree_spec.update({'eg0_obs': eg0 * c/np.square(xg0)/d_scale})
-            tree_spec.update({'wg0_obs': xg0})
-            tree_spec.update({'fg1_obs': fg1 * c/np.square(xg1)/d_scale})
-            tree_spec.update({'eg1_obs': eg1 * c/np.square(xg1)/d_scale})
-            tree_spec.update({'wg1_obs': xg1})
-            tree_spec.update({'fg2_obs': fg2 * c/np.square(xg2)/d_scale})
-            tree_spec.update({'eg2_obs': eg2 * c/np.square(xg2)/d_scale})
-            tree_spec.update({'wg2_obs': xg2})
+            for ii in range(3):
+                flam_tmp = self.mb.data['fg%d'%ii] * c / np.square(self.mb.data['xg%d'%ii]) / d_scale
+                elam_tmp = self.mb.data['eg%d'%ii] * c / np.square(self.mb.data['xg%d'%ii]) / d_scale
+                fnu_tmp = flamtonu(self.mb.data['xg%d'%ii], flam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                enu_tmp = flamtonu(self.mb.data['xg%d'%ii], elam_tmp * scale, m0set=23.9, m0=-48.6) * u.uJy
+                tree_spec['obs'].update({'fg%d'%ii: fnu_tmp})
+                tree_spec['obs'].update({'eg%d'%ii: enu_tmp})
+                tree_spec['obs'].update({'wg%d'%ii: self.mb.data['xg%d'%ii] * u.AA})
 
         # Figure configure;
-        _ = self.update_axis_sed(x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=f_plot_filter)
+        _ = self.update_axis_sed(x1min, x1max, ymax, scale, d_scale, wht3, f_plot_filter=f_plot_filter)
 
         # Filts;
         tree_spec['filters'] = self.mb.filts
@@ -3433,24 +3429,6 @@ class PLOT(object):
                 ha='left', va='center', transform=self.axes['ax1'].transAxes)
             
         #######################################
-        if f_grsm:
-            conlim = (x0>10000) & (x0<25000)
-            xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
-            self.axes['ax2t'].set_xlabel('')
-            self.axes['ax2t'].set_xlim(xgmin, xgmax)
-
-            conaa = (x0>xgmin-50) & (x0<xgmax+50)
-            ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d_scale) * 1.15
-            yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d_scale) / 1.15
-
-            self.axes['ax2t'].set_ylim(yminzoom, ymaxzoom)
-            self.axes['ax2t'].xaxis.labelpad = -2
-            if xgmax>20000:
-                self.axes['ax2t'].set_xticks([8000, 12000, 16000, 20000, 24000])
-                self.axes['ax2t'].set_xticklabels(['0.8', '1.2', '1.6', '2.0', '2.4'])
-            else:
-                self.axes['ax2t'].set_xticks([8000, 10000, 12000, 14000, 16000])
-                self.axes['ax2t'].set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
 
         if f_dust:
             try:
@@ -3483,8 +3461,9 @@ class PLOT(object):
         return tree_spec
 
 
-    def plot_bb_sed(self, xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=3e5, col_dat = 'r', f_bbbox=False, sigma=1.0):
+    def plot_bb_sed(self, d_scale, SNlim, c=3e5, col_dat = 'r', f_bbbox=False, sigma=1.0):
         """"""
+        xbb, fybb, eybb, exbb, NRbb = self.mb.dict['xbb'], self.mb.dict['fybb'], self.mb.dict['eybb'], self.mb.dict['exbb'], self.mb.dict['NRbb']
         #######################################
         # D.Kelson like Box for BB photometry
         #######################################
@@ -3684,10 +3663,11 @@ class PLOT(object):
             return False, False, False
 
 
-    @staticmethod
-    def show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=[], SNlim=3, f_chind=True, f_exclude=False):
+    def show_chi2(self, hdul, ysump, wht3, ndim_eff, SNlim=3, f_chind=True, f_exclude=False):
         """ based on Sawick12 """
         from scipy import special
+        fy, ey, x = self.mb.dict['fy'], self.mb.dict['ey'], self.mb.dict['x']
+        x_ex = self.mb.dict['x_ex']
 
         if f_chind:
             conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
@@ -3735,10 +3715,12 @@ class PLOT(object):
         return chi2, conw, con_up, chi_nd, nod, fin_chi2
 
 
-    def plot_bbmodel_sed(self, zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, x1_tot, ytmp16, ytmp50, ytmp84, 
+    def plot_bbmodel_sed(self, zbes, x1_tot, ytmp16, ytmp50, ytmp84, 
                          SFILT, DFILT, DIR_FILT, scale, d_scale, DL, leng, sigma, 
                          SNlim=2, c=3e5, col_dat='r', col_dia='blue'):
-        """"""    
+        """"""
+        xbb, fybb, eybb, x_ex, fy_ex, ey_ex = self.mb.dict['xbb'], self.mb.dict['fybb'], self.mb.dict['eybb'], self.mb.dict['x_ex'], self.mb.dict['fy_ex'], self.mb.dict['ey_ex']
+
         if self.mb.f_dust:
             ALLFILT = np.append(SFILT,DFILT)
             lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=self.mb, f_regist=False)
@@ -3984,7 +3966,7 @@ class PLOT(object):
         return gsf_dict
 
 
-    def update_axis_sed(self, x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=False):
+    def update_axis_sed(self, x1min, x1max, ymax, scale, d_scale, wht3, f_plot_filter=False):
         """"""
         self.axes['ax1'].set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
         self.axes['ax1'].set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
@@ -4020,7 +4002,7 @@ class PLOT(object):
             add_line_names()
 
         # Filters
-        ind_remove = np.where((wht3<=0) | (ey<=0))[0]
+        ind_remove = np.where((wht3<=0) | (self.mb.dict['ey']<=0))[0]
         if f_plot_filter:
             _ = self.plot_filter(ymax, scl=scl_yaxis, ind_remove=ind_remove)
 
@@ -4029,6 +4011,27 @@ class PLOT(object):
         self.axes['ax1'].plot(xx, yy, ls='--', lw=0.5, color='k')
         self.axes['ax1'].legend(loc=1, fontsize=11)
         self.axes['ax1'].xaxis.labelpad = -3
+
+        if self.f_grsm:
+            x0, ysum = self.dict_model['x0'], self.dict_model['ysum']
+
+            conlim = (x0>10000) & (x0<25000)
+            xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
+            self.axes['ax2t'].set_xlabel('')
+            self.axes['ax2t'].set_xlim(xgmin, xgmax)
+
+            conaa = (x0>xgmin-50) & (x0<xgmax+50)
+            ymaxzoom = np.max(ysum[conaa]*c/np.square(x0[conaa])/d_scale) * 1.15
+            yminzoom = np.min(ysum[conaa]*c/np.square(x0[conaa])/d_scale) / 1.15
+
+            self.axes['ax2t'].set_ylim(yminzoom, ymaxzoom)
+            self.axes['ax2t'].xaxis.labelpad = -2
+            if xgmax>20000:
+                self.axes['ax2t'].set_xticks([8000, 12000, 16000, 20000, 24000])
+                self.axes['ax2t'].set_xticklabels(['0.8', '1.2', '1.6', '2.0', '2.4'])
+            else:
+                self.axes['ax2t'].set_xticks([8000, 10000, 12000, 14000, 16000])
+                self.axes['ax2t'].set_xticklabels(['0.8', '1.0', '1.2', '1.4', '1.6'])
 
         if self.mb.f_dust:
             self.axes['ax3t'].set_xlim(1e4, 3e7)
