@@ -499,25 +499,48 @@ def process_igm_z_conv(MB, wave, spec, ms, Ls, zbest, LSF=None, f_IGM=False, lm=
 def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
     tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True,
     agn_powerlaw=True):
-    '''
-    Make SPECTRA at given z and filter set.
-    Also, after v1.8, through this function library and data are register to the main class object, MB.
-    
-    Parameters
-    ----------
-    inputs : str
-        Configuration file.
-    zbest : float
-        Best redshift at this iteration. Templates are generated based on this reshift.
-    Z : array
-        Stellar phase metallicity in logZsun.
-    age : array
-        Age, in Gyr.
-    fneb : int
-        flag for adding nebular emissionself.
-    tmp_norm : float
-        Normalization of the stored templated. i.e. each template is in units of tmp_norm [Lsun].
-    '''
+    """
+    MB : object
+        Main class object containing configuration, cosmology, and stellar population parameters.
+    ebblim : float, optional
+        Flux limit for emission line galaxies (default: 1e10).
+    lamliml : float, optional
+        Lower wavelength limit in Angstroms (default: 0.).
+    lamlimu : float, optional
+        Upper wavelength limit in Angstroms (default: 50000.).
+    ncolbb : int, optional
+        Number of columns for broadband filters (default: 10000).
+    tau_lim : float, optional
+        Optical depth limit (default: 0.001). Currently unused in function.
+    tmp_norm : float, optional
+        Normalization of the stored templates in units of Lsun (default: 1e10).
+    nthin : int, optional
+        Thinning factor for wavelength grid (default: 1).
+    delwave : float, optional
+        Wavelength resolution in Angstroms. If 0, uses native resolution (default: 0).
+    lammax : float, optional
+        Maximum observed wavelength in Angstroms (default: 300000). Applied only if f_dust is False.
+    f_IGM : bool, optional
+        Flag for applying IGM absorption. Currently disabled and applied during fitting (default: True).
+    agn_powerlaw : bool, optional
+        Flag to use simple powerlaw AGN model instead of realistic FSPS AGN (default: True).
+    Returns
+    -------
+    bool
+        True if template generation completed successfully.
+    Notes
+    -----
+    - Supports two SFH models: standard age/metallicity grid (SFH_FORM == -99) and tau models (other values).
+    - Generates spectral templates convolved with photometric filters.
+    - Optionally includes nebular emission and AGN components.
+    - Optionally includes dust emission with modified blackbody model or Draine model.
+    - Outputs templates in ASDF format for efficient storage and retrieval.
+    - Templates are stored in MB.af and saved to directory specified by MB.DIR_TMP.
+    Raises
+    ------
+    SystemExit
+        If z=0 template library is missing or inconsistent with configuration.
+    """
     # Why??? -> IGM is now applied during the fit;
     f_IGM = False
 

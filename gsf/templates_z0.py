@@ -50,34 +50,77 @@ def validate_and_save_tree(tree, file_out, dir_tmp='templates/', keys=['spec','M
 
 def make_templates_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True,
                 smooth_uv=False):
-    '''
-    This is for the preparation of default template, with FSPS, at z=0.
-    Should be run before SED fitting.
-
-    Parameters
-    ----------
-    :class:`gsf.fitting.Mainbody` : class
-        Mainbody class, that contains attributes.
-
-    lammin : float, optional
-        Minimum value of the rest-frame wavelength of the template, in AA.
-
-    lammax : float, optional
-        Maximum value of the rest-frame wavelength of the template, in AA.
-
-    tau_lim : float, optional
-        Maximum value of tau of the template, in Gyr. Tau smaller than this 
-        value would be approximated by SSP.
-
-    force_no_neb : bool
-        Turn this on that you are very much sure do not want to include emission line templates, 
-        maybe to save some time running z0 module.
-
-    f_mp : bool
-        Multiprocessing.
-    smooth_uv : bool
-        Experimental - smoothing stellar spectra at rf-UV, as they look wiggling...
-    '''
+    """
+    Generate default stellar population synthesis templates at z=0 using FSPS.
+    This function creates a comprehensive library of stellar population templates
+    at redshift zero, incorporating various metallicities, ages, and star formation
+    histories. The templates include stellar spectra, mass-to-light ratios, and
+    Lick indices.
+    MB : gsf.fitting.Mainbody
+        Mainbody class instance containing configuration attributes including:
+        - nimf : int
+            Initial mass function type
+        - age : array-like
+            Age grid points (Gyr)
+        - tau0 : array-like
+            Star formation timescale grid (Gyr)
+        - fneb : bool
+            Flag for nebular emission inclusion
+        - Zall : array-like
+            Metallicity grid points
+        - cosmo : astropy.cosmology
+            Cosmology instance
+        - DIR_TMP : str
+            Output directory path
+        - logUs : array-like
+            Ionization parameter grid
+        - AGNTAUs : array-like
+            AGN optical depth grid
+        - fagn : bool
+            Flag for AGN inclusion
+        - logger : logging.Logger
+            Logger instance
+        Minimum rest-frame wavelength of template (Angstrom). Default: 100
+        Maximum rest-frame wavelength of template (Angstrom). Default: 160000
+        Maximum tau value for SSP approximation (Gyr). Default: 0.001
+    force_no_neb : bool, optional
+        If True, exclude nebular emission templates. Default: False
+    Zforce : float or None, optional
+        If specified, generate templates only for this metallicity value.
+        Default: None (generate for all metallicities)
+    f_mp : bool, optional
+        Enable multiprocessing flag. Default: True
+    smooth_uv : bool, optional
+        Experimental flag to smooth stellar spectra in rest-frame UV
+        (lambda < 3000 Angstrom) to reduce wiggles. Default: False
+    Returns
+    -------
+    None
+        Saves ASDF format file containing template library with keys:
+        - wavelength : array
+            Rest-frame wavelength array (Angstrom)
+        - fspec_*_*_* : array
+            Flux spectra for each Z, age, and tau combination (L_sun/AA)
+        - flux_nebular_* : array
+            Nebular emission contribution spectra
+        - flux_agn_* : array
+            AGN contribution spectra
+        - ms_* : array
+            Stellar mass surviving for each age and metallicity
+        - Ls_* : array
+            Bolometric luminosity for each age and metallicity
+        - frac_mass_survive_* : array
+            Fraction of formed mass surviving
+        - Lick indices : array
+            Lick/IJ index values
+    Notes
+    -----
+    - Automatically selects continuous SFH (sfh=1) or SSP (sfh=0) based on tau0
+    - For tau0=99, applies continuous age binning
+    - For tau0>0, applies fixed-width tau bins
+    - For tau0<0, applies single stellar population approximation
+    - Execution time scales with number of ages, metallicities, and SFH parameters
+    """
     import fsps
     nimf = MB.nimf
     age = MB.age
