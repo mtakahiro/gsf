@@ -153,7 +153,7 @@ class PLOT(object):
         return self.axes
 
 
-    def update_axis_sfh(self, f_log_sfh=True, skip_zhist=True, lsfrl=-1):
+    def update_axis_sfh(self, f_log_sfh=True, skip_zhist=True, lsfrl=-1, taumodel=False):
         ''''''
         if self.zbes<2:
             zred  = [self.zbes, 2, 3, 6]
@@ -202,8 +202,14 @@ class PLOT(object):
         self.axes['ax2'].set_xlim(self.Txmin, self.Txmax)
         self.axes['ax2'].set_ylim(self.y2min, self.y2max)
         self.axes['ax2'].set_xscale('log')
-        self.axes['ax2'].text(0.05, 0.08, 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-                                %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), self.Avtmp[1]), 
+        if taumodel:
+            lbl_ax2 = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f\n$\log \\tau_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+                                %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), np.nanmedian(self.TL[0,:]), self.Avtmp[1])
+        else:
+            lbl_ax2 = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+                                %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), self.Avtmp[1])
+
+        self.axes['ax2'].text(0.05, 0.08, lbl_ax2, 
                                 fontsize=9, 
                                 transform=self.axes['ax2'].transAxes,
                                 bbox=dict(facecolor='w', alpha=0.7), zorder=10,
@@ -1040,8 +1046,8 @@ class PLOT(object):
         # self.TLW = TTp[0,:]
         # self.TMW = TTp[0,:]
         self.TAW = TCp[0,:]
-        self.TC = TC
-        self.TL = TL
+        self.TC = TAmc[:,:] # Age
+        self.TL = TTmc[:,:] # Tau?
         self.SFRs_SED = SFRs_SED
         self.xSFp = xSFp
         self.SFp = SFp
@@ -1055,7 +1061,7 @@ class PLOT(object):
         self.y2max = y2max
 
         # Update axis
-        self.update_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=self.skip_zhist, lsfrl=lsfrl)
+        self.update_axis_sfh(f_log_sfh=f_log_sfh, skip_zhist=self.skip_zhist, lsfrl=lsfrl, taumodel=True)
 
         # Write files
         tree_sfh = self.save_files_sfh(tsets_SFR_SED=tsets_SFR_SED, taumodel=True)

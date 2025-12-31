@@ -618,7 +618,11 @@ class Mainbody(GsfBase):
             try:
                 self.SFH_FORM = int(inputs['SFH_FORM'])
             except:
-                self.SFH_FORM = -99
+                if 'AGE' in inputs:
+                    self.SFH_FORM = -99
+                else:
+                    self.logger.error('`AGE` is not provided in the input; If you intend to use a tau model, specify `SFH_FORM` and `NPEAK`.')
+                    sys.exit()
 
             # This is for non-functional form for SFH;
             if self.SFH_FORM == -99:
