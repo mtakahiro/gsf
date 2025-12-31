@@ -2161,24 +2161,14 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
     return wht2, ypoly
 
 def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
-    ################
-    # Line library
-    ################
-    #LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'Halpha', 'S2L', 'S2H']
-    #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4983, 6563, 6717, 6731]
-    fLW = np.zeros(len(LW), dtype='int') # flag.
-
     #R_grs = 45
     #R_grs = 23.0
     R_grs = (xcont[1] - xcont[0])
     dw   = 1
-    lsig = 1.5 # significance of lines.
-    er   = 1./np.sqrt(wycont)
 
     con   = (xcont<20000)
     z     = np.polyfit(xcont[con], ycont[con], 5, w=wycont[con])
     p     = np.poly1d(z)
-    ypoly = p(xcont)
 
     wht2   = wycont
     flag_l = 0

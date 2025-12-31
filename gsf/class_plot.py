@@ -85,7 +85,7 @@ class PLOT(object):
         return beta_obs_percs,nbeta_obs
     
 
-    def get_sfh_figure_format(self, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax):
+    def get_figure_format_sfh(self, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax):
         """"""
         self.axes['ax1'].set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
         self.axes['ax2'].set_xlabel('$t_\mathrm{lookback}$/Gyr', fontsize=12)
@@ -203,10 +203,12 @@ class PLOT(object):
         self.axes['ax2'].set_xlim(self.Txmin, self.Txmax)
         self.axes['ax2'].set_ylim(self.y2min, self.y2max)
         self.axes['ax2'].set_xscale('log')
-        self.axes['ax2'].text(self.Txmin*1.1, self.y2min+0.07*(self.y2max-self.y2min), 
-                              'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+        self.axes['ax2'].text(0.05, 0.08, 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
                                 %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), self.Avtmp[1]), 
-                                fontsize=9, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
+                                fontsize=9, 
+                                transform=self.axes['ax2'].transAxes,
+                                bbox=dict(facecolor='w', alpha=0.7), zorder=10,
+                                horizontalalignment='left')
 
         dely2 = 0.1
         while (self.y2max-self.y2min)/dely2>7:
@@ -235,7 +237,7 @@ class PLOT(object):
             self.axes['ax4t'].plot(Tzz, Tzz*0+y3max+(y3max-y3min)*.00, marker='|', color='k', ms=3, linestyle='None')
             self.axes['ax4t'].set_xlim(self.Txmin, self.Txmax)
 
-        _ = self.get_sfh_figure_format(Tzz, zredl, lsfrl, lsfru, self.y2min, self.y2max, self.Txmin, self.Txmax)
+        _ = self.get_figure_format_sfh(Tzz, zredl, lsfrl, lsfru, self.y2min, self.y2max, self.Txmin, self.Txmax)
 
         return
 
@@ -1394,8 +1396,6 @@ class PLOT(object):
         nbeta_obs, beta_obs_percs = self.dict_model['nbeta_obs'], self.dict_model['beta_obs_percs']
         MD50, TD50 = self.dict_model['MD50'], self.dict_model['TD50']
 
-        print(f_50_comp.shape, age)
-
         # data params:
         wht3, ey = self.mb.dict['wht3'], self.mb.dict['ey']
         x1min, x1max, ymax = self.mb.dict['x1min'], self.mb.dict['x1max'], self.mb.dict['ymax']
@@ -2053,7 +2053,7 @@ class PLOT(object):
         else:
             MB.dict = MB.read_data(Cz0, Cz1, Cz2, zbes)
 
-        f_grsm = self.check_grism(NRbb_lim=NRbb_lim)
+        f_grsm, _ = self.check_grism(NRbb_lim=NRbb_lim)
 
         # Weight is set to zero for those no data (ey<0).
         self.get_weight(zbes)
@@ -2720,7 +2720,7 @@ class PLOT(object):
         else:
             self.mb.dict = self.mb.read_data(Cz0, Cz1, Cz2, zbes)
         
-        f_grsm = self.check_grism(NRbb_lim=NRbb_lim)
+        f_grsm, _ = self.check_grism(NRbb_lim=NRbb_lim)
 
         # Weight is set to zero for those no data (ey<0).
         self.get_weight(zbes)
