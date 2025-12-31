@@ -496,7 +496,7 @@ def process_igm_z_conv(MB, wave, spec, ms, Ls, zbest, LSF=None, f_IGM=False, lm=
     return spec_mul_nu, spec_mul_nu_conv, ms
 
 
-def maketemp(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
+def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000, 
     tau_lim=0.001, tmp_norm=1e10, nthin=1, delwave=0, lammax=300000, f_IGM=True,
     agn_powerlaw=True):
     '''

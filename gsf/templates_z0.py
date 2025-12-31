@@ -10,7 +10,7 @@ from astropy.convolution import Gaussian1DKernel, convolve
 
 import gsf
 from .function import get_ind,get_imf_str,get_lognorm
-from .utils_maketmp import get_nebular_template
+from .utils_templates import get_nebular_template
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
@@ -48,7 +48,7 @@ def validate_and_save_tree(tree, file_out, dir_tmp='templates/', keys=['spec','M
     return True
 
 
-def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True,
+def make_templates_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True,
                 smooth_uv=False):
     '''
     This is for the preparation of default template, with FSPS, at z=0.
@@ -359,7 +359,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_tau(MB, lammin=100, lammax=160000, Zforce=None): 
+def make_templates_z0_tau(MB, lammin=100, lammax=160000, Zforce=None): 
     '''
     This is for the preparation of default template, with FSPS, at z=0.
     Should be run before SED fitting.
@@ -557,7 +557,7 @@ def make_tmp_z0_tau(MB, lammin=100, lammax=160000, Zforce=None):
     assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
+def make_templates_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                            alpha='+00', ):
     '''
     This is for the preparation of default template, with BPASS v2.3 templates, at z=0.
@@ -805,7 +805,7 @@ def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02
     assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
+def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                       upmass=300, 
                       couple_neb=False, logu_neb=-2.0,
                       age_neb=0.01,
@@ -1192,7 +1192,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
+def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                       upmass=300, 
                       couple_neb=False, logu_neb=-2.0,
                       age_neb=0.01,

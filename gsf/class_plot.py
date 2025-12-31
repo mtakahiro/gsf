@@ -19,7 +19,7 @@ from .function import *
 # from .function_class import Func
 # from .basic_func import Basic
 from .function_igm import *
-from .maketmp_filt import get_LSF
+from .templates import get_LSF
 
 class PLOT(object):
     '''
