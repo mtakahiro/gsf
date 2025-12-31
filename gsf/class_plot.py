@@ -882,8 +882,9 @@ class PLOT(object):
         ySF_each = np.zeros((self.mb.npeak, len(tt), mmax), dtype=float) # SFR
         yMS_each = np.zeros((self.mb.npeak, len(tt), mmax), dtype=float) # MFR
         ZZmc = np.zeros((self.mb.npeak, mmax), dtype=float) 
-        TTmc = np.zeros((self.mb.npeak, mmax), dtype=float) 
-        TAmc = np.zeros((self.mb.npeak, mmax), dtype=float) 
+        TTmc = np.zeros((self.mb.npeak, mmax), dtype=float) # Light-weighted age
+        TMmc = np.zeros((self.mb.npeak, mmax), dtype=float) # Mass-weighted age
+        TAmc = np.zeros((self.mb.npeak, mmax), dtype=float) # tau
 
         if Txmin > np.min(tt):
             Txmin = np.min(tt) * 0.8
@@ -899,23 +900,30 @@ class PLOT(object):
                 except:
                     Av_tmp = samples['AV'][mtmp]
 
+            _AA_sum = 0
+            _AM_sum = 0
             for aa in range(self.mb.npeak):
-                AAtmp = samples['A%d'%aa][mtmp]
-                ltautmp = samples['TAU%d'%aa][mtmp]
-                lagetmp = samples['AGE%d'%aa][mtmp]
+
                 if aa == 0 or self.mb.ZEVOL:
                     try:
                         ZZtmp = samples['Z%d'%aa][mtmp]
                     except:
                         ZZtmp = self.mb.ZFIX
 
-                ZZmc[aa,mm] = ZZtmp
-                TAmc[aa,mm] = lagetmp
-                TTmc[aa,mm] = ltautmp
+                AAtmp = samples['A%d'%aa][mtmp]
+                ltautmp = samples['TAU%d'%aa][mtmp]
+                lagetmp = samples['AGE%d'%aa][mtmp]
 
                 nZtmp,nttmp,natmp = self.mb.bfnc.Z2NZ(ZZtmp, ltautmp, lagetmp)
                 mslist = sedpar['ML_'+str(nZtmp)+'_'+str(nttmp)][natmp]
-                # f_m_sur = sedpar0['frac_mass_survive_%d'%nZtmp][natmp]
+
+                _AA_sum += 10**AAtmp 
+                _AM_sum += 10**AAtmp * mslist
+
+                ZZmc[aa,mm] = ZZtmp
+                TAmc[aa,mm] = lagetmp * 10**AAtmp
+                TMmc[aa,mm] = lagetmp * 10**AAtmp * mslist
+                TTmc[aa,mm] = ltautmp
 
                 xSF[:,mm], ySF_each[aa,:,mm], yMS_each[aa,:,mm] = PLOT.sfr_tau(10**lagetmp, 10**ltautmp, ZZtmp, sfh=self.mb.SFH_FORM, tt=tt, Mtot=10**AAtmp*mslist)
                 ySF[:,mm] += ySF_each[aa,:,mm]
@@ -927,6 +935,11 @@ class PLOT(object):
                     if len(ySF_each[aa,:,mm][con_sfr])>0:
                         SFRs_SED[mm,t] += np.nanmean(ySF_each[aa,:,mm][con_sfr])
 
+            # Devide;
+            TAmc[aa,mm] /= _AA_sum
+            TMmc[aa,mm] /= _AM_sum
+
+            # 
             Av[mm] = Av_tmp
             if plot_each:
                 self.axes['ax1'].plot(xSF[:,mm], np.log10(ySF[:,mm]), linestyle='-', color='k', alpha=alpha_sfh, zorder=-1, lw=0.5)
@@ -1016,13 +1029,15 @@ class PLOT(object):
 
         # Total Metal
         ZCp = np.zeros((self.mb.npeak,3),float)
-        TCp = np.zeros((self.mb.npeak,3),float)
-        TTp = np.zeros((self.mb.npeak,3),float)
+        TCp = np.zeros((self.mb.npeak,3),float) # Tau
+        TMp = np.zeros((self.mb.npeak,3),float) # Mass weighted age
+        TTp = np.zeros((self.mb.npeak,3),float) # Light weighted age
         for aa in range(len(self.mb.age)):
             if A50[aa]/Asum>flim: # if >1%
                 msize[aa] = 200 * A50[aa]/Asum
             ZCp[aa,:] = np.percentile(ZZmc[aa,:], [16,50,84])
             TCp[aa,:] = np.percentile(TTmc[aa,:], [16,50,84])
+            TMp[aa,:] = np.percentile(TMmc[aa,:], [16,50,84])
             TTp[aa,:] = np.percentile(TAmc[aa,:], [16,50,84])
 
         if not self.skip_zhist:
@@ -1156,12 +1171,17 @@ class PLOT(object):
 
         percs = [16,50,84]
         zmc = self.hdul[1].data['zmc']
-        con = (~np.isnan(self.TL[0,:]))
-        TLW = [np.percentile(self.TL[0,:][con],16), np.percentile(self.TL[0,:][con],50), np.percentile(self.TL[0,:][con],84)]
+
+        # Age and tau;
         if taumodel:
             # TMW = TLW
-            TMW = TLW
+            con = (~np.isnan(self.TL[0,:]))
+            TLW = [np.percentile(self.TL[0,:][con],16), np.percentile(self.TL[0,:][con],50), np.percentile(self.TL[0,:][con],84)]
+            con = (~np.isnan(self.TC[0,:]))
+            TMW = [np.percentile(self.TC[0,:][con],16), np.percentile(self.TC[0,:][con],50), np.percentile(self.TC[0,:][con],84)]
         else:
+            con = (~np.isnan(self.TL[0,:]))
+            TLW = [np.percentile(self.TL[0,:][con],16), np.percentile(self.TL[0,:][con],50), np.percentile(self.TL[0,:][con],84)]
             con = (~np.isnan(self.TC[0,:]))
             TMW = [np.percentile(self.TC[0,:][con],16), np.percentile(self.TC[0,:][con],50), np.percentile(self.TC[0,:][con],84)]
 
