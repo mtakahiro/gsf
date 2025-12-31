@@ -155,22 +155,21 @@ class PLOT(object):
 
     def update_axis_sfh(self, f_log_sfh=True, skip_zhist=True, lsfrl=-1):
         ''''''
-        if self.zbes<4:
-            if self.zbes<2:
-                zred  = [self.zbes, 2, 3, 6]
-                zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
-            elif self.zbes<2.5:
-                zred  = [self.zbes, 2.5, 3, 6]
-                zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
-            elif self.zbes<3.:
-                zred  = [self.zbes, 3, 6]
-                zredl = ['$z_\mathrm{obs.}$', 3, 6]
-            else:
-                zred  = [self.zbes, 6]
-                zredl = ['$z_\mathrm{obs.}$', 6]
-        elif self.zbes<6:
+        if self.zbes<2:
+            zred  = [self.zbes, 2, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2, 3, 6]
+        elif self.zbes<2.5:
+            zred  = [self.zbes, 2.5, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 2.5, 3, 6]
+        elif self.zbes<3.:
+            zred  = [self.zbes, 3, 6]
+            zredl = ['$z_\mathrm{obs.}$', 3, 6]
+        elif self.zbes<5:
             zred  = [self.zbes, 5, 6, 9]
             zredl = ['$z_\mathrm{obs.}$', 5, 6, 9]
+        elif self.zbes<6:
+            zred  = [self.zbes, 6, 9]
+            zredl = ['$z_\mathrm{obs.}$', 6, 9]
         elif self.zbes<12:
             zred  = [self.zbes, 12]
             zredl = ['$z_\mathrm{obs.}$', 12]
