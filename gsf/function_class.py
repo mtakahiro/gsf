@@ -1,8 +1,5 @@
 import numpy as np
-import sys
 import scipy.interpolate as interpolate
-import asdf
-from astropy.io import fits
 
 from .function import *
 # from .basic_func import Basic
@@ -374,7 +371,7 @@ class Func:
         return nr, xx, yy
 
 
-    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
+    def get_template_single(self, A00, Av, index_age, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
                             f_apply_igm=True, xhi=None):
         '''
         Parameters
@@ -397,7 +394,6 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
-        DIR_TMP = self.MB.DIR_TMP
         NZ = bfnc.Z2NZ(Z)
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
@@ -416,7 +412,7 @@ class Func:
             nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
             coln = int(2 + NZ*NU + nAGNTAU)
         else:
-            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
+            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + index_age)
 
         nr = lib[:,0]
         xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal

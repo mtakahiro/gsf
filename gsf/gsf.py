@@ -67,8 +67,8 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
                     from .maketmp_z0 import make_tmp_z0
                     make_tmp_z0(MB, lammax=lammax)
             else:
-                from .maketmp_z0_tau import make_tmp_z0
-                make_tmp_z0(MB, lammax=lammax)            
+                from .maketmp_z0 import make_tmp_z0_tau
+                make_tmp_z0_tau(MB, lammax=lammax)            
 
     #
     # 1. Start making redshifted templates.
@@ -162,8 +162,8 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
                     from .maketmp_z0 import make_tmp_z0
                     make_tmp_z0(MB, lammax=lammax)
             else:
-                from .maketmp_z0_tau import make_tmp_z0
-                make_tmp_z0(MB, lammax=lammax)            
+                from .maketmp_z0 import make_tmp_z0_tau
+                make_tmp_z0_tau(MB, lammax=lammax)            
 
     if not flag_suc:
         sys.exit()
