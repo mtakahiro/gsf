@@ -203,8 +203,8 @@ class PLOT(object):
         self.axes['ax2'].set_ylim(self.y2min, self.y2max)
         self.axes['ax2'].set_xscale('log')
         if taumodel:
-            lbl_ax2 = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f\n$\log \\tau_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
-                                %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), np.nanmedian(self.TL[0,:]), self.Avtmp[1])
+            lbl_ax2 = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z/Z_\odot:%.2f$\n$\log T$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
+                                %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), np.nanmedian(self.TAU[0,:]), self.Avtmp[1])
         else:
             lbl_ax2 = 'ID: %s\n$z_\mathrm{obs.}:%.2f$\n$\log M_\mathrm{*}/M_\odot:%.2f$\n$\log Z_\mathrm{*}/Z_\odot:%.2f$\n$\log T_\mathrm{*}$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$'\
                                 %(self.mb.ID, self.zbes, self.ACp[0,1], self.ZCp[0,1], np.nanmedian(self.TC[0,:]), self.Avtmp[1])
@@ -735,7 +735,7 @@ class PLOT(object):
         self.ZLP = self.ZCP #[ZLp[0,0], ZLp[0,1], ZLp[0,2]]
         # self.TLW = TTp[0,:]
         # self.TMW = TTp[0,:]
-        # self.TAW = TCp[0,:]
+        # self.TAU = TCp[0,:]
         self.TC = TC
         self.TL = TL
         self.SFRs_SED = SFRs_SED
@@ -1045,9 +1045,10 @@ class PLOT(object):
         self.ZLP = self.ZCP #[ZLp[0,0], ZLp[0,1], ZLp[0,2]]
         # self.TLW = TTp[0,:]
         # self.TMW = TTp[0,:]
-        self.TAW = TCp[0,:]
+        # self.TAU = TCp[0,:]
         self.TC = TAmc[:,:] # Age
-        self.TL = TTmc[:,:] # Tau?
+        self.TL = TAmc[:,:] # Age
+        self.TAU = TTmc[:,:] # Tau
         self.SFRs_SED = SFRs_SED
         self.xSFp = xSFp
         self.SFp = SFp
@@ -1155,13 +1156,14 @@ class PLOT(object):
 
         percs = [16,50,84]
         zmc = self.hdul[1].data['zmc']
-        # ACP = [ACp[0,0], ACp[0,1], ACp[0,2]]
-        # ZCP = [ZCp[0,0], ZCp[0,1], ZCp[0,2]]
-        # ZLP = [ZLp[0,0], ZLp[0,1], ZLp[0,2]]
-        con = (~np.isnan(self.TC[0,:]))
-        TMW = [np.percentile(self.TC[0,:][con],16), np.percentile(self.TC[0,:][con],50), np.percentile(self.TC[0,:][con],84)]
         con = (~np.isnan(self.TL[0,:]))
         TLW = [np.percentile(self.TL[0,:][con],16), np.percentile(self.TL[0,:][con],50), np.percentile(self.TL[0,:][con],84)]
+        if taumodel:
+            # TMW = TLW
+            TMW = TLW
+        else:
+            con = (~np.isnan(self.TC[0,:]))
+            TMW = [np.percentile(self.TC[0,:][con],16), np.percentile(self.TC[0,:][con],50), np.percentile(self.TC[0,:][con],84)]
 
         for ii in range(len(percs)):
             prihdr['zmc_%d'%percs[ii]] = ('%.3f'%zmc[ii],'redshift')
@@ -1182,8 +1184,9 @@ class PLOT(object):
         for ii in range(len(percs)):
             prihdr['AV0_%d'%percs[ii]] = ('%.3f'%self.Avtmp[ii], 'Dust attenuation, mag')
         if taumodel:
+            _taus = [np.percentile(self.TAU[0,:][con],16), np.percentile(self.TAU[0,:][con],50), np.percentile(self.TAU[0,:][con],84)]
             for ii in range(len(percs)):
-                prihdr['HIERARCH TAU_%d'%percs[ii]] = ('%.3f'%self.TAW[ii], 'Tau, logGyr')
+                prihdr['HIERARCH TAU_%d'%percs[ii]] = ('%.3f'%_taus[ii], 'Tau, logGyr')
         prihdu = fits.PrimaryHDU(header=prihdr)
 
         # For SFH plot;
