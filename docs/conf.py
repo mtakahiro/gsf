@@ -27,11 +27,11 @@ def setup(app):
 # -- Project information -----------------------------------------------------
 
 project = 'gsf'
-copyright = '2021, Takahiro Morishita'
+copyright = '2025, Takahiro Morishita'
 author = 'Takahiro Morishita'
 
 # The full version, including alpha/beta/rc tags
-release = '1.4'
+release = '2.0.0'
 
 master_doc = 'index'
 
