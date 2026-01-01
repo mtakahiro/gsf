@@ -60,24 +60,64 @@ fLW = np.zeros(len(LW), dtype='int')
 
 
 class Mainbody(GsfBase):
-    '''
-    The list of (possible) `Mainbody` attributes is given below:
-
-    Attributes
-    ----------
-    nimf : int 
-        0:Salpeter, 1:Chabrier, 2:Kroupa, 3:vanDokkum08.
-    Z : float array
-        Stellar phase metallicity in logZsun.
-    age : float array
-        Age, in Gyr.
-    fneb : int
-        flag for adding nebular emission. 0: No, 1: Yes.
-    tau0 : float array
-        Width of age bin. If you want to fix it to a specific value, set it to >0.01, in Gyr.
-        Otherwise, it would be either minimum value (=0.01; if one age bin), 
-        or the width to the next age bin.
-    '''
+    """
+    Mainbody class for GSF framework.
+    A comprehensive class for fitting galaxy spectral energy distributions (SEDs) 
+    using stellar population synthesis models. Handles template generation, data 
+    management, parameter optimization, and Bayesian inference through MCMC sampling.
+        IMF selection: 0=Salpeter, 1=Chabrier, 2=Kroupa, 3=vanDokkum08.
+        Stellar phase metallicity in log(Z/Zsun).
+        Age in Gyr.
+        Flag for nebular emission. 0: disabled, 1: enabled.
+        Width of age bin in Gyr. Values >0.01 fix to specific value; 
+        otherwise use minimum (0.01 Gyr for single bin) or next bin width.
+    Methods
+    __init__(inputs, c, Mpc_cm, m0set, pixelscale, Lsun, cosmo, idman, zman, zman_min, zman_max, NRbb_lim, verbose, configurationfile, show_list)
+        Initialize Mainbody instance with configuration and physical constants.
+    check_input(inputs, dict_config, show_list)
+        Validate input configuration keywords against allowed parameter list.
+    get_configfile(name)
+        Generate configuration file template from current settings.
+    update_input(inputs, c, Mpc_cm, m0set, pixelscale, Lsun, cosmo, idman, zman, zman_min, zman_max, sigz)
+        Register and update parameter attributes from configuration file.
+    get_lines(LW0)
+        Extract emission line information.
+    read_data(Cz0, Cz1, Cz2, zgal, add_fir, idman)
+        Read observed spectral and photometric data from disk.
+    plot_data()
+        Visualize observed data.
+    set_zprior(zliml, zlimu, delzz, priors, f_eazy, eaz_pz, zmax, f_norm)
+        Define redshift prior probability distribution.
+    fit_redshift(xm_tmp, fm_tmp, delzz, ezmin, snlim, priors, f_line_check, fzvis, f_norm, f_lambda, zmax, include_photometry, f_exclude_negative, return_figure)
+        Perform redshift fitting using MCMC on SED model.
+    get_zdist(f_interact, f_ascii, return_figure)
+        Generate and save redshift probability distribution plot.
+    add_param(fit_params, sigz, zmin, zmax)
+        Add free parameters (dust, nebular, AGN, redshift, etc.) to fit.
+    set_param()
+        Initialize fitting parameters with bounds and initial values.
+    check_mainbody()
+        Validate internal consistency of input parameters.
+    prepare_class(add_fir)
+        Load template libraries and prepare for fitting.
+    get_shuffle(out, nshuf, amp)
+        Randomize initial walker positions for MCMC sampling.
+    main(cornerplot, specplot, sigz, ezmin, ferr, f_move, verbose, skip_fitz, out, f_plot_accept, f_shuffle, amp_shuffle, check_converge, Zini, f_plot_chain, f_chind, ncpu, f_prior_sfh, norder_sfh_prior, include_photometry)
+        Execute full SED fitting pipeline with least-squares minimization and MCMC sampling.
+    quick_fit(specplot, sigz, ezmin, ferr, f_move, f_get_templates, Zini, include_photometry, f_only_spec)
+        Perform rapid chi-square minimization fit without MCMC.
+    search_redshift(dict, xm_tmp, fm_tmp, zliml, zlimu, delzz, lines, prior, method, include_photometry, f_plot)
+        Explore redshift parameter space and compute chi-square grid.
+    plot_fit_result(out, xmin, xmax)
+        Generate SED plot with best-fit model overlaid on data.
+    check_keys(self)
+        Extract and store list of input configuration keywords.
+    Supports multiple sampling methods: EMCEE (ensemble MCMC), ZEUS (slice sampling), 
+    and Dynesty (nested sampling). Includes options for dust attenuation, nebular 
+    emission, AGN contribution, and redshift as a free parameter.
+    Configuration driven through YAML/input files with sections: Templates, Fitting, 
+    Data, and Misc parameters.
+    """
     def __init__(self, inputs, c:float=3e18, Mpc_cm:float=3.08568025e+24, m0set:float=25.0, pixelscale:float=0.06, Lsun:float=3.839*1e33, 
         cosmo=None, idman:str=None, zman=None, zman_min=None, zman_max=None, NRbb_lim=10000, verbose=False, configurationfile=None,
         show_list=True):
@@ -578,7 +618,11 @@ class Mainbody(GsfBase):
             try:
                 self.SFH_FORM = int(inputs['SFH_FORM'])
             except:
-                self.SFH_FORM = -99
+                if 'AGE' in inputs:
+                    self.SFH_FORM = -99
+                else:
+                    self.logger.error('`AGE` is not provided in the input; If you intend to use a tau model, specify `SFH_FORM` and `NPEAK`.')
+                    sys.exit()
 
             # This is for non-functional form for SFH;
             if self.SFH_FORM == -99:
@@ -629,7 +673,7 @@ class Mainbody(GsfBase):
                     self.delage = 0.0001
                     self.agemax = self.agemin + self.delage
 
-                self.ageparam = np.arange(self.agemin, self.agemax, self.delage)
+                self.ageparam = 10**np.arange(self.agemin, self.agemax, self.delage)
                 self.nage = len(self.ageparam)
 
                 self.taumax = float(inputs['TAUMAX'])

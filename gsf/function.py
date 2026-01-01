@@ -31,6 +31,15 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
 
+def get_lognorm(t, ltau0, T0=-10):
+    A = 1
+    tau0 = 10**ltau0
+    SFR = t * 0 + 1e-20
+    conlogn = (t>0)
+    SFR[conlogn] = A / np.sqrt(2*np.pi*tau0**2) * np.exp(-(np.log(t[conlogn])-T0)**2/(2*tau0**2)) / t[conlogn]
+    return SFR
+
+
 def get_property_table(file_out=None, dir_gsf_output='./gsf_output/', is_latex=False):
     ''''''
     # New file;
@@ -219,17 +228,6 @@ def get_ews_model(fd_gsf, wl_b, wl_r, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_
     wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r : float
         Rest-frame wavelengths that define the range of continuum flux.
     '''
-    # wave_obs = fd_gsf['sed']['OBS']['wave_bb'].value
-    # flux_obs = fd_gsf['sed']['OBS']['fnu_bb'].value
-    # fluxerr_obs = fd_gsf['sed']['OBS']['enu_bb'].value
-    # filters = np.asarray(fd_gsf['FILTERS'])
-
-    # con_obs = (fluxerr_obs > 0) & (wave_obs>wl_cont_b_r *(1+z)) & (wave_obs<wl_cont_r_b *(1+z))
-    # if len(wave_obs[con_obs]) == 0:
-    #     print('No obs data found within the range')
-    #     return np.zeros(1,float), np.zeros((1,3),float), '0', np.zeros(1,float), '0'
-    # cont_obs = (fluxerr_obs > 0) & (flux_obs/fluxerr_obs > snlim) & (((wave_obs>wl_cont_b_b *(1+z)) & (wave_obs<wl_cont_b_r *(1+z))) | ((wave_obs>wl_cont_r_b *(1+z)) & (wave_obs<wl_cont_r_r *(1+z))))
-    
     z = fd_gsf['sed']['REDSHIFT']
     flux_key = 'fnu'
     if stellar_only:
@@ -1758,106 +1756,6 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
         return lcen, fnu
 
 
-"""
-def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
-    '''
-    This one does not improve much.
-    
-    Parameters
-    ----------
-    f0 : float array
-        Flux for spectrum, in fnu
-    l0 : float array
-        Wavelength for spectrum, in AA (that matches filter response curve's.)
-    f_regist : bool
-        If True, read filter response curves and register those to MB.
-    '''
-    if MB==None:
-        f_regist = True
-    if f_regist:
-        lfil_lib = {}
-        ffil_lib = {}
-
-    if fw:
-        fwhm = np.zeros_like(band0, dtype=float)
-
-    if not f_regist:
-        try:
-            ffil_lib = MB.ffil_lib
-            if fw:
-                fwhm = MB.filt_fwhm
-        except:
-            f_regist = True
-            ffil_lib = {}
-            # lfils = np.zeros_like(band0, dtype=float)
-            # ffils = np.zeros_like(band0, dtype=float)
-            # lmins = np.zeros_like(band0, dtype=float)
-            # lmaxs = np.zeros_like(band0, dtype=float)
-
-    if f_regist:
-        lcen = np.zeros_like(band0, dtype=float)
-        for ii in range(len(band0)):
-            ffil_lib['%s'%band0[ii]] = {}
-            
-            fd = np.loadtxt(DIR + '%s.fil'%str(band0[ii]), comments='#')
-            lfil = fd[:,1]
-            ffil = fd[:,2]
-            ffil /= np.max(ffil)
-            lmin = np.min(lfil)
-            lmax = np.max(lfil)
-
-            if fw:
-                ffil_cum = np.cumsum(ffil)
-                ffil_cum/= ffil_cum.max()
-                con = (ffil_cum>0.05) & (ffil_cum<0.95)
-                fwhm[ii] = np.max(lfil[con]) - np.min(lfil[con])
-
-            con = (l0>lmin) & (l0<lmax)
-            delw = np.nanmin(np.diff(l0))
-            if delw > np.nanmin(np.diff(ffil)):
-                lfil_new = np.arange(lmin,lmax,delw)
-                fint = interpolate.interp1d(lfil, ffil, kind='nearest', fill_value="extrapolate")
-                ffil = fint(lfil_new)
-                lfil = lfil_new
-
-            ffil_lib['%s'%band0[ii]]['lfil'] = lfil
-            ffil_lib['%s'%band0[ii]]['ffil'] = ffil
-            ffil_lib['%s'%band0[ii]]['lmin'] = lmin
-            ffil_lib['%s'%band0[ii]]['lmax'] = lmax
-            lcen[ii] = np.sum(lfil*ffil)/np.sum(ffil)
-        
-        ffil_lib['lcen'] = lcen
-
-    fnu = np.zeros_like(band0, dtype=float)
-    for ii in range(len(band0)):
-        con = (l0>ffil_lib['%s'%band0[ii]]['lmin']) & (l0<ffil_lib['%s'%band0[ii]]['lmax']) #& (f0>0)
-
-        if len(l0[con])>1:
-            fint = interp1d(ffil_lib['%s'%band0[ii]]['lfil'], ffil_lib['%s'%band0[ii]]['ffil'], kind='nearest', fill_value="extrapolate")
-            filt_int = fint(l0[con])
-
-            # This does not work sometimes;
-            I1 = np.sum(f0[con]/l0[con]**2*c*filt_int*l0[con])
-            I2 = np.sum(filt_int/l0[con])
-            if I2>0:
-                fnu[ii] = I1/I2/c
-            else:
-                fnu[ii] = 0
-        else:
-            fnu[ii] = 0
-
-    if MB != None and f_regist:
-        MB.ffil_lib = ffil_lib
-        if fw:
-            MB.filt_fwhm = fwhm
-        
-    if fw:
-        return ffil_lib['lcen'], fnu, fwhm
-    else:
-        return ffil_lib['lcen'], fnu
-"""
-
-
 def fil_fwhm(band0, DIR):
     '''
     Parameters
@@ -2263,24 +2161,14 @@ def check_line_cz_man(ycont,xcont,wycont,model,zgal,LW=LW0,norder=5.):
     return wht2, ypoly
 
 def detect_line_man(xcont, ycont, wycont, zgal, LW, model):
-    ################
-    # Line library
-    ################
-    #LN = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta', 'O3', 'Halpha', 'S2L', 'S2H']
-    #LW = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4983, 6563, 6717, 6731]
-    fLW = np.zeros(len(LW), dtype='int') # flag.
-
     #R_grs = 45
     #R_grs = 23.0
     R_grs = (xcont[1] - xcont[0])
     dw   = 1
-    lsig = 1.5 # significance of lines.
-    er   = 1./np.sqrt(wycont)
 
     con   = (xcont<20000)
     z     = np.polyfit(xcont[con], ycont[con], 5, w=wycont[con])
     p     = np.poly1d(z)
-    ypoly = p(xcont)
 
     wht2   = wycont
     flag_l = 0

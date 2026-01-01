@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
-import asdf
+# import copy
+import asdf,sys,os
 import scipy.interpolate as interpolate
 
 # import os
@@ -9,41 +9,118 @@ from astropy.io import ascii,fits
 from astropy.convolution import Gaussian1DKernel, convolve
 
 import gsf
-from .function import get_ind,get_imf_str
+from .function import get_ind,get_imf_str,get_lognorm
+from .utils_templates import get_nebular_template
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
 
-def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True,
+def initiate_tree(MB):
+    """"""
+    # ASDF Big tree;
+    # Create header;
+    tree = {
+        'imf': get_imf_str(MB.nimf),
+        'nimf': MB.nimf,
+        'version_gsf': gsf.__version__
+    }
+    tree.update({'age': MB.age})
+    tree.update({'Z': MB.Zall})
+    if MB.fneb:
+        tree.update({'logUMIN': MB.logUMIN})
+        tree.update({'logUMAX': MB.logUMAX})
+        tree.update({'DELlogU': MB.DELlogU})
+    if MB.fagn:
+        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
+        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
+        tree.update({'DELAGNTAU': MB.DELAGNTAU})
+    return tree
+
+
+def validate_and_save_tree(tree, file_out, dir_tmp='templates/', keys=['spec','ML','lick']):
+    """"""
+    for key in keys:
+        if key not in tree:
+            return False
+    # Save
+    af = asdf.AsdfFile(tree)
+    af.write_to(os.path.join(dir_tmp, file_out), all_array_compression='zlib')
+    return True
+
+
+def make_templates_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False, Zforce=None, f_mp=True,
                 smooth_uv=False):
-    '''
-    This is for the preparation of default template, with FSPS, at z=0.
-    Should be run before SED fitting.
-
-    Parameters
-    ----------
-    :class:`gsf.fitting.Mainbody` : class
-        Mainbody class, that contains attributes.
-
-    lammin : float, optional
-        Minimum value of the rest-frame wavelength of the template, in AA.
-
-    lammax : float, optional
-        Maximum value of the rest-frame wavelength of the template, in AA.
-
-    tau_lim : float, optional
-        Maximum value of tau of the template, in Gyr. Tau smaller than this 
-        value would be approximated by SSP.
-
-    force_no_neb : bool
-        Turn this on that you are very much sure do not want to include emission line templates, 
-        maybe to save some time running z0 module.
-
-    f_mp : bool
-        Multiprocessing.
-    smooth_uv : bool
-        Experimental - smoothing stellar spectra at rf-UV, as they look wiggling...
-    '''
+    """
+    Generate default stellar population synthesis templates at z=0 using FSPS.
+    This function creates a comprehensive library of stellar population templates
+    at redshift zero, incorporating various metallicities, ages, and star formation
+    histories. The templates include stellar spectra, mass-to-light ratios, and
+    Lick indices.
+    MB : gsf.fitting.Mainbody
+        Mainbody class instance containing configuration attributes including:
+        - nimf : int
+            Initial mass function type
+        - age : array-like
+            Age grid points (Gyr)
+        - tau0 : array-like
+            Star formation timescale grid (Gyr)
+        - fneb : bool
+            Flag for nebular emission inclusion
+        - Zall : array-like
+            Metallicity grid points
+        - cosmo : astropy.cosmology
+            Cosmology instance
+        - DIR_TMP : str
+            Output directory path
+        - logUs : array-like
+            Ionization parameter grid
+        - AGNTAUs : array-like
+            AGN optical depth grid
+        - fagn : bool
+            Flag for AGN inclusion
+        - logger : logging.Logger
+            Logger instance
+        Minimum rest-frame wavelength of template (Angstrom). Default: 100
+        Maximum rest-frame wavelength of template (Angstrom). Default: 160000
+        Maximum tau value for SSP approximation (Gyr). Default: 0.001
+    force_no_neb : bool, optional
+        If True, exclude nebular emission templates. Default: False
+    Zforce : float or None, optional
+        If specified, generate templates only for this metallicity value.
+        Default: None (generate for all metallicities)
+    f_mp : bool, optional
+        Enable multiprocessing flag. Default: True
+    smooth_uv : bool, optional
+        Experimental flag to smooth stellar spectra in rest-frame UV
+        (lambda < 3000 Angstrom) to reduce wiggles. Default: False
+    Returns
+    -------
+    None
+        Saves ASDF format file containing template library with keys:
+        - wavelength : array
+            Rest-frame wavelength array (Angstrom)
+        - fspec_*_*_* : array
+            Flux spectra for each Z, age, and tau combination (L_sun/AA)
+        - flux_nebular_* : array
+            Nebular emission contribution spectra
+        - flux_agn_* : array
+            AGN contribution spectra
+        - ms_* : array
+            Stellar mass surviving for each age and metallicity
+        - Ls_* : array
+            Bolometric luminosity for each age and metallicity
+        - frac_mass_survive_* : array
+            Fraction of formed mass surviving
+        - Lick indices : array
+            Lick/IJ index values
+    Notes
+    -----
+    - Automatically selects continuous SFH (sfh=1) or SSP (sfh=0) based on tau0
+    - For tau0=99, applies continuous age binning
+    - For tau0>0, applies fixed-width tau bins
+    - For tau0<0, applies single stellar population approximation
+    - Execution time scales with number of ages, metallicities, and SFH parameters
+    """
     import fsps
     nimf = MB.nimf
     age = MB.age
@@ -59,9 +136,7 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     else:
         file_out = 'spec_all.asdf'
     Z = MB.Zall
-    NZ = len(Z)
     
-    # Current age in Gyr;
     age_univ = MB.cosmo.age(0).value
 
     MB.logger.warning('Making templates at z=0 - This may take a while.')
@@ -91,9 +166,6 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 #
                 # Determining tau for each age bin;
                 #
-                # if zz == 0 and pp == 0 and ss == 0 and age[ss]<0.01 and MB.fneb:
-                #     MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
-
                 # 1.Continuous age bin;
                 if int(tau0[pp]) == 99:
                     if ss==0:
@@ -222,39 +294,9 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
 
                     # Loop within logU;
                     for nlogU, logUtmp in enumerate(MB.logUs):
+
                         esptmp.params['gas_logu'] = logUtmp
-                        esp = esptmp
-
-                        if age[ss]>0.01:
-                            tage_neb = 0.01
-                            MB.logger.info('Nebular component is calculabed with %.2f Gyr'%tage_neb)
-                        else:
-                            tage_neb = age[ss]
-
-                        ewave0, eflux0 = esp.get_spectrum(tage=tage_neb, peraa=True)
-                        # plt.close()
-                        # plt.plot(ewave0, eflux0)
-                        # plt.xlim(0,10000)
-                        # plt.show()
-
-                        if age[ss] != tage_neb:
-                            # sp_tmp = sp.copy()
-                            sp_tmp = copy.copy(sp)
-                            wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_neb, peraa=True) # Lsun/AA
-                            _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
-                        else:
-                            _, flux_tmp = wave, flux
-
-                        con = (ewave0>lammin) & (ewave0<lammax)
-                        flux_nebular = eflux0[con] - flux_tmp
-                        # Eliminate some negatives. Mostly on <912A;
-                        con_neg = flux_nebular<0
-                        flux_nebular[con_neg] = 0
-
-                        # plt.close()
-                        # plt.plot(ewave0[con], flux_nebular)
-                        # plt.xlim(0,10000)
-                        # plt.show()
+                        esp, flux_nebular = get_nebular_template(wave, flux, sp, esptmp, age[ss], lammin, lammax)
 
                         tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
                         tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
@@ -308,13 +350,10 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
                 if flagz and ss == 0 and pp == 0:
                     # ASDF Big tree;
                     # Create header;
-                    tree = {
-                        'isochrone': '%s'%(sp.libraries[0].decode("utf-8")),
-                        'library': '%s'%(sp.libraries[1].decode("utf-8")),
-                        'imf': get_imf_str(nimf),
-                        'nimf': nimf,
-                        'version_gsf': gsf.__version__
-                    }
+                    tree = initiate_tree(MB)
+                    tree['isochrone'] = sp.libraries[0].decode("utf-8")
+                    tree['library'] = sp.libraries[1].decode("utf-8")
+
                     tree.update({'age': MB.age})
                     tree.update({'Z': MB.Zall})
                     if fneb:
@@ -360,12 +399,208 @@ def make_tmp_z0(MB, lammin=100, lammax=160000, tau_lim=0.001, force_no_neb=False
     tree.update({'lick' : tree_lick})
 
     # Save
-    af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
-    MB.logger.info('Step 0: Done.')
+    assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
+def make_templates_z0_tau(MB, lammin=100, lammax=160000, Zforce=None): 
+    '''
+    This is for the preparation of default template, with FSPS, at z=0.
+    Should be run before SED fitting.
+
+    Parameters
+    ----------
+    :class:`gsf.fitting.Mainbody` : class
+        Mainbody class, that contains attributes.
+
+    lammin : float, optional
+        Minimum value of the rest-frame wavelength of the template, in AA.
+
+    lammax : float, optional
+        Maximum value of the rest-frame wavelength of the template, in AA.
+
+    tau_lim : float, optional
+        Maximum value of tau of the template, in Gyr. Tau smaller than this 
+        value would be approximated by SSP.
+    '''
+    import fsps
+    nimf = MB.nimf
+    age = MB.ageparam # in linear.
+    fneb = MB.fneb
+    DIR_TMP = MB.DIR_TMP
+    Na = len(age)
+
+    tau = MB.tau
+    sfh = MB.SFH_FORM
+
+    if not Zforce == None:
+        file_out = 'spec_all_Z%.1f.asdf'%Zforce
+    else:
+        file_out = 'spec_all.asdf'
+    Z = MB.Zall
+    NZ = len(Z)
+    
+    # Current age in Gyr;
+    age_univ = MB.cosmo.age(0).value
+
+    NZ = len(Z)
+    Nt = len(tau)
+    Na = len(age)
+
+    ms = np.zeros(Na, dtype='float')
+    Ls = np.zeros(Na, dtype='float')
+
+    print('#######################################')
+    print('Making templates at z=0, IMF=%d'%(nimf))
+    print('#######################################')
+
+    tree_spec = {}
+    tree_ML = {}
+    tree_lick = {}
+
+    print('tau is the width of each age bin.')
+    flagz = True
+    for zz in range(len(Z)):
+        if not Zforce == None and Z[zz] != Zforce:
+            continue
+        for ss in range(len(tau)):
+
+            if 10**tau[ss]<0.01:
+                # then do SSP
+                print('!! tau is <0.01Gyr. SSP is applied. !!') # This corresponds to the min-tau of fsps.
+                sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0) # Lsun/Hz
+                if fneb == 1:
+                    esptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, add_neb_emission=1) # Lsun/Hz
+                if MB.fagn:
+                    asptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=0, logzsol=Z[zz], dust_type=2, dust2=0.0, fagn=1.0) # Lsun/Hz
+            elif sfh<5:
+                sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=sfh, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=10**tau[ss], const=0, sf_start=0, sf_trunc=0, tburst=13, fburst=0) # Lsun/Hz
+                if fneb == 1:
+                    esptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=sfh, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=10**tau[ss], const=0, sf_start=0, sf_trunc=0, tburst=13, fburst=0, add_neb_emission=1) # Lsun/Hz
+                if MB.fagn:
+                    asptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=1, imf_type=nimf, sfh=sfh, logzsol=Z[zz], dust_type=2, dust2=0.0, tau=10**tau[ss], const=0, sf_start=0, sf_trunc=0, tburst=13, fburst=0, fagn=1.0) # Lsun/Hz
+            elif sfh==6: # Custom SFH
+                sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0)
+                if fneb == 1:
+                    sp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0, add_neb_emission=1)
+                if MB.fagn:
+                    asptmp = fsps.StellarPopulation(compute_vega_mags=False, zcontinuous=3, imf_type=nimf, sfh=3, dust_type=2, dust2=0.0, fagn=1.0)
+                print('Log normal is used. !!')
+
+            print('Z:%d/%d, t:%d/%d, %s, %s'%(zz+1, len(Z), ss+1, len(tau), sp.libraries[0].decode("utf-8") , sp.libraries[1].decode("utf-8")))
+            ms = np.zeros(Na)
+            Ls = np.zeros(Na)
+            LICK = np.zeros((Na,len(INDICES)), dtype='float')
+            mlost = np.zeros(Na, dtype='float')
+
+            for tt in range(len(age)):
+
+                if zz == 0 and ss == 0 and tt == 0 and age[tt]<0.01:
+                    MB.logger.warning('Your input AGE includes <0.01Gyr --- fsps interpolates spectra, and you may not get accurate SEDs.')
+
+                if sfh==6: # Tabular SFH.
+                    tuniv_hr = np.arange(0,age_univ,0.01) # in Gyr
+                    T0 = np.log(age[tt])
+                    sfh_hr_in = get_lognorm(tuniv_hr, tau[ss], T0) # tau in log Gyr
+                    zh_hr_in  = tuniv_hr*0 + 10**Z[zz] # metallicity is constant
+                    sp.set_tabular_sfh(tuniv_hr, sfh_hr_in, zh_hr_in)
+                    wave0, flux0 = sp.get_spectrum(tage=age_univ, peraa=True) # if peraa=True, in unit of L/AA
+                else:
+                    wave0, flux0 = sp.get_spectrum(tage=age[tt], peraa=True) # if peraa=True, in unit of L/AA
+
+                con = (wave0>lammin) & (wave0<lammax)
+                wave, flux = wave0[con], flux0[con]
+                ms[tt] = sp.stellar_mass
+                if np.isnan(ms[tt]):
+                    print('Error at age %.3f and tau %.3f'%(age[tt], tau[ss]))
+                    sys.exit()
+
+                Ls[tt] = 10**sp.log_lbol
+                LICK[tt,:] = get_ind(wave, flux)
+                mlost[tt] = sp.stellar_mass / sp.formed_mass
+
+                if fneb and tt == 0 and ss == 0:
+
+                    esptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    stellar_mass_tmp = sp.stellar_mass
+
+                    # Loop within logU;
+                    for nlogU, logUtmp in enumerate(MB.logUs):
+
+                        esptmp.params['gas_logu'] = logUtmp
+                        esp, flux_nebular = get_nebular_template(wave, flux, sp, esptmp, age[ss], lammin, lammax)
+
+                        tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular})
+                        tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: esp.emline_wavelengths})
+                        tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: esp.emline_luminosity})
+                        tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: esp.stellar_mass - stellar_mass_tmp})
+
+                if MB.fagn and tt == 0 and ss == 0:
+
+                    asptmp.params['gas_logz'] = Z[zz] # gas metallicity, assuming = Zstel
+                    stellar_mass_tmp = sp.stellar_mass
+
+                    # Loop within logU;
+                    for nAGNTAU, AGNTAUtmp in enumerate(MB.AGNTAUs):
+                        asptmp.params['agn_tau'] = AGNTAUtmp
+                        asp = asptmp
+
+                        tage_agn = age[tt]
+
+                        ewave0, eflux0 = asp.get_spectrum(tage=tage_agn, peraa=True)
+                        if age[tt] != tage_agn:
+                            sp_tmp = sp.copy()
+                            wave0_tmp, flux0_tmp = sp_tmp.get_spectrum(tage=tage_agn, peraa=True) # Lsun/AA
+                            _, flux_tmp = wave0_tmp[con], flux0_tmp[con]
+                        else:
+                            _, flux_tmp = wave, flux
+
+                        con = (ewave0>lammin) & (ewave0<lammax)
+                        flux_agn = eflux0[con] - flux_tmp
+                        # Eliminate some negatives. Mostly on <912A;
+                        con_neg = flux_agn<0
+                        flux_agn[con_neg] = 0
+
+                        tree_spec.update({'flux_agn_Z%d'%zz+'_AGNTAU%d'%nAGNTAU: flux_agn})
+                        tree_spec.update({'agn_mass_Z%d'%zz+'_AGNTAU%d'%nAGNTAU: asp.stellar_mass - stellar_mass_tmp})
+
+                if flagz and ss == 0 and tt == 0:
+                    # ASDF Big tree;
+                    # Create header;
+                    tree = initiate_tree(MB)
+                    tree['isochrone'] = sp.libraries[0].decode("utf-8")
+                    tree['library'] = sp.libraries[1].decode("utf-8")
+
+                    tree_spec.update({'wavelength': wave})
+                    flagz = False
+
+                tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(tt): flux})
+
+            for ll in range(len(INDICES)):
+                # ASDF
+                tree_lick.update({INDICES[ll]+'_'+str(zz)+'_'+str(ss): LICK[:,ll]})
+
+            tree_ML.update({'ms_'+str(zz)+'_'+str(ss): ms})
+            tree_ML.update({'Ls_'+str(zz)+'_'+str(ss): Ls})
+            tree_ML.update({'frac_mass_survive_'+str(zz)+'_'+str(ss): mlost})
+
+    # Write;
+    for aa in range(len(tau)):
+        tree.update({'tau%d'%(aa): tau[aa]})
+    for aa in range(len(age)):
+        tree.update({'age%d'%(aa): age[aa]})
+    for aa in range(len(Z)):
+        tree.update({'Z%d'%(aa): Z[aa]})
+
+    # Index, Mass-to-light;
+    tree.update({'spec' : tree_spec})
+    tree.update({'ML' : tree_ML})
+    tree.update({'lick' : tree_lick})
+
+    #
+    assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
+
+
+def make_templates_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                            alpha='+00', ):
     '''
     This is for the preparation of default template, with BPASS v2.3 templates, at z=0.
@@ -563,24 +798,9 @@ def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02
                 if flagz and ss == 0 and pp == 0:
                     # ASDF Big tree;
                     # Create header;
-                    tree = {
-                        'isochrone': 'BPASS',
-                        'library': 'BPASS',
-                        'nimf': nimf,
-                        'version_gsf': gsf.__version__
-                    }
-
-                    tree.update({'age': MB.age})
-                    tree.update({'Z': MB.Zall})
-                    if fneb:
-                        tree.update({'logUMIN': MB.logUMIN})
-                        tree.update({'logUMAX': MB.logUMAX})
-                        tree.update({'DELlogU': MB.DELlogU})
-                    if MB.fagn:
-                        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
-                        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
-                        tree.update({'DELAGNTAU': MB.DELAGNTAU})
-
+                    tree = initiate_tree(MB)
+                    tree['isochrone'] = 'BPASS_v2p3'
+                    tree['library'] = 'BPASS_v2p3'
                     # ASDF
                     tree_spec.update({'wavelength': wave})
                     flagz = True
@@ -607,7 +827,6 @@ def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02
                 col4 = fits.Column(name='tau_'+str(zz), format='E', unit='Gyr', array=tau_age)
                 tree_ML.update({'realtau_'+str(zz): ms})
 
-
     # Write;
     for aa in range(len(age)):
         tree.update({'realtau%d(Gyr)'%(aa): tau_age[aa]})
@@ -626,11 +845,10 @@ def make_tmp_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02
     tree.update({'lick' : tree_lick})
 
     # Save
-    af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
+    assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
+def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                       upmass=300, 
                       couple_neb=False, logu_neb=-2.0,
                       age_neb=0.01,
@@ -685,7 +903,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     Z = MB.Zall
     age = MB.age
     tau0 = MB.tau0
-    fneb = MB.fneb
     DIR_TMP= MB.DIR_TMP
 
     # binary?
@@ -696,18 +913,18 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
         bin_str = 'str'
     DIR_LIB = MB.DIR_BPASS + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
 
-    if fneb:
-        MB.logger.warning('Currently, BPASS nebular emission is only available for imf135_300 bin.')
+    if MB.fneb:
         if bin_str == 'bin' and imf_str == '135_300':
-            print('nebular is on')
-            fneb = True
+            MB.logger.info('nebular is on')
+            MB.fneb = True
             DIR_LIB_NEB = MB.DIR_BPASS + 'BPASS%s-Cloudy/cloudyspec_outputs/'%(MB.BPASS_ver)
         else:
-            print('nebular is off')
+            MB.logger.error('Currently, BPASS nebular emission is only available for imf135_300 bin.')
+            MB.logger.error('Turn `ADD_NEBULAE` off')
             print(bin_str, imf_str)
-            fneb = False
+            MB.fneb = False
+            return False
 
-    NZ = len(Z)
     Na = len(age)
 
     # Current age in Gyr;
@@ -756,7 +973,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
         lage_temp = (6+0.1*(nage_temp-2))
         age_temp = 10**(6+0.1*(nage_temp-2)) # in yr
 
-        if fneb:
+        if MB.fneb:
             mstel_emi = 1e6
             ncols_emi = 15
             Lunit_emi = 3.848e33
@@ -772,7 +989,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
 
         # 'tau is the width of each age bin.'
         for pp in range(len(tau0)):
-            spall = [] # For sps model
             ms = np.zeros(Na, dtype='float')
             Ls = np.zeros(Na, dtype='float')
             mlost = np.zeros(Na, dtype='float')
@@ -866,25 +1082,10 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if flagz and ss == 0 and pp == 0:
-                    # ASDF Big tree;
-                    # Create header;
-                    tree = {
-                        'isochrone': 'BPASS',
-                        'library': 'BPASS',
-                        'nimf': nimf,
-                        'version_gsf': gsf.__version__
-                    }
+                    tree = initiate_tree(MB)
+                    tree['isochrone'] = 'BPASS'
+                    tree['library'] = 'BPASS'
 
-                    tree.update({'age': MB.age})
-                    tree.update({'Z': MB.Zall})
-                    if fneb:
-                        tree.update({'logUMIN': MB.logUMIN})
-                        tree.update({'logUMAX': MB.logUMAX})
-                        tree.update({'DELlogU': MB.DELlogU})
-                    if MB.fagn:
-                        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
-                        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
-                        tree.update({'DELAGNTAU': MB.DELAGNTAU})
 
                     # ASDF
                     tree_spec.update({'wavelength': wave})
@@ -895,7 +1096,7 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                     tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
                     # BPASS neb;
-                    if fneb and pp == 0 and ss == iix_age_neb:
+                    if MB.fneb and pp == 0 and ss == iix_age_neb:
 
                         if zz == 0:
                             MB.logger.info('BPASS nebular component is calculated using age=%.1e'%(age[ss]))
@@ -925,15 +1126,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                             else:
                                 flux0_emi = flux0_emi[:] * 0
 
-                            # if zz == 0 and nlogU ==0:
-                            #     for _i in range(5):
-                            #         plt.plot(wave0_emi, 10**fd_sed_emi['col%d'%(_i+2)], ls=':', alpha=0.5, label='%d'%(_i))
-
-                            # Then. add flux if tau > 0.
-                            # con = (wave0>lammin) & (wave0<lammax)
-                            # wave, flux = wave0[con], flux0[con]
-                            # con_emi = (wave0_emi>lammin) & (wave0_emi<lammax)
-                            # ewave, eflux = wave0_emi[con_emi], flux0_emi[con_emi]
                             femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
                             flux_nebular = femi(wave)
                             emline_luminosity = np.sum(flux0_emi)
@@ -948,7 +1140,6 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                             tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
                             tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
                             tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
-                            # print('fspec_nebular_Z%d'%zz+'_logU%d'%nlogU, flux_nebular)
 
                 else:
                     MB.logUFIX = logu_neb
@@ -1041,11 +1232,10 @@ def make_tmp_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     tree.update({'lick' : tree_lick})
 
     # Save
-    af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
+    assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
 
-def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
+def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                       upmass=300, 
                       couple_neb=False, logu_neb=-2.0,
                       age_neb=0.01,
@@ -1091,14 +1281,16 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
         This case, logU will be fixed.
         else, nebular component is calculated assuming the youngest age among the age bin, and will be controlled by Aneb.
     '''
+    MB.logger.warning('General templates are provided; For now, nebular emission is coupled to the main. f_neb is set to %s'%(MB.fneb))
+
     nimf = MB.nimf
-    if nimf == 0: # Salpeter
-        imf_str = '135all_%d'%(upmass)
-        imf_str = '135_%d'%(upmass)
-    elif nimf == 1:
-        imf_str = '_chab%d'%(upmass)
-    else:
-        imf_str = ''
+    # if nimf == 0: # Salpeter
+    #     imf_str = '135all_%d'%(upmass)
+    #     imf_str = '135_%d'%(upmass)
+    # elif nimf == 1:
+    #     imf_str = '_chab%d'%(upmass)
+    # else:
+    #     imf_str = ''
 
     if Zforce is not None:
         file_out = 'spec_all_Z%.1f.asdf'%Zforce
@@ -1110,25 +1302,6 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     tau0 = MB.tau0
     fneb = MB.fneb
     DIR_TMP= MB.DIR_TMP
-
-    # binary?
-    # f_bin = MB.f_bin
-    # if f_bin==1:
-    #     bin_str = 'bin'
-    # else:
-    #     bin_str = 'str'
-    # DIR_LIB = MB.DIR_BPASS + 'BPASS%s/BPASS%s_%s-imf%s/'%(MB.BPASS_ver,MB.BPASS_ver,bin_str,imf_str)
-
-    if fneb:
-        MB.logger.warning('Currently, BPASS nebular emission is only available for imf135_300 bin.')
-        if bin_str == 'bin' and imf_str == '135_300':
-            print('nebular is on')
-            fneb = True
-            DIR_LIB_NEB = MB.DIR_BPASS + 'BPASS%s-Cloudy/cloudyspec_outputs/'%(MB.BPASS_ver)
-        else:
-            print('nebular is off')
-            print(bin_str, imf_str)
-            fneb = False
 
     NZ = len(Z)
     Na = len(age)
@@ -1151,7 +1324,8 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     fd_temp = ascii.read(MB.file_temp)
     logZs_temp = fd_temp['logZ']
     logTs_temp = fd_temp['logT']
-    Ms_temp = fd_temp['Ms']
+    # Ms_temp = fd_temp['Ms_form']
+    # Ms_survive_temp = fd_temp['Ms_survive']
 
     flagz = True
     for zz in range(len(Z)):
@@ -1193,7 +1367,6 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
         # 'tau is the width of each age bin.'
         wave0 = None
         for pp in range(len(tau0)):
-            spall = [] # For sps model
             ms = np.zeros(Na, dtype='float')
             Ls = np.zeros(Na, dtype='float')
             mlost = np.zeros(Na, dtype='float')
@@ -1224,7 +1397,7 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                     wave_tmp = fd_sed['wavelength']
 
                 # age_stm = fd_temp['logT'][iiz[0][0]]#np.log10(age[ss]) #fd_stm['col1']
-                mass_formed = fd_temp['Ms'][iiz[0][0]]#fd_stm['col2'][0]
+                mass_formed = fd_temp['Ms_form'][iiz[0][0]]#fd_stm['col2'][0]
 
                 ncols = len(MB.age)
                 nage_temp = np.arange(2,ncols+1,1)
@@ -1237,58 +1410,10 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                 #
                 # Determining tau for each age bin;
                 #
-                if int(tau0[pp]) == 99:
-                    # @@@ TBD
-                    if ss==0:
-                        tautmp = age[ss]
-                        agetmp = age[ss]/2.
-                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>0))
-                        for sstmp in con_tau[0][-1:]:
-                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
-                            ms[ss] += fd_stm['col2'][sstmp]
-                            mass_formed_tot += mass_formed
-                    else:
-                        tautmp = age[ss] - age[ss-1]
-                        agetmp = age[ss] - (age[ss]-age[ss-1])/2.
-                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>age[ss-1]*1e9))
-                        for sstmp in con_tau[0][-1:]:
-                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
-                            ms[ss] += fd_stm['col2'][sstmp]
-                            mass_formed_tot += mass_formed
-
-                elif tau0[pp] > 0.0:
-                    # @@@ TBD
-
-                    if ss==0 and age[ss]<tau0[pp]:
-                        tautmp = age[ss]
-                        agetmp = age[ss]/2.
-                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>0))
-                        for sstmp in con_tau[0]:
-                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
-                            ms[ss] += fd_stm['col2'][sstmp]
-                            mass_formed_tot += mass_formed
-
-                    elif (age[ss]-age[ss-1]) < tau0[pp]:
-                        tautmp = age[ss] - age[ss-1]
-                        agetmp = age[ss] - (age[ss]-age[ss-1])/2.
-                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>age[ss-1]*1e9))
-                        for sstmp in con_tau[0]:
-                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
-                            ms[ss] += fd_stm['col2'][sstmp]
-                            mass_formed_tot += mass_formed
-
-                    else:
-                        tautmp = tau0[pp]
-                        agetmp = age[ss] - tau0[pp]/2.
-                        con_tau= np.where((age_temp[:]<=age[ss]*1e9) & (age_temp[:]>(age[ss] - tau0[pp])*1e9))
-                        for sstmp in con_tau[0]:
-                            flux0  += fd_sed['col%d'%(sstmp+2)][:]
-                            ms[ss] += fd_stm['col2'][sstmp]
-                            mass_formed_tot += mass_formed
-
-                else: # =Negative tau; SSP
+                if False:
+                    hoge
+                else:
                     iis = np.argmin(np.abs(age[ss] - age_temp[:]/1e9))
-                    # iistm = np.argmin(np.abs(age[ss] - 10**age_stm[:]/1e9))
                     if ss==0:
                         tautmp = 10**6.05 / 1e9 # in Gyr
                         agetmp = age[ss]/2.
@@ -1302,7 +1427,7 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                     flux0 = fint(wave0) # unit?
                     flux0 /= 3.826e33 # Now in Lsun, same as in BPASS.
 
-                    ms[ss] = mass_formed
+                    ms[ss] = fd_temp['Ms_survive'][iiz[0][0]]
                     mass_formed_tot += mass_formed
 
                 # Keep tau in header;
@@ -1315,29 +1440,13 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
 
                 # Temp
                 mlost[ss] = ms[ss] / mass_formed_tot
-                Ls[ss] = np.sum(flux0) # BPASS sed is in Lsun.
+                Ls[ss] = np.nansum(flux0) # BPASS sed is in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if flagz and ss == 0 and pp == 0:
-                    # ASDF Big tree;
-                    # Create header;
-                    tree = {
-                        'isochrone': '',
-                        'library': '',
-                        'nimf': nimf,
-                        'version_gsf': gsf.__version__
-                    }
-
-                    tree.update({'age': MB.age})
-                    tree.update({'Z': MB.Zall})
-                    if fneb:
-                        tree.update({'logUMIN': MB.logUMIN})
-                        tree.update({'logUMAX': MB.logUMAX})
-                        tree.update({'DELlogU': MB.DELlogU})
-                    if MB.fagn:
-                        tree.update({'AGNTAUMIN': MB.AGNTAUMIN})
-                        tree.update({'AGNTAUMAX': MB.AGNTAUMAX})
-                        tree.update({'DELAGNTAU': MB.DELAGNTAU})
+                    tree = initiate_tree(MB)
+                    tree['isochrone'] = 'general'
+                    tree['library'] = 'general'
 
                     # ASDF
                     tree_spec.update({'wavelength': wave})
@@ -1347,63 +1456,8 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
                     # ASDF
                     tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
-                    # BPASS neb;
-                    if fneb and pp == 0 and ss == iix_age_neb:
-                        # @@@ TBD
-                        if zz == 0:
-                            MB.logger.info('BPASS nebular component is calculated using age=%.1e'%(age[ss]))
-
-                        for nlogU, logUtmp in enumerate(MB.logUs):
-                            # Each file has 16 columns and 30,000 rows. The first column lists a wavelength in angstroms, 
-                            # and each remaining column n (n>1) holds the model flux for the population at an age of 10^(6+0.1*(n-2)) years at that wavelength. The range of ages covered is log(age/years)=6.0-7.5
-                            # for nlogU, logUtmp in enumerate(MB.logUs):
-                            # The units of flux are log_10(ergs/s per Angstrom), normalised for a cluster of 1e6 Msun formed in a single instantaneous burst. The total luminosity of the SED can be simply calculated by summing all the rows together
-                            iix = np.argmin(np.abs(logUtmp - logUs_bpass))
-                            logu_str = logUs_bpass_str[iix]
-                            file_sed_emi = '%scloudyspec_imf%s_z%s_%s_%s.sed'%(DIR_LIB_NEB,imf_str,z_str,bin_str,logu_str)
-                            fd_sed_emi = ascii.read(file_sed_emi)
-                            con_emi_data = (fd_sed_emi['col1'] != 'Total_Power')
-                            fd_sed_emi = fd_sed_emi[con_emi_data]
-                            wave0_emi = np.asarray([float(s) for s in fd_sed_emi['col1']])
-                            flux0_emi = np.zeros(len(wave0_emi),'float')
-                            # Repeat the same but for emission;
-
-                            #
-                            # Determining tau for each age bin;
-                            #
-                            # Only ssp available;
-                            iis = np.argmin(np.abs(age[ss] - age_emi[:]/1e9))
-                            if iis+2 < ncols_emi:
-                                flux0_emi = 10**fd_sed_emi['col%d'%(iis+2)]
-                            else:
-                                flux0_emi = flux0_emi[:] * 0
-
-                            # if zz == 0 and nlogU ==0:
-                            #     for _i in range(5):
-                            #         plt.plot(wave0_emi, 10**fd_sed_emi['col%d'%(_i+2)], ls=':', alpha=0.5, label='%d'%(_i))
-
-                            # Then. add flux if tau > 0.
-                            # con = (wave0>lammin) & (wave0<lammax)
-                            # wave, flux = wave0[con], flux0[con]
-                            # con_emi = (wave0_emi>lammin) & (wave0_emi<lammax)
-                            # ewave, eflux = wave0_emi[con_emi], flux0_emi[con_emi]
-                            femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
-                            flux_nebular = femi(wave)
-                            emline_luminosity = np.sum(flux0_emi)
-
-                            flux_nebular_only = flux_nebular/Lunit_emi-flux
-                            con_neg = flux_nebular_only<0
-                            flux_nebular_only[con_neg] = 0
-
-                            # ASDF
-                            # tree_spec.update({'efspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): eflux})
-                            tree_spec.update({'flux_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular_only}) # in Lsun/AA
-                            tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
-                            tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
-                            tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
-                            # print('fspec_nebular_Z%d'%zz+'_logU%d'%nlogU, flux_nebular)
-
                 else:
+                    # This is currently off
                     MB.logUFIX = logu_neb
                     MB.nlogU = 1
                     MB.logUMIN = MB.logUFIX
@@ -1494,8 +1548,10 @@ def make_tmp_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02,
     tree.update({'lick' : tree_lick})
 
     # Save
-    af = asdf.AsdfFile(tree)
-    af.write_to(DIR_TMP + file_out, all_array_compression='zlib')
+    assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
+
+    # Check;
+    # plot_mform_msurvive(MB)
 
 
 def smooth_spectrum(wave, flux, wmin=0, wmax=1750, sigma=30, verbose=False):
@@ -1525,3 +1581,19 @@ def smooth_spectrum(wave, flux, wmin=0, wmax=1750, sigma=30, verbose=False):
     flux[con] = z
 
     return wave, flux
+
+
+def plot_mform_msurvive(mb, ind_Z=0):
+    """"""
+    af = asdf.open(os.path.join(mb.DIR_TMP, 'spec_all.asdf'))
+    mshdu = af['ML']
+    tt = mb.age
+    ms = mshdu['ms_%d'%ind_Z]
+    frac_mass_survive = mshdu['frac_mass_survive_%d'%ind_Z]
+    plt.plot(tt, ms/frac_mass_survive, linestyle='-', label='mass formed')
+    plt.plot(tt, ms, linestyle='--', label='mass survived')
+    # plt.xlim(1e-3,10)
+    plt.xscale('log')
+    plt.xlabel('age [Gyr]')
+    plt.legend(loc=0)
+    plt.show()

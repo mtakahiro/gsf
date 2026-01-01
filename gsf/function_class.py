@@ -1,13 +1,10 @@
 import numpy as np
-import sys
 import scipy.interpolate as interpolate
-import asdf
-from astropy.io import fits
 
 from .function import *
-from .basic_func import Basic
+# from .basic_func import Basic
 from .function_igm import dijkstra_igm_abs
-from .maketmp_filt import maketemp,maketemp_tau
+# from .maketmp_filt import maketemp
 
 
 class Func:
@@ -63,8 +60,8 @@ class Func:
         lib : float array
             
         '''
-        ID0 = self.MB.ID
-        DIR_TMP = self.DIR_TMP
+        # ID0 = self.MB.ID
+        # DIR_TMP = self.DIR_TMP
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
@@ -73,10 +70,10 @@ class Func:
 
         # ASDF;
         if fall == 0:
-            app = ''
+            # app = ''
             hdu0 = self.MB.af['spec']
         elif fall == 1:
-            app = 'all_'
+            # app = 'all_'
             hdu0 = self.MB.af['spec_full']
 
         if f_neb:
@@ -374,7 +371,7 @@ class Func:
         return nr, xx, yy
 
 
-    def get_template_single(self, A00, Av, nmodel, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
+    def get_template_single(self, A00, Av, index_age, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
                             f_apply_igm=True, xhi=None):
         '''
         Parameters
@@ -397,7 +394,6 @@ class Func:
         ZZ = self.ZZ
         AA = self.AA
         bfnc = self.MB.bfnc
-        DIR_TMP = self.MB.DIR_TMP
         NZ = bfnc.Z2NZ(Z)
 
         pp0 = np.random.uniform(low=0, high=len(tau0), size=(1,))
@@ -416,7 +412,7 @@ class Func:
             nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
             coln = int(2 + NZ*NU + nAGNTAU)
         else:
-            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + nmodel)
+            coln = int(2 + pp*len(ZZ)*len(AA) + NZ*len(AA) + index_age)
 
         nr = lib[:,0]
         xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
@@ -691,21 +687,16 @@ class Func_tau:
         '''
         Loads template in obs range.
         '''
-        ID0 = self.MB.ID
         ZZ = self.ZZ
-        AA = self.AA
-        bfnc = self.MB.bfnc
+        NZ = len(ZZ)
 
         # ASDF;
         if fall == 0:
-            app = ''
+            # app = ''
             hdu0 = self.MB.af['spec']
         elif fall == 1:
-            app = 'all_'
+            # app = 'all_'
             hdu0 = self.MB.af['spec_full']
-
-        DIR_TMP = self.DIR_TMP
-        NZ = len(ZZ)
 
         if f_neb:
             NU = len(self.MB.logUs)
@@ -883,9 +874,15 @@ class Func_tau:
             return nr, xx, yy
 
 
-    def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, pp=0, lib=None, f_get_Mtot=False, f_check_limit=True):
+    def get_total_flux_neb(self, par, f_Alog=True, lib_all=True, lib=None, f_get_Mtot=False, f_check_limit=True):
         '''
         '''
+        if lib is None:
+            if lib_all:
+                lib = self.MB.lib_neb_all
+            else:
+                lib = self.MB.lib_neb
+
         Mtot = 0
         try:
             Aneb = par['Aneb']
@@ -936,6 +933,70 @@ class Func_tau:
             return nr, xx, yy
 
 
+    def get_template_single(self, A00, Av, tau, age, Z, zgal, lib, logU=None, AGNTAU=None, f_apply_dust=True, EBVratio=2.27,
+                            f_apply_igm=True, xhi=None):
+        '''
+        Parameters
+        ----------
+        EBVratio : float
+            E(B-V)_neb / E(B-V)_st. 
+            Useful table in https://iopscience.iop.org/article/10.3847/1538-4357/aba35e/pdf
+
+        Returns
+        -------
+        A00 * yyd_sort, xxd_sort : float arrays
+            Flux (fnu) and wavelength (AA; observed frame)
+
+        Notes
+        -----
+        This function is only used in plot_sed.py.
+        Common function for mebular and nonnebular temlates.
+        '''
+        NZ, NT, NA = self.MB.bfnc.Z2NZ(Z,tau,age)
+
+        if logU != None:
+            NU = len(self.MB.logUs)
+            # Dust attenuation to nebulae
+            Av *= EBVratio
+            nlogU = np.argmin(np.abs(self.MB.logUs - logU))
+            coln = int(2 + NZ*NU + nlogU)
+        elif AGNTAU != None:
+            NU = len(self.MB.AGNTAUs)
+            nAGNTAU = np.argmin(np.abs(self.MB.AGNTAUs - AGNTAU))
+            coln = int(2 + NZ*NU + nAGNTAU)
+        else:
+            coln = int(2 + NZ*self.MB.ntau*self.MB.npeak + NT*self.MB.npeak + NA)
+
+        nr = lib[:,0]
+        xx = lib[:,1] # This is OBSERVED wavelength range at z=zgal
+        yy = lib[:,coln]
+
+        if f_apply_igm:
+            if xhi == None:
+                xhi = self.MB.x_HI_input
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=xhi)
+            self.MB.x_HI = x_HI
+
+        if f_apply_dust:
+            yyd, xxd, nrd = apply_dust(yy, xx/(1+zgal), nr, Av, dust_model=self.dust_model)
+        else:
+            yyd, xxd, nrd = yy, xx/(1+zgal), nr
+
+        xxd *= (1.+zgal)
+
+        nrd_yyd = np.zeros((len(nrd),3), dtype='float')
+        nrd_yyd[:,0] = nrd[:]
+        nrd_yyd[:,1] = yyd[:]
+        nrd_yyd[:,2] = xxd[:]
+
+        b = nrd_yyd
+        nrd_yyd_sort = b[np.lexsort(([-1,1]*b[:,[1,0]]).T)]
+        yyd_sort = nrd_yyd_sort[:,1]
+        xxd_sort = nrd_yyd_sort[:,2]
+
+        return A00 * yyd_sort, xxd_sort
+
+
     def tmp04_dust(self, par, nprec=1):
         '''
         Makes model template with a given param setself.
@@ -969,9 +1030,10 @@ class Func_tau:
 
         return yy_s, xx_s
 
-  
-    def get_template(self, par, f_Alog=True, nprec=1, f_val=False, check_bound=False, 
-        lib_all=False, lib=None, f_nrd=False, f_apply_dust=True, f_apply_igm=True, xhi=None, f_neb=False, deltaz_lim=0.1):
+
+    def get_template(self, par, f_Alog:bool=True, nprec:int=1, f_val:bool=False, lib_all:bool=False, f_nrd:bool=False, 
+        f_apply_dust:bool=True, f_apply_igm=True, xhi=None, deltaz_lim=0.1, f_neb=False, EBVratio:float=2.27, f_agn=False,
+        check_bound=False):
         '''
         Makes model template with a given param set.
         Also dust attenuation.
@@ -981,18 +1043,6 @@ class Func_tau:
         nprec : int
             Precision when redshift is refined. 
         '''
-        ZZ = self.ZZ
-        AA = self.AA 
-        bfnc = self.MB.bfnc
-        Mtot = 0
-        pp = 0
-
-        if lib is None:
-            if lib_all:
-                lib = self.MB.lib_all
-            else:
-                lib = self.MB.lib
-
         if f_val:
             par = par.params
 
@@ -1013,11 +1063,15 @@ class Func_tau:
         Av = par['AV0']
 
         if f_neb:
+            # Dust attenuation to nebulae
+            Av *= EBVratio
+
+        if f_neb:
             # @@@ Not clear why f_check_limit cannot work
-            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
+            nr, xx, yy, Mtot = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=lib_all, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
         else:
             # @@@ Not clear why f_check_limit cannot work
-            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, pp=pp, lib=lib, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
+            nr, xx, yy, Mtot = self.get_total_flux(par, f_Alog=f_Alog, lib_all=lib_all, f_get_Mtot=True, f_check_limit=check_bound)#, f_check_limit=True)
 
         # @@@ Filter convolution may need to happpen here
         if round(zmc,nprec) != round(self.MB.zgal,nprec):
@@ -1030,9 +1084,9 @@ class Func_tau:
                     nr_full, xx_full, yy_full = nr, xx, yy
                 else:
                     if f_neb:
-                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True, lib=lib)
+                        nr_full, xx_full, yy_full = self.get_total_flux_neb(par, f_Alog=f_Alog, lib_all=True)
                     else:
-                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True, lib=lib)
+                        nr_full, xx_full, yy_full = self.get_total_flux(par, f_Alog=f_Alog, lib_all=True)
 
                 xx_s, yy_s = filconv(self.MB.filts, xx_full / (1+self.MB.zgal) * (1+zmc), yy_full, self.MB.DIR_FILT, MB=self.MB, f_regist=False)
                 

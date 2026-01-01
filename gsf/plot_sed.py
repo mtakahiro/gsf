@@ -37,6 +37,70 @@ from .maketmp_filt import get_LSF
 col = ['violet', 'indigo', 'b', 'lightblue', 'lightgreen', 'g', 'orange', 'coral', 'r', 'darkred']#, 'k']
 
 
+def make_final_product(MB, percs=[16,50,84]):
+    gsf_dict = {}
+    gsf_dict['primary_params'] = {}
+
+    # a single ASDF;
+    tree_shf = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(MB.ID)))
+    gsf_dict['sfh'] = {}
+    gsf_dict = modify_keys(tree_shf, 'sfh', gsf_dict=gsf_dict)
+    tsets_SFR = tree_shf['header']['tsets_SFR'].split(',')
+    tsets_SFR = [float(s) for s in tsets_SFR]
+
+    tree_sed = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(MB.ID)))
+    gsf_dict['sed'] = {}
+
+    lbls_sed_skip = ['header']
+    lbls_sed_skip = [s.upper() for s in lbls_sed_skip]
+    key_skip = ['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']
+    key_skip += lbls_sed_skip
+
+    label = 'sed'
+    gsf_dict = modify_keys_sed(tree_sed, label, gsf_dict=gsf_dict, key_skip=key_skip)
+
+    keys_param_sed = ['MUV', 'SFRUV', 'SFRUV_STEL', 'SFRUV_BETA', 'SFRUV_UNCOR', 'UVBETA', 'UVBETA_OBS', 'UV', 'VJ']
+    keys_param_sfh = ['ZMC', 'MSTEL', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW', 'AV0']
+    for key in keys_param_sed:
+        for perc in percs:
+            try:
+                gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sed']['%s_%d'%(key, perc)]
+            except:
+                print('%s_%d'%(key, perc),'cannot be found')
+
+    for key in keys_param_sfh:
+        for perc in percs:
+            try:
+                gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sfh']['%s_%d'%(key, perc)]
+            except:
+                print('%s_%d'%(key, perc),'cannot be found')
+
+    key = 'SFR'
+    for t in range(len(tsets_SFR)):
+        for perc in percs:
+            gsf_dict['primary_params']['%s_%dMYR_%d'%(key, tsets_SFR[t]*1e3, perc)] = gsf_dict['sfh']['%s_%dMYR_%d'%(key, tsets_SFR[t]*1e3, perc)]
+
+    af = asdf.AsdfFile(gsf_dict)
+    af.write_to(os.path.join(MB.DIR_OUT, 'gsf_%s.asdf'%(MB.ID)), all_array_compression='zlib')
+    return gsf_dict
+
+
+def setup_library(MB):
+    """"""
+    MB.lib = MB.fnc.open_spec_fits(fall=0)
+    MB.lib_all = MB.fnc.open_spec_fits(fall=1, orig=True)
+    if MB.f_dust:
+        MB.lib_dust = MB.fnc.open_spec_dust_fits(fall=0)
+        MB.lib_dust_all = MB.fnc.open_spec_dust_fits(fall=1)
+    if MB.fneb:
+        MB.lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
+        MB.lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
+    if MB.fagn:
+        MB.lib_agn = MB.fnc.open_spec_fits(fall=0, f_agn=True)
+        MB.lib_agn_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_agn=True)
+    return MB
+
+
 def modify_keys_sed(fd_sfh, label, gsf_dict=None, key_skip=['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']):
     '''
     label : 'sfh' or 'sed' 
@@ -147,13 +211,423 @@ def modify_keys(fd_sfh, label, gsf_dict=None, key_skip=['BITPIX', 'EXTEND', 'SIM
     return gsf_dict
 
 
+def add_line_names(ax2t, ):
+    """"""
+    ###############
+    # Line name
+    ###############
+    LN0 = ['Mg2', '$NeIV$', '[OII]', 'H$\theta$', 'H$\eta$', 'Ne3?', 'H$\delta$', 'H$\gamma$', 'H$\\beta$', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
+    LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 5175, 6563, 6717, 6731]
+    fsl = 9 # Fontsize for line
+    try:
+        for ii in range(len(LW)):
+            ll = np.argmin(np.abs(LW[ii]-LW0[:]))
+
+            if ll == 2 and FLW[ii] == 1: # FLW is the flag for line fitting.
+                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
+                xxl = yyl * 0 + LW0[ll]
+                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                ax2t.text(xxl[0]-130, yyl[0]*1.28, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+
+            elif (ll == 9 and FLW[ii] == 1):
+                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
+                xxl = yyl * 0 + LW0[ll]
+                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+
+            elif (ll == 10 and FLW[ii] == 1):
+                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
+                xxl = yyl * 0 + LW0[ll]
+                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                ax2t.text(xxl[0]+40, yyl[0]*0.75, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+
+            elif FLW[ii] == 1 and (ll == 6 or ll == 7 or ll == 8):
+                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
+                xxl = yyl * 0 + LW0[ll]
+                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+
+            elif ll == 6 or ll == 7 or ll == 8:
+                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
+                xxl = yyl * 0 + LW0[ll]
+                ax2t.errorbar(xxl, yyl, lw=0.5, color='gray', zorder=1, alpha=1., label='', capsize=0)
+                ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color='gray', fontsize=9, rotation=90)
+
+            elif FLW[ii] == 1:
+                yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.7,yminzoom+(ymaxzoom-yminzoom)*.95, 0.01)
+                xxl = yyl * 0 + LW0[ll]
+                ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
+                ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
+    except:
+        pass
+
+
+def plot_bbmodel_sed(MB, zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, ax1, ax3t, x1_tot, ytmp16, ytmp50, ytmp84, SFILT, DFILT, DIR_FILT, scale, d_scale, DL, axes, leng, sigma, SNlim=2, f_plot_resid=False, c=3e5, col_dat='r', col_dia='blue'):
+    """"""    
+    if MB.f_dust:
+        ALLFILT = np.append(SFILT,DFILT)
+        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
+
+        ax1.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
+        ax3t.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
+
+        iix = []
+        for ii in range(len(fbb)):
+            iix.append(ii)
+        con_sed = ()
+        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
+
+        # plot FIR range;
+        ax3t.scatter(lbb, fbb, lw=0.5, color='none', edgecolor=col_dia, \
+        zorder=2, alpha=1.0, marker='d', s=50)
+        print(lbb, fbb)
+
+    else:
+        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
+        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
+
+        iix = []
+        for ii in range(len(fbb)):
+            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
+        con_sed = (eybb>0)
+        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
+
+        if f_plot_resid:
+            conbb_hs = (fybb/eybb>SNlim)
+            axes['B'].scatter(lbb[iix][conbb_hs], ((fybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
+            conbb_hs = (fybb/eybb<=SNlim) & (eybb>0)
+            axes['B'].errorbar(lbb[iix][conbb_hs], ((eybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs], yerr=leng,\
+                uplims=((fybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs] * sigma, linestyle='',\
+                color=col_dat, lw=0.5, marker='', ms=4, label='', zorder=4, capsize=1.5)
+            axes['B'].set_xscale(ax1.get_xscale())
+            axes['B'].set_xlim(ax1.get_xlim())
+            axes['B'].set_xticks(ax1.get_xticks())
+            axes['B'].set_xticklabels(ax1.get_xticklabels())
+            axes['B'].set_xlabel(ax1.get_xlabel())
+            xx = np.arange(axes['B'].get_xlim()[0],axes['B'].get_xlim()[1],100)
+            axes['B'].plot(xx,xx*0,linestyle='--',lw=0.5,color='k')
+            axes['B'].set_ylabel('Residual / $\sigma$')
+            axes['A'].set_xlabel('')
+            axes['A'].set_xticks(ax1.get_xticks())
+            axes['A'].set_xticklabels('')
+
+        # Calculate EW, if there is excess band;
+        try:
+            iix2 = []
+            for ii in range(len(fy_ex)):
+                iix2.append(np.argmin(np.abs(lbb[:]-x_ex[ii])))
+
+            # Rest-frame EW;
+            # Note about 16/84 in fbb
+            EW16 = (fy_ex * c / np.square(x_ex) /d_scale - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW50 = (fy_ex * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW84 = (fy_ex * c / np.square(x_ex) /d_scale - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+
+            EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+            EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
+
+            cnt50 = fbb[iix2] # in Flam
+            cnt16 = fbb16[iix2] # in Flam
+            cnt84 = fbb84[iix2] # in Flam
+ 
+            # Luminosity;
+            #Lsun = 3.839 * 1e33 #erg s-1
+            L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
+            L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
+            L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
+
+            ew_label = []
+            for ii in range(len(fy_ex)):
+                lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
+                fres = MB.band['%s_res'%MB.filts[iix2[ii]]][:]
+                ew_label.append(MB.filts[iix2[ii]])
+
+                print('\n')
+                print('EW016 for', x_ex[ii], 'is %d'%EW16[ii])
+                print('EW050 for', x_ex[ii], 'is %d'%EW50[ii])
+                print('EW084 for', x_ex[ii], 'is %d'%EW84[ii])
+                print('%d_{-%d}^{+%d} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
+                print('Or, %d\pm{%d} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
+        except:
+            print('\nEW calculation; Failed.\n')
+            EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = None, None, None, None, None, None, None, None, None, None, None
+            ew_label = []
+            pass
+
+    return lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84
+
+
+def show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=[], SNlim=3, f_chind=True, f_exclude=False):
+    """ based on Sawick12 """
+    from scipy import special
+
+    if f_chind:
+        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
+    else:
+        conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+
+    try:
+        logf = hdul[1].data['logf'][1]
+        ey_revised = np.sqrt(ey**2+ ysump**2 * np.exp(logf)**2)
+    except:
+        ey_revised = ey
+
+    chi2 = sum((np.square(fy-ysump) / ey_revised)[conw])
+
+    chi_nd = 0.0
+    if f_chind:
+        f_ex = np.zeros(len(fy), 'int')
+        if f_exclude:
+            for ii in range(len(fy)):
+                if x[ii] in x_ex:
+                    f_ex[ii] = 1
+
+        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
+        x_erf = (ey_revised[con_up] - ysump[con_up]) / (np.sqrt(2) * ey_revised[con_up])
+        f_erf = special.erf(x_erf)
+        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey_revised[con_up] * (1 + f_erf)) )
+
+    # Number of degree;
+    con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+    nod = int(len(wht3[con_nod])-ndim_eff)
+
+    print('\n')
+    print('No-of-detection    : %d'%(len(wht3[conw])))
+    print('chi2               : %.2f'%(chi2))
+    if f_chind:
+        print('No-of-non-detection: %d'%(len(ey[con_up])))
+        print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
+    print('No-of-params       : %d'%(ndim_eff))
+    print('Degrees-of-freedom : %d'%(nod))
+    if nod>0:
+        fin_chi2 = (chi2 - 2 * chi_nd) / nod
+    else:
+        fin_chi2 = -99
+    print('Final chi2/nu      : %.2f'%(fin_chi2))    
+    return chi2, conw, con_up, chi_nd, nod, fin_chi2
+
+
+def get_sed_figure_format(MB, ax1, x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=False, ax3t=None):
+    """"""
+    ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
+    ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
+
+    xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
+    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
+    if MB.f_dust:
+        x1max = 400000
+        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
+        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
+
+    if x1min > 2500:
+        xticks = xticks[1:]
+        xlabels = xlabels[1:]
+
+    ax1.set_xlim(x1min, x1max)
+    ax1.set_xscale('log')
+
+    if not ymax == None:
+        ax1.set_ylim(-ymax*MB.scl_yaxis,ymax)
+
+    ax1.set_xticks(xticks)
+    ax1.set_xticklabels(xlabels)
+
+    ###############
+    # Line name
+    ###############
+    if False:
+        add_line_names()
+
+    # Filters
+    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
+    if f_plot_filter:
+        ax1 = plot_filter(MB, ax1, ymax, scl=MB.scl_yaxis, ind_remove=ind_remove)
+
+    xx = np.arange(100,400000)
+    yy = xx * 0
+    ax1.plot(xx, yy, ls='--', lw=0.5, color='k')
+    ax1.legend(loc=1, fontsize=11)
+    ax1.xaxis.labelpad = -3
+
+    if MB.f_dust:
+        ax3t.set_xlim(1e4, 3e7)
+        ax3t.set_xscale('log')
+        ax3t.set_xticks([10000, 1000000, 10000000])
+        ax3t.set_xticklabels(['1', '100', '1000'])
+
+    return ax1 #ax1t, ax2, ax2t
+
+
+def initiate_figure_sed(MB, f_grsm=False, f_plot_filter=True, f_plot_resid=True):
+    """"""
+    axes = None
+    ax3t = None
+    ax2t = None 
+    if f_grsm or MB.f_dust:
+        fig = plt.figure(figsize=(7.,3.2))
+        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
+        ax1 = fig.add_subplot(111)
+        xsize = 0.29
+        ysize = 0.25
+        if f_grsm:
+            ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
+        if MB.f_dust:
+            ax3t = ax1.inset_axes((0.7,.35,.28,.25))
+
+        f_plot_resid = False
+        MB.logger.info('Grism data. f_plot_resid is turned off.')
+    else:
+        if f_plot_resid:
+            fig_mosaic = """
+            AAAA
+            AAAA
+            BBBB
+            """
+            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = axes['A']
+        else:
+            if f_plot_filter:
+                fig = plt.figure(figsize=(5.5,2.))
+            else:
+                fig = plt.figure(figsize=(5.5,1.8))
+            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
+            ax1 = fig.add_subplot(111)
+
+    if f_plot_filter:
+        MB.scl_yaxis = 0.2
+    else:
+        MB.scl_yaxis = 0.1
+
+    return fig, axes, ax1, ax2t, ax3t
+
+
+def plot_bb_sed(MB, ax1, xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=3e5, col_dat = 'r', f_bbbox=False, sigma=1.0):
+    """"""
+    #######################################
+    # D.Kelson like Box for BB photometry
+    #######################################
+    if f_bbbox:
+        for ii in range(len(xbb)):
+            if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
+                xx = [xbb[ii]-exbb[ii],xbb[ii]-exbb[ii]]
+                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+                xx = [xbb[ii]+exbb[ii],xbb[ii]+exbb[ii]]
+                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
+                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
+                yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
+                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
+    else: # Normal BB plot;
+        # Detection;
+        conbb_hs = (fybb/eybb>SNlim)
+        ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale, \
+        yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d_scale, color='k', linestyle='', linewidth=0.5, zorder=4)
+        ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale, \
+        marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
+        try:
+            # For any data removed fron fit (i.e. IRAC excess):
+            #data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
+            NR_ex = MB.data['bb_obs_removed']['NR']# data_ex['col1']
+        except:
+            NR_ex = []
+
+        # Upperlim;
+        if len(fybb[conbb_hs]):
+            leng = np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale) * 0.05 #0.2
+        else:
+            leng = None
+        conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
+        
+        for ii in range(len(xbb)):
+            if NRbb[ii] in NR_ex[:]:
+                conebb_ls[ii] = False
+
+        ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, yerr=leng,\
+            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, linestyle='', color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
+
+    return ax1, leng
+
+
+def plot_dust_sed(MB, ax1, ax3t, AD50, nTD50, zp50, c=3e5, d_scale=1, SNlim=3):
+    """"""
+    from lmfit import Parameters
+    par = Parameters()
+    par.add('MDUST',value=AD50)
+    par.add('TDUST',value=nTD50)
+    par.add('zmc',value=zp50)
+
+    y0d, x0d = MB.fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
+    y0d_cut, _ = MB.fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
+
+    # data;
+    xbbd, fybbd, eybbd = MB.data['spec_fir_obs']['x'], MB.data['spec_fir_obs']['fy'], MB.data['spec_fir_obs']['ey']
+
+    try:
+        conbbd_hs = (fybbd/eybbd>SNlim)
+        ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
+        yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d_scale, color='k', linestyle='', linewidth=0.5, zorder=4)
+        ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
+        '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+        ax3t.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
+        '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
+    except:
+        pass
+
+    try:
+        conebbd_ls = (fybbd/eybbd<=SNlim)
+        ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) /d_scale, \
+        yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale)*0.05, \
+        uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
+        ax3t.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) /d_scale, \
+        yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale)*0.05, \
+        uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
+    except:
+        pass
+
+    return ax1, ax3t, y0d_cut, y0d, x0d
+
+
+def read_mcmc_chain(ID, samplepath='', use_pickl=True):
+    if use_pickl:
+        pfile = 'gsf_chain_' + ID + '.cpkl'
+        data = loadcpkl(os.path.join(samplepath+'/'+pfile))
+    else:
+        pfile = 'gsf_chain_' + ID + '.asdf'
+        data = asdf.open(os.path.join(samplepath+'/'+pfile))
+
+    try:
+        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
+        burnin = data['burnin']
+        nmc    = data['niter']
+        nwalk  = data['nwalkers']
+        Nburn  = burnin
+        if use_pickl:
+            samples = data['chain'][:]
+        else:
+            samples = data['chain']
+        return ndim, Nburn, samples
+    except:
+        msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
+        print_err(msg, exit=False)
+        return False, False, False
+
+
 def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
     f_apply_igm=True, show_noattn=False, percs=[16,50,84],
-    x1min=4000, return_figure=False, lcb='#4682b4',
+    x1min=4000, return_figure=False, lcb='#4682b4', col_dat='r', col_dia='blue',
+    sigma=1.0,
     lam_b=1350, lam_r=3000,
-    clean_files=True
+    clean_files=True,
+    use_pickl=True,
     ):
     '''
     Parameters
@@ -292,6 +766,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         # DFWFILT = fil_fwhm(DFILT, DIR_FILT)
         if verbose:
             MB.logger.info('Total dust mass is %.2e'%(MD50))
+    else:
+        DFILT = []
 
     if MB.fxhi:
         # xhi16 = hdul[1].data['xhi'][0]
@@ -383,40 +859,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         LIBRARY = ''
         nimf = ''
 
-    #############
-    # Plot.
-    #############
-    # Set the inset.
-    if f_grsm or MB.f_dust:
-        fig = plt.figure(figsize=(7.,3.2))
-        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-        ax1 = fig.add_subplot(111)
-        xsize = 0.29
-        ysize = 0.25
-        if f_grsm:
-            ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
-        if MB.f_dust:
-            ax3t = ax1.inset_axes((0.7,.35,.28,.25))
-
-        f_plot_resid = False
-        MB.logger.info('Grism data. f_plot_resid is turned off.')
-    else:
-        if f_plot_resid:
-            fig_mosaic = """
-            AAAA
-            AAAA
-            BBBB
-            """
-            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = axes['A']
-        else:
-            if f_plot_filter:
-                fig = plt.figure(figsize=(5.5,2.))
-            else:
-                fig = plt.figure(figsize=(5.5,1.8))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.08, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
+    # Initiate figure;
+    fig, axes, ax1, ax2t, ax3t = initiate_figure_sed(MB, f_grsm=f_grsm, f_plot_filter=f_plot_filter, f_plot_resid=f_plot_resid)
 
     # Determine scale here;
     if scale == None:
@@ -428,53 +872,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             MB.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
     d_scale = MB.d * scale
 
-    #######################################
-    # D.Kelson like Box for BB photometry
-    #######################################
-    col_dat = 'r'
-    if f_bbbox:
-        for ii in range(len(xbb)):
-            if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
-                xx = [xbb[ii]-exbb[ii],xbb[ii]-exbb[ii]]
-                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-                xx = [xbb[ii]+exbb[ii],xbb[ii]+exbb[ii]]
-                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
-                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
-                yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-    else: # Normal BB plot;
-        # Detection;
-        conbb_hs = (fybb/eybb>SNlim)
-        ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale, \
-        yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d_scale, color='k', linestyle='', linewidth=0.5, zorder=4)
-        ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale, \
-        marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
-        try:
-            # For any data removed fron fit (i.e. IRAC excess):
-            #data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
-            NR_ex = MB.data['bb_obs_removed']['NR']# data_ex['col1']
-        except:
-            NR_ex = []
-
-        # Upperlim;
-        sigma = 1.0
-        if len(fybb[conbb_hs]):
-            leng = np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale) * 0.05 #0.2
-        else:
-            leng = None
-        conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
-        
-        for ii in range(len(xbb)):
-            if NRbb[ii] in NR_ex[:]:
-                conebb_ls[ii] = False
-
-        ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, yerr=leng,\
-            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, linestyle='', color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
+    # Plot BB data points;
+    ax1, leng = plot_bb_sed(MB, ax1, xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat=col_dat, f_bbbox=f_bbbox, sigma = sigma)
 
     # Get beta from obs;
     # Detection and rest-frame;
@@ -498,16 +897,14 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
     # For any data removed fron fit (i.e. IRAC excess):
     f_exclude = False
+    col_ex = 'lawngreen'
+    x_ex = []
+    fy_ex = []
+    ex_ex = []
+    ey_ex = []
     try:
-        col_ex = 'lawngreen'
         # Currently, this file is made after FILTER_SKIP;
-        # data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
-        # x_ex = data_ex['col2']
-        # fy_ex = data_ex['col3']
-        # ey_ex = data_ex['col4']
-        # ex_ex = data_ex['col5']
         x_ex, fy_ex, ey_ex, ex_ex = MB.data['bb_obs_removed']['x'], MB.data['bb_obs_removed']['fy'], MB.data['bb_obs_removed']['ey'], MB.data['bb_obs_removed']['ex']
-
         ax1.errorbar(
             x_ex, fy_ex * c / np.square(x_ex) /d_scale,
             xerr=ex_ex, yerr=ey_ex*c/np.square(x_ex)/d_scale, color='k', linestyle='', linewidth=0.5, zorder=5
@@ -519,57 +916,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     except:
         pass
 
-
     #####################################
     # Open ascii file and stock to array.
-    lib = fnc.open_spec_fits(fall=0)
-    lib_all = fnc.open_spec_fits(fall=1, orig=True)
-
-    if MB.f_dust:
-        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
-        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
-    if MB.fneb:
-        lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
-        lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
-    if MB.fagn:
-        lib_agn = MB.fnc.open_spec_fits(fall=0, f_agn=True)
-        lib_agn_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_agn=True)
+    MB = setup_library(MB)
 
     # FIR dust plot;
     if MB.f_dust:
-        from lmfit import Parameters
-        par = Parameters()
-        par.add('MDUST',value=AD50)
-        par.add('TDUST',value=nTD50)
-        par.add('zmc',value=zp50)
-
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
-        y0d_cut, _ = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
-
-        # data;
-        xbbd, fybbd, eybbd = MB.data['spec_fir_obs']['x'], MB.data['spec_fir_obs']['fy'], MB.data['spec_fir_obs']['ey']
-
-        try:
-            conbbd_hs = (fybbd/eybbd>SNlim)
-            ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
-            yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d_scale, color='k', linestyle='', linewidth=0.5, zorder=4)
-            ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
-            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-            ax3t.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
-            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-        except:
-            pass
-
-        try:
-            conebbd_ls = (fybbd/eybbd<=SNlim)
-            ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) /d_scale, \
-            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale)*0.05, \
-            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
-            ax3t.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) /d_scale, \
-            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale)*0.05, \
-            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
-        except:
-            pass
+        ax1, ax3t, y0d_cut, y0d, x0d = plot_dust_sed(MB, ax1, ax3t, AD50, nTD50, zp50, c=c, d_scale=d_scale, SNlim=SNlim)
 
     #
     # This is for UVJ color time evolution.
@@ -578,8 +931,8 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     for jj in range(len(age)):
         ii = int(len(nage) - jj - 1) # from old to young templates.
         if jj == 0:
-            y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, xhi=xhi50)
-            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib, xhi=xhi50)
+            y0, x0 = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib_all, xhi=xhi50)
+            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib, xhi=xhi50)
 
             ysum = y0
             ysump = y0p
@@ -597,21 +950,21 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
             if MB.fneb: 
                 # Only at one age pixel;
-                y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb_all, logU=logU50, xhi=xhi50)
-                y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, lib_neb, logU=logU50, xhi=xhi50)
+                y0_r, x0_tmp = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, MB.lib_neb_all, logU=logU50, xhi=xhi50)
+                y0p, _ = fnc.get_template_single(Aneb50, AAv[0], ii, Z50[ii], zbes, MB.lib_neb, logU=logU50, xhi=xhi50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
             if MB.fagn: 
                 # Only at one age pixel;
-                y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn_all, AGNTAU=AGNTAU50, xhi=xhi50)
-                y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, lib_agn, AGNTAU=AGNTAU50, xhi=xhi50)
+                y0_r, x0_tmp = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, MB.lib_agn_all, AGNTAU=AGNTAU50, xhi=xhi50)
+                y0p, _ = fnc.get_template_single(Aagn50, AAv[0], ii, Z50[ii], zbes, MB.lib_agn, AGNTAU=AGNTAU50, xhi=xhi50)
                 ysum += y0_r
                 ysump[:nopt] += y0p
 
         else:
-            y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib_all, xhi=xhi50)
-            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, lib, xhi=xhi50)
+            y0_r, x0_tmp = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib_all, xhi=xhi50)
+            y0p, _ = fnc.get_template_single(A50[ii], AAv[0], ii, Z50[ii], zbes, MB.lib, xhi=xhi50)
             ysum += y0_r
             ysump[:nopt] += y0p
             f_50_comp[ii,:] = y0_r[:] * c / np.square(x0_tmp) / d_scale
@@ -642,7 +995,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             fwuvj.write('%.2f %.3f %.3f\n'%(age[ii], uvt, vjt))
             fwuvj.close()
 
-
     #############
     # Main result
     #############
@@ -655,9 +1007,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     else:
         ymax = None
 
-    ax1.set_xlabel('Observed wavelength [$\mathrm{\mu m}$]', fontsize=11)
-    ax1.set_ylabel('$f_\lambda$ [$10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$]'%(np.log10(scale)),fontsize=11,labelpad=2)
-
     x1max = 100000
     if MB.has_photometry:
         if x1max < np.nanmax(xbb):
@@ -667,34 +1016,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                 x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
     else:
         x1min = 2000
-
-    xticks = [2500, 5000, 10000, 20000, 40000, 80000, x1max]
-    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-    if MB.f_dust:
-        x1max = 400000
-        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
-        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-
-    if x1min > 2500:
-        xticks = xticks[1:]
-        xlabels = xlabels[1:]
-
-    ax1.set_xlim(x1min, x1max)
-    ax1.set_xscale('log')
-    if f_plot_filter:
-        scl_yaxis = 0.2
-    else:
-        scl_yaxis = 0.1
-
-    if not ymax == None:
-        ax1.set_ylim(-ymax*scl_yaxis,ymax)
-
-    ax1.set_xticks(xticks)
-    ax1.set_xticklabels(xlabels)
-
-    xx = np.arange(100,400000)
-    yy = xx * 0
-    ax1.plot(xx, yy, ls='--', lw=0.5, color='k')
 
     #############
     # Plot
@@ -767,30 +1088,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
     #
     # From MCMC chain
     #
-    samplepath = MB.DIR_OUT
-    use_pickl = False
-    use_pickl = True
-    if use_pickl:
-        pfile = 'gsf_chain_' + ID + '.cpkl'
-        data = loadcpkl(os.path.join(samplepath+'/'+pfile))
-    else:
-        pfile = 'gsf_chain_' + ID + '.asdf'
-        data = asdf.open(os.path.join(samplepath+'/'+pfile))
-
-    try:
-        ndim   = data['ndim']     # By default, use ndim and burnin values contained in the cpkl file, if present.
-        burnin = data['burnin']
-        nmc    = data['niter']
-        nwalk  = data['nwalkers']
-        Nburn  = burnin
-        if use_pickl:
-            samples = data['chain'][:]
-        else:
-            samples = data['chain']
-    except:
-        msg = ' =   >   NO keys of ndim and burnin found in cpkl, use input keyword values'
-        print_err(msg, exit=False)
-        return -1
+    ndim, Nburn, samples = read_mcmc_chain(ID, samplepath=MB.DIR_OUT, use_pickl=use_pickl)
 
     # Saved template;
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
@@ -855,11 +1153,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 
             if ss == MB.aamin[0]:
 
-                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
+                mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                 fm_tmp = mod0_tmp.copy()
                 fm_tmp_nl = mod0_tmp.copy()
 
-                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                fm_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
 
                 # Each;
                 ytmp_each[kk,:,ss] = mod0_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -872,16 +1170,16 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     else:
                         logU_tmp = samples['logU'][nr]
 
-                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
                     # ax1.plot(xm_tmp_tmp, mod0_tmp, '-', lw=.5, color='orange', zorder=-1, alpha=1.)
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp_nl += mod0_tmp_nl
 
                     # Make attenuation free template;
-                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aneb_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_neb_all, logU=logU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
                 if MB.fagn:
@@ -890,22 +1188,22 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                         AGNTAU_tmp = MB.AGNTAUFIX
                     else:
                         AGNTAU_tmp = samples['AGNTAU'][nr]
-                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp += mod0_tmp
 
                     # Make no emission line template;
-                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
+                    mod0_tmp_nl, _ = fnc.get_template_single(0, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_igm=f_apply_igm, xhi=xhi)
                     fm_tmp_nl += mod0_tmp_nl
 
                     # Make attenuation free template;
-                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                    mod0_tmp_noatn, _ = fnc.get_template_single(Aagn_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_agn_all, AGNTAU=AGNTAU_tmp, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                     fm_tmp_noatn += mod0_tmp_noatn
 
             else:
-                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
+                mod0_tmp, xx_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
                 fm_tmp += mod0_tmp
                 fm_tmp_nl += mod0_tmp
-                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
+                mod0_tmp_noatn, _ = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_dust=False, f_apply_igm=False, xhi=xhi)
                 fm_tmp_noatn += mod0_tmp_noatn
 
                 # Each;
@@ -1072,148 +1370,15 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         MB.logger.info('f_fancyplot is False. f_fill is set to False.')
 
     # Calculate non-det chi2
-    # based on Sawick12
-    if f_chind:
-        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
-    else:
-        conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
-
-    try:
-        logf = hdul[1].data['logf'][1]
-        ey_revised = np.sqrt(ey**2+ ysump**2 * np.exp(logf)**2)
-    except:
-        ey_revised = ey
-
-    chi2 = sum((np.square(fy-ysump) / ey_revised)[conw])
-
-    chi_nd = 0.0
-    if f_chind:
-        f_ex = np.zeros(len(fy), 'int')
-        if f_exclude:
-            for ii in range(len(fy)):
-                if x[ii] in x_ex:
-                    f_ex[ii] = 1
-
-        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
-        from scipy import special
-        x_erf = (ey_revised[con_up] - ysump[con_up]) / (np.sqrt(2) * ey_revised[con_up])
-        f_erf = special.erf(x_erf)
-        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey_revised[con_up] * (1 + f_erf)) )
-
-    # Number of degree;
-    con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
-    nod = int(len(wht3[con_nod])-ndim_eff)
-
-    print('\n')
-    print('No-of-detection    : %d'%(len(wht3[conw])))
-    print('chi2               : %.2f'%(chi2))
-    if f_chind:
-        print('No-of-non-detection: %d'%(len(ey[con_up])))
-        print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
-    print('No-of-params       : %d'%(ndim_eff))
-    print('Degrees-of-freedom : %d'%(nod))
-    if nod>0:
-        fin_chi2 = (chi2 - 2 * chi_nd) / nod
-    else:
-        fin_chi2 = -99
-    print('Final chi2/nu      : %.2f'%(fin_chi2))
+    chi2, conw, con_up, chi_nd, nod, fin_chi2 = show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=x_ex, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
 
     # plot BB model from best template (blue squares)
-    col_dia = 'blue'
-    if MB.f_dust:
-        ALLFILT = np.append(SFILT,DFILT)
-        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
-        lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
-        lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
-
-        ax1.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
-        ax3t.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
-
-        iix = []
-        for ii in range(len(fbb)):
-            iix.append(ii)
-        con_sed = ()
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
-
-        # plot FIR range;
-        ax3t.scatter(lbb, fbb, lw=0.5, color='none', edgecolor=col_dia, \
-        zorder=2, alpha=1.0, marker='d', s=50)
-        print(lbb, fbb)
-
-    else:
-        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
-        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
-        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
-
-        iix = []
-        for ii in range(len(fbb)):
-            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
-        con_sed = (eybb>0)
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
-
-        if f_plot_resid:
-            conbb_hs = (fybb/eybb>SNlim)
-            axes['B'].scatter(lbb[iix][conbb_hs], ((fybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
-            conbb_hs = (fybb/eybb<=SNlim) & (eybb>0)
-            axes['B'].errorbar(lbb[iix][conbb_hs], ((eybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs], yerr=leng,\
-                uplims=((fybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs] * sigma, linestyle='',\
-                color=col_dat, lw=0.5, marker='', ms=4, label='', zorder=4, capsize=1.5)
-            axes['B'].set_xscale(ax1.get_xscale())
-            axes['B'].set_xlim(ax1.get_xlim())
-            axes['B'].set_xticks(ax1.get_xticks())
-            axes['B'].set_xticklabels(ax1.get_xticklabels())
-            axes['B'].set_xlabel(ax1.get_xlabel())
-            xx = np.arange(axes['B'].get_xlim()[0],axes['B'].get_xlim()[1],100)
-            axes['B'].plot(xx,xx*0,linestyle='--',lw=0.5,color='k')
-            axes['B'].set_ylabel('Residual / $\sigma$')
-            axes['A'].set_xlabel('')
-            axes['A'].set_xticks(ax1.get_xticks())
-            axes['A'].set_xticklabels('')
-
-        # Calculate EW, if there is excess band;
-        try:
-            iix2 = []
-            for ii in range(len(fy_ex)):
-                iix2.append(np.argmin(np.abs(lbb[:]-x_ex[ii])))
-
-            # Rest-frame EW;
-            # Note about 16/84 in fbb
-            EW16 = (fy_ex * c / np.square(x_ex) /d_scale - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW50 = (fy_ex * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW84 = (fy_ex * c / np.square(x_ex) /d_scale - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-
-            EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-
-            cnt50 = fbb[iix2] # in Flam
-            cnt16 = fbb16[iix2] # in Flam
-            cnt84 = fbb84[iix2] # in Flam
- 
-            # Luminosity;
-            #Lsun = 3.839 * 1e33 #erg s-1
-            L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-            L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-            L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-
-            ew_label = []
-            for ii in range(len(fy_ex)):
-                lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
-                fres = MB.band['%s_res'%MB.filts[iix2[ii]]][:]
-                ew_label.append(MB.filts[iix2[ii]])
-
-                print('\n')
-                print('EW016 for', x_ex[ii], 'is %d'%EW16[ii])
-                print('EW050 for', x_ex[ii], 'is %d'%EW50[ii])
-                print('EW084 for', x_ex[ii], 'is %d'%EW84[ii])
-                print('%d_{-%d}^{+%d} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
-                print('Or, %d\pm{%d} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
-        except:
-            pass
+    lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = plot_bbmodel_sed(MB, zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, ax1, ax3t, x1_tot, ytmp16, ytmp50, ytmp84, SFILT, DFILT, DIR_FILT, scale, d_scale, DL, axes, leng, sigma, SNlim=SNlim, f_plot_resid=f_plot_resid, c=c, col_dat=col_dat, col_dia=col_dia)
 
     # Filters
     ind_remove = np.where((wht3<=0) | (ey<=0))[0]
     if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
+        ax1 = plot_filter(MB, ax1, ymax, scl=MB.scl_yaxis, ind_remove=ind_remove)
 
     if save_sed:
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
@@ -1452,12 +1617,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
                     tree_spec['header'].update({'%s'%key: hdr[key]})
 
         # BB;
-        Cnu_to_Jy = 10**((23.9-m0set)) # fnu_mzpset to microJy. So the final output SED library has uJy.
-        # tree_spec['model'].update({'wave_bb': lbb * u.AA})
-        # tree_spec['model'].update({'fnu_bb_16': fbb16_nu * Cnu_to_Jy * u.uJy})
-        # tree_spec['model'].update({'fnu_bb_50': fbb_nu * Cnu_to_Jy * u.uJy})
-        # tree_spec['model'].update({'fnu_bb_84': fbb84_nu * Cnu_to_Jy * u.uJy})
-
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=23.9, m0=-48.6) * u.uJy
         fbb50_nu = flamtonu(lbb, fbb*scale, m0set=23.9, m0=-48.6) * u.uJy
         fbb84_nu = flamtonu(lbb, fbb84*scale, m0set=23.9, m0=-48.6) * u.uJy
@@ -1561,43 +1720,7 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
         af.write_to(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)), all_array_compression='zlib')
 
     # Make a new dict
-    gsf_dict = {}
-    gsf_dict['primary_params'] = {}
-
-    # a single ASDF;
-    tree_shf = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_sfh_%s.asdf'%(ID)))
-    gsf_dict['sfh'] = {}
-    gsf_dict = modify_keys(tree_shf, 'sfh', gsf_dict=gsf_dict)
-    tsets_SFR = tree_shf['header']['tsets_SFR'].split(',')
-    tsets_SFR = [float(s) for s in tsets_SFR]
-
-    tree_sed = asdf.open(os.path.join(MB.DIR_OUT, 'gsf_spec_%s.asdf'%(ID)))
-    gsf_dict['sed'] = {}
-
-    lbls_sed_skip = ['header']
-    lbls_sed_skip = [s.upper() for s in lbls_sed_skip]
-    key_skip = ['BITPIX', 'EXTEND', 'SIMPLE', 'NAXIS']
-    key_skip += lbls_sed_skip
-
-    label = 'sed'
-    gsf_dict = modify_keys_sed(tree_sed, label, gsf_dict=gsf_dict, key_skip=key_skip)
-
-    keys_param_sed = ['MUV', 'SFRUV', 'SFRUV_STEL', 'SFRUV_BETA', 'SFRUV_UNCOR', 'UVBETA', 'UVBETA_OBS', 'UV', 'VJ']
-    keys_param_sfh = ['ZMC', 'MSTEL', 'T_LW', 'T_MW', 'Z_LW', 'Z_MW', 'AV0']
-    for key in keys_param_sed:
-        for perc in percs:
-            gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sed']['%s_%d'%(key, perc)]
-    for key in keys_param_sfh:
-        for perc in percs:
-            gsf_dict['primary_params']['%s_%d'%(key, perc)] = gsf_dict['sfh']['%s_%d'%(key, perc)]
-
-    key = 'SFR'
-    for t in range(len(tsets_SFR)):
-        for perc in percs:
-            gsf_dict['primary_params']['%s_%dMYR_%d'%(key, tsets_SFR[t]*1e3, perc)] = gsf_dict['sfh']['%s_%dMYR_%d'%(key, tsets_SFR[t]*1e3, perc)]
-
-    af = asdf.AsdfFile(gsf_dict)
-    af.write_to(os.path.join(MB.DIR_OUT, 'gsf_%s.asdf'%(ID)), all_array_compression='zlib')
+    gsf_dict = make_final_product(MB, percs=percs)
 
     #
     # SED params in plot
@@ -1620,8 +1743,6 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             ax1.text(0.02, 0.68, label,\
             fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
             ha='left', va='center', transform=ax1.transAxes)
-
-    ax1.xaxis.labelpad = -3
 
     if f_grsm:
         if wave_spec_max<23000:
@@ -1672,65 +1793,13 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
             if verbose:
                 print('y3 limit is not specified.')
             pass
-        ax3t.set_xlim(1e4, 3e7)
-        ax3t.set_xscale('log')
-        ax3t.set_xticks([10000, 1000000, 10000000])
-        ax3t.set_xticklabels(['1', '100', '1000'])
 
-    ###############
-    # Line name
-    ###############
-    LN0 = ['Mg2', '$NeIV$', '[OII]', 'H$\theta$', 'H$\eta$', 'Ne3?', 'H$\delta$', 'H$\gamma$', 'H$\\beta$', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
-    LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 5175, 6563, 6717, 6731]
-    fsl = 9 # Fontsize for line
-    if f_grsm:
-        try:
-            for ii in range(len(LW)):
-                ll = np.argmin(np.abs(LW[ii]-LW0[:]))
-
-                if ll == 2 and FLW[ii] == 1: # FLW is the flag for line fitting.
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]-130, yyl[0]*1.28, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-                elif (ll == 9 and FLW[ii] == 1):
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-
-                elif (ll == 10 and FLW[ii] == 1):
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*0.75, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-                elif FLW[ii] == 1 and (ll == 6 or ll == 7 or ll == 8):
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-                elif ll == 6 or ll == 7 or ll == 8:
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color='gray', zorder=1, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color='gray', fontsize=9, rotation=90)
-
-                elif FLW[ii] == 1:
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.7,yminzoom+(ymaxzoom-yminzoom)*.95, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-        except:
-            pass
-
+    # Figure configure;
+    ax1 = get_sed_figure_format(MB, ax1, x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=False, ax3t=ax3t)
 
     ####################
     ## Save
     ####################
-    ax1.legend(loc=1, fontsize=11)
-
     if figpdf:
         fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.pdf', dpi=dpi)
     else:
@@ -1755,7 +1824,11 @@ def plot_sed(MB, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=Fals
 def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
     mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
     f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
-    return_figure=False, col_dat='r'):
+    return_figure=False, percs=[16,50,84], 
+    col_dat='r', col_dia='blue',
+    lcb = '#4682b4', # line color, blue
+    sigma=1.0, use_pickl=True,
+    ):
     '''
     Parameters
     ----------
@@ -1777,13 +1850,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     if f_silence:
         import matplotlib
         matplotlib.use("Agg")
-
-    def gaus(x,a,x0,sigma):
-        return a*exp(-(x-x0)**2/(2*sigma**2))
-    
+   
     print('\n### Running plot_sed_tau ###\n')
-
-    lcb = '#4682b4' # line color, blue
 
     fnc  = MB.fnc
     bfnc = MB.bfnc
@@ -1825,7 +1893,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ###########################
     # Open result file
     ###########################
-    file = MB.DIR_OUT + 'summary_' + ID + '.fits'
+    file = MB.DIR_OUT + 'gsf_params_' + ID + '.fits'
     hdul = fits.open(file) 
     
     ndim_eff = hdul[0].header['NDIM']
@@ -1898,7 +1966,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     ZZ50 = np.sum(Z50*A50)/np.sum(A50)
 
     # FIR Dust;
-    try:
+    if MB.f_dust:
         MD16 = hdul[1].data['MDUST'][0]
         MD50 = hdul[1].data['MDUST'][1]
         MD84 = hdul[1].data['MDUST'][2]
@@ -1917,7 +1985,8 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         if verbose:
             print('Total dust mass is %.2e'%(MD50))
         f_dust = True
-    except:
+    else:
+        DFILT = []
         f_dust = False
 
     chi = hdul[1].data['chi'][0]
@@ -1995,93 +2064,29 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         LIBRARY = ''
         nimf = ''
 
-    #############
-    # Plot.
-    #############
-    # Set the inset.
-    if f_grsm or f_dust:
-        fig = plt.figure(figsize=(7.,3.2))
-        fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-        ax1 = fig.add_subplot(111)
-        xsize = 0.29
-        ysize = 0.25
-        if f_grsm:
-            ax2t = ax1.inset_axes((1-xsize-0.01,1-ysize-0.01,xsize,ysize))
-        if f_dust:
-            ax3t = ax1.inset_axes((0.7,.35,.28,.25))
-        f_plot_resid = False
-    else:
-        if f_plot_resid:
-            fig_mosaic = """
-            AAAA
-            AAAA
-            BBBB
-            """
-            fig,axes = plt.subplot_mosaic(mosaic=fig_mosaic, figsize=(5.5,4.2))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = axes['A']
-        else:
-            fig = plt.figure(figsize=(5.5,2.2))
-            fig.subplots_adjust(top=0.98, bottom=0.16, left=0.1, right=0.99, hspace=0.15, wspace=0.25)
-            ax1 = fig.add_subplot(111)
+    # Initiate figure;
+    fig, axes, ax1, ax2t, ax3t = initiate_figure_sed(MB, f_grsm=f_grsm, f_plot_filter=f_plot_filter, f_plot_resid=f_plot_resid)
 
-    # Determine scale for visualization;
-    # i.e. "x10^??" in y axis.
+    # Determine scale here;
     if scale == None:
         conbb_hs = (fybb/eybb > SNlim)
-        scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d)))
-    # d = MB.d * scale
+        if len(fybb[conbb_hs])>0:
+            scale = 10**(int(np.log10(np.nanmax(fybb[conbb_hs] * c / np.square(xbb[conbb_hs])) / MB.d))) / 10
+        else:
+            scale = 1e-19
+            MB.logger.info('no data point has SN > %.1f. Setting scale to %.1e'%(SNlim, scale))
+    d_scale = MB.d * scale
 
-    #######################################
-    # D.Kelson like Box for BB photometry
-    #######################################
-    if f_bbbox:
-        for ii in range(len(xbb)):
-            if eybb[ii]<100 and fybb[ii]/eybb[ii]>1:
-                xx = [xbb[ii]-exbb[ii],xbb[ii]-exbb[ii]]
-                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-                xx = [xbb[ii]+exbb[ii],xbb[ii]+exbb[ii]]
-                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
-                yy = [(fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]-eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-                xx = [xbb[ii]-exbb[ii],xbb[ii]+exbb[ii]]
-                yy = [(fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale, (fybb[ii]+eybb[ii])*c/np.square(xbb[ii])/d_scale]
-                ax1.plot(xx, yy, color='k', linestyle='-', linewidth=0.5, zorder=3)
-    else: # Normal BB plot;
-        # Detection;
-        conbb_hs = (fybb/eybb>SNlim)
-        ax1.errorbar(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale, \
-        yerr=eybb[conbb_hs]*c/np.square(xbb[conbb_hs])/d_scale, color='k', linestyle='', linewidth=0.5, zorder=4)
-        ax1.plot(xbb[conbb_hs], fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale, \
-        marker='.', color=col_dat, linestyle='', linewidth=0, zorder=4, ms=8)#, label='Obs.(BB)')
-
-        try:
-            # For any data removed fron fit (i.e. IRAC excess):
-            data_ex = ascii.read(DIR_TMP + 'bb_obs_' + ID + '_removed.cat')
-            NR_ex = data_ex['col1']
-        except:
-            NR_ex = []
-
-        # Upperlim;
-        sigma = 1.0
-        leng = np.max(fybb[conbb_hs] * c / np.square(xbb[conbb_hs]) /d_scale) * 0.05 #0.2
-        conebb_ls = (fybb/eybb<=SNlim) & (eybb>0)
-        
-        for ii in range(len(xbb)):
-            if NR[ii] in NR_ex[:]:
-                conebb_ls[ii] = False
-        
-        ax1.errorbar(xbb[conebb_ls], eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, yerr=leng,\
-            uplims=eybb[conebb_ls] * c / np.square(xbb[conebb_ls]) /d_scale * sigma, linestyle='',color=col_dat, marker='', ms=4, label='', zorder=4, capsize=3)
-
+    # Plot BB data points;
+    ax1, leng = plot_bb_sed(MB, ax1, xbb, fybb, eybb, exbb, NRbb, d_scale, SNlim, c=c, col_dat='r', f_bbbox=f_bbbox, sigma = sigma)
 
     # For any data removed fron fit (i.e. IRAC excess):
     f_exclude = False
+    col_ex = 'lawngreen'
+    x_ex = []
+    fy_ex = []
+    ey_ex = []
     try:
-        col_ex = 'lawngreen'
         #col_ex = 'limegreen'
         #col_ex = 'r'
         # Currently, this file is made after FILTER_SKIP;
@@ -2098,74 +2103,37 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     except:
         pass
 
+    # #####################################
+    # # Open ascii file and stock to array.
+    # MB.lib = fnc.open_spec_fits(fall=0)
+    # MB.lib_all = fnc.open_spec_fits(fall=1, orig=True)
+
+    # if f_dust:
+    #     DT0 = float(MB.inputs['TDUST_LOW'])
+    #     DT1 = float(MB.inputs['TDUST_HIG'])
+    #     dDT = float(MB.inputs['TDUST_DEL'])
+    #     Temp = np.arange(DT0,DT1,dDT)
+    #     MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
+    #     MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
+    # if MB.fneb:
+    #     lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
+    #     lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
 
     #####################################
     # Open ascii file and stock to array.
-    MB.lib = fnc.open_spec_fits(fall=0)
-    MB.lib_all = fnc.open_spec_fits(fall=1, orig=True)
+    MB = setup_library(MB)
 
-    if f_dust:
-        DT0 = float(MB.inputs['TDUST_LOW'])
-        DT1 = float(MB.inputs['TDUST_HIG'])
-        dDT = float(MB.inputs['TDUST_DEL'])
-        Temp = np.arange(DT0,DT1,dDT)
-        MB.lib_dust = fnc.open_spec_dust_fits(fall=0)
-        MB.lib_dust_all = fnc.open_spec_dust_fits(fall=1)
-    if MB.fneb:
-        lib_neb = MB.fnc.open_spec_fits(fall=0, f_neb=True)
-        lib_neb_all = MB.fnc.open_spec_fits(fall=1, orig=True, f_neb=True)
-
-    # FIR dust plot;
-    if f_dust:
-        from lmfit import Parameters
-        par = Parameters()
-        par.add('MDUST',value=AD50)
-        par.add('TDUST',value=nTD50)
-        par.add('zmc',value=zp50)
-
-        y0d, x0d = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust_all)
-        y0d_cut, x0d_cut = fnc.tmp04_dust(par.valuesdict())#, zbes, lib_dust)
-        
-        # data;
-        dat_d = ascii.read(MB.DIR_TMP + 'bb_dust_obs_' + MB.ID + '.cat')
-        NRbbd = dat_d['col1']
-        xbbd = dat_d['col2']
-        fybbd = dat_d['col3']
-        eybbd = dat_d['col4']
-        exbbd = dat_d['col5']
-        snbbd = fybbd/eybbd
-
-        try:
-            conbbd_hs = (fybbd/eybbd>SNlim)
-            ax1.errorbar(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
-            yerr=eybbd[conbbd_hs]*c/np.square(xbbd[conbbd_hs])/d_scale, color='k', linestyle='', linewidth=0.5, zorder=4)
-            ax1.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
-            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-            ax3t.plot(xbbd[conbbd_hs], fybbd[conbbd_hs] * c / np.square(xbbd[conbbd_hs]) /d_scale, \
-            '.r', linestyle='', linewidth=0, zorder=4)#, label='Obs.(BB)')
-        except:
-            pass
-
-        try:
-            conebbd_ls = (fybbd/eybbd<=SNlim)
-            ax1.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) /d_scale, \
-            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale)*0.05, \
-            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
-            ax3t.errorbar(xbbd[conebbd_ls], eybbd[conebbd_ls] * c / np.square(xbbd[conebbd_ls]) /d_scale, \
-            yerr=fybbd[conebbd_ls]*0+np.max(fybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale)*0.05, \
-            uplims=eybbd[conebbd_ls]*c/np.square(xbbd[conebbd_ls])/d_scale, color='r', linestyle='', linewidth=0.5, zorder=4)
-        except:
-            pass
-
+    if MB.f_dust:
+        ax1, ax3t, y0d_cut, y0d, x0d = plot_dust_sed(MB, ax1, ax3t, AD50, nTD50, zp50, c=c, d_scale=d_scale, SNlim=SNlim)
 
     #
     # This is for UVJ color time evolution.
     #
     Asum = np.sum(A50[:])
-    alp = .5
+    # alp = .5
 
     # Get total templates
-    y0p, x0p = MB.fnc.get_template(vals, f_val=False, check_bound=False)
+    y0p, _ = MB.fnc.get_template(vals, f_val=False, check_bound=False)
     y0, x0 = MB.fnc.get_template(vals, f_val=False, check_bound=False, lib_all=True)
 
     ysum = y0
@@ -2206,52 +2174,24 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     #############
     # Main result
     #############
-    conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>1) # (conbb) &
-    ymax = np.max(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
-
-    xboxl = 17000
-    xboxu = 28000
-
-    x1max = 22000
-    if x1max < np.max(xbb[conbb_ymax]):
-        x1max = np.max(xbb[conbb_ymax]) * 1.5
-    ax1.set_xlim(2000, 11000)
-    ax1.set_xscale('log')
-    if f_plot_filter:
-        scl_yaxis = 0.2
+    if MB.has_photometry:
+        conbb_ymax = (xbb>0) & (fybb>0) & (eybb>0) & (fybb/eybb>SNlim)
+        if len(fybb[conbb_ymax]):
+            ymax = np.nanmax(fybb[conbb_ymax]*c/np.square(xbb[conbb_ymax])/d_scale) * 1.6
+        else:
+            ymax = np.nanmax(fybb*c/np.square(xbb)/d_scale) * 1.6
     else:
-        scl_yaxis = 0.1
-    ax1.set_ylim(-ymax*scl_yaxis,ymax)
-    ax1.text(2100,-ymax*0.08,'SNlimit:%.1f'%(SNlim),fontsize=8)
+        ymax = None
 
-    ax1.set_xlabel('Observed wavelength ($\mathrm{\mu m}$)', fontsize=12)
-    ax1.set_ylabel('Flux ($10^{%d}\mathrm{erg}/\mathrm{s}/\mathrm{cm}^{2}/\mathrm{\AA}$)'%(np.log10(scale)),fontsize=12,labelpad=-2)
-
-    xticks = [2500, 5000, 10000, 20000, 40000, 80000, 110000]
-    xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-    if f_dust:
-        xticks = [2500, 5000, 10000, 20000, 40000, 80000, 400000]
-        xlabels= ['0.25', '0.5', '1', '2', '4', '8', '']
-
-    ax1.set_xticks(xticks)
-    ax1.set_xticklabels(xlabels)
-
-
-    dely1 = 0.5
-    while (ymax-0)/dely1<1:
-        dely1 /= 2.
-    while (ymax-0)/dely1>4:
-        dely1 *= 2.
-
-    y1ticks = np.arange(0, ymax, dely1)
-    ax1.set_yticks(y1ticks)
-    ax1.set_yticklabels(np.arange(0, ymax, dely1), minor=False)
-    ax1.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-    ax1.yaxis.labelpad = 1.5
-
-    xx = np.arange(1200,400000)
-    yy = xx * 0
-    ax1.plot(xx, yy, ls='--', lw=0.5, color='k')
+    x1max = 100000
+    if MB.has_photometry:
+        if x1max < np.nanmax(xbb):
+            x1max = np.nanmax(xbb) * 1.5
+        if len(fybb[conbb_ymax]):
+            if x1min > np.nanmin(xbb[conbb_ymax]):
+                x1min = np.nanmin(xbb[conbb_ymax]) / 1.5
+    else:
+        x1min = 2000
 
     #############
     # Plot
@@ -2320,28 +2260,19 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         print('Median SN at 3400-3800 is;', np.median((fgrism/egrism)[con4000b]))
         print('Median SN at 4200-5000 is;', np.median((fgrism/egrism)[con4000r]))
 
+        # TEST;
+        ax1.errorbar(xg2, fg2 * c/np.square(xg2)/d_scale, yerr=eg2 * c/np.square(xg2)/d_scale, lw=0.5, color='#DF4E00', zorder=10, alpha=1., label='', capsize=0)
+        ax1.errorbar(xg1, fg1 * c/np.square(xg1)/d_scale, yerr=eg1 * c/np.square(xg1)/d_scale, lw=0.5, color='g', zorder=10, alpha=1., label='', capsize=0)
+        ax1.errorbar(xg0, fg0 * c/np.square(xg0)/d_scale, yerr=eg0 * c/np.square(xg0)/d_scale, lw=0.5, linestyle='', color='royalblue', zorder=10, alpha=1., label='', capsize=0)
 
     #
     # From MCMC chain
     #
-    file = MB.DIR_OUT + 'chain_' + ID + '_corner.cpkl'
-    niter = 0
-    data = loadcpkl(file)
-    ndim = data['ndim'] 
-    burnin = data['burnin']
-    nmc = data['niter']
-    nwalk = data['nwalkers']
-    Nburn = burnin
-    res = data['chain'][:]
-
-    samples = res
+    ndim, Nburn, samples = read_mcmc_chain(ID, samplepath=MB.DIR_OUT, use_pickl=use_pickl)
 
     # Saved template;
     ytmp = np.zeros((mmax,len(ysum)), dtype='float')
     ytmp_each = np.zeros((mmax,len(ysum),len(age)), dtype='float')
-
-    ytmpmax = np.zeros(len(ysum), dtype='float')
-    ytmpmin = np.zeros(len(ysum), dtype='float')
 
     # MUV;
     DL      = MB.cosmo.luminosity_distance(zbes).value * Mpc_cm # Luminositydistance in cm
@@ -2350,11 +2281,9 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     Fuv2800   = np.zeros(mmax, dtype='float') # For Fuv(1500-2800)
     Lir     = np.zeros(mmax, dtype='float') # For L(8-1000um)
     UVJ     = np.zeros((mmax,4), dtype='float') # For UVJ color;
-
     Cmznu   = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
 
     # From random chain;
-    alp=0.02
     for kk in range(0,mmax,1):
         nr = np.random.randint(Nburn, len(samples['A%d'%MB.aamin[0]]))
         try:
@@ -2482,17 +2411,20 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
     # For grism;
     if f_grsm:
-        from astropy.convolution import convolve
-        from .maketmp_filt import get_LSF
-        LSF, _ = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:], c=3e18)
-        spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
-        spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
-        spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
-        if False:#True:
+        LSF = get_LSF(MB.inputs, MB.DIR_EXTR, ID, x1_tot[:]/(1.+zbes), c=3e18)
+        try:
+            spec_grsm16 = convolve(ytmp16[:], LSF, boundary='extend')
+            spec_grsm50 = convolve(ytmp50[:], LSF, boundary='extend')
+            spec_grsm84 = convolve(ytmp84[:], LSF, boundary='extend')
+        except:
+            spec_grsm16 = ytmp16[:]
+            spec_grsm50 = ytmp50[:]
+            spec_grsm84 = ytmp84[:]
+
+        if True:
             ax2t.plot(x1_tot[:], ytmp50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
         else:
             ax2t.plot(x1_tot[:], spec_grsm50, '-', lw=0.5, color='gray', zorder=3., alpha=1.0)
-
 
     #if not f_fill:
     ax1.fill_between(x1_tot[::nstep_plot], ytmp16[::nstep_plot], ytmp84[::nstep_plot], ls='-', lw=.5, color='gray', zorder=-2, alpha=0.5)
@@ -2508,180 +2440,13 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
     MB.sed_flux50 = ytmp50
     MB.sed_flux84 = ytmp84
 
-
-    #########################
     # Calculate non-det chi2
-    # based on Sawick12
-    #########################
-    #chi2,fin_chi2 = get_chi2(fy, ey, wht3, ysump, ndim_eff, SNlim=1.0, f_chind=f_chind, f_exclude=f_exclude, xbb=xbb, x_ex=x_ex)
-    def func_tmp(xint,eobs,fmodel):
-        int_tmp = np.exp(-0.5 * ((xint-fmodel)/eobs)**2)
-        return int_tmp
-
-    if f_chind:
-        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
-    else:
-        conw = (wht3>0) & (ey>0)
-
-    chi2 = sum((np.square(fy-ysump) * np.sqrt(wht3))[conw])
-
-    chi_nd = 0.0
-    if f_chind:
-        f_ex = np.zeros(len(fy), 'int')
-        if f_exclude:
-            for ii in range(len(fy)):
-                if x[ii] in x_ex:
-                    f_ex[ii] = 1
-
-        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
-        from scipy import special
-        x_erf = (ey[con_up] - ysump[con_up]) / (np.sqrt(2) * ey[con_up])
-        f_erf = special.erf(x_erf)
-        chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey[con_up] * (1 + f_erf)) )
-
-    # Number of degree;
-    con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
-    if MB.ferr:
-        ndim_eff -= 1
-        
-    nod = int(len(wht3[con_nod])-ndim_eff)
-
-    if nod>0:
-        fin_chi2 = (chi2 - 2 * chi_nd) / nod
-    else:
-        fin_chi2 = -99
-
-    if f_chind:
-        conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
-        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
-    else:
-        conw = (wht3>0) & (ey>0)
-
-    # Print results;
-    print('\n')
-    print('No-of-detection    : %d'%(len(wht3[conw])))
-    print('chi2               : %.2f'%(chi2))
-    if f_chind:
-        print('No-of-non-detection: %d'%(len(ey[con_up])))
-        print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
-    print('No-of-params       : %d'%(ndim_eff))
-    print('Degrees-of-freedom : %d'%(nod))
-    print('Final chi2/nu      : %.2f'%(fin_chi2))
-
-
-    if False:
-        from lmfit import Model, Parameters, minimize, fit_report, Minimizer
-        from .posterior_flexible import Post
-        class_post = Post(MB)
-        residual = class_post.residual
-        MB.set_param()
-        fit_params = MB.fit_params #Parameters()
-        for key in vals.keys():
-            try:
-                fit_params[key].value=vals[key]
-            except:
-                pass
-        out_tmp = minimize(residual, fit_params, args=(fy, ey, wht3, False), method='differential_evolution') # nelder is the most efficient.
-        csq = out_tmp.chisqr
-        rcsq = out_tmp.redchi
-        print(csq, rcsq)
+    chi2, conw, con_up, chi_nd, nod, fin_chi2 = show_chi2(hdul, fy, ey, ysump, x, wht3, ndim_eff, x_ex=x_ex, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
 
     #
     # plot BB model from best template (blue squares)
     #
-    col_dia = 'blue'
-    if f_dust:
-        ALLFILT = np.append(SFILT,DFILT)
-        #for ii in range(len(x1_tot)):
-        #    print(x1_tot[ii], model_tot[ii]*c/np.square(x1_tot[ii])/d_scale)
-        lbb, fbb, lfwhm = filconv(ALLFILT, x1_tot, ytmp50, DIR_FILT, fw=True)
-        lbb, fbb16, lfwhm = filconv(ALLFILT, x1_tot, ytmp16, DIR_FILT, fw=True)
-        lbb, fbb84, lfwhm = filconv(ALLFILT, x1_tot, ytmp84, DIR_FILT, fw=True)
-
-        ax1.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
-        ax3t.plot(x1_tot, ytmp50, '--', lw=0.5, color='purple', zorder=-1, label='')
-
-        iix = []
-        for ii in range(len(fbb)):
-            iix.append(ii)
-        con_sed = ()
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
-
-        # plot FIR range;
-        ax3t.scatter(lbb, fbb, lw=0.5, color='none', edgecolor=col_dia, \
-        zorder=2, alpha=1.0, marker='d', s=50)
-
-    else:
-        lbb, fbb, lfwhm = filconv(SFILT, x1_tot, ytmp50, DIR_FILT, fw=True, MB=MB, f_regist=False)
-        lbb, fbb16, lfwhm = filconv(SFILT, x1_tot, ytmp16, DIR_FILT, fw=True, MB=MB, f_regist=False)
-        lbb, fbb84, lfwhm = filconv(SFILT, x1_tot, ytmp84, DIR_FILT, fw=True, MB=MB, f_regist=False)
-
-        iix = []
-        for ii in range(len(fbb)):
-            iix.append(np.argmin(np.abs(lbb[ii]-xbb[:])))
-        con_sed = (eybb>0)
-        ax1.scatter(lbb[iix][con_sed], fbb[iix][con_sed], lw=0.5, color='none', edgecolor=col_dia, zorder=3, alpha=1.0, marker='d', s=50)
-
-        if f_plot_resid:
-            conbb_hs = (fybb/eybb>SNlim)
-            axes['B'].scatter(lbb[iix][conbb_hs], ((fybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs], lw=0.5, color='none', edgecolor='r', zorder=3, alpha=1.0, marker='.', s=50)
-            conbb_hs = (fybb/eybb<=SNlim) & (eybb>0)
-            axes['B'].errorbar(lbb[iix][conbb_hs], ((eybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs], yerr=leng,\
-                uplims=((fybb*c/np.square(xbb)/d_scale - fbb)/(eybb*c/np.square(xbb)/d_scale))[iix][conbb_hs] * sigma, linestyle='',\
-                color=col_dat, lw=0.5, marker='', ms=4, label='', zorder=4, capsize=1.5)
-            axes['B'].set_xscale(ax1.get_xscale())
-            axes['B'].set_xlim(ax1.get_xlim())
-            axes['B'].set_xticks(ax1.get_xticks())
-            axes['B'].set_xticklabels(ax1.get_xticklabels())
-            axes['B'].set_xlabel(ax1.get_xlabel())
-            xx = np.arange(axes['B'].get_xlim()[0],axes['B'].get_xlim()[1],100)
-            axes['B'].plot(xx,xx*0,linestyle='--',lw=0.5,color='k')
-            axes['B'].set_ylabel('Residual / $\sigma$')
-            axes['A'].set_xlabel('')
-            axes['A'].set_xticks(ax1.get_xticks())
-            axes['A'].set_xticklabels('')
-
-        # Calculate EW, if there is excess band;
-        try:
-            iix2 = []
-            for ii in range(len(fy_ex)):
-                iix2.append(np.argmin(np.abs(lbb[:]-x_ex[ii])))
-
-            # Rest-frame EW;
-            # Note about 16/84 in fbb
-            EW16 = (fy_ex * c / np.square(x_ex) /d_scale - fbb84[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW50 = (fy_ex * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW84 = (fy_ex * c / np.square(x_ex) /d_scale - fbb16[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-
-            EW50_er1 = ((fy_ex-ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-            EW50_er2 = ((fy_ex+ey_ex) * c / np.square(x_ex) /d_scale - fbb[iix2]) / (fbb[iix2]) * lfwhm[iix2] / (1.+zbes)
-
-            cnt50 = fbb[iix2]
-            cnt16 = fbb16[iix2]
-            cnt84 = fbb84[iix2]
- 
-            # Luminosity;
-            #Lsun = 3.839 * 1e33 #erg s-1
-            L16 = EW16 * cnt16 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-            L50 = EW50 * cnt50 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-            L84 = EW84 * cnt84 * (4.*np.pi*DL**2) * scale * (1+zbes) # A * erg/s/A/cm2 * cm2
-
-            ew_label = []
-            for ii in range(len(fy_ex)):
-                lres = MB.band['%s_lam'%MB.filts[iix2[ii]]][:]
-                fres = MB.band['%s_res'%MB.filts[iix2[ii]]][:]
-                ew_label.append(MB.filts[iix2[ii]])
-
-                print('\n')
-                print('EW016 for', x_ex[ii], 'is %d'%EW16[ii])
-                print('EW050 for', x_ex[ii], 'is %d'%EW50[ii])
-                print('EW084 for', x_ex[ii], 'is %d'%EW84[ii])
-                print('%d_{-%d}^{+%d} , for sed error'%(EW50[ii],EW50[ii]-EW84[ii],EW16[ii]-EW50[ii]))
-                print('Or, %d\pm{%d} , for flux error'%(EW50[ii],EW50[ii]-EW50_er1[ii]))
-        except:
-            print('\nEW calculation; Failed.\n')
-            pass
-
+    lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = plot_bbmodel_sed(MB, zbes, xbb, fybb, eybb, x_ex, fy_ex, ey_ex, ax1, ax3t, x1_tot, ytmp16, ytmp50, ytmp84, SFILT, DFILT, DIR_FILT, scale, d_scale, DL, axes, leng, sigma, SNlim=SNlim, f_plot_resid=f_plot_resid, c=c, col_dat=col_dat, col_dia=col_dat)
 
     if save_sed:
         fbb16_nu = flamtonu(lbb, fbb16*scale, m0set=m0set)
@@ -2775,7 +2540,6 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         hdr['UVBETA50'] = beta_50
         hdr['UVBETA84'] = beta_84
 
-
         # UVJ
         try:
             hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
@@ -2813,6 +2577,7 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
 
         # Version;
         import gsf
+        from astropy import units as u
         hdr['version'] = gsf.__version__
 
         # Write;
@@ -2830,6 +2595,17 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             'scale': scale,
             'version_gsf': gsf.__version__
         }
+        tree_spec['model'] = {}
+        tree_spec['obs'] = {}
+        tree_spec['header'] = {}
+
+        # Dump physical parameters;
+        for key in hdr:
+            if key not in tree_spec:
+                if key[:-3] == 'SFRUV':
+                    tree_spec['header'].update({'%s'%key: hdr[key] * u.solMass / u.yr})
+                else:
+                    tree_spec['header'].update({'%s'%key: hdr[key]})
 
         # BB;
         tree_spec.update({'wave': lbb})
@@ -2890,25 +2666,32 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
         af = asdf.AsdfFile(tree_spec)
         af.write_to(MB.DIR_OUT + 'gsf_spec_%s.asdf'%(ID), all_array_compression='zlib')
 
+    # Make a new dict
+    gsf_dict = make_final_product(MB, percs=percs)
+
     #
     # SED params in plot
     #
     if f_label:
+        fs_label = 8
         fd = fits.open(MB.DIR_OUT + 'SFH_' + ID + '.fits')[0].header
         if f_dust:
             label = 'ID: %s\n$z:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log M_\mathrm{dust}/M_\odot:%.2f$\n$T_\mathrm{dust}/K:%.1f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
-            ylabel = ymax*0.45
+            %(ID, zbes, float(fd['Mstel_50']), MD50, TD50, float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV0_50']), fin_chi2)
         else:
             label = 'ID: %s\n$z:%.2f$\n$\log M_*/M_\odot:%.2f$\n$\log Z_*/Z_\odot:%.2f$\n$\log T_0$/Gyr$:%.2f$\n$\log \\tau$/Gyr$:%.2f$\n$A_V$/mag$:%.2f$\n$\\chi^2/\\nu:%.2f$'\
-            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV_50']), fin_chi2)
-            ylabel = ymax*0.4
+            %(ID, zbes, float(fd['Mstel_50']), float(fd['Z_MW_50']), float(fd['T_MW_50']), float(fd['TAU_50']), float(fd['AV0_50']), fin_chi2)
 
-        ax1.text(2200, ylabel, label,\
-        fontsize=7, bbox=dict(facecolor='w', alpha=0.7), zorder=10)
+        if f_grsm:
+            ax1.text(0.02, 0.68, label,\
+            fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
+            ha='left', va='center', transform=ax1.transAxes)
+        else:
+            ax1.text(0.02, 0.68, label,\
+            fontsize=fs_label, bbox=dict(facecolor='w', alpha=0.8, lw=1.), zorder=10,
+            ha='left', va='center', transform=ax1.transAxes)
         
     #######################################
-    ax1.xaxis.labelpad = -3
     if f_grsm:
         conlim = (x0>10000) & (x0<25000)
         xgmin, xgmax = np.min(x0[conlim]),np.max(x0[conlim]), #7500, 17000
@@ -2937,73 +2720,17 @@ def plot_sed_tau(MB, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf
             if verbose:
                 print('y3 limit is not specified.')
             pass
-        ax3t.set_xlim(1e5, 3e7)
-        ax3t.set_xscale('log')
-        ax3t.set_xticks([100000, 1000000, 10000000])
-        ax3t.set_xticklabels(['10', '100', '1000'])
 
-    ###############
-    # Line name
-    ###############
-    LN0 = ['Mg2', '$NeIV$', '[OII]', 'H$\theta$', 'H$\eta$', 'Ne3?', 'H$\delta$', 'H$\gamma$', 'H$\\beta$', 'O3', 'O3', 'Mgb', 'Halpha', 'S2L', 'S2H']
-    LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4959, 5007, 5175, 6563, 6717, 6731]
-    fsl = 9 # Fontsize for line
-    if f_grsm:
-        try:
-            for ii in range(len(LW)):
-                ll = np.argmin(np.abs(LW[ii]-LW0[:]))
-
-                if ll == 2 and FLW[ii] == 1: 
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]-130, yyl[0]*1.28, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-                elif (ll == 9 and FLW[ii] == 1):
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-
-                elif (ll == 10 and FLW[ii] == 1):
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.5,yminzoom+(ymaxzoom-yminzoom)*0.65, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*0.75, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-                elif FLW[ii] == 1 and (ll == 6 or ll == 7 or ll == 8):
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-
-                elif ll == 6 or ll == 7 or ll == 8:
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.2,yminzoom+(ymaxzoom-yminzoom)*0.35, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color='gray', zorder=1, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*0.95, '%s'%(LN0[ll]),  color='gray', fontsize=9, rotation=90)
-
-                elif FLW[ii] == 1:
-                    yyl = np.arange(yminzoom+(ymaxzoom-yminzoom)*0.7,yminzoom+(ymaxzoom-yminzoom)*.95, 0.01)
-                    xxl = yyl * 0 + LW0[ll]
-                    ax2t.errorbar(xxl, yyl, lw=0.5, color=lcb, zorder=20, alpha=1., label='', capsize=0)
-                    ax2t.text(xxl[0]+40, yyl[0]*1.25, '%s'%(LN0[ll]),  color=lcb, fontsize=9, rotation=90)
-        except:
-            pass
-
-    # Filters
-    ind_remove = np.where((wht3<=0) | (ey<=0))[0]
-    if f_plot_filter:
-        ax1 = plot_filter(MB, ax1, ymax, scl=scl_yaxis, ind_remove=ind_remove)
+    # Figure configure;
+    ax1 = get_sed_figure_format(MB, ax1, x1min, x1max, ymax, scale, ey, wht3, f_plot_filter=False, ax3t=ax3t)
 
     ####################
     ## Save
     ####################
-    ax1.legend(loc=1, fontsize=11)
-
     if figpdf:
-        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.pdf', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.pdf', dpi=dpi)
     else:
-        fig.savefig(MB.DIR_OUT + 'SPEC_' + ID + '_spec.png', dpi=dpi)
+        fig.savefig(MB.DIR_OUT + 'gsf_spec_' + ID + '.png', dpi=dpi)
 
     if return_figure:
         return fig
