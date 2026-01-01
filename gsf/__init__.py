@@ -1,3 +1,13 @@
+"""gsf
+
+Package entry point for gsf (Galactic SED Fitting).
+
+This module exposes package metadata and performs minimal runtime
+initialization. Docstrings across the package follow NumPy/Sphinx
+conventions to enable automatic documentation generation with Sphinx
+and the Napoleon extension.
+"""
+
 import re
 import sys
 import os

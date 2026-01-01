@@ -259,9 +259,9 @@ class MinimizerResult:
     message : str
         Message about fit success.
     ier : int
-        Integer error value from :scipydoc:`optimize.leastsq` (`leastsq` only).
+        Integer error value from scipy.optimize.leastsq (``leastsq`` only).
     lmdif_message : str
-        Message from :scipydoc:`optimize.leastsq` (`leastsq` only).
+        Message from scipy.optimize.leastsq (``leastsq`` only).
     nvarys : int
         Number of variables in fit: :math:`N_{\rm varys}`.
     ndata : int
@@ -804,10 +804,10 @@ class Minimizer:
                     self.result.params[nam].value = v.nominal_value
 
     def scalar_minimize(self, method='Nelder-Mead', params=None, **kws):
-        """Scalar minimization using :scipydoc:`optimize.minimize`.
+        """Scalar minimization using scipy.optimize.minimize.
 
         Perform fit with any of the scalar minimization algorithms supported by
-        :scipydoc:`optimize.minimize`. Default argument values are:
+        scipy.optimize.minimize. Default argument values are:
 
         +-------------------------+-----------------+-----------------------------------------------------+
         | :meth:`scalar_minimize` | Default Value   | Description                                         |
@@ -845,7 +845,7 @@ class Minimizer:
         params : :class:`~lmfit.parameter.Parameters`, optional
            Parameters to use as starting point.
         **kws : dict, optional
-            Minimizer options pass to :scipydoc:`optimize.minimize`.
+            Minimizer options pass to scipy.optimize.minimize.
 
         Returns
         -------
@@ -1451,9 +1451,9 @@ class Minimizer:
         return result
 
     def least_squares(self, params=None, **kws):
-        """Least-squares minimization using :scipydoc:`optimize.least_squares`.
+        """Least-squares minimization using scipy.optimize.least_squares.
 
-        This method wraps :scipydoc:`optimize.least_squares`, which has inbuilt
+        This method wraps scipy.optimize.least_squares, which has inbuilt
         support for bounds and robust loss functions. By default it uses the
         Trust Region Reflective algorithm with a linear loss function (i.e.,
         the standard least-squares problem).
@@ -1463,7 +1463,7 @@ class Minimizer:
         params : :class:`~lmfit.parameter.Parameters`, optional
            Parameters to use as starting point.
         **kws : dict, optional
-            Minimizer options to pass to :scipydoc:`optimize.least_squares`.
+            Minimizer options to pass to scipy.optimize.least_squares.
 
         Returns
         -------
@@ -1543,7 +1543,7 @@ class Minimizer:
         When possible, this calculates the estimated uncertainties and
         variable correlations from the covariance matrix.
 
-        This method calls :scipydoc:`optimize.leastsq`.
+        This method calls scipy.optimize.leastsq.
         By default, numerical derivatives are used, and the following
         arguments are set:
 
@@ -1565,7 +1565,7 @@ class Minimizer:
         params : :class:`~lmfit.parameter.Parameters`, optional
            Parameters to use as starting point.
         **kws : dict, optional
-            Minimizer options to pass to :scipydoc:`optimize.leastsq`.
+            Minimizer options to pass to scipy.optimize.leastsq.
 
         Returns
         -------
@@ -1646,10 +1646,10 @@ class Minimizer:
     def basinhopping(self, params=None, **kws):
         """Use the `basinhopping` algorithm to find the global minimum of a function.
 
-        This method calls :scipydoc:`optimize.basinhopping` using the default
+        This method calls scipy.optimize.basinhopping using the default
         arguments. The default minimizer is `BFGS`, but since lmfit supports
         parameter bounds for all minimizers, the user can choose any of the
-        solvers present in :scipydoc:`optimize.minimize`.
+        solvers present in scipy.optimize.minimize.
 
         Parameters
         ----------
@@ -1705,7 +1705,7 @@ class Minimizer:
     def brute(self, params=None, Ns=20, keep=50, workers=1):
         """Use the `brute` method to find the global minimum of a function.
 
-        The following parameters are passed to :scipydoc:`optimize.brute`
+        The following parameters are passed to scipy.optimize.brute
         and cannot be changed:
 
         +-------------------+-------+----------------------------------------+
@@ -1735,17 +1735,17 @@ class Minimizer:
         keep : int, optional
             Number of best candidates from the brute force method that are
             stored in the :attr:`candidates` attribute. If 'all', then all grid
-            points from :scipydoc:`optimize.brute` are stored as candidates.
+            points from scipy.optimize.brute are stored as candidates.
         workers : int or map-like callable, optional
             For parallel evaluation of the grid, added in SciPy v1.3 (see
-            :scipydoc:`optimize.brute` for more details).
+            scipy.optimize.brute for more details).
 
         Returns
         -------
         :class:`MinimizerResult`
             Object containing the parameters from the brute force method.
             The return values (`x0`, `fval`, `grid`, `Jout`) from
-            :scipydoc:`optimize.brute` are stored as `brute_<parname>` attributes.
+            scipy.optimize.brute are stored as `brute_<parname>` attributes.
             The `MinimizerResult` also contains the `candidates` attribute and
             `show_candidates()` method. The `candidates` attribute contains the
             parameters and chisqr from the brute force method as a namedtuple,
@@ -1765,7 +1765,7 @@ class Minimizer:
         The :meth:`brute` method evalutes the function at each point of a
         multidimensional grid of points. The grid points are generated from the
         parameter ranges using `Ns` and (optional) `brute_step`.
-        The implementation in :scipydoc:`optimize.brute` requires finite bounds
+        The implementation in scipy.optimize.brute requires finite bounds
         and the `range` is specified as a two-tuple `(min, max)` or slice-object
         `(min, max, brute_step)`. A slice-object is used directly, whereas a
         two-tuple is converted to a slice object that interpolates `Ns` points
@@ -1987,7 +1987,7 @@ class Minimizer:
         """Use the `SHGO` algorithm to find the global minimum.
 
         SHGO stands for "simplicial homology global optimization" and calls
-        :scipydoc:`optimize.shgo` using its default arguments.
+        scipy.optimize.shgo using its default arguments.
 
         Parameters
         ----------
@@ -2001,7 +2001,7 @@ class Minimizer:
         -------
         :class:`MinimizerResult`
             Object containing the parameters from the SHGO method.
-            The return values specific to :scipydoc:`optimize.shgo` (`x`,
+            The return values specific to scipy.optimize.shgo (`x`,
             `xl`, `fun`, `funl`, `nfev`, `nit`, `nlfev`, `nlhev`, and
             `nljev`) are stored as `shgo_<parname>` attributes.
 
@@ -2052,7 +2052,7 @@ class Minimizer:
     def dual_annealing(self, params=None, **kws):
         """Use the `dual_annealing` algorithm to find the global minimum.
 
-        This method calls :scipydoc:`optimize.dual_annealing` using its
+        This method calls scipy.optimize.dual_annealing using its
         default arguments.
 
         Parameters
@@ -2067,7 +2067,7 @@ class Minimizer:
         -------
         :class:`MinimizerResult`
             Object containing the parameters from the dual_annealing method.
-            The return values specific to :scipydoc:`optimize.dual_annealing`
+            The return values specific to scipy.optimize.dual_annealing
             (`x`, `fun`, `nfev`, `nhev`, `njev`, and `nit`) are stored as
             `da_<parname>` attributes.
 

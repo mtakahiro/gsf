@@ -11,11 +11,15 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import os
 import sys
-import sphinx_rtd_theme
 
-#sys.path.insert(0, os.path.abspath('/Users/tmorishita/GitHub/gsf/gsf/'))
-
+# Ensure the project root is on sys.path so autodoc can import the package
+sys.path.insert(0, os.path.abspath('..'))
+try:
+    import sphinx_rtd_theme
+except Exception:
+    sphinx_rtd_theme = None
 def setup(app):
    app.add_css_file('css/custom.css')
 
@@ -40,10 +44,31 @@ master_doc = 'index'
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
     "sphinx_rtd_theme",
     "sphinx_automodapi.automodapi",
 ]
-html_theme = "sphinx_rtd_theme"
+
+# Prefer the RTD theme if available
+html_theme = "sphinx_rtd_theme" if sphinx_rtd_theme is not None else "alabaster"
+
+# Mock heavy runtime imports during autodoc so docs can be built without
+# installing every optional dependency. Add module names here if they cause
+# import-time side effects or are not available in the build environment.
+autodoc_mock_imports = [
+    'matplotlib',
+    'matplotlib.pyplot',
+    'colorama',
+    'corner',
+    'emcee',
+    'zeus',
+    'pandas',
+    'astropy',
+    'asdf',
+    'lmfit',
+    'pkg_resources',
+    'scipy',
+]
 
 numpydoc_show_class_members = False
 

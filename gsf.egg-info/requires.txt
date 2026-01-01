@@ -1,0 +1,16 @@
+asdf
+astropy
+colorama
+corner
+dust_extinction
+emcee
+fsps>=0.4.8
+lmfit
+multiprocess
+numpy>=1.21
+pandas
+pytest
+scipy>=1.5.1
+specutils
+sphinx_automodapi
+zeus-mcmc
