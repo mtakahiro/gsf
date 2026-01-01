@@ -1,23 +1,23 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generating templates &mdash; gsf 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
 
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=51b770b3"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -61,7 +61,6 @@
 <li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
 <li class="toctree-l1"><a class="reference internal" href="redshift_fitting.html">Redshift Fitting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
 </ul>
 
         </div>
@@ -89,9 +88,9 @@
            <div itemprop="articleBody">
              
   <section id="generating-templates">
-<span id="templates"></span><h1>Generating templates<a class="headerlink" href="#generating-templates" title="Link to this heading"></a></h1>
+<span id="templates"></span><h1>Generating templates<a class="headerlink" href="#generating-templates" title="Permalink to this heading"></a></h1>
 <section id="rest-frame-templates-execution-flag-0">
-<span id="template-z0"></span><h2>Rest-frame templates (Execution flag = 0)<a class="headerlink" href="#rest-frame-templates-execution-flag-0" title="Link to this heading"></a></h2>
+<span id="template-z0"></span><h2>Rest-frame templates (Execution flag = 0)<a class="headerlink" href="#rest-frame-templates-execution-flag-0" title="Permalink to this heading"></a></h2>
 <p>In this step (specifically, <cite>make_tmp_z0</cite>), gsf generates synthetic spectral templates
 via <a class="reference external" href="https://github.com/dfm/python-fsps">python-fsps</a>, based on the parameters
 in the configuration file. The parameters are limited from the original fsps (<a class="reference external" href="http://adsabs.harvard.edu/abs/2009ApJ...699..486C">Conroy et al. 2009</a>),
@@ -112,7 +111,7 @@ If set to a negative value, then SSP is applied.</p>
 <img alt="_images/pixel.png" src="_images/pixel.png" />
 </section>
 <section id="shifting-templates-to-the-input-redshift-execution-flag-1">
-<span id="template-z"></span><h2>Shifting templates to the input redshift (Execution flag = 1)<a class="headerlink" href="#shifting-templates-to-the-input-redshift-execution-flag-1" title="Link to this heading"></a></h2>
+<span id="template-z"></span><h2>Shifting templates to the input redshift (Execution flag = 1)<a class="headerlink" href="#shifting-templates-to-the-input-redshift-execution-flag-1" title="Permalink to this heading"></a></h2>
 <p>In this step (specifically, <cite>maketemp</cite> module), gsf shifts the rest-frame templates generated above (i.e. those in <code class="docutils literal notranslate"><span class="pre">spec_all.asdf</span></code>)
 to the input redshift and calculates fluxes of the input filters for one-to-one comparison.
 Basically, there are three steps;</p>
@@ -148,7 +147,7 @@ Basically, there are three steps;</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Takahiro Morishita.</p>
+    <p>&#169; Copyright 2017-2025, Takahiro Morishita.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

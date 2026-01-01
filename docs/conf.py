@@ -27,7 +27,7 @@ def setup(app):
 # -- Project information -----------------------------------------------------
 
 project = 'gsf'
-copyright = '2025, Takahiro Morishita'
+copyright = '2017-2025, Takahiro Morishita'
 author = 'Takahiro Morishita'
 
 # The full version, including alpha/beta/rc tags
@@ -47,8 +47,9 @@ extensions = [
     'sphinx.ext.napoleon',
     "sphinx_rtd_theme",
     "sphinx_automodapi.automodapi",
+    'sphinx.ext.coverage',
+    'sphinx.ext.autosectionlabel',
 ]
-
 # Prefer the RTD theme if available
 html_theme = "sphinx_rtd_theme" if sphinx_rtd_theme is not None else "alabaster"
 

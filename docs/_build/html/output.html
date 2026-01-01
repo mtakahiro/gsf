@@ -1,23 +1,23 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Output files &mdash; gsf 2.0.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
 
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=51b770b3"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -62,7 +62,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
 <li class="toctree-l1"><a class="reference internal" href="redshift_fitting.html">Redshift Fitting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="auto/modules.html">gsf</a></li>
 </ul>
 
         </div>
@@ -90,7 +89,7 @@
            <div itemprop="articleBody">
              
   <section id="output-files">
-<span id="output"></span><h1>Output files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h1>
+<span id="output"></span><h1>Output files<a class="headerlink" href="#output-files" title="Permalink to this heading"></a></h1>
 <p>Gsf generates plots of the MCMC covariance matrices, star formation histories, and SED in default.
 It also generates the following files, so you can make your own plots of these quantities;</p>
 <ul class="simple">
@@ -102,22 +101,22 @@ It also generates the following files, so you can make your own plots of these q
 <p>See <a class="reference external" href="https://github.com/mtakahiro/gsf/blob/master/example/Plot%20SFH%20and%20SED.ipynb">this notebook</a>
 for how to use these files.</p>
 <section id="summary-file">
-<h2>1.summary file<a class="headerlink" href="#summary-file" title="Link to this heading"></a></h2>
+<h2>1.summary file<a class="headerlink" href="#summary-file" title="Permalink to this heading"></a></h2>
 <p>stores statistical values (16/50/84th) for fitting parameters (e.g., amplitude)
 as well as primary physical parameters (e.g.,stellar mass). The header also contains meta info
 such as calculation time.</p>
 </section>
 <section id="chain-file">
-<h2>2.chain file<a class="headerlink" href="#chain-file" title="Link to this heading"></a></h2>
+<h2>2.chain file<a class="headerlink" href="#chain-file" title="Permalink to this heading"></a></h2>
 <p>stores MCMC-chains.</p>
 </section>
 <section id="sfh-file">
-<h2>3.SFH file<a class="headerlink" href="#sfh-file" title="Link to this heading"></a></h2>
+<h2>3.SFH file<a class="headerlink" href="#sfh-file" title="Permalink to this heading"></a></h2>
 <p>stores star formation rates (logSFR), stellar masses (logMstel), and metallicity (logZ)
 as a function of lookback time (time). Star formation rate is the average SFR in the last <cite>TSET_SFR</cite> (default: 0.1Gyr) of the posetrior SFH.</p>
 </section>
 <section id="spectral-file">
-<h2>4.Spectral file<a class="headerlink" href="#spectral-file" title="Link to this heading"></a></h2>
+<h2>4.Spectral file<a class="headerlink" href="#spectral-file" title="Permalink to this heading"></a></h2>
 <p>stores the best fit model spectra for each age/tau component, as well as observed fluxes and
 error.</p>
 <ul class="simple">
@@ -138,7 +137,7 @@ error.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Takahiro Morishita.</p>
+    <p>&#169; Copyright 2017-2025, Takahiro Morishita.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

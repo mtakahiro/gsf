@@ -1,6 +1,15 @@
 gsf package
 ===========
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   gsf.Logger
+   gsf.tests
+
 Submodules
 ----------
 
@@ -9,149 +18,149 @@ gsf.basic\_func module
 
 .. automodule:: gsf.basic_func
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
+
+gsf.class\_plot module
+----------------------
+
+.. automodule:: gsf.class_plot
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 gsf.fitting module
 ------------------
 
 .. automodule:: gsf.fitting
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gsf.function module
 -------------------
 
 .. automodule:: gsf.function
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gsf.function\_class module
 --------------------------
 
 .. automodule:: gsf.function_class
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gsf.function\_igm module
 ------------------------
 
 .. automodule:: gsf.function_igm
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gsf.gsf module
 --------------
 
 .. automodule:: gsf.gsf
    :members:
-   :undoc-members:
    :show-inheritance:
-
-gsf.maketmp\_filt module
-------------------------
-
-.. automodule:: gsf.maketmp_filt
-   :members:
    :undoc-members:
-   :show-inheritance:
-
-gsf.maketmp\_z0 module
-----------------------
-
-.. automodule:: gsf.maketmp_z0
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-gsf.maketmp\_z0\_tau module
----------------------------
-
-.. automodule:: gsf.maketmp_z0_tau
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 gsf.minimizer module
 --------------------
 
 .. automodule:: gsf.minimizer
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
-gsf.plot\_MZ module
--------------------
+gsf.plot\_sed module
+--------------------
 
-.. automodule:: gsf.plot_MZ
+.. automodule:: gsf.plot_sed
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
-gsf.plot\_sed\_logA module
---------------------------
+gsf.plot\_sfh module
+--------------------
 
-.. automodule:: gsf.plot_sed_logA
+.. automodule:: gsf.plot_sfh
    :members:
-   :undoc-members:
    :show-inheritance:
-
-gsf.plot\_sfh\_logA module
---------------------------
-
-.. automodule:: gsf.plot_sfh_logA
-   :members:
    :undoc-members:
-   :show-inheritance:
 
 gsf.posterior\_flexible module
 ------------------------------
 
 .. automodule:: gsf.posterior_flexible
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gsf.posterior\_nested module
 ----------------------------
 
 .. automodule:: gsf.posterior_nested
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
+
+gsf.templates module
+--------------------
+
+.. automodule:: gsf.templates
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+gsf.templates\_z0 module
+------------------------
+
+.. automodule:: gsf.templates_z0
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+gsf.utils\_templates module
+---------------------------
+
+.. automodule:: gsf.utils_templates
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 gsf.version module
 ------------------
 
 .. automodule:: gsf.version
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
-gsf.writing module
-------------------
+gsf.write\_param module
+-----------------------
 
-.. automodule:: gsf.writing
+.. automodule:: gsf.write_param
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 gsf.zfit module
 ---------------
 
 .. automodule:: gsf.zfit
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: gsf
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

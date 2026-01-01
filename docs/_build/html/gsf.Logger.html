@@ -1,0 +1,234 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gsf.Logger package &mdash; gsf 2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            gsf
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing gsf</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">Paramter Description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input.html">Input files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Generating templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fitting.html">Fitting process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">Output files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="prior.html">Prior</a></li>
+<li class="toctree-l1"><a class="reference internal" href="redshift_fitting.html">Redshift Fitting</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">gsf</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">gsf.Logger package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/gsf.Logger.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gsf-logger-package">
+<h1>gsf.Logger package<a class="headerlink" href="#gsf-logger-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-gsf.Logger.GsfBase">
+<span id="gsf-logger-gsfbase-module"></span><h2>gsf.Logger.GsfBase module<a class="headerlink" href="#module-gsf.Logger.GsfBase" title="Permalink to this heading"></a></h2>
+<p>Created on: May 2, 2023
+Credit: Antonio Addis (IPAC)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="gsf.Logger.GsfBase.GsfBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gsf.Logger.GsfBase.</span></span><span class="sig-name descname"><span class="pre">GsfBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configurationfile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfBase.GsfBase" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class used for GSF common variables/functions/utilities (Logger, configfile parsing etc)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfBase.GsfBase.deleteAnalysisDir">
+<span class="sig-name descname"><span class="pre">deleteAnalysisDir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfBase.GsfBase.deleteAnalysisDir" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfBase.GsfBase.getAnalysisDir">
+<span class="sig-name descname"><span class="pre">getAnalysisDir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfBase.GsfBase.getAnalysisDir" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfBase.GsfBase.load_json">
+<span class="sig-name descname"><span class="pre">load_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_file</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfBase.GsfBase.load_json" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gsf.Logger.GsfConfig">
+<span id="gsf-logger-gsfconfig-module"></span><h2>gsf.Logger.GsfConfig module<a class="headerlink" href="#module-gsf.Logger.GsfConfig" title="Permalink to this heading"></a></h2>
+<p>Created on: May 2, 2023
+Credit: Antonio Addis (IPAC)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="gsf.Logger.GsfConfig.GsfConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gsf.Logger.GsfConfig.</span></span><span class="sig-name descname"><span class="pre">GsfConfig</span></span><a class="headerlink" href="#gsf.Logger.GsfConfig.GsfConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfConfig.GsfConfig.getConf">
+<span class="sig-name descname"><span class="pre">getConf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subkey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfConfig.GsfConfig.getConf" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfConfig.GsfConfig.getConfigurationFile">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getConfigurationFile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfConfig.GsfConfig.getConfigurationFile" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfConfig.GsfConfig.load_configuration">
+<span class="sig-name descname"><span class="pre">load_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configurationfile</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfConfig.GsfConfig.load_configuration" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-gsf.Logger.GsfLogger">
+<span id="gsf-logger-gsflogger-module"></span><h2>gsf.Logger.GsfLogger module<a class="headerlink" href="#module-gsf.Logger.GsfLogger" title="Permalink to this heading"></a></h2>
+<p>Created on: May 2, 2023
+Credit: Antonio Addis (IPAC)</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.ColoredFormatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gsf.Logger.GsfLogger.</span></span><span class="sig-name descname"><span class="pre">ColoredFormatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.ColoredFormatter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Formatter</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.ColoredFormatter.format">
+<span class="sig-name descname"><span class="pre">format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#gsf.Logger.GsfLogger.ColoredFormatter.format" title="Permalink to this definition"></a></dt>
+<dd><p>Format the specified record as text.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.GsfLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gsf.Logger.GsfLogger.</span></span><span class="sig-name descname"><span class="pre">GsfLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.GsfLogger" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class defines the logging format, level and output.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.GsfLogger.getDefaultLogger">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getDefaultLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loggerName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logLevel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.GsfLogger.getDefaultLogger" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.GsfLogger.getLogger">
+<span class="sig-name descname"><span class="pre">getLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loggerName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addFileHandler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.GsfLogger.getLogger" title="Permalink to this definition"></a></dt>
+<dd><p>We expect the loggerName to have the following format: &lt;class_name&gt;_&lt;id&gt;</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.GsfLogger.getRootLogsDir">
+<span class="sig-name descname"><span class="pre">getRootLogsDir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.GsfLogger.getRootLogsDir" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.GsfLogger.mapLogLevel">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mapLogLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verboseLvl</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.GsfLogger.mapLogLevel" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.GsfLogger.setLogger">
+<span class="sig-name descname"><span class="pre">setLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rootPath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logLevel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gsf.Logger.GsfLogger.GsfLogger.setLogger" title="Permalink to this definition"></a></dt>
+<dd><p>Must be called once, before getLogger()
+It sets the root directory of the logs, the log level and the formatter.
+It defines a common stream handler for all the loggers. (TODO: think about it in a multiprocessing/multithread context)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="gsf.Logger.GsfLogger.Singleton">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">gsf.Logger.GsfLogger.</span></span><span class="sig-name descname"><span class="pre">Singleton</span></span><a class="headerlink" href="#gsf.Logger.GsfLogger.Singleton" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></p>
+<p>Make sure there is a single instance of the logger class at any time.</p>
+</dd></dl>
+
+</section>
+<section id="module-gsf.Logger">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-gsf.Logger" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2025, Takahiro Morishita.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
