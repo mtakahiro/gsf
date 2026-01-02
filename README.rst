@@ -15,8 +15,8 @@ version 1.7 and after
 - This code was originally designed for HST grism data; now it can be used for a geranal purpose (e.g., broadband photometry, JWST prism).
 
 
-Why do I need gsf?
-~~~~~~~~~~~~~~~~~~
+_Why do I need gsf?_
+~~~~~~~~~~~~~~~~~~~~
 
 The strength of gsf lies in its flexibility to model the galaxy spectrum by adopting a flexible approach to the galaxy's star formation history 
 and metallicity enrichment history. This flexibility is a huge advantage and allows the user to explore a wide range of galaxy properties, 
@@ -120,7 +120,7 @@ Execution flag
 
 Release notes
 ~~~~~~~~~~~~~
-- V2.0: Functional SFH model (exponentional, delayed tau, etc.) is back to functional. Cleaned up some plotting scripts.  
+- V2.0: Functional SFH model (exponentional, delayed tau, etc.) is back functional. Cleaned up some plotting scripts.  
 - V1.9: Some output files (mostly fits) are underdeprecation warning; Try to use *.asdf files.
 - V1.8: JWST prism spectrum can be fit. Usability in Notebook has been improved. Logger has been implemented (thanks to Antonio Addis).
 - V1.7.4: pytest has been implemented.
