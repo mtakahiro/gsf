@@ -15,12 +15,16 @@ from .utils_templates import get_nebular_template
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
 
 
-def initiate_tree(MB):
+def initiate_tree(MB, bpass=False):
     """"""
     # ASDF Big tree;
     # Create header;
+    if MB.imf_str is None:
+        imf_str = get_imf_str(MB.nimf)
+    else:
+        imf_str = MB.imf_str
     tree = {
-        'imf': get_imf_str(MB.nimf),
+        'imf': imf_str,
         'nimf': MB.nimf,
         'version_gsf': gsf.__version__
     }
@@ -890,10 +894,13 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
     if nimf == 0: # Salpeter
         imf_str = '135all_%d'%(upmass)
         imf_str = '135_%d'%(upmass)
+        MB.imf_str = imf_str 
     elif nimf == 1:
         imf_str = '_chab%d'%(upmass)
+        MB.imf_str = imf_str 
     else:
         imf_str = ''
+        MB.imf_str = None
 
     if Zforce is not None:
         file_out = 'spec_all_Z%.1f.asdf'%Zforce

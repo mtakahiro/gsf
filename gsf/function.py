@@ -336,7 +336,7 @@ def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r,
         return wave_obs[con_obs], ews/(1+z), filters[con_obs], wave_obs[cont_obs], filters[cont_obs]
 
 
-def get_imf_str(nimf):
+def get_imf_str(nimf, bpass=False):
     '''
     from https://dfm.io/python-fsps/current/stellarpop_api/:
     0: Salpeter (1955)

@@ -107,6 +107,7 @@ class Mainbody(GsfBase):
         self.ztemplate = False
         # self.z_prior = None
         # self.p_prior = None
+        self.imf_str = None
 
         if not flag_input:
             self.flag_class = False

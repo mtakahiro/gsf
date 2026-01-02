@@ -1959,7 +1959,7 @@ class PLOT(object):
         MB = self.mb
         MB.logger.info('Running plot_sed')
 
-        print('\n### Running plot_sed_tau ###\n')
+        print('\n### Running plot_sed ###\n')
 
         fnc  = self.mb.fnc
         bfnc = self.mb.bfnc
