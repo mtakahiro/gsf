@@ -9,13 +9,13 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from lmfit import Model, Parameters, minimize, fit_report#, Minimizer
-from numpy import log10
+# from numpy import log10
 import os.path
-import random
-import string
+# import random
+# import string
 import timeit
-from scipy import stats
-from scipy.stats import norm
+# from scipy import stats
+# from scipy.stats import norm
 import scipy.interpolate as interpolate
 from astropy.io import fits,ascii
 import corner
@@ -23,14 +23,14 @@ import emcee
 import zeus
 import pandas as pd
 import asdf
-import logging
+# import logging
 import pathlib
 
 # import from custom codes
 from .function import check_line_man, check_line_cz_man, calc_Dn4, savecpkl, get_leastsq, print_err, str2bool
 from .zfit import check_redshift,get_chi2
 from .write_param import get_param
-from .function_class import Func
+# from .function_class import Func
 from .minimizer import Minimizer
 from .posterior_flexible import Post
 from .function_igm import get_XI
@@ -2179,7 +2179,6 @@ class Mainbody(GsfBase):
                     plt.close()
                     # For memory optimization;
                     del samples, axes
-
 
                 # Similar for nested;
                 # Dummy just to get structures;

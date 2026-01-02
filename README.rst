@@ -112,14 +112,15 @@ Take a look at `notebooks <https://github.com/mtakahiro/gsf_examples/tree/master
 
 Execution flag
 ~~~~~~~~~~~~~~
-- 0: Generating z=0 templates (takes a while if MILES is specified in the fsps config file). Start from here if any critical parameter (e.g., Z-range, age bins) in config file is changed. This will then automatically proceed to the next step.
+- 0: Generate z=0 templates (takes a while if MILES is specified in the fsps config file). Start from here if any critical parameter (e.g., Z-range, age bins) in config file is changed. This will then automatically proceed to the next step.
 - 1: Redshift template to z=z_input, by using existing z=0 templates (from Step 0). This will then automatically proceed to the next step.
-- 2: Fitting part, by using existing redshifted templates (from step1). This will then automatically proceed to the next step.
-- 3: Creates SFH and SED plots by using the fitting results.
+- 2: Main fitting part run, by using existing redshifted templates (from step1). This will then automatically proceed to the next step.
+- 3: Create plots by using the fitting results.
 
 
 Release notes
 ~~~~~~~~~~~~~
+- V2.0: Functional SFH model (exponentional, delayed tau, etc.) is back to functional. Cleaned up some plotting scripts.  
 - V1.9: Some output files (mostly fits) are underdeprecation warning; Try to use *.asdf files.
 - V1.8: JWST prism spectrum can be fit. Usability in Notebook has been improved. Logger has been implemented (thanks to Antonio Addis).
 - V1.7.4: pytest has been implemented.
