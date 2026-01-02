@@ -15,7 +15,7 @@ version 1.7 and after
 - This code was originally designed for HST grism data; now it can be used for a geranal purpose (e.g., broadband photometry, JWST prism).
 
 
-_Why do I need gsf?_
+*Why do I need gsf?*
 ~~~~~~~~~~~~~~~~~~~~
 
 The strength of gsf lies in its flexibility to model the galaxy spectrum by adopting a flexible approach to the galaxy's star formation history 
