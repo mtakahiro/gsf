@@ -21,7 +21,7 @@ dependencies = [
     'corner',
     'dust_extinction',
     'emcee',
-    'fsps>=0.4.8',
+    'fsps>=0.4.7',
     'lmfit',
     'multiprocess',
     'numpy>=1.21',
