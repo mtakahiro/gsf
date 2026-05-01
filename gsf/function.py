@@ -31,6 +31,22 @@ fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
 
 
+def lamtonu(lam):
+    '''
+    lam : float array
+        in AA
+    '''
+    return c/lam
+
+
+def nutolam(nu):
+    '''
+    nu : float array
+        in Hz, or 1/s
+    '''
+    return c/nu
+
+
 def get_lognorm(t, ltau0, T0=-10):
     A = 1
     tau0 = 10**ltau0
@@ -1657,7 +1673,7 @@ def filconv_fast(filts, band, l0, f0, fw=False):
         return lcen, fnu
 
 
-def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
+def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None, has_unit=False):
     '''
     Parameters
     ----------
@@ -1673,6 +1689,14 @@ def filconv(band0, l0, f0, DIR, fw=False, f_regist=True, MB=None):
     if f_regist:
         lfil_lib = {}
         ffil_lib = {}
+
+    try:
+        l0.unit
+        has_unit = True
+        l0 = l0.to(u.AA).value
+        f0 = f0.value
+    except:
+        pass
 
     fnu = np.zeros_like(band0, dtype=float)
     lcen = np.zeros_like(band0, dtype=float)
