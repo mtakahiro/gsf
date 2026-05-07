@@ -4,17 +4,18 @@ import scipy.interpolate as interpolate
 from .function import *
 # from .basic_func import Basic
 from .function_igm import dijkstra_igm_abs
+from .function_igm import inoue_igm
 # from .maketmp_filt import maketemp
 
 
-class Func:
+class Func():
     '''
     The list of (possible) `Func` attributes is given below:
 
     Attributes
     ----------
     '''
-    def __init__(self, MB):
+    def __init__(self, MB, use_inoue=True):
         '''
         Parameters
         ----------
@@ -27,6 +28,9 @@ class Func:
         self.AA = MB.nage
         self.tau0 = MB.tau0
         self.MB = MB
+        self.use_inoue = use_inoue
+        if self.use_inoue:
+            self.cls_inoue = inoue_igm(self.MB)
 
         self.dust_model = MB.dust_model
         self.DIR_TMP = MB.DIR_TMP
@@ -425,7 +429,11 @@ class Func:
                 x_HI_lin = 10**xhi
             else:
                 x_HI_lin = None
-            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            
+            if self.use_inoue:
+                yy, x_HI = self.cls_inoue.inoue_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            else:
+                yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:
@@ -548,8 +556,10 @@ class Func:
                 x_HI_lin = 10**xhi
             else:
                 x_HI_lin = None
-            print(x_HI_lin, xhi)
-            yy, x_HI = dijkstra_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            if self.use_inoue:
+                yy, x_HI = self.cls_inoue.inoue_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            else:
+                yy, x_HI = dijkstra_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:
@@ -618,10 +628,10 @@ class Func:
         return yy_s, xx_s
 
 
-class Func_tau:
+class Func_tau():
     '''
     '''
-    def __init__(self, MB):
+    def __init__(self, MB, use_inoue=True):
         '''
         Parameters
         ----------
@@ -636,6 +646,9 @@ class Func_tau:
 
         self.dust_model = MB.dust_model
         self.DIR_TMP = MB.DIR_TMP
+        self.use_inoue = use_inoue
+        if self.use_inoue:
+            self.cls_inoue = inoue_igm(self.MB)
 
         if MB.f_dust:
             self.Temp = MB.Temp
@@ -987,7 +1000,10 @@ class Func_tau:
                 x_HI_lin = 10**xhi
             else:
                 x_HI_lin = None
-            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            if self.use_inoue:
+                yy, x_HI = self.cls_inoue.inoue_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            else:
+                yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:
@@ -1129,7 +1145,10 @@ class Func_tau:
                 x_HI_lin = 10**xhi
             else:
                 x_HI_lin = None
-            yy, x_HI = dijkstra_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            if self.use_inoue:
+                yy, x_HI = self.cls_inoue.inoue_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
+            else:
+                yy, x_HI = dijkstra_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:

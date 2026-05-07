@@ -1401,7 +1401,7 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                     wave0 = fd_sed['wavelength']
                     wave_tmp = fd_sed['wavelength']
                     # Make Yggdrasil into a HR?
-                    wave0 = wave_tmp#np.arange(np.nanmin(wave_tmp), 100000, 0.2)
+                    wave0 = np.arange(np.nanmin(wave_tmp), 100000, 0.5)
                 else:
                     wave_tmp = fd_sed['wavelength']
 

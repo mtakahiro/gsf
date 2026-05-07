@@ -3,6 +3,253 @@ import numpy as np
 # import sys
 # from scipy.integrate import simps
 from scipy import integrate
+import os
+
+
+class inoue_igm(object):
+	def __init__(self, MB):
+		self._scale_tau = 1.0
+		# Load LAF coefficients
+		data_path = MB.config_path
+		laf_file = os.path.join(data_path, "LAFcoeff.txt")
+		data = np.loadtxt(laf_file, unpack=True)
+		_, lam, alf1, alf2, alf3 = data
+		self._lam = lam[:, np.newaxis]
+		self._alf1 = alf1[:, np.newaxis]
+		self._alf2 = alf2[:, np.newaxis]
+		self._alf3 = alf3[:, np.newaxis]
+
+		# Load DLA coefficients
+		dla_file = os.path.join(data_path, "DLAcoeff.txt")
+		data = np.loadtxt(dla_file, unpack=True)
+		_, lam, adla1, adla2 = data
+		self._adla1 = adla1[:, np.newaxis]
+		self._adla2 = adla2[:, np.newaxis]
+
+	def tau_laf(self, redshift, lam_obs,
+				z1_laf = 1.2,
+				z2_laf = 4.7
+				):
+		"""Compute the Lyman series and Lyman-alpha forest optical depth.
+
+		Args:
+			redshift (float): Source redshift.
+			lam_obs (array): Observed-frame wavelengths in Angstroms.
+
+		Returns:
+			array: Optical depth due to the Lyman-alpha forest.
+		"""
+		# Strip units for the following calculations
+		lam = self._lam
+
+		tau_laf_value = np.zeros_like(lam_obs * lam).T
+
+		# Conditions based on observed lam and redshift
+		cond0 = lam_obs < lam * (1 + redshift)
+		cond1 = cond0 & (lam_obs < lam * (1 + z1_laf))
+		cond2 = cond0 & (
+			(lam_obs >= lam * (1 + z1_laf)) & (lam_obs < lam * (1 + z2_laf))
+		)
+		cond3 = cond0 & (lam_obs >= lam * (1 + z2_laf))
+
+		tau_laf_value = np.zeros_like(lam_obs * lam)
+		tau_laf_value[cond1] += ((self._alf1 / lam**1.2) * lam_obs**1.2)[cond1]
+		tau_laf_value[cond2] += ((self._alf2 / lam**3.7) * lam_obs**3.7)[cond2]
+		tau_laf_value[cond3] += ((self._alf3 / lam**5.5) * lam_obs**5.5)[cond3]
+
+		return tau_laf_value.sum(axis=0)
+
+
+	def tau_dla(self, redshift, lam_obs, z1_dla = 2.0):
+		"""Compute the Lyman series and Damped Lyman-alpha (DLA) optical depth.
+
+		Args:
+			redshift (float): Source redshift.
+			lam_obs (array): Observed-frame wavelengths in Angstroms.
+
+		Returns:
+			array: Optical depth due to DLA.
+		"""
+		# Strip units for the following calculations
+		lam = self._lam
+
+		tau_dla_value = np.zeros_like(lam_obs * lam)
+
+		# Conditions based on observed wavelength and redshift
+		cond0 = (lam_obs < lam * (1 + redshift)) & (
+			lam_obs < lam * (1.0 + z1_dla)
+		)
+		cond1 = (lam_obs < lam * (1 + redshift)) & ~(
+			lam_obs < lam * (1.0 + z1_dla)
+		)
+
+		tau_dla_value[cond0] += ((self._adla1 / lam**2) * lam_obs**2)[cond0]
+		tau_dla_value[cond1] += ((self._adla2 / lam**3) * lam_obs**3)[cond1]
+
+		return tau_dla_value.sum(axis=0)
+
+
+	def tau_lc_dla(self, redshift, lam_obs,
+				z1_dla = 2.0,
+				lam_l = 911.8
+				):
+		"""Compute the Lyman continuum optical depth for DLA.
+
+		Args:
+			redshift (float): Source redshift.
+			lam_obs (array): Observed-frame wavelengths in Angstroms.
+
+		Returns:
+			array: Optical depth due to Lyman continuum for DLA.
+		"""
+		# Strip units for the following calculations
+		tau_lc_dla_value = np.zeros_like(lam_obs)
+
+		cond0 = lam_obs < lam_l * (1.0 + redshift)
+		if redshift < z1_dla:
+			tau_lc_dla_value[cond0] = (
+				0.2113 * (1.0 + redshift) ** 2
+				- 0.07661
+				* (1.0 + redshift) ** 2.3
+				* (lam_obs[cond0] / lam_l) ** (-0.3)
+				- 0.1347 * (lam_obs[cond0] / lam_l) ** 2
+			)
+		else:
+			cond1 = lam_obs >= lam_l * (1.0 + z1_dla)
+
+			tau_lc_dla_value[cond0 & cond1] = (
+				0.04696 * (1.0 + redshift) ** 3
+				- 0.01779
+				* (1.0 + redshift) ** 3.3
+				* (lam_obs[cond0 & cond1] / lam_l) ** (-0.3)
+				- 0.02916 * (lam_obs[cond0 & cond1] / lam_l) ** 3
+			)
+			tau_lc_dla_value[cond0 & ~cond1] = (
+				0.6340
+				+ 0.04696 * (1.0 + redshift) ** 3
+				- 0.01779
+				* (1.0 + redshift) ** 3.3
+				* (lam_obs[cond0 & ~cond1] / lam_l) ** (-0.3)
+				- 0.1347 * (lam_obs[cond0 & ~cond1] / lam_l) ** 2
+				- 0.2905 * (lam_obs[cond0 & ~cond1] / lam_l) ** (-0.3)
+			)
+
+		return tau_lc_dla_value
+
+
+	def tau_lc_laf(self, redshift, lam_obs,
+				z1_laf = 1.2,
+				z2_laf = 4.7,
+				lam_l = 911.8
+				):
+		"""Compute the Lyman continuum optical depth for LAF.
+
+		Args:
+			redshift (float): Source redshift.
+			lam_obs (array): Observed-frame wavelengths in Angstroms.
+
+		Returns:
+			array: Optical depth due to Lyman continuum for LAF.
+		"""
+		# Strip units for the following calculations
+		tau_lc_laf_value = np.zeros_like(lam_obs)
+
+		cond0 = lam_obs < lam_l * (1.0 + redshift)
+
+		if redshift < z1_laf:
+			tau_lc_laf_value[cond0] = 0.3248 * (
+				(lam_obs[cond0] / lam_l) ** 1.2
+				- (1.0 + redshift) ** -0.9 * (lam_obs[cond0] / lam_l) ** 2.1
+			)
+		elif redshift < z2_laf:
+			cond1 = lam_obs >= lam_l * (1 + z1_laf)
+			tau_lc_laf_value[cond0 & cond1] = 2.545e-2 * (
+				(1.0 + redshift) ** 1.6
+				* (lam_obs[cond0 & cond1] / lam_l) ** 2.1
+				- (lam_obs[cond0 & cond1] / lam_l) ** 3.7
+			)
+			tau_lc_laf_value[cond0 & ~cond1] = (
+				2.545e-2
+				* (1.0 + redshift) ** 1.6
+				* (lam_obs[cond0 & ~cond1] / lam_l) ** 2.1
+				+ 0.3248 * (lam_obs[cond0 & ~cond1] / lam_l) ** 1.2
+				- 0.2496 * (lam_obs[cond0 & ~cond1] / lam_l) ** 2.1
+			)
+		else:
+
+			cond1 = lam_obs > lam_l * (1.0 + z2_laf)
+			cond2 = (lam_obs >= lam_l * (1.0 + z1_laf)) & (
+				lam_obs < lam_l * (1.0 + z2_laf)
+			)
+			cond3 = lam_obs < lam_l * (1.0 + z1_laf)
+
+			tau_lc_laf_value[cond0 & cond1] = 5.221e-4 * (
+				(1.0 + redshift) ** 3.4
+				* (lam_obs[cond0 & cond1] / lam_l) ** 2.1
+				- (lam_obs[cond0 & cond1] / lam_l) ** 5.5
+			)
+			tau_lc_laf_value[cond0 & cond2] = (
+				5.221e-4
+				* (1.0 + redshift) ** 3.4
+				* (lam_obs[cond0 & cond2] / lam_l) ** 2.1
+				+ 0.2182 * (lam_obs[cond0 & cond2] / lam_l) ** 2.1
+				- 2.545e-2 * (lam_obs[cond0 & cond2] / lam_l) ** 3.7
+			)
+			tau_lc_laf_value[cond0 & cond3] = (
+				5.221e-4
+				* (1.0 + redshift) ** 3.4
+				* (lam_obs[cond0 & cond3] / lam_l) ** 2.1
+				+ 0.3248 * (lam_obs[cond0 & cond3] / lam_l) ** 1.2
+				- 3.140e-2 * (lam_obs[cond0 & cond3] / lam_l) ** 2.1
+			)
+
+		return tau_lc_laf_value
+
+
+	def calculate_general_tau(self, redshift, lam_obs):
+		"""Compute the total IGM optical depth.
+
+		Args:
+			redshift (float): Redshift to evaluate IGM absorption.
+			lam_obs (array): Observed-frame wavelengths in Angstroms.
+
+		Returns:
+			array: Total IGM absorption optical depth.
+		"""
+		tau_ls = self.tau_laf(redshift, lam_obs) + self.tau_dla(redshift, lam_obs)
+		tau_lc = self.tau_lc_laf(redshift, lam_obs) + self.tau_lc_dla(redshift, lam_obs)
+
+		# Upturn at short wavelengths, low-z
+		# k = 1./100
+		# l0 = 600-6/k
+		# clip = lam_obs/(1+redshift) < 600.
+		# tau_clip = 100*(1-1./(1+np.exp(-k*(lam_obs/(1+redshift)-l0))))
+		tau_clip = 0.0
+
+		return self._scale_tau * (tau_lc + tau_ls + tau_clip)
+
+	def inoue_igm_abs(self, xtmp, ytmp, zin, cosmo=None, xLL=1215.67, ckms=3e5, 
+	# def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1215.67, ckms=3e5, 
+		R_b1=1.0, delta_v_0=600, alpha_x=1.0, x_HI=None, verbose=False,
+		zend=5, zstart=8, log_xHI=False):
+		''''''
+		# import scipy.interpolate as interpolate
+
+		tau = self.calculate_general_tau(zin, xtmp*(1+zin))
+		transmission = np.exp(-tau)
+
+		# Handle NaNs and values greater than 1
+		transmission[transmission != transmission] = 0.0  # squash NaNs
+		transmission[transmission > 1] = 1
+
+		# Cut RF <700??
+		transmission[xtmp<700] = 0.0  # squash NaNs
+
+		# Interpolate is not needed??
+		# fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='nearest', fill_value="extrapolate")
+		# tau = fint(delta_lam)
+		ytmp_abs = ytmp * transmission
+		return ytmp_abs, x_HI
 
 
 def get_XI(z, zend=5, zstart=8):
@@ -26,7 +273,8 @@ def get_dtdz(z, zs, dtdzs):
 	return dtdzs[iix]
 
 
-def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5, zobs=6, xLLL=1400):
+def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5, zobs=0, xLLL=1400, x_HI=None,
+						zend=5, zstart=8):
 	'''
 	Purpose
 	-------
@@ -52,7 +300,6 @@ def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5
 	zs = np.linspace(zobs,zin,1000)
 
 	xtmp_obs = xtmp * (1+zin)
-	x_HI = 0.8
 	T = 1e0 #1e4 # K
 	sigma_0 = 5.9e-14 * (T / 1e4)**(-1/2) # cm2
 	a_V = 4.7e-4  * (T / 1e4)**(-1/2) # 
@@ -62,6 +309,12 @@ def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5
 	delta_nu_d = nu_a * np.sqrt(2 * k_B * T / m_p / ckms**2)
 
 	dtdzs = (cosmo.age(zs)[0:-1].value - cosmo.age(zs)[1:].value) * 1e9 * 365.25 * 3600 * 24 / np.diff(zs) # s
+
+	if x_HI == None:
+		x_HI = get_XI(zin, zend=zend, zstart=zstart) # neutral fraction
+	else:
+		if verbose:
+			print('Neutral fraction, x_HI = %.10f, is provided;'%(x_HI))
 
 	# xLL = 1390
 	for ii in range(len(xtmp_obs)):
@@ -88,9 +341,9 @@ def masongronke_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., c=3e18, ckms=3e5
 	return ytmp_abs
 
 
-def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5, 
+def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1215.67, ckms=3e5, 
 	R_b1=1.0, delta_v_0=600, alpha_x=1.0, x_HI=None, verbose=False,
-	zend=5, zstart=8):
+	zend=5, zstart=8, log_xHI=False, tau_max=200):
 	'''
 	Purpose
 	-------
@@ -122,41 +375,68 @@ def dijkstra_igm_abs(xtmp, ytmp, zin, cosmo=None, xLL=1216., ckms=3e5,
 	xobs = xtmp * (1.*zin)
 	ytmp_abs = np.zeros(len(ytmp), float)
 
-	xtmp_obs = xtmp * (1+zin)
-
 	if x_HI == None:
 		x_HI = get_XI(zin, zend=zend, zstart=zstart) # neutral fraction
 	else:
 		if verbose:
-			print('Neutral fraction, x_HI = %.2f, is provided;'%(x_HI))
+			print('Neutral fraction, x_HI = %.10f, is provided;'%(x_HI))
 
 	# This helps speeding up
-	x_HI = float("{:.3f}".format(x_HI))
+	x_HI = float("{:.10f}".format(x_HI))
 
 	x_D = alpha_x * x_HI # x_D is not clear..
 	delta_lam = (xtmp - xLL) * (zin + 1)
-	delta_lam_fine = (np.linspace(900,2000,1000) - xLL) * (zin + 1)
+	delta_lam_fine = (np.linspace(900,1500,10000) - xLL) * (zin + 1)
 
 	delta_v = ckms * delta_lam_fine / (xLL * (1.+zin))
 	delta_v_b1 = delta_v # 
 	if R_b1>0:
+		print(R_b1, cosmo.H(zin).value * R_b1 / (1.+zin))
 		delta_v_b1 += cosmo.H(zin).value * R_b1 / (1.+zin) # km / (Mpc s) * Mpc
 
-	tau_fine = 2.3 * x_D * (delta_v_b1/delta_v_0)**(-1) * ((1+zin)/10)**(3/2) # Eq.(30)
+	tau_fine = 2.3 * x_D * (np.abs(delta_v_b1)/delta_v_0)**(-1) * ((1+zin)/10)**(3/2) # Eq.(30)
 	con_tau = (tau_fine < 0) | (delta_v_b1 == 0)
-	tau_fine[con_tau] = 100
+	tau_fine[con_tau] = tau_max
+	con_tau2 = (delta_v_b1<0)
+	tau_fine[con_tau2] = tau_max # By doing this, it assumes the blue side of Lya is completely attenuated
+	# import matplotlib.pyplot as plt
+	# plt.plot(delta_v_b1, tau_fine)
+	# plt.show()
+	# print(tau_fine)
+	# hoghe
+
+	if False:#True:#
+		import matplotlib.pyplot as plt
+		plt.close()
+		plt.plot(delta_v_b1, tau_fine)
+		# plt.xlim(1200,1220)
+		# plt.ylim(1e-2,1e1)
+		plt.yscale('log')
 
 	fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='nearest', fill_value="extrapolate")
 	tau = fint(delta_lam)
+	Transmission = np.exp(-tau)
+	ytmp_abs = ytmp * Transmission
 
-	# import matplotlib.pyplot as plt
-	# plt.close()
-	# plt.plot(xtmp, tau[:] )
-	# plt.xlim(1200,1500)
-	# plt.show()
-	# hoge
+	if False:#True:#
+		import matplotlib.pyplot as plt
+		plt.close()
+		# plt.plot(delta_lam_fine, tau_fine)
+		# plt.plot(xtmp, tau, ls='--')
+		plt.plot(xtmp, Transmission)
+		plt.xlim(1200,1220)
+		plt.yscale('log')
+		plt.show()
+		hoge
 
-	ytmp_abs = ytmp * np.exp(-tau)
+	if False:#True:#
+		import matplotlib.pyplot as plt
+		plt.close()
+		plt.plot(xtmp, tau)
+		plt.xlim(1200,1220)
+		# plt.ylim(1e-2,1e1)
+		plt.yscale('log')
+		plt.show()
 
 	return ytmp_abs, x_HI
 

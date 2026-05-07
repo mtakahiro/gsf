@@ -577,8 +577,8 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
         print_err(msg, exit=True)
 
     # show all spectra:
-    plot_all_templates(MB, af, show_parameters=True)
-    hoge
+    # plot_all_templates(MB, af, show_parameters=True)
+    # hoge
 
     # ASDF Big tree;
     # Create header;
@@ -1205,17 +1205,28 @@ def sim_spec(lmin, fin, sn):
 def plot_all_templates(MB, af, show_parameters=True):
     '''
     '''
-    MB.x_HI_input = 10**-7
     for zz in range(len(af['Z'])):
         for ss in range(len(af['age'])):
             for pp in range(len(range(len(MB.tau0)))):
                 wave = af['spec']['wavelength']
                 flux = af['spec']['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
 
+                # flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
                 flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
+                # MB.x_HI_input = 10**0
+                # flux_igm_2, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
+                flux_igm_2, _ = inoue_igm_abs(wave, flux*0+1, MB.zgal)
+                # flux_igm_3 = masongronke_igm_abs(wave, flux, MB.zgal)
 
                 # plt.plot(wave, flux)
-                plt.plot(wave, flux_igm)
+                # plt.plot(wave, flux_igm)
+                plt.plot(wave, flux_igm_2)
+                # plt.plot(wave, flux_igm_3)
+                plt.xlim(0, 1220)
+                plt.ylim(0, 1)
+                # plt.yscale('log')
+                plt.show()
+                hge
 
         for nlogU, logUtmp in enumerate(MB.logUs):                
             flux = af['spec']['fspec_nebular_Z%d'%zz+'_logU%d'%nlogU]
