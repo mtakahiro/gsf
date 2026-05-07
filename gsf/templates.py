@@ -455,7 +455,7 @@ def load_data(MB, ncolbb=10000):
     return MB, data_meta
         
 
-def process_igm_z_conv(MB, wave, spec, ms, Ls, zbest, LSF=None, f_IGM=False, lm=[]):
+def process_igm_z_conv(MB, wave, spec, ms, Ls, zbest, LSF=None, f_IGM=False, lm=[], apply_distance=True):
     '''
     f_IGM = False in default, because IGM is now applied during the fit;
     '''
@@ -468,14 +468,17 @@ def process_igm_z_conv(MB, wave, spec, ms, Ls, zbest, LSF=None, f_IGM=False, lm=
     else:
         spec_igm_tmp = spec
 
-    # Distance;
-    # (1.+zbest) takes acount of the change in delta lam by redshifting.
-    # Note that this is valid only when F_nu.
-    # When Flambda, /(1.+zbest) will be *(1.+zbest).
-    spec_mul_nu = flamtonu(wave, spec_igm_tmp, m0set=MB.m0set)
-    spec_mul_nu *= MB.Lsun/(4.*np.pi*_DL**2/(1.+zbest))
-    spec_mul_nu *= (1./Ls)#*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
-    ms *= (1./Ls)#*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
+    if apply_distance:
+        # Distance;
+        # (1.+zbest) takes acount of the change in delta lam by redshifting.
+        # Note that this is valid only when F_nu.
+        # When Flambda, /(1.+zbest) will be *(1.+zbest).
+        spec_mul_nu = flamtonu(wave, spec_igm_tmp, m0set=MB.m0set)
+        spec_mul_nu *= MB.Lsun/(4.*np.pi*_DL**2/(1.+zbest))
+        spec_mul_nu *= (1./Ls)#*tmp_norm # in unit of erg/s/Hz/cm2/ms[ss].
+        ms *= (1./Ls)#*tmp_norm # M/L; 1 unit template has this mass in [Msolar].
+    else:
+        spec_mul_nu = spec_igm_tmp
 
     # Convolution;
     if len(lm)>0:
@@ -572,6 +575,10 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     if not flag:
         msg = 'There is inconsistency in z0 library and input file. Exiting.'
         print_err(msg, exit=True)
+
+    # show all spectra:
+    plot_all_templates(MB, af, show_parameters=True)
+    hoge
 
     # ASDF Big tree;
     # Create header;
@@ -693,10 +700,10 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                             for uu in range(len(MB.logUs)):
                                 if delwave>0:
-                                    fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                                    fint = interpolate.interp1d(lm0_orig, spechdu['fspec_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
                                     spec_mul_neb[zz,uu,:] = fint(lm0)
                                 else:
-                                    spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin][con_wave]
+                                    spec_mul_neb[zz,uu,:] = spechdu['fspec_nebular_Z%d_logU%d'%(zz,uu)][::nthin][con_wave]
 
                                 con_neb = (spec_mul_neb[zz,uu,:]<0)
                                 spec_mul_neb[zz,uu,:][con_neb] = 0
@@ -897,10 +904,10 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
                         for uu in range(len(MB.logUs)):
                             if delwave>0:
-                                fint = interpolate.interp1d(lm0_orig, spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
+                                fint = interpolate.interp1d(lm0_orig, spechdu['fspec_nebular_Z%d_logU%d'%(zz,uu)][::nthin], kind='nearest', fill_value="extrapolate")
                                 spec_mul_neb[zz,uu,:] = fint(lm0)
                             else:
-                                spec_mul_neb[zz,uu,:] = spechdu['flux_nebular_Z%d_logU%d'%(zz,uu)][::nthin][con_wave]
+                                spec_mul_neb[zz,uu,:] = spechdu['fspec_nebular_Z%d_logU%d'%(zz,uu)][::nthin][con_wave]
                             
                             con_neb = (spec_mul_neb[zz,uu,:]<0)
                             spec_mul_neb[zz,uu,:][con_neb] = 0
@@ -967,6 +974,8 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     tree.update({'spec_full' : tree_spec_full})
     tree.update({'ML' : tree_ML})
     tree.update({'SFR' : tree_SFR})
+    tree.update({'Z' : Z})
+    tree.update({'age' : age})
 
     ######################
     # Add dust component;
@@ -1080,6 +1089,11 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
     _ = attach_data(MB, ltmpbb, ltmpbb_d, data_meta, ebblim=ebblim, lamliml=lamliml, lamlimu=lamlimu, ncolbb=ncolbb)
 
     MB.ztemplate = True
+
+    #
+    # plot_all_templates(MB, MB.af)
+    # hoge
+
     return True
 
 
@@ -1187,6 +1201,33 @@ def sim_spec(lmin, fin, sn):
             frand[ii] = np.random.normal(fin[ii],erand[ii],1)
     return frand, erand
 
+
+def plot_all_templates(MB, af, show_parameters=True):
+    '''
+    '''
+    MB.x_HI_input = 10**-7
+    for zz in range(len(af['Z'])):
+        for ss in range(len(af['age'])):
+            for pp in range(len(range(len(MB.tau0)))):
+                wave = af['spec']['wavelength']
+                flux = af['spec']['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+
+                flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
+
+                # plt.plot(wave, flux)
+                plt.plot(wave, flux_igm)
+
+        for nlogU, logUtmp in enumerate(MB.logUs):                
+            flux = af['spec']['fspec_nebular_Z%d'%zz+'_logU%d'%nlogU]
+            flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
+            # plt.plot(wave, flux, ls='--')
+            # plt.plot(wave, flux_igm, ls='--')
+
+    plt.xlim(0, 2000)
+    plt.yscale('log')
+    plt.ylim(1e-10, 1e1)
+    plt.show()
+    return 
 
 def show_template_parameters(af):
     ''''''

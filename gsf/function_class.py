@@ -421,7 +421,11 @@ class Func:
         if f_apply_igm:
             if xhi == None:
                 xhi = self.MB.x_HI_input
-            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=xhi)
+            if xhi is not None:
+                x_HI_lin = 10**xhi
+            else:
+                x_HI_lin = None
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:
@@ -538,9 +542,14 @@ class Func:
         yy = yy_s
 
         if f_apply_igm:
-            if xhi == None:
+            if xhi is None:
                 xhi = self.MB.x_HI_input
-            yy, x_HI = dijkstra_igm_abs(xx / (1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=xhi)
+            if xhi is not None:
+                x_HI_lin = 10**xhi
+            else:
+                x_HI_lin = None
+            print(x_HI_lin, xhi)
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:
@@ -974,7 +983,11 @@ class Func_tau:
         if f_apply_igm:
             if xhi == None:
                 xhi = self.MB.x_HI_input
-            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=xhi)
+            if xhi is not None:
+                x_HI_lin = 10**xhi
+            else:
+                x_HI_lin = None
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zgal), yy, zgal, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:
@@ -1112,7 +1125,11 @@ class Func_tau:
         if f_apply_igm:
             if xhi == None:
                 xhi = self.MB.x_HI_input
-            yy, x_HI = dijkstra_igm_abs(xx / (1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=xhi)
+            if xhi is not None:
+                x_HI_lin = 10**xhi
+            else:
+                x_HI_lin = None
+            yy, x_HI = dijkstra_igm_abs(xx/(1+zmc), yy, zmc, cosmo=self.MB.cosmo, x_HI=x_HI_lin)
             self.MB.x_HI = x_HI
 
         if f_apply_dust:

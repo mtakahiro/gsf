@@ -1678,6 +1678,9 @@ class PLOT(object):
             else:
                 hdr['UVBETA_obs%d'%percs[ii]] = -99
 
+            # X_HI;
+            hdr['XHI_%d'%percs[ii]] = self.dict_model['xhis_percs'][ii]
+
         # UVJ
         try:
             hdr['uv16'] = np.nanpercentile(UVJ[:,0],16)
@@ -2295,6 +2298,7 @@ class PLOT(object):
         Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
         betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        _xhis = np.zeros(mmax, dtype=float)
 
         # From random chain;
         for kk in range(0,mmax,1):
@@ -2304,6 +2308,7 @@ class PLOT(object):
                 xhi = samples['xhi'][nr]
             else:
                 xhi = MB.x_HI_input
+            _xhis[kk] = xhi
 
             if MB.has_AVFIX:
                 Av_tmp = MB.AVFIX
@@ -2475,6 +2480,7 @@ class PLOT(object):
                            'f_50_comp':f_50_comp, 
                            'Fuv':Fuv, 'Fuv2800':Fuv2800, 'Lir':Lir, 'Luv1600':Luv1600, 'Luv1600_nl':Luv1600_nl, 'Luv1600_noatn':Luv1600_noatn,
                            'betas':betas, 'UVJ':UVJ, 'AVs':AVs, 'nbeta_obs':nbeta_obs, 'beta_obs_percs':beta_obs_percs,
+                           'xhis':_xhis, 'xhis_percs':np.percentile(_xhis, percs),
                            'MD50':MD50, 'TD50':TD50,
                            }
         if self.mb.f_dust:
@@ -2934,6 +2940,7 @@ class PLOT(object):
         Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
         betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        _xhis = np.zeros(mmax, dtype=float)
 
         # From random chain;
         for kk in range(0,mmax,1):
@@ -2943,6 +2950,7 @@ class PLOT(object):
                 xhi = samples['xhi'][nr]
             else:
                 xhi = self.mb.x_HI_input
+            _xhis[kk] = xhi
 
             if self.mb.has_AVFIX:
                 Av_tmp = self.mb.AVFIX
@@ -3090,6 +3098,7 @@ class PLOT(object):
                            'f_50_comp':f_50_comp,
                            'Fuv':Fuv, 'Fuv2800':Fuv2800, 'Lir':Lir, 'Luv1600':Luv1600, 'Luv1600_nl':Luv1600_nl, 'Luv1600_noatn':Luv1600_noatn,
                            'betas':betas, 'UVJ':UVJ, 'AVs':AVs, 'nbeta_obs':nbeta_obs, 'beta_obs_percs':beta_obs_percs,
+                           'xhis':_xhis, 'xhis_percs':np.percentile(_xhis, percs),
                            'MD50':MD50, 'TD50':TD50,
                            }
         if self.mb.f_dust:

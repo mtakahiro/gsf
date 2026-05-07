@@ -396,7 +396,6 @@ class Mainbody(GsfBase):
             # Others;
             self.neb_correlate = False
 
-
         if not self.f_general:
             # BPASS Binary template
             try:
@@ -420,14 +419,16 @@ class Mainbody(GsfBase):
         # if 'BPASS' in self.input_keys and str2bool(inputs['BPASS']):
         #     self.logger.warning('Currently, BPASS does not have option of nebular emission.')
         #     inputs['ADD_NEBULAE'] = '0'
-        if not self.f_general:
+        if not self.f_general or 'DIR_CLOUDY' in self.input_keys:
             # @@@ For now, no support for general template with AGN and Nebular;
 
             # Nebular;
             self.neb_correlate = False
             if 'ADD_NEBULAE' in self.input_keys:
+
                 if str2bool(inputs['ADD_NEBULAE']):
                     self.fneb = True
+
                     try:
                         # Correlation between Aneb and LW age? May add some time; see posterior_flexible
                         if inputs['NEBULAE_PRIOR'] == '1':
@@ -452,6 +453,7 @@ class Mainbody(GsfBase):
                             sys.exit()
                     except:
                         self.DELlogU = 0.5
+
                     self.logUs = np.arange(self.logUMIN, self.logUMAX, self.DELlogU)
                     self.nlogU = len(self.logUs)
 
@@ -842,7 +844,7 @@ class Mainbody(GsfBase):
 
         # XHI as a param;
         if 'XHIFIX' in inputs:
-            self.x_HI_input = float(inputs['XHIFIX'])
+            self.x_HI_input = float(inputs['XHIFIX']) # in log(XHI)
             self.fxhi = False
         else:
             self.x_HI_input = None
@@ -992,6 +994,7 @@ class Mainbody(GsfBase):
             self.f_chind = True
 
         self.logger.info('Complete')
+
         return True
 
 
@@ -1644,7 +1647,7 @@ class Mainbody(GsfBase):
         # xhi
         if self.fxhi:
             xhi0 = get_XI(self.zgal)
-            fit_params.add('xhi', value=xhi0, min=0, max=1)
+            fit_params.add('xhi', value=np.log10(xhi0), min=-6, max=0) # in log;
             f_add = True
 
         self.fit_params = fit_params
