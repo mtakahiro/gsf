@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 # import copy
 import asdf,sys,os
 import scipy.interpolate as interpolate
+import pandas as pd
 
 # import os
 from astropy.io import ascii,fits
@@ -13,6 +14,62 @@ from .function import get_ind,get_imf_str,get_lognorm
 from .utils_templates import get_nebular_template
 
 INDICES = ['G4300', 'Mgb', 'Fe5270', 'Fe5335', 'NaD', 'Hb', 'Fe4668', 'Fe5015', 'Fe5709', 'Fe5782', 'Mg1', 'Mg2', 'TiO1', 'TiO2']
+
+
+def get_logU(nH, QH, radius=1e18, c=3e8):
+    '''
+    radius : float
+        in cm
+    c : float
+        in cm/sec
+    '''
+    logU = np.log10(QH / (4 * np.pi * radius**2 * c * nH))
+    return logU
+
+
+def get_cloudy_nebular_file(lib_str, bin_str, imf, age_cloudy_str, logZ, dir_cloudy='', Zsun=0.020,
+                            loghden=3, logqh=55, logU=None):
+    ''''''
+    # iix = np.argmin(np.abs(logu_neb - logUs_bpass))
+    # logu_str = logUs_bpass_str[iix]                        
+    logz_cloudy_str = get_bpass_zstr(logZ, Zsun=Zsun)
+    if lib_str == 'ygdr':
+        logz_cloudy_str = 'em10'
+    suff_cloudy = '%s_%s_%s_%s_z%s'%(lib_str, bin_str, imf, age_cloudy_str, logz_cloudy_str)
+    file_grid_emi = os.path.join(dir_cloudy, '%s.grd'%(suff_cloudy)) # Contain 1 SED, for a given logU and age.
+    fd_grid_emi = pd.read_csv(file_grid_emi, encoding='ascii', sep='\t')
+    index_grd = fd_grid_emi['#Index']
+    loghden_grd = fd_grid_emi['HDEN=%f L']
+    if logU is not None:
+        logu_grd = fd_grid_emi['IONIZATIO']
+        iix = np.argmin(np.abs(loghden_grd-loghden) + np.abs((logu_grd-logU)))
+        print(10**loghden_grd[iix], 10**logu_grd[iix], logU)
+    else:
+        logqh_grd = fd_grid_emi['Q(H) %f L']
+        iix = np.argmin(np.abs(loghden_grd-loghden) + np.abs((logqh_grd-logqh)))
+        logU = get_logU(10**loghden_grd[iix], 10**logqh_grd[iix], radius=1e18, c=3e8)
+        logU = get_logU(10**2, 1e48, radius=1e18, c=3e8)
+        print(10**loghden_grd[iix], 10**logqh_grd[iix], logU)
+
+    # print(index_grd[iix], logqh_grd[iix], loghden_grd[iix])
+    id_cloudy_template = str(index_grd[iix]).zfill(4) #'0000' # @@@ TBD
+    file_sed_emi = os.path.join(dir_cloudy, suff_cloudy, '%s_%s.txt'%(suff_cloudy,id_cloudy_template)) # Contain 1 SED, for a given logU and age.
+    return file_sed_emi
+
+
+def get_bpass_zstr(logZ, Zsun=0.020):
+    ''''''
+    if 10**(logZ)*Zsun>1e-3:
+        zstrtmp = round(10**(logZ)*Zsun/10,5)
+        zstrtmp2 = '%.6s'%(zstrtmp)
+        z_str = zstrtmp2[3:]
+        if len(z_str)<3:
+            z_str = z_str+'0'
+    elif 10**(logZ)*Zsun>1e-4:
+        z_str = 'em4'
+    else:
+        z_str = 'em5'
+    return z_str
 
 
 def initiate_tree(MB, bpass=False):
@@ -955,16 +1012,7 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
         #
         # open spectral file;
         #
-        if 10**(Z[zz])*Zsun>1e-3:
-            zstrtmp = round(10**(Z[zz])*Zsun/10,5)
-            zstrtmp2 = '%.6s'%(zstrtmp)
-            z_str = zstrtmp2[3:]
-            if len(z_str)<3:
-                z_str = z_str+'0'
-        elif 10**(Z[zz])*Zsun>1e-4:
-            z_str = 'em4'
-        else:
-            z_str = 'em5'
+        z_str = get_bpass_zstr(Z[zz], Zsun=Zsun)
 
         file_sed = '%sspectra-%s-imf%s.z%s.dat'%(DIR_LIB,bin_str,imf_str,z_str)
         file_stm = '%sstarmass-%s-imf%s.z%s.dat'%(DIR_LIB,bin_str,imf_str,z_str)
@@ -1093,7 +1141,6 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
                     tree['isochrone'] = 'BPASS'
                     tree['library'] = 'BPASS'
 
-
                     # ASDF
                     tree_spec.update({'wavelength': wave})
                     flagz = True
@@ -1102,8 +1149,67 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
                     # ASDF
                     tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
 
-                    # BPASS neb;
-                    if MB.fneb and pp == 0 and ss == iix_age_neb:
+                    if MB.dir_cloudy is not None and pp == 0 and ss == iix_age_neb:
+                        mstel_emi = 1e6 # ???
+                        Lunit_emi = 3.848e33 # ???
+                        lib_str = 'bpass'
+                        imf = 'imf135_300'
+                        bin_str = 'bin'
+                        age_cloudy_str = '1e6'
+                        loghden_cloudy = 3
+                        # This is currently off
+                        if logu_neb is not None:
+                            MB.logUFIX = logu_neb
+                        MB.nlogU = 1
+                        MB.logUMIN = MB.logUFIX
+                        MB.logUMAX = MB.logUFIX
+                        MB.DELlogU = 0
+                        MB.logUs = np.asarray([MB.logUMAX])
+
+                        file_sed_emi = get_cloudy_nebular_file(lib_str, bin_str, imf, age_cloudy_str, Z[zz], 
+                                                               dir_cloudy=MB.dir_cloudy, logU=MB.logUMAX, loghden=loghden_cloudy)
+
+                        fd_sed_emi = pd.read_csv(file_sed_emi, encoding='ascii', sep='\t')
+                        wave0_emi = np.asarray([float(s) for s in fd_sed_emi['#Cont  nu']])
+                        flux0_emi = np.zeros(len(wave0_emi),'float')
+
+                        if pp == 0 and ss == 0 and zz == 0:
+                            MB.logger.info('BPASS nebular component is calculated using logU=%.1f'%(logu_neb))
+
+                        #
+                        # Determining tau for each age bin;
+                        #
+                        # Only ssp available;
+                        flux0_emi = fd_sed_emi['total']
+                        emline_luminosity = np.nansum(flux0_emi)
+
+                        femi = interpolate.interp1d(wave0_emi, flux0_emi, kind='linear', fill_value="extrapolate")
+                        flux_nebular = femi(wave)
+                        con_neg = flux_nebular<0
+                        flux_nebular[con_neg] = 0
+
+                        flux_nebular_only = flux_nebular/Lunit_emi
+                        con_neg = flux_nebular_only<0
+                        flux_nebular_only[con_neg] = 0
+
+                        # ASDF
+                        L_neb_tmp = np.nansum(flux_nebular/Lunit_emi)
+                        tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
+                        if False:#True:#
+                            plt.close()
+                            # plt.plot(wave, flux)
+                            plt.plot(wave0_emi, flux0_emi/Lunit_emi * Ls[ss]/L_neb_tmp, marker='x', ms=3)
+                            plt.plot(wave, flux_nebular/Lunit_emi * Ls[ss]/L_neb_tmp, marker='.', ms=10)
+                            plt.xlim(0, 2000)
+                            plt.show()
+                            hoge
+                        tree_spec.update({'fspec_nebular_Z%d'%zz+'_logU%d'%0: flux_nebular_only}) # in Lsun/AA
+                        tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%0: wave})
+                        tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%0: emline_luminosity}) # in Lsun
+                        tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%0: mstel_emi}) # in Msun
+
+                    # BPASS defined nebular components;
+                    elif MB.fneb and pp == 0 and ss == iix_age_neb:
 
                         if zz == 0:
                             MB.logger.info('BPASS nebular component is calculated using age=%.1e'%(age[ss]))
@@ -1244,7 +1350,7 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
 
 def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                       upmass=300, 
-                      couple_neb=True, logu_neb=-2.0,
+                      couple_neb=True, logu_neb=None,
                       age_neb=0.01,
                       ):
     '''
@@ -1328,11 +1434,15 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
     age_age = np.zeros(Na,dtype=float)
 
     # General templates;
-    fd_temp = ascii.read(MB.file_temp)
-    logZs_temp = fd_temp['logZ']
-    logTs_temp = fd_temp['logT']
-    # Ms_temp = fd_temp['Ms_form']
-    # Ms_survive_temp = fd_temp['Ms_survive']
+    try:
+        fd_temp = ascii.read(MB.file_temp)
+        logZs_temp = fd_temp['logZ']
+        logTs_temp = fd_temp['logT']
+    except:
+        # ASDF?
+        fd_temp = asdf.open(MB.file_temp)
+        logZs_temp = fd_temp['logZ']
+        logTs_temp = fd_temp['logT']
 
     flagz = True
     for zz in range(len(Z)):
@@ -1393,9 +1503,7 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                     hoge
 
                 file_sed = '%s'%(fd_temp['file'][iiz[0][0]])
-                # file_stm = '%sstarmass-%s-imf%s.z%s.dat'%(DIR_LIB,bin_str,imf_str,z_str)
                 fd_sed = ascii.read(file_sed)
-                # fd_stm = ascii.read(file_stm)
 
                 if wave0 is None:
                     wave0 = fd_sed['wavelength']
@@ -1412,7 +1520,6 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                 nage_temp = np.arange(2,ncols+1,1)
                 lage_temp = np.log10(MB.age) #(6+0.1*(nage_temp-2))
                 age_temp = 10**(6+0.1*(nage_temp-2)) # in yr
-
                 mass_formed_tot = 0
                 # flux0 = np.zeros(len(wave_tmp),'float')
 
@@ -1436,7 +1543,8 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                     flux0 = fint(wave0) # unit?
                     flux0 /= 3.826e33 # Now in Lsun, same as in BPASS.
 
-                    ms[ss] = fd_temp['Ms_survive'][iiz[0][0]]
+                    ms[ss] = fd_temp['Ms_survive'][iiz[0][0]] # Which?
+                    # ms[ss] = fd_temp['Ms_form'][iiz[0][0]] # Which?
                     mass_formed_tot += mass_formed
 
                 # Keep tau in header;
@@ -1475,31 +1583,42 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                         if zz == 0:
                             MB.logger.info('BPASS nebular component is calculated using age=%.1e'%(age[ss]))
 
-                        import pandas as pd
-                        logz_cloudy_str = 'zem10'
                         mstel_emi = 1e6 # ???
                         Lunit_emi = 1 #3.848e33 # ???
-                        suff_cloudy = 'ygdr_none_imf_popiii_1_1e6_%s'%(logz_cloudy_str)
-                        dir_cloudy = '/Users/morishita/cloudy_data/%s'%suff_cloudy
-                        if dir_cloudy is not None:
+                        try:
+                            lib_str = fd_temp['meta']['lib']#'ygdr'
+                            imf_cloudy = 'imf_%s'%(fd_temp['meta']['pop'])
+                        except:
+                            # templates_popiii_2_fcov_0_inst_limit
+                            lib_str = MB.file_temp.split('/')[-1].split('_')[1] #'ygdr'
+                            imf_cloudy = 'imf_%s_%s'%(MB.file_temp.split('/')[-1].split('_')[2], MB.file_temp.split('/')[-1].split('_')[3])
+                        bin_str = 'none'
+                        age_cloudy_str = '1e6'
+                        loghden_cloudy = 3
+                        # logz_cloudy_str = 'zem10'
+                        # suff_cloudy = 'ygdr_%s_%s_%s_%s'%(bin_str, imf, age_cloudy_str, logz_cloudy_str)
+
+                        if MB.dir_cloudy is not None:
                             # This is currently off
-                            MB.logUFIX = logu_neb
+                            if logu_neb is not None:
+                                MB.logUFIX = logu_neb
+                            else:
+                                MB.logUFIX = -0.5
                             MB.nlogU = 1
                             MB.logUMIN = MB.logUFIX
                             MB.logUMAX = MB.logUFIX
                             MB.DELlogU = 0
                             MB.logUs = np.asarray([MB.logUMAX])
 
-                            # iix = np.argmin(np.abs(logu_neb - logUs_bpass))
-                            # logu_str = logUs_bpass_str[iix]                        
-                            id_cloudy_template = '0000' # @@@ TBD
-                            file_sed_emi = os.path.join(dir_cloudy, '%s_%s.txt'%(suff_cloudy,id_cloudy_template)) # Contain 1 SED, for a given logU and age.
+                            file_sed_emi = get_cloudy_nebular_file(lib_str, bin_str, imf_cloudy, age_cloudy_str, Z[zz], 
+                                                                dir_cloudy=MB.dir_cloudy, logU=MB.logUMAX, loghden=loghden_cloudy)
+
                             fd_sed_emi = pd.read_csv(file_sed_emi, encoding='ascii', sep='\t')
                             wave0_emi = np.asarray([float(s) for s in fd_sed_emi['#Cont  nu']])
                             flux0_emi = np.zeros(len(wave0_emi),'float')
 
                             if pp == 0 and ss == 0 and zz == 0:
-                                MB.logger.info('BPASS nebular component is calculated using logU=%.1f'%(logu_neb))
+                                MB.logger.info('BPASS nebular component is calculated using logU=%.1f'%(MB.logUFIX))
 
                             #
                             # Determining tau for each age bin;

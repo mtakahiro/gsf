@@ -361,11 +361,20 @@ class Mainbody(GsfBase):
         self.f_general = False
         if 'LIST_TEMP' in inputs:
             self.file_temp = inputs['LIST_TEMP']
-            fd_temp = ascii.read(self.file_temp)
-            logUs_temp = fd_temp['logU']
-            con = (logUs_temp==-99)
-            logZs_temp = np.sort(np.unique(fd_temp['logZ'][con]))
-            ages_temp = np.sort(np.unique(fd_temp['logT'][con]))
+
+            try:
+                fd_temp = ascii.read(self.file_temp)
+                logUs_temp = fd_temp['logU']
+                con = (logUs_temp==-99)
+                logZs_temp = np.sort(np.unique(fd_temp['logZ'][con]))
+                ages_temp = np.sort(np.unique(fd_temp['logT'][con]))
+            except:
+                fd_temp = asdf.open(self.file_temp)
+                logUs_temp = fd_temp['logU']
+                con = (logUs_temp==-99)
+                logZs_temp = np.sort(np.unique(fd_temp['logZ'][con]))
+                ages_temp = np.sort(np.unique(fd_temp['logT'][con]))
+
             self.f_general = True
             self.f_bpass = 0
 
@@ -421,6 +430,10 @@ class Mainbody(GsfBase):
         #     inputs['ADD_NEBULAE'] = '0'
         if not self.f_general or 'DIR_CLOUDY' in self.input_keys:
             # @@@ For now, no support for general template with AGN and Nebular;
+            if 'DIR_CLOUDY' in self.input_keys:
+                self.dir_cloudy = inputs['DIR_CLOUDY']
+            else:
+                self.dir_cloudy = None
 
             # Nebular;
             self.neb_correlate = False

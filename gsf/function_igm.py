@@ -249,7 +249,7 @@ class inoue_igm(object):
 		# fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='nearest', fill_value="extrapolate")
 		# tau = fint(delta_lam)
 		ytmp_abs = ytmp * transmission
-		return ytmp_abs, x_HI
+		return ytmp_abs, None
 
 
 def get_XI(z, zend=5, zstart=8):

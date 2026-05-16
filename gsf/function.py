@@ -14,6 +14,8 @@ from colorama import Fore, Back, Style
 from datetime import datetime
 
 from astropy import units as u
+from astropy.constants import G, h, k_B
+from astropy.constants import c as _c
 from astropy.cosmology import WMAP9
 from dust_extinction.averages import G03_SMCBar
 from astropy.modeling.polynomial import Chebyshev1D
@@ -29,6 +31,39 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
+
+def get_radius_from_Qh(nH, QH, logU, c=3e8):
+    '''
+    '''
+    radius = np.sqrt(QH/(4*np.pi*c*nH)/10**logU)
+    return radius
+
+def get_logU(nH, QH, radius=1e18, c=3e8):
+    '''
+    QH : float
+        in ph/s
+    radius : float
+        in cm
+    c : float
+        in cm/sec
+    '''
+    logU = np.log10(QH / (4 * np.pi * radius**2 * c * nH))
+    return logU
+
+
+def get_Qh(wave_model, fnu_model, z, cosmo=None):
+    ''''''
+    nu = _c.to('cm/s')/wave_model.to('cm')
+    ergs = nu * h.to('erg s') * (1+z)# in erg s Hz
+    con_ion = (ergs >= 2.17896e-11 * u.erg) # > 13.6eV
+    flam_model = fnutolam(wave_model, fnu_model, has_unit=True)
+    dL = cosmo.luminosity_distance(z).value * (1 * u.Mpc).to('cm') # Luminositydistance in cm
+    photons = flam_model / ergs * 4 * np.pi * dL**2 # ph/s/AA
+    # plt.plot(wave_model.value, photons)
+    # plt.show()
+    Qh = np.nansum(photons[con_ion][:-1] * np.diff(wave_model[con_ion])) # ph/s
+    # print('Ionizing photon number is:', Qh)         
+    return Qh
 
 
 def lamtonu(lam):

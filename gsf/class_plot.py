@@ -2474,6 +2474,9 @@ class PLOT(object):
 
         print('')
 
+        # Get ionizing photon?
+        # Qh = get_Qh(x0 * u('AA'), ytmp_noatn * u('erg/s/cm^2/AA'), zmc, cosmo=self.mb.cosmo)
+
         # Pack necessary objects;
         self.dict_model = {'ysum':ysum, 'x0':x0, 'ytmp':ytmp, 'ytmp_nl':ytmp_nl, 'ytmp_noatn':ytmp_noatn,
                            'x1_tot':x1_tot, 'xm_tmp':xm_tmp, 'ytmp_each':ytmp_each, 'ysump':ysump, 
