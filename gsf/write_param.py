@@ -19,6 +19,8 @@ def get_param(self, res, fitc, tcalc=1., burnin=-1):
     print('##########################')
     # lib_all = self.lib_all
     tree = {}
+    if self.fneb and self.fneb_tied and 'Aneb' not in res.flatchain.keys():
+        res.flatchain['Aneb'] = res.flatchain['A%d'%self.fneb_tied_iix] + res.flatchain['mni_factor']
 
     # Those are from redshiftfit;
     zrecom = self.zgal

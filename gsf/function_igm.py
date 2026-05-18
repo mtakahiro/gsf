@@ -25,6 +25,8 @@ class inoue_igm(object):
 		_, lam, adla1, adla2 = data
 		self._adla1 = adla1[:, np.newaxis]
 		self._adla2 = adla2[:, np.newaxis]
+		self._tau = None
+		self._zin = 99
 
 	def tau_laf(self, redshift, lam_obs,
 				z1_laf = 1.2,
@@ -233,10 +235,11 @@ class inoue_igm(object):
 		R_b1=1.0, delta_v_0=600, alpha_x=1.0, x_HI=None, verbose=False,
 		zend=5, zstart=8, log_xHI=False):
 		''''''
-		# import scipy.interpolate as interpolate
-
-		tau = self.calculate_general_tau(zin, xtmp*(1+zin))
-		transmission = np.exp(-tau)
+		# @@@ TBD; need to be careful
+		if self._tau is None or np.abs(zin-self._zin) > (1+zin)*0.03 or len(self._tau) != len(xtmp):
+			self._zin = zin
+			self._tau = self.calculate_general_tau(self._zin, xtmp*(1+self._zin))
+		transmission = np.exp(-self._tau)
 
 		# Handle NaNs and values greater than 1
 		transmission[transmission != transmission] = 0.0  # squash NaNs
@@ -245,9 +248,6 @@ class inoue_igm(object):
 		# Cut RF <700??
 		transmission[xtmp<700] = 0.0  # squash NaNs
 
-		# Interpolate is not needed??
-		# fint = interpolate.interp1d(delta_lam_fine, tau_fine, kind='nearest', fill_value="extrapolate")
-		# tau = fint(delta_lam)
 		ytmp_abs = ytmp * transmission
 		return ytmp_abs, None
 

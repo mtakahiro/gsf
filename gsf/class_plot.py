@@ -411,7 +411,6 @@ class PLOT(object):
         # Load Pickle
         ##############################
         samplepath = MB.DIR_OUT 
-
         use_pickl = False
         use_pickl = True
         if use_pickl:
@@ -1679,7 +1678,10 @@ class PLOT(object):
                 hdr['UVBETA_obs%d'%percs[ii]] = -99
 
             # X_HI;
-            hdr['XHI_%d'%percs[ii]] = self.dict_model['xhis_percs'][ii]
+            if np.isnan(self.dict_model['xhis_percs'][ii]):
+                hdr['XHI_%d'%percs[ii]] = -99
+            else:
+                hdr['XHI_%d'%percs[ii]] = self.dict_model['xhis_percs'][ii]
 
         # UVJ
         try:
@@ -2278,6 +2280,9 @@ class PLOT(object):
         # From MCMC chain
         #
         ndim, Nburn, samples = PLOT.read_mcmc_chain(self.mb.ID, samplepath=self.mb.DIR_OUT, use_pickl=use_pickl)
+
+        if self.mb.fneb and self.mb.fneb_tied and 'Aneb' not in samples.keys():
+            samples['Aneb'] = samples['A%d'%self.mb.fneb_tied_iix] + samples['mni_factor']
 
         # Saved template;
         ytmp = np.zeros((mmax,len(ysum)), dtype=float)

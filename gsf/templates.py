@@ -645,6 +645,7 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
                             spec_mul[ss,:] = spechdu['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)][::nthin][con_wave] # Lsun/A
 
                         # New;
+                        # Note: spec_mul * tmp_norm makes the template to have a luminosity of tmp_norm in unit of Lsun
                         spec_mul_nu[ss,:], spec_mul_nu_conv[ss,:], ms[ss] = process_igm_z_conv(MB, wave, spec_mul[ss,:]*tmp_norm, ms[ss]*tmp_norm, Ls[ss], zbest, LSF=data_meta['LSF'], lm=data_meta['lm'])
 
                         try:
@@ -1092,7 +1093,6 @@ def make_templates(MB, ebblim=1e10, lamliml=0., lamlimu=50000., ncolbb=10000,
 
     #
     # plot_all_templates(MB, MB.af)
-    # hoge
 
     return True
 
@@ -1210,23 +1210,30 @@ def plot_all_templates(MB, af, show_parameters=True):
             for pp in range(len(range(len(MB.tau0)))):
                 wave = af['spec']['wavelength']
                 flux = af['spec']['fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
+                wave_full = af['spec_full']['wavelength']
+                flux_full = af['spec_full']['fspec_orig_'+str(zz)+'_'+str(ss)+'_'+str(pp)]
 
                 # flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
-                flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
+                # flux_igm, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
                 # MB.x_HI_input = 10**0
                 # flux_igm_2, _, _ = process_igm_z_conv(MB, wave, flux, 1, 1, MB.zgal, LSF=None, lm=[], f_IGM=True, apply_distance=False)
-                flux_igm_2, _ = inoue_igm_abs(wave, flux*0+1, MB.zgal)
+                # flux_igm_2, _ = inoue_igm_abs(wave, flux*0+1, MB.zgal)
                 # flux_igm_3 = masongronke_igm_abs(wave, flux, MB.zgal)
 
                 # plt.plot(wave, flux)
-                # plt.plot(wave, flux_igm)
-                plt.plot(wave, flux_igm_2)
-                # plt.plot(wave, flux_igm_3)
-                plt.xlim(0, 1220)
-                plt.ylim(0, 1)
-                # plt.yscale('log')
-                plt.show()
-                hge
+                if pp == 0 and (ss == 0 or ss == len(af['age'])-1):
+                    plt.plot(wave_full, flux_full, label='Z%d_age%d_tau%d, ML%.3e'%(zz,ss,pp, af['ML']['ML_%d'%(zz)][ss]))
+                    # plt.plot(wave, flux_igm)
+                    # plt.plot(wave, flux_igm_2)
+                    # plt.plot(wave, flux_igm_3)
+                    # print(np.nansum(flux_full))
+
+        plt.xlim(900*(1+MB.zgal), 12000*(1+MB.zgal))
+        # plt.ylim(0, 1)
+        plt.yscale('log')
+        plt.legend(loc=0)
+        plt.show()
+        hge
 
         for nlogU, logUtmp in enumerate(MB.logUs):                
             flux = af['spec']['fspec_nebular_Z%d'%zz+'_logU%d'%nlogU]

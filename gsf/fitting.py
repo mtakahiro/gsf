@@ -442,13 +442,13 @@ class Mainbody(GsfBase):
                 if str2bool(inputs['ADD_NEBULAE']):
                     self.fneb = True
 
-                    try:
+                    if 'NEBULAE_PRIOR' in inputs:
                         # Correlation between Aneb and LW age? May add some time; see posterior_flexible
                         if inputs['NEBULAE_PRIOR'] == '1':
                             self.neb_correlate = True 
                         else:
                             self.neb_correlate = False
-                    except:
+                    else:
                         self.neb_correlate = False
                         
                     try:
@@ -480,11 +480,10 @@ class Mainbody(GsfBase):
                     except:
                         self.logUFIX = None
 
-                    try:
-                        nfneb_tied = str(inputs['NEBULAE_TIED'])
-                    except:
-                        nfneb_tied = '0'
-                    self.fneb_tied = str2bool(nfneb_tied)
+                    if 'NEBULAE_TIED' in inputs:
+                        self.fneb_tied = str2bool(str(inputs['NEBULAE_TIED']))
+                    else:
+                        self.fneb_tied = str2bool('0')
 
                 else:
                     self.fneb = False                
@@ -1619,14 +1618,25 @@ class Mainbody(GsfBase):
             f_add = True
 
         # Nebular; ver1.6
+        # self.fneb_tied = False#True
         if self.fneb:
             self.Anebmin = -10
             self.Anebmax = 10
+            self.mnimin = -5
+            self.mnimax = 0
             if self.fneb_tied:
                 # @@@ TBD
-                iix = np.argmin(np.abs(self.age-0.01))
-                print('Aneb is tied to A%d'%iix)
-                fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d if Aneb > A%d'%(iix,iix)) #self.Amax)#, expr='<A%d'%iix)
+                if False:
+                    self.fneb_tied_iix = np.argmin(np.abs(self.age-0.01))
+                    print('Aneb is tied to A%d'%self.fneb_tied_iix)
+                    fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d if Aneb > A%d'%(self.fneb_tied_iix,self.fneb_tied_iix)) #self.Amax)#, expr='<A%d'%iix)
+                else:
+                    # self.fneb_tied_iix = np.argmin(np.abs(self.age-10**(-3.000000)))
+                    self.fneb_tied_iix = np.argmin(self.age)
+                    print('Aneb is tied to A%d'%self.fneb_tied_iix)
+                    fit_params.add(name="mni_factor", min=self.mnimin, max=self.mnimax, vary=True)#, value=-0.2
+                    fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d+mni_factor'%(self.fneb_tied_iix)) #self.Amax)#, expr='<A%d'%iix)
+
             else:
                 fit_params.add('Aneb', value=self.Aini, min=self.Anebmin, max=self.Anebmax)
             self.ndim += 1

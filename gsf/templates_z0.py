@@ -1420,7 +1420,7 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
     Na = len(age)
 
     # Current age in Gyr;
-    age_univ = MB.cosmo.age(0).value
+    # age_univ = MB.cosmo.age(0).value
 
     print('#######################################')
     print('Making templates at z=0, IMF=%d'%(nimf))
@@ -1557,7 +1557,7 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
 
                 # Temp
                 mlost[ss] = ms[ss] / mass_formed_tot
-                Ls[ss] = np.nansum(flux0) # BPASS sed is in Lsun.
+                Ls[ss] = np.nansum(flux0) # bolometric Luminosity, in Lsun.
                 LICK[ss,:] = get_ind(wave, flux)
 
                 if flagz and ss == 0 and pp == 0:
@@ -1707,10 +1707,6 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                             tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%0: emline_luminosity}) # in Lsun
                             tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%0: mstel_emi}) # in Msun
 
-            # plt.legend(loc=0)
-            # plt.show()
-            # hoge
-
             # Register M/Ls;
             if pp == 0:
                 # use tau0[0] as representative for M/L and index.
@@ -1748,6 +1744,7 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
     assert validate_and_save_tree(tree, file_out, dir_tmp=DIR_TMP) == True
 
     # Check;
+    # plot_sed_templates(MB)
     # plot_mform_msurvive(MB)
 
 
@@ -1778,6 +1775,27 @@ def smooth_spectrum(wave, flux, wmin=0, wmax=1750, sigma=30, verbose=False):
     flux[con] = z
 
     return wave, flux
+
+
+def plot_sed_templates(mb):
+    """"""
+    af = asdf.open(os.path.join(mb.DIR_TMP, 'spec_all.asdf'))
+    ages = mb.age
+    logZs = mb.Zall
+    for i in range(len(logZs)):
+        plt.figure(figsize=(10,5))
+        for j in range(len(ages)):
+            if True:#ages[j]>1e-1:
+                wave = af['spec']['wavelength']
+                flux = af['spec']['fspec_%d_%d_0'%(i,j)]
+                plt.plot(wave, flux, label='Z=%.3e, age=%.3e Gyr, %.3e, %.3e'%(logZs[i], ages[j], af['ML']['Ls_%d'%(i)][j], af['ML']['ms_%d'%(i)][j]))
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel('wavelength [AA]')
+        plt.ylabel('flux [Lsun/AA]')
+        plt.legend(loc=0)
+        plt.show()
+    hoge
 
 
 def plot_mform_msurvive(mb, ind_Z=0):
