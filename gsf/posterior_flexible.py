@@ -62,6 +62,11 @@ class Post():
         if self.mb.fneb:
             n_optir = self.mb.n_optir
             model_neb, _ = self.mb.fnc.get_template(vals, f_neb=True, xhi=xhi)
+            # import matplotlib.pyplot as plt
+            # plt.plot(x1, model)
+            # plt.plot(x1, model_neb)
+            # plt.show()
+            # hoge
             model[:n_optir] += model_neb
 
         if self.mb.fagn:
