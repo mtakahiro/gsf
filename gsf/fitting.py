@@ -484,7 +484,7 @@ class Mainbody(GsfBase):
                         self.fneb_tied = str2bool(str(inputs['NEBULAE_TIED']))
                     else:
                         self.fneb_tied = str2bool('0')
-
+                        
                 else:
                     self.fneb = False                
                     self.logUMIN = -2.5
@@ -671,6 +671,11 @@ class Mainbody(GsfBase):
                 for nn,age_tmp in enumerate(self.age):
                     aamin.append(nn)
                 self.aamin = aamin
+
+        if self.fneb_tied:
+            self.fneb_tied_iix = np.argmin(self.age)
+            # self.fneb_tied_iix = np.argmin(np.abs(self.age-10**(-3.000000)))
+            print('Aneb is tied to A%d'%self.fneb_tied_iix)
 
         # SNlimit;
         try:
@@ -1622,8 +1627,8 @@ class Mainbody(GsfBase):
         if self.fneb:
             self.Anebmin = -10
             self.Anebmax = 10
-            self.mnimin = -5
-            self.mnimax = 0
+            self.mnimin = 3
+            self.mnimax = 5
             if self.fneb_tied:
                 # @@@ TBD
                 if False:
@@ -1631,9 +1636,6 @@ class Mainbody(GsfBase):
                     print('Aneb is tied to A%d'%self.fneb_tied_iix)
                     fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d if Aneb > A%d'%(self.fneb_tied_iix,self.fneb_tied_iix)) #self.Amax)#, expr='<A%d'%iix)
                 else:
-                    # self.fneb_tied_iix = np.argmin(np.abs(self.age-10**(-3.000000)))
-                    self.fneb_tied_iix = np.argmin(self.age)
-                    print('Aneb is tied to A%d'%self.fneb_tied_iix)
                     fit_params.add(name="mni_factor", min=self.mnimin, max=self.mnimax, vary=True)#, value=-0.2
                     fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d+mni_factor'%(self.fneb_tied_iix)) #self.Amax)#, expr='<A%d'%iix)
 

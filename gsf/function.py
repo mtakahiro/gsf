@@ -1,6 +1,7 @@
 # from scipy import asarray as ar,exp
 import numpy as np
 import sys,glob,asdf
+import matplotlib.pyplot as plt
 try:
     from scipy.integrate import simps
 except:
@@ -31,6 +32,78 @@ LN0 = ['Mg2', 'Ne5', 'O2', 'Htheta', 'Heta', 'Ne3', 'Hdelta', 'Hgamma', 'Hbeta',
 LW0 = [2800, 3347, 3727, 3799, 3836, 3869, 4102, 4341, 4861, 4960, 5008, 5175, 6563, 6717, 6731]
 fLW = np.zeros(len(LW0), dtype='int') # flag.
 c = 3.e18 # A/s
+
+
+def convert_cloudy_to_flux_density(wl, fl):
+    ''''''
+    fl_new = np.zeros(len(fl), dtype='float')
+    for ii in range(len(fl)):
+        if ii == 0:
+            _delwl = (wl[ii+1]-wl[ii])
+        elif ii == len(fl)-1:
+            _delwl = (wl[ii]-wl[ii-1])
+        else:
+            _delwl = (wl[ii+1] - wl[ii-1])/2.
+        fl_new[ii] = fl[ii] / np.abs(_delwl)
+    return wl, fl_new
+
+
+def get_line_flux(wl_obs, fl_obs, z_obs, ndata=10, delta_lam=15, lines={'H1_1215.67':1215.67, 'H1_4861.32':4861.32, 'H1_6562.80':6562.80}, results=None, plot=False):
+    '''
+    fl_obs : float array
+        flux density, in erg/s/cm2/A
+    '''
+    # plot = True
+    if results is None:
+        results = {}
+    for key in lines.keys():
+        wl_line_b = (1+z_obs)*lines[key] - delta_lam * (1+z_obs)
+        wl_line_r = (1+z_obs)*lines[key] + delta_lam * (1+z_obs)
+        wl_cont_b_b = (1+z_obs)*lines[key] - delta_lam * (1+z_obs) * 2.5
+        wl_cont_b_r = (1+z_obs)*lines[key] - delta_lam * (1+z_obs) * 1.25
+        wl_cont_r_b = (1+z_obs)*lines[key] + delta_lam * (1+z_obs) * 1.25
+        wl_cont_r_r = (1+z_obs)*lines[key] + delta_lam * (1+z_obs) * 2.5
+        con_line = (wl_obs>wl_line_b) & (wl_obs<wl_line_r)
+        con_cont = ((wl_obs>wl_cont_b_b) & (wl_obs<wl_cont_b_r)) | ((wl_obs>wl_cont_r_b) & (wl_obs<wl_cont_r_r))
+        if len(wl_obs[con_line])<ndata:
+            print('Warning: emission line flux %s is extracted using a small number of pixels (N=%d)'%(key, len(wl_obs[con_line])))
+        if len(wl_obs[con_cont])<ndata:
+            print('Warning: continuum flux for %s is extracted using a small number of pixels (N=%d)'%(key, len(wl_obs[con_cont])))
+        
+        delta_lam_model = np.abs(np.nanmedian(np.diff(wl_obs[con_line])))
+        _cont = np.nanmean(fl_obs[con_cont])
+        _fluxdens = np.nanmean(fl_obs[con_line])
+        _flux = np.nansum(fl_obs[con_line] - _cont)*delta_lam_model
+        _ew0 = _flux / _cont / (1+z_obs)
+        _wl_line_obs = np.nanmean(wl_obs[con_line])
+        # print(key, _flux)
+
+        if key not in results:
+            results[key] = {'wl_line_obs':[_wl_line_obs], 'flux':[_flux], 'continuum':[_cont], 'ew0':[_ew0], 'delta_lam':[delta_lam]}
+        else:
+            results[key]['flux'].append(_flux)
+            results[key]['continuum'].append(_cont)
+            results[key]['ew0'].append(_ew0)
+            results[key]['delta_lam'].append(delta_lam)
+            results[key]['wl_line_obs'].append(_wl_line_obs)
+
+        if plot:
+            import matplotlib.pyplot as plt
+            plt.close()
+            plt.plot(wl_obs, fl_obs, color='r', ls='-', lw=0.5)
+            plt.scatter(wl_obs[con_line], fl_obs[con_line], c='r')
+            plt.scatter(wl_obs[con_cont], fl_obs[con_cont], c='b')
+            plt.scatter(_wl_line_obs, _cont, c='b', marker='+')
+            plt.xlim((lines[key]*(1+z_obs)-500), (lines[key]*(1+z_obs)+500))
+            plt.xlim(4500*(1+z_obs), 6900*(1+z_obs))
+            plt.show()
+            print(key, _fluxdens, _cont, _flux, delta_lam_model)
+
+    if plot:
+        hoge
+
+    return results
+
 
 def get_radius_from_Qh(nH, QH, logU, c=3e8):
     '''

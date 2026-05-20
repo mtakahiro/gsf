@@ -29,11 +29,11 @@ class PLOT(object):
         self.mb = mb
         self.f_grsm = False
 
-        if f_silence:
-            import matplotlib
-            matplotlib.use("Agg")
-        else:
-            import matplotlib
+        # if f_silence:
+        #     import matplotlib
+        #     matplotlib.use("Agg")
+        # else:
+        #     import matplotlib
 
         self.skip_zhist = False
         if self.mb.has_ZFIX:
@@ -44,6 +44,8 @@ class PLOT(object):
         NUM_COLORS = len(self.mb.age)
         cm = plt.get_cmap('gist_rainbow_r')
         self.col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
+
+        self.lines_dict = {'H1_1215.67':1215.67, 'H1_4861.32':4861.32, 'H1_6562.80':6562.80}
 
         return 
 
@@ -1408,7 +1410,7 @@ class PLOT(object):
                         col_dat='r', col_dia='b',
                         show_noattn=False, f_fancyplot=False, f_fill=False,
                         f_chind=False, f_exclude=False, f_plot_filter=False, f_label=True,
-                        verbose=False, taumodel=False):
+                        verbose=False, taumodel=False, line_fluxes={}):
         """"""
         age  = self.mb.age
         nage = self.mb.nage # is this true to tau model too??
@@ -1784,7 +1786,32 @@ class PLOT(object):
                 fnus_fir = flamtonu(x1_dust_full, ytmps_dust_full[ii]*scale, m0set=23.9, m0=-48.6) * u.uJy
                 tree_spec['model'].update({'fnu_fir_%d'%percs[ii]: fnus_fir})
 
-        # EW;
+        # Emission lines and equivalent width0 from the full spectrum
+        if line_fluxes is not None:
+            for key in line_fluxes.keys():
+                if False:
+                    # Fnu
+                    tree_spec['model'].update({'spectral_lineflux_%s_16'%(key): flamtonu(np.nanpercentile(line_fluxes[key]['wl_line_obs'],50), np.nanpercentile(line_fluxes[key]['flux'],16), m0set=23.9, m0=-48.6) * u.uJy * u.Hz})
+                    tree_spec['model'].update({'spectral_lineflux_%s_50'%(key): flamtonu(np.nanpercentile(line_fluxes[key]['wl_line_obs'],50), np.nanpercentile(line_fluxes[key]['flux'],50), m0set=23.9, m0=-48.6) * u.uJy * u.Hz})
+                    tree_spec['model'].update({'spectral_lineflux_%s_84'%(key): flamtonu(np.nanpercentile(line_fluxes[key]['wl_line_obs'],50), np.nanpercentile(line_fluxes[key]['flux'],84), m0set=23.9, m0=-48.6) * u.uJy * u.Hz})
+                    tree_spec['model'].update({'spectral_continuumfnu_%s_16'%(key): flamtonu(np.nanpercentile(line_fluxes[key]['wl_line_obs'],50), np.nanpercentile(line_fluxes[key]['continuum'],16), m0set=23.9, m0=-48.6) * u.uJy})
+                    tree_spec['model'].update({'spectral_continuumfnu_%s_50'%(key): flamtonu(np.nanpercentile(line_fluxes[key]['wl_line_obs'],50), np.nanpercentile(line_fluxes[key]['continuum'],50), m0set=23.9, m0=-48.6) * u.uJy})
+                    tree_spec['model'].update({'spectral_continuumfnu_%s_84'%(key): flamtonu(np.nanpercentile(line_fluxes[key]['wl_line_obs'],50), np.nanpercentile(line_fluxes[key]['continuum'],84), m0set=23.9, m0=-48.6) * u.uJy})
+                    tree_spec['model'].update({'spectral_ew0_%s_16'%(key): np.nanpercentile(line_fluxes[key]['ew0'],16) * u.AA})
+                    tree_spec['model'].update({'spectral_ew0_%s_50'%(key): np.nanpercentile(line_fluxes[key]['ew0'],50) * u.AA})
+                    tree_spec['model'].update({'spectral_ew0_%s_84'%(key): np.nanpercentile(line_fluxes[key]['ew0'],84) * u.AA})
+                else:
+                    tree_spec['model'].update({'spectral_lineflux_%s_16'%(key): np.nanpercentile(line_fluxes[key]['flux'],16) * u.erg / u.s / u.cm**2})
+                    tree_spec['model'].update({'spectral_lineflux_%s_50'%(key): np.nanpercentile(line_fluxes[key]['flux'],50) * u.erg / u.s / u.cm**2})
+                    tree_spec['model'].update({'spectral_lineflux_%s_84'%(key): np.nanpercentile(line_fluxes[key]['flux'],84) * u.erg / u.s / u.cm**2})
+                    tree_spec['model'].update({'spectral_continuumfnu_%s_16'%(key): np.nanpercentile(line_fluxes[key]['continuum'],16) * u.erg / u.s / u.cm**2 / u.AA})
+                    tree_spec['model'].update({'spectral_continuumfnu_%s_50'%(key): np.nanpercentile(line_fluxes[key]['continuum'],50) * u.erg / u.s / u.cm**2 / u.AA})
+                    tree_spec['model'].update({'spectral_continuumfnu_%s_84'%(key): np.nanpercentile(line_fluxes[key]['continuum'],84) * u.erg / u.s / u.cm**2 / u.AA})
+                    tree_spec['model'].update({'spectral_ew0_%s_16'%(key): np.nanpercentile(line_fluxes[key]['ew0'],16) * u.AA})
+                    tree_spec['model'].update({'spectral_ew0_%s_50'%(key): np.nanpercentile(line_fluxes[key]['ew0'],50) * u.AA})
+                    tree_spec['model'].update({'spectral_ew0_%s_84'%(key): np.nanpercentile(line_fluxes[key]['ew0'],84) * u.AA})
+
+        # broad band EW;
         try:
             for ii in range(len(EW50)):
                 tree_spec['model'].update({'EW_%s_16'%(ew_label[ii]): EW16[ii] * u.AA})
@@ -2304,6 +2331,7 @@ class PLOT(object):
         betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         _xhis = np.zeros(mmax, dtype=float)
+        results_line = None
 
         # From random chain;
         for kk in range(0,mmax,1):
@@ -2428,9 +2456,9 @@ class PLOT(object):
                     deldt = (x1_dust[1] - x1_dust[0])
                     x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
                     # Redefine??
-                    ytmp = np.zeros((mmax,len(x1_tot)), dtype=float)
-                    ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float)
-                    ytmp_noatn = np.zeros((mmax,len(x1_tot)), dtype=float)
+                    ytmp = np.zeros((mmax,len(x1_tot)), dtype=float) # Full model template
+                    ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float) # Model template, no nebular component
+                    ytmp_noatn = np.zeros((mmax,len(x1_tot)), dtype=float) # Full model template but without dust attenuation.
                     ytmp_dust = np.zeros((mmax,len(x1_dust)), dtype=float)
                     ytmp_dust_full = np.zeros((mmax,len(model_dust_full)), dtype=float)
 
@@ -2471,6 +2499,10 @@ class PLOT(object):
                 x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
                 lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
                 )
+            
+            results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
+                                              lines=self.lines_dict, 
+                                              results=results_line)
 
             # Do stuff...
             # time.sleep(0.01)
@@ -2505,7 +2537,7 @@ class PLOT(object):
                              col_dat=col_dat, col_dia=col_dia,
                              show_noattn=show_noattn, f_fancyplot=f_fancyplot, f_fill=f_fill,
                              f_chind=f_chind, f_exclude=f_exclude, f_plot_filter=f_plot_filter, f_label=f_label, 
-                             verbose=verbose, taumodel=False)
+                             verbose=verbose, taumodel=False, line_fluxes=results_line)
 
         ####################
         ## Save

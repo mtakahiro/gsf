@@ -152,7 +152,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
 
             if MB.f_general:
                     from .templates_z0 import make_templates_z0_general
-                    make_templates_z0_general(MB, lammax=lammax)
+                    make_templates_z0_general(MB, lammax=lammax, delwave=MB.delwave)
 
             elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
