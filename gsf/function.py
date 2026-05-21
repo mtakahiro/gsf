@@ -50,7 +50,7 @@ def convert_cloudy_to_flux_density(wl, fl):
 
 def get_line_flux(wl_obs, fl_obs, z_obs, ndata=10, delta_lam=15, 
                   lines={'H1_1215.67':1215.67, 'He2_1640.41':1640.41, 'He2_4685.68':4685.68, 'H1_4861.32':4861.32, 'H1_6562.80':6562.80}, 
-                  results=None, plot=False, fl_noline=None):
+                  results=None, plot=False, fl_noline=None, verbose=True):
     '''
     fl_obs : float array
         flux density, in erg/s/cm2/A
@@ -67,10 +67,11 @@ def get_line_flux(wl_obs, fl_obs, z_obs, ndata=10, delta_lam=15,
         wl_cont_r_r = (1+z_obs)*lines[key] + delta_lam * (1+z_obs) * 2.5
         con_line = (wl_obs>wl_line_b) & (wl_obs<wl_line_r)
         con_cont = ((wl_obs>wl_cont_b_b) & (wl_obs<wl_cont_b_r)) | ((wl_obs>wl_cont_r_b) & (wl_obs<wl_cont_r_r))
-        if len(wl_obs[con_line])<ndata:
-            print('Warning: emission line flux %s is extracted using a small number of pixels (N=%d)'%(key, len(wl_obs[con_line])))
-        if len(wl_obs[con_cont])<ndata:
-            print('Warning: continuum flux for %s is extracted using a small number of pixels (N=%d)'%(key, len(wl_obs[con_cont])))
+        if verbose:
+            if len(wl_obs[con_line])<ndata:
+                print('Warning: emission line flux %s is extracted using a small number of pixels (N=%d)'%(key, len(wl_obs[con_line])))
+            if len(wl_obs[con_cont])<ndata:
+                print('Warning: continuum flux for %s is extracted using a small number of pixels (N=%d)'%(key, len(wl_obs[con_cont])))
         
         delta_lam_model = np.abs(np.nanmedian(np.diff(wl_obs[con_line])))
         _fluxdens = np.nanmean(fl_obs[con_line])

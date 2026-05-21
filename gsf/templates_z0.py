@@ -1402,7 +1402,7 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
 def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.02, 
                       upmass=300, 
                       couple_neb=True, logu_neb=None,
-                      age_neb=0.01,
+                      age_neb=0.0,
                       delwave=0.5,
                       ):
     '''
@@ -1600,8 +1600,8 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                     flux0 = fint(wave0) # unit?
                     flux0 /= 3.826e33 # Now in Lsun, same as in BPASS.
 
-                    # ms[ss] = fd_temp['Ms_survive'][iiz[0][0]]#/fd_temp['Ms_form'][iiz[0][0]]
-                    ms[ss] = fd_temp['Ms_form'][iiz[0][0]]
+                    ms[ss] = fd_temp['Ms_survive'][iiz[0][0]]#/fd_temp['Ms_form'][iiz[0][0]]
+                    # ms[ss] = fd_temp['Ms_form'][iiz[0][0]]
                     mass_formed_tot += mass_formed
 
                 # Keep tau in header;
@@ -1628,9 +1628,6 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                 
                 # ASDF
                 tree_spec.update({'fspec_'+str(zz)+'_'+str(ss)+'_'+str(pp): flux})
-
-                _beta = get_uvbeta(wave, flux, 0, lam_blue=1650, lam_red=2300)
-                print(Z[zz], age[ss], _beta)
                 
                 # BPASS neb;
                 if MB.fneb and pp == 0 and ss == iix_age_neb:
@@ -1675,19 +1672,41 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                             MB.logUs = np.asarray([MB.logUMAX])
 
                         for nlogU, logUtmp in enumerate(MB.logUs):
-                            if pp == 0 and ss == 0 and zz == 0:
-                                MB.logger.info('BPASS nebular component is calculated using logU=%.1f'%(MB.logUFIX))
+                            if pp == 0 and ss == iix_age_neb and zz == 0:
+                                MB.logger.info('BPASS nebular component is calculated using logU=%.1f'%(logUtmp))
 
-                            file_sed_emi = get_cloudy_nebular_file(lib_str, bin_str, imf_cloudy, age_cloudy_str, logz_cloudy, 
-                                                                dir_cloudy=MB.dir_cloudy, logU=logUtmp, loghden=loghden_cloudy)
+                            if logUtmp>40:
+                                file_sed_emi = get_cloudy_nebular_file(lib_str, bin_str, imf_cloudy, age_cloudy_str, logz_cloudy, 
+                                                                    dir_cloudy=MB.dir_cloudy, logqh=logUtmp, loghden=loghden_cloudy)
+                            else:
+                                file_sed_emi = get_cloudy_nebular_file(lib_str, bin_str, imf_cloudy, age_cloudy_str, logz_cloudy, 
+                                                                    dir_cloudy=MB.dir_cloudy, logU=logUtmp, loghden=loghden_cloudy)
                             MB.logger.info('Reading nebular spectrum from %s'%(file_sed_emi))
 
                             flux_nebular_only, emline_luminosity = get_nebular_spectrum_cloudy(file_sed_emi, wave, flux, norm=True)
+
+                            for A in np.arange(0,1,0.1):
+                                flux_nebular_only_test = flux_nebular_only * A
+                                flux_sum = flux + flux_nebular_only_test
+                                _beta = get_uvbeta(wave, flux_sum, 0, lam_blue=1650, lam_red=2300)
+                                results_line = get_line_flux(wave, flux_sum, 0, 
+                                                            # lines=self.lines_dict, 
+                                                            # results=results_line, 
+                                                            fl_noline=None, verbose=False)#ytmp_nl[kk,:]*scale)
+                                label = 'EWLya %.1e EWHe2 %.1e EWHb %.1e EWHa %.1e'%(results_line['H1_1215.67']['ew0'][0],results_line['He2_1640.41']['ew0'][0],results_line['H1_4861.32']['ew0'][0],results_line['H1_6562.80']['ew0'][0])
+                                print(round(A,2), Z[zz], np.log10(age[ss]), logUtmp, _beta, label)
 
                             tree_spec.update({'fspec_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular_only}) # in Lsun/AA
                             tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
                             tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
                             tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
+
+                            # plt.plot(wave, flux, label='stellar')
+                            # plt.plot(wave, flux_nebular_only_test, label='nebular')
+                            # plt.xlim(1200,7000)
+                            # plt.ylim(1e-5,1e1)
+                            # plt.yscale('log')
+                            # plt.show()
 
                     else:
                         # When no cloudy directory is specified.
