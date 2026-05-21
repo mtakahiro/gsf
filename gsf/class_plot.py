@@ -2502,7 +2502,8 @@ class PLOT(object):
             
             results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
                                               lines=self.lines_dict, 
-                                              results=results_line)
+                                              results=results_line, 
+                                              fl_noline=None)#ytmp_nl[kk,:]*scale)
 
             # Do stuff...
             # time.sleep(0.01)

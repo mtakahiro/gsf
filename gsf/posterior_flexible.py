@@ -7,6 +7,8 @@ from numpy import exp as np_exp
 from numpy import log as np_log
 from scipy.special import erf
 from scipy.stats import lognorm,norm
+from .function import get_line_flux,fnutolam
+
 
 class Post():
     '''
@@ -107,6 +109,26 @@ class Post():
             tmp = (model - fy)**2 / sig + np_log(2*3.14*sig**2)
             con_res = (tmp>0) & (~np.isinf(tmp))
             resid[con_res] = np.sqrt(tmp[con_res])
+
+        # @@@;
+        if False:#'Aneb' in vals:
+            # try:
+            #     vals['Aneb'] = 1.0
+            # except:
+            #     vals['Aneb'].value = 1.0
+            model_full, x1_full = self.mb.fnc.get_template(vals, f_neb=False, xhi=xhi, lib_all=True)
+            model_full_neb, _ = self.mb.fnc.get_template(vals, f_neb=True, xhi=xhi, lib_all=True)
+            model_full_lam = fnutolam(x1_full, model_full+model_full_neb, m0set=self.mb.m0set)
+            results_line = get_line_flux(x1_full, model_full_lam, self.mb.zgal, 
+                                                lines={'H1_4861.32':4861.32}, 
+                                                fl_noline=None,)#ytmp_nl[kk,:]*scale)
+            flux_hb = 2.264e-18
+            fluxerr_hb = 0.365e-18
+            resid_lines = (results_line['H1_4861.32']['flux'][0]-flux_hb) / fluxerr_hb #* 10
+            con_res = (wht>0)
+            resid[con_res] += resid_lines/(len(resid[con_res]))
+            print(resid_lines/(len(resid[con_res])))
+            # print(results_line['H1_4861.32']['flux'][0], flux_hb, resid_lines)#, resid
 
         if not out:
             return resid # i.e. residual/sigma. Because is_weighted = True.
@@ -408,8 +430,10 @@ class Post():
                 import matplotlib.pyplot as plt
                 plt.close()
                 yy = np.arange(-2,2,0.1)
-                plt.plot(yy, np.log(self.mb.prior[key_param].pdf((yy-mu) * np.sqrt(2) / sigma)))
+                plt.plot(yy, np.log(self.mb.prior[key_param].pdf((yy-mu) * np.sqrt(2) / sigma)), label='$\sigma=%.1f$'%(sigma))
+                plt.legend(loc=0)
                 plt.show()
+                hoge
 
         respr = np.log(self.mb.prior[key_param].pdf((y-mu) * np.sqrt(2) / sigma))
 

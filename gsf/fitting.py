@@ -121,7 +121,6 @@ class Mainbody(GsfBase):
             'Templates' : ['TAU0', 'NIMF', 'BINARY', 
                            'SFH_FORM',
                            'AMIN', 'AMAX', 
-                           'ADD_NEBULAE', 'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 
                            'ADD_AGN', 'AGNTAUMIN', 'AGNTAUMAX', 'DELAGNTAU', 'AGNTAUFIX', 'AAGNMIN', 'AAGNMAX',
                            'AGE', 'AGEMIN', 'AGEMAX', 'DELAGE', 'AGEFIX',
                            'ZMIN', 'ZMAX', 'DELZ', 'ZFIX', 'ZEVOL', 
@@ -133,6 +132,11 @@ class Mainbody(GsfBase):
                            'TAUMIN', 'TAUMAX', 'DELTAU', 'NPEAK', 
                            'XHIFIX'
                            ],
+
+            'Templates_nebular' : [
+                           'ADD_NEBULAE', 'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 
+                           'DIR_CLOUDY', 'AGE_CLOUDY', 'LOGHDEN_CLOUDY', 'NEBULAE_TIED',
+                            ],
 
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
                          'FNELD', 'NCPU', 'F_ERR', 'ZVIS', 'F_MDYN',
@@ -419,6 +423,7 @@ class Mainbody(GsfBase):
         # Nebular emission;
         # Becuase of force_no_neb, add logUs regardless of `ADD_NEBULAE` flag.
         self.fneb = False
+        self.fneb_tied = False
         self.nlogU = 0
         self.fagn = False
         self.nAGNTAU = 0
@@ -672,7 +677,7 @@ class Mainbody(GsfBase):
                     aamin.append(nn)
                 self.aamin = aamin
 
-        if self.fneb_tied:
+        if self.fneb_tied and self.fneb:
             self.fneb_tied_iix = np.argmin(self.age)
             # self.fneb_tied_iix = np.argmin(np.abs(self.age-10**(-3.000000)))
             print('Aneb is tied to A%d'%self.fneb_tied_iix)
@@ -1638,10 +1643,10 @@ class Mainbody(GsfBase):
                 else:
                     fit_params.add(name="mni_factor", min=self.mnimin, max=self.mnimax, vary=True)#, value=-0.2
                     fit_params.add('Aneb', value=self.Aini, min=self.Amin, max=self.Amax, expr='A%d+mni_factor'%(self.fneb_tied_iix)) #self.Amax)#, expr='<A%d'%iix)
-
             else:
                 fit_params.add('Aneb', value=self.Aini, min=self.Anebmin, max=self.Anebmax)
             self.ndim += 1
+
             if not self.logUFIX == None:
                 fit_params.add('logU', value=self.logUFIX, vary=False)
             else:
