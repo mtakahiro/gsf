@@ -2107,39 +2107,40 @@ class Mainbody(GsfBase):
                             # pos[:,aa] = out.params[key].value
                             aa += 1
 
+                #
+                kwargs_emcs = {'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 
+                    'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim}
+
                 if self.f_zeus:
                     self.logger.info('sampling with ZEUS')
                     check_converge = False
-                    f_burnin = True
-                    if f_burnin:
-                        # Burn phase;
-                        moves = zeus.moves.DifferentialMove() #GlobalMove()
-                        sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
-                            args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust], \
-                            moves=moves, maxiter=1e6,\
-                            kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 'f_chind':f_chind, 
-                            'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim},\
-                            )
-                        # Run MCMC
-                        nburn = int(self.nmc/10)
 
-                        self.logger.info('Running burn-in')
-                        sampler.run_mcmc(pos, nburn)
-                        self.logger.info('Done burn-in')
+                    # Burn phase;
+                    moves = zeus.moves.DifferentialMove() #GlobalMove()
+                    sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
+                        args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust], \
+                        moves=moves, maxiter=1e6,\
+                        kwargs=kwargs_emcs,\
+                        )
+                    # Run MCMC
+                    nburn = int(self.nmc/10)
 
-                        # Get the burnin samples
-                        burnin = sampler.get_chain()
+                    self.logger.info('Running burn-in')
+                    sampler.run_mcmc(pos, nburn)
+                    self.logger.info('Done burn-in')
 
-                        # Set the new starting positions of walkers based on their last positions
-                        pos = burnin[-1]
+                    # Get the burnin samples
+                    burnin = sampler.get_chain()
+
+                    # Set the new starting positions of walkers based on their last positions
+                    pos = burnin[-1]
 
                     # Switch sampler;
                     moves = zeus.moves.GlobalMove()
                     sampler = zeus.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=[out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust], \
                         moves=moves, maxiter=1e4,\
-                        kwargs={'f_val':True, 'out':out, 'lnpreject':-np.inf, 
-                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim},\
+                        kwargs=kwargs_emcs,\
                         )
 
                 else:
@@ -2147,9 +2148,8 @@ class Mainbody(GsfBase):
                     moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
                     sampler = emcee.EnsembleSampler(self.nwalk, self.ndim, class_post.lnprob_emcee, \
                         args=(out.params, self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.dict['NR'], self.f_dust),\
-                        #moves=moves,\
-                        kwargs={'f_val': True, 'out': out, 'lnpreject':-np.inf, 
-                        'f_prior_sfh':f_prior_sfh, 'norder_sfh_prior':norder_sfh_prior, 'SNlim':self.SNlim, 'NRbb_lim':self.NRbb_lim},\
+                        moves=moves,\
+                        kwargs=kwargs_emcs,\
                         )
 
                 if check_converge:

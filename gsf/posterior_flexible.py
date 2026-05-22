@@ -286,24 +286,15 @@ class Post():
             # Prior from dynamical mass:
             if gauss_prior and self.gauss_Mdyn == None:
                 self.gauss_Mdyn = stats.norm(self.mb.logMdyn, self.mb.elogMdyn)
-            #logMtmp = self.get_mass(vals)
             logMtmp = self.mb.logMtmp
-            #print(logMtmp)
             if flat_prior:
                 if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
-                    #pars = self.swap_pars(pars)
-                    #print(logMtmp, self.mb.logMdyn + self.mb.elogMdyn)
                     return lnpreject
                 else:
                     respr += 0
             elif gauss_prior:
                 if logMtmp > self.mb.logMdyn + self.mb.elogMdyn * nsigma:
-                    #pars = self.swap_pars(pars)
-                    #return lnpreject
                     pass
-                #elif logMtmp < self.mb.logMdyn - self.mb.elogMdyn * nsigma:
-                #    pars = self.swap_pars_inv(pars)
-                #    return lnpreject
                 p_gauss = self.gauss_Mdyn.pdf(logMtmp) #/ self.gauss_cnst
                 respr += np_log(p_gauss)
 

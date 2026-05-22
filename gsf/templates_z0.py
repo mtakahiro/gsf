@@ -23,8 +23,8 @@ def get_nebular_spectrum_cloudy(file_sed_emi, wave, flux, norm=True):
     wave0_emi = np.asarray([float(s) for s in fd_sed_emi['#Cont  nu']])
     flux0_emi = np.zeros(len(wave0_emi),'float')
 
-    nu_emi = lamtonu(wave0_emi)
-    flux0_emi = (fd_sed_emi['total'])#/nu_emi)
+    # nu_emi = lamtonu(wave0_emi)
+    flux0_emi = (fd_sed_emi['total']) # This is in units of erg/s/cm2; Hazy 2.2.1
     wave0_emi, flux0_emi = convert_cloudy_to_flux_density(wave0_emi, flux0_emi)
     emline_luminosity = np.nansum(flux0_emi)
 
@@ -35,7 +35,7 @@ def get_nebular_spectrum_cloudy(file_sed_emi, wave, flux, norm=True):
 
     # Normalize this to the stellar flux?
     if norm:
-        con_neb = (wave>1180) & (wave<1200)
+        con_neb = (wave>1380) & (wave<1420)
         Lunit_emi = np.nanmedian(flux_nebular[con_neb]/flux[con_neb])
     else:
         Lunit_emi = 1
@@ -1586,12 +1586,13 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                 if False:
                     hoge
                 else:
+                    # @@@ TBD; what is tau for the ssp model??
                     iis = np.argmin(np.abs(age[ss] - age_temp[:]/1e9))
                     if ss==0:
                         tautmp = ( 10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05) ) / 1e9 # in Gyr
                         agetmp = age[ss]#/2.
                     else:
-                        tautmp = ( 10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05) ) / 1e9 # Gyr
+                        tautmp = ( 10**(lage_temp[iis]+0.05) - 10**(lage_temp[iis]-0.05) ) / 1e9 # in Gyr
                         agetmp = age[ss]#(age[ss]+age[ss-1])/2.
 
                     # Interp;

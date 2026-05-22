@@ -300,49 +300,60 @@ class PLOT(object):
         return tt, yy, yyms
 
 
-    def get_delt(self, tau_lim=0.001):
+    def get_delt(self, tau_lim=0.001, af=None, continue_to_tcosmo=False):
         """"""
         delT  = np.zeros(len(self.mb.age),dtype=float)
         delTl = np.zeros(len(self.mb.age),dtype=float)
         delTu = np.zeros(len(self.mb.age),dtype=float)
-        if len(self.mb.age) == 1:
-            for aa in range(len(self.mb.age)):
-                try:
-                    tau_ssp = float(self.mb.inputs['TAU_SSP'])
-                except:
-                    tau_ssp = tau_lim
-                delTl[aa] = tau_ssp/2.
-                delTu[aa] = tau_ssp/2.
-                if self.mb.age[aa] < tau_lim:
-                    # This is because fsps has the minimum tau = tau_lim
-                    delT[aa] = tau_lim
-                else:
-                    delT[aa] = delTu[aa] + delTl[aa]
-        else: 
-            # @@@ Note: This is only true when CSP...?
-            for aa in range(len(self.mb.age)):
-                if aa == 0:
-                    delTl[aa] = self.mb.age[aa]
-                    delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
-                    delT[aa] = delTu[aa] + delTl[aa]
-                elif self.Tuni < self.mb.age[aa]:
-                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
-                    delTu[aa] = self.Tuni-self.mb.age[aa] #delTl[aa] #10.
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                elif aa == len(self.mb.age)-1:
-                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
-                    delTu[aa] = self.Tuni - self.mb.age[aa]
-                    delT[aa]  = delTu[aa] + delTl[aa]
-                else:
-                    delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
-                    delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
-                    if self.mb.age[aa]+delTu[aa]>self.Tuni:
-                        delTu[aa] = self.Tuni-self.mb.age[aa]
-                    delT[aa] = delTu[aa] + delTl[aa]
+        if af is None:
+            if len(self.mb.age) == 1:
+                for aa in range(len(self.mb.age)):
+                    try:
+                        tau_ssp = float(self.mb.inputs['TAU_SSP'])
+                    except:
+                        print('Warning : SSP tau is assumed to be %.3e'%(tau_lim))
+                        tau_ssp = tau_lim
+                    delTl[aa] = tau_ssp/2.
+                    delTu[aa] = tau_ssp/2.
+                    if self.mb.age[aa] < tau_lim:
+                        # This is because fsps has the minimum tau = tau_lim
+                        delT[aa] = tau_lim
+                    else:
+                        delT[aa] = delTu[aa] + delTl[aa]
+            else: 
+                # @@@ Note: This is only true when CSP...?
+                for aa in range(len(self.mb.age)):
+                    if aa == 0:
+                        delTl[aa] = self.mb.age[aa]
+                        delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
+                        delT[aa] = delTu[aa] + delTl[aa]
+                    elif self.Tuni < self.mb.age[aa]:
+                        delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
+                        delTu[aa] = self.Tuni - self.mb.age[aa] #delTl[aa] #10.
+                        delT[aa] = delTu[aa] + delTl[aa]
+                    elif aa == len(self.mb.age)-1:
+                        delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
+                        if continue_to_tcosmo:
+                            delTu[aa] = self.Tuni - self.mb.age[aa]
+                        else:
+                            delTu[aa] = delTl[aa]
+                        delT[aa]  = delTu[aa] + delTl[aa]
+                    else:
+                        delTl[aa] = (self.mb.age[aa]-self.mb.age[aa-1])/2.
+                        delTu[aa] = (self.mb.age[aa+1]-self.mb.age[aa])/2.
+                        if self.mb.age[aa]+delTu[aa]>self.Tuni:
+                            delTu[aa] = self.Tuni - self.mb.age[aa]
+                        delT[aa] = delTu[aa] + delTl[aa]
 
-                if delTu[aa]<0:
-                    delTu[aa] = 1e3
+                    if delTu[aa]<0:
+                        delTu[aa] = 1e3
 
+        else:
+            for aa in range(len(self.mb.age)):
+                delTl[aa] = af['realage%d(Gyr)'%aa] - af['realtau%d(Gyr)'%aa]/2.
+                delTu[aa] = af['realage%d(Gyr)'%aa] + af['realtau%d(Gyr)'%aa]/2.
+                delT[aa] = af['realtau%d(Gyr)'%aa]
+        
         mask_age = (delT<=0) # For those age_template > age_universe
         delT[mask_age] = np.inf
         delT[:] *= 1e9 # Gyr to yr
@@ -379,7 +390,7 @@ class PLOT(object):
 
         bfnc = MB.bfnc
         ID = MB.ID
-        Z = MB.Zall
+        # Z = MB.Zall
         age = MB.age
         age = np.asarray(age)
 
@@ -405,9 +416,6 @@ class PLOT(object):
         ####################
         self.Tuni = self.mb.cosmo.age(self.zbes).value #, use_flat=True, **cosmo)
         Tuni0 = (self.Tuni - age[:])
-
-        # get delt
-        delT, delTl, delTu = self.get_delt(tau_lim=tau_lim)
 
         ##############################
         # Load Pickle
@@ -471,9 +479,12 @@ class PLOT(object):
 
         # ASDF;
         af = MB.af #asdf.open(MB.DIR_TMP + 'spec_all_' + MB.ID + '.asdf')
-        af0 = asdf.open(MB.DIR_TMP + 'spec_all.asdf')
+        af0 = MB.af0 #asdf.open(MB.DIR_TMP + 'spec_all.asdf')
         sedpar = af['ML'] # For M/L
         sedpar0 = af0['ML'] # For mass loss frac.
+
+        # get delt
+        delT, delTl, delTu = self.get_delt(tau_lim=tau_lim)#, af=af0)
 
         AAtmp = np.zeros(len(age), dtype=float)
         ZZtmp = np.zeros(len(age), dtype=float)
