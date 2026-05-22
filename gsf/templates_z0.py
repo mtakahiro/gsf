@@ -20,7 +20,11 @@ def get_nebular_spectrum_cloudy(file_sed_emi, wave, flux, norm=True):
     '''
     '''
     fd_sed_emi = pd.read_csv(file_sed_emi, encoding='ascii', sep='\t')
-    wave0_emi = np.asarray([float(s) for s in fd_sed_emi['#Cont  nu']])
+    try:
+        wave0_emi = np.asarray([float(s) for s in fd_sed_emi['#Cont  nu']])
+    except:
+        fd_sed_emi = pd.read_csv(file_sed_emi, encoding='ascii', sep='\t', names=['#Cont  nu', 'incident', 'trans', 'DiffOut', 'net trans', 'reflc', 'total', 'reflin', 'outlin', 'lineID', 'cont', 'nLine'])
+        wave0_emi = np.asarray([float(s) for s in fd_sed_emi['#Cont  nu']])
     flux0_emi = np.zeros(len(wave0_emi),'float')
 
     # nu_emi = lamtonu(wave0_emi)

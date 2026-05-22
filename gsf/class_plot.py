@@ -534,7 +534,7 @@ class PLOT(object):
                 f_m_sur = sedpar0['frac_mass_survive_%d'%nZtmp][aa]
 
                 # quantity in log scale;
-                AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand 
+                AM[aa, mm] = AAtmp[aa] + np.log10(mslist[aa]) + Arand
                 AL[aa, mm] = AM[aa,mm] - np.log10(mslist[aa])
                 SF[aa, mm] = AAtmp[aa] + np.log10(mslist[aa] / delT[aa] / f_m_sur) + Arand # log Msun/yr
                 ZM[aa, mm] = ZZtmp[aa] + Zrand
