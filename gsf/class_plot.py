@@ -65,10 +65,11 @@ class PLOT(object):
     def get_uvbeta_obs(self, zp50, lam_b=1250, lam_r=1600, snlim=2, d_scale=1, percs=[16,50,84]):
         ''''''
         xbb = self.mb.dict['xbb']
+        # exbb = self.mb.dict['exbb']
         fybb = self.mb.dict['fybb']
         eybb = self.mb.dict['eybb']
-        con_bet = (fybb/eybb>snlim) & (xbb/(1+zp50)>lam_b) & (xbb/(1+zp50)<lam_r)
-        nbeta_obs = len(con_bet)
+        con_bet = (fybb/eybb>snlim) & ((xbb)/(1+zp50)>lam_b) & ((xbb)/(1+zp50)<lam_r)
+        nbeta_obs = len(xbb[con_bet])
         if nbeta_obs>1:
             nmc_uv = 3000
             betas_obs = np.zeros(nmc_uv,float)
@@ -85,7 +86,7 @@ class PLOT(object):
         else:
             beta_obs_percs = [np.nan,np.nan,np.nan]
         return beta_obs_percs,nbeta_obs
-    
+
 
     def get_figure_format_sfh(self, Tzz, zredl, lsfrl, lsfru, y2min, y2max, Txmin, Txmax):
         """"""
@@ -1508,7 +1509,7 @@ class PLOT(object):
             self.mb.logger.info('f_fancyplot is False. f_fill is set to False.')
 
         # Calculate non-det chi2
-        chi2, conw, con_up, chi_nd, nod, fin_chi2 = self.show_chi2(self._hdul, ysump, wht3, ndim_eff, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
+        chi2, conw, con_up, chi_nd, nod, fin_chi2, bic, aic = self.show_chi2(self._hdul, ysump, wht3, ndim_eff, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
 
         # plot BB model from best template (blue squares)
         lbb, fbb, fbb16, fbb84, ew_label, EW16, EW50, EW84, EW50_er1, EW50_er2, cnt16, cnt50, cnt84, L16, L50, L84 = self.plot_bbmodel_sed(zbes, x1_tot, ytmp16, ytmp50, ytmp84, 
@@ -1609,6 +1610,8 @@ class PLOT(object):
             hdr['hierarch reduced-chi2'] = fin_chi2
         except:
             hdr['hierarch reduced-chi2'] = 0
+        hdr['bic'] = bic
+        hdr['aic'] = aic
 
         # Write parameters;
         # Muv
@@ -1677,10 +1680,25 @@ class PLOT(object):
             else:
                 hdr['UVBETA%d'%percs[ii]] = 99
             
-            hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
-            hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
-            hdr['SFRUV_STEL_%d'%percs[ii]] = SFRUV_NL[ii]
-            hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
+            if not np.isnan(SFRUV_BETA[ii]):
+                hdr['SFRUV_BETA_%d'%percs[ii]] = SFRUV_BETA[ii]
+            else:
+                hdr['SFRUV_BETA_%d'%percs[ii]] = 99
+
+            if not np.isnan(SFRUV[ii]):
+                hdr['SFRUV_%d'%percs[ii]] = SFRUV[ii]
+            else:
+                hdr['SFRUV_%d'%percs[ii]] = -99
+
+            if not np.isnan(SFRUV_NL[ii]):
+                hdr['SFRUV_STEL_%d'%percs[ii]] = SFRUV_NL[ii]
+            else:
+                hdr['SFRUV_STEL_%d'%percs[ii]] = -99
+
+            if not np.isnan(SFRUV_UNCOR[ii]):
+                hdr['SFRUV_UNCOR%d'%percs[ii]] = SFRUV_UNCOR[ii]
+            else:
+                hdr['SFRUV_UNCOR%d'%percs[ii]] = -99
 
             # UV beta obs;
             if ii == 0:
@@ -1971,7 +1989,7 @@ class PLOT(object):
         return tree_spec
 
 
-    def plot_sed(self, flim=0.01, fil_path='./', scale=None, f_chind=True, figpdf=False, save_sed=True, 
+    def plot_sed(self, flim=0.01, fil_path='./', scale=None, figpdf=False, save_sed=True, 
         mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True,
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
         f_apply_igm=True, show_noattn=False, percs=[16,50,84],
@@ -2001,6 +2019,7 @@ class PLOT(object):
         '''
         MB = self.mb
         MB.logger.info('Running plot_sed')
+        MB.meta_sed = {}
 
         print('\n### Running plot_sed ###\n')
 
@@ -2167,6 +2186,7 @@ class PLOT(object):
         # Get beta from obs;
         # Detection and rest-frame;
         beta_obs_percs,nbeta_obs = self.get_uvbeta_obs(zp50, lam_b=lam_b, lam_r=lam_r, snlim=SNlim, d_scale=d_scale, percs=percs)
+        MB.meta_sed.update({'lam_uvbeta_b': 'lam_b', 'lam_uvbeta_r': 'lam_r'})
 
         # For any data removed fron fit (i.e. IRAC excess):
         f_exclude = self.plot_flux_excess(d_scale)
@@ -2382,6 +2402,21 @@ class PLOT(object):
                     except:
                         ZZ_tmp = MB.ZFIX
 
+                # @@@ Extra;
+                # if ss <1:
+                #     AA_tmp = 10**-8
+                # elif ss <2:
+                #     AA_tmp = 10**0.9
+                # elif ss <3:
+                #     AA_tmp = 10**-8
+                # elif ss == 3:
+                #     AA_tmp = 10**-8
+                # elif ss == 4:
+                #     AA_tmp = 10**-8
+                # else:
+                #     hoge
+                # samples['Aneb'][nr] = 0.8
+
                 if ss == MB.aamin[0]:
 
                     mod0_tmp, xm_tmp = fnc.get_template_single(AA_tmp, Av_tmp, ss, ZZ_tmp, zmc, MB.lib_all, f_apply_igm=f_apply_igm, xhi=xhi)
@@ -2516,6 +2551,26 @@ class PLOT(object):
                                               results=results_line, 
                                               fl_noline=None)#ytmp_nl[kk,:]*scale)
 
+            # @@@ Extra;
+            # self.lines_dict = {'H1_6562.80':6562.80}
+            # results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
+            #                                   lines=self.lines_dict, 
+            #                                   results=results_line, 
+            #                                   fl_noline=None, plot=True)#ytmp_nl[kk,:]*scale)
+
+            # @@@ Extra;
+            # wht3, ey = self.mb.dict['wht3'], self.mb.dict['ey']
+            # chi2, conw, con_up, chi_nd, nod, fin_chi2 = self.show_chi2(self._hdul, ysump, wht3, ndim_eff, SNlim=SNlim, f_chind=f_chind, f_exclude=f_exclude)
+            # print(chi2, fin_chi2)
+            # print(results_line['H1_4861.32']['flux'], results_line['H1_4861.32']['ew0'])
+            # plt.plot(x1_tot, (ytmp[kk,:]), color='lightblue')
+            # plt.plot(x1_tot, (ytmp_nl[kk,:]), color='orange')
+            # plt.ylim(0.01, 3.5)
+            # plt.xlim(1000, 50000)
+            # plt.yscale('log')
+            # plt.show()
+            # hoge
+
             # Do stuff...
             # time.sleep(0.01)
             # Update Progress Bar
@@ -2548,7 +2603,7 @@ class PLOT(object):
                              wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max, SNlim=SNlim, wave_spec_max=self.wave_spec_max,
                              col_dat=col_dat, col_dia=col_dia,
                              show_noattn=show_noattn, f_fancyplot=f_fancyplot, f_fill=f_fill,
-                             f_chind=f_chind, f_exclude=f_exclude, f_plot_filter=f_plot_filter, f_label=f_label, 
+                             f_chind=MB.f_chind, f_exclude=f_exclude, f_plot_filter=f_plot_filter, f_label=f_label, 
                              verbose=verbose, taumodel=False, line_fluxes=results_line)
 
         ####################
@@ -2649,7 +2704,7 @@ class PLOT(object):
         return wht, wht3
 
 
-    def plot_sed_tau(self, flim=0.01, fil_path='./', scale=1e-19, f_chind=True, figpdf=False, save_sed=True, 
+    def plot_sed_tau(self, flim=0.01, fil_path='./', scale=1e-19, figpdf=False, save_sed=True, 
         mmax=300, dust_model=0, DIR_TMP='./templates/', f_label=False, f_bbbox=False, verbose=False, f_silence=True, 
         f_fill=False, f_fancyplot=False, f_Alog=True, dpi=300, f_plot_filter=True, f_plot_resid=False, NRbb_lim=10000,
         f_apply_igm=True, show_noattn=False,
@@ -2680,9 +2735,11 @@ class PLOT(object):
         '''
         print('\n### Running plot_sed_tau ###\n')
 
+        MB = self.mb
         fnc = self.mb.fnc
         age = self.mb.age
         self.f_plot_resid = f_plot_resid
+        self.mb.meta_sed = {}
         
         nstep_plot = 1
         if self.mb.f_bpass:
@@ -2993,6 +3050,7 @@ class PLOT(object):
         betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         _xhis = np.zeros(mmax, dtype=float)
+        results_line = None
 
         # From random chain;
         for kk in range(0,mmax,1):
@@ -3137,6 +3195,11 @@ class PLOT(object):
                 lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
                 )
 
+            results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
+                                              lines=self.lines_dict, 
+                                              results=results_line, 
+                                              fl_noline=None)#ytmp_nl[kk,:]*scale)
+
             # Do stuff...
             # time.sleep(0.01)
             # Update Progress Bar
@@ -3166,8 +3229,8 @@ class PLOT(object):
                              wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max, SNlim=SNlim, wave_spec_max=self.wave_spec_max,
                              col_dat=col_dat, col_dia=col_dia,
                              show_noattn=show_noattn, f_fancyplot=f_fancyplot, f_fill=f_fill,
-                             f_chind=f_chind, f_exclude=f_exclude, f_plot_filter=f_plot_filter, f_label=f_label, 
-                             verbose=verbose, taumodel=True)
+                             f_chind=MB.f_chind, f_exclude=f_exclude, f_plot_filter=f_plot_filter, f_label=f_label, 
+                             verbose=verbose, taumodel=True, line_fluxes=results_line)
 
         ####################
         ## Save
@@ -3403,7 +3466,7 @@ class PLOT(object):
         if f_chind:
             conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
         else:
-            conw = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
+            conw = (wht3>0) & (ey>0) & (fy/ey>SNlim)
 
         try:
             logf = hdul[1].data['logf'][1]
@@ -3413,15 +3476,15 @@ class PLOT(object):
 
         chi2 = sum((np.square(fy-ysump) / ey_revised)[conw])
 
+        f_ex = np.zeros(len(fy), 'int')
+        if f_exclude:
+            for ii in range(len(fy)):
+                if x[ii] in x_ex:
+                    f_ex[ii] = 1
+
+        con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
         chi_nd = 0.0
         if f_chind:
-            f_ex = np.zeros(len(fy), 'int')
-            if f_exclude:
-                for ii in range(len(fy)):
-                    if x[ii] in x_ex:
-                        f_ex[ii] = 1
-
-            con_up = (ey>0) & (fy/ey<=SNlim) & (f_ex == 0)
             x_erf = (ey_revised[con_up] - ysump[con_up]) / (np.sqrt(2) * ey_revised[con_up])
             f_erf = special.erf(x_erf)
             chi_nd = np.sum( np.log(np.sqrt(np.pi / 2) * ey_revised[con_up] * (1 + f_erf)) )
@@ -3430,20 +3493,34 @@ class PLOT(object):
         con_nod = (wht3>0) & (ey>0) #& (fy/ey>SNlim)
         nod = int(len(wht3[con_nod])-ndim_eff)
 
+        # BIC
+        resid = (np.square(fy-ysump) / ey_revised)[conw]
+        from astropy.stats.info_theory import bayesian_info_criterion
+        from astropy.stats import akaike_info_criterion
+        if f_chind and len(fy[con_up])>0:
+            lnlike = -0.5 * (np.sum(resid**2) - 2 * chi_nd)
+        else:
+            lnlike = -0.5 * (np.sum(resid**2))
+        bic = bayesian_info_criterion(lnlike, ndim_eff, len(wht3[conw]))
+        aic = akaike_info_criterion(lnlike, ndim_eff, len(wht3[conw]))
+
         print('\n')
         print('No-of-detection    : %d'%(len(wht3[conw])))
-        print('chi2               : %.2f'%(chi2))
+        print('chi2               : %.3e'%(chi2))
         if f_chind:
             print('No-of-non-detection: %d'%(len(ey[con_up])))
-            print('chi2 for non-det   : %.2f'%(- 2 * chi_nd))
+            print('chi2 for non-det   : %.3e'%(- 2 * chi_nd))
         print('No-of-params       : %d'%(ndim_eff))
         print('Degrees-of-freedom : %d'%(nod))
         if nod>0:
             fin_chi2 = (chi2 - 2 * chi_nd) / nod
         else:
             fin_chi2 = -99
-        print('Final chi2/nu      : %.2f'%(fin_chi2))    
-        return chi2, conw, con_up, chi_nd, nod, fin_chi2
+        print('Final chi2/nu      : %.3e'%(fin_chi2))
+        print('BIC : %.3e'%(bic))
+        print('AIC : %.3e'%(aic))
+
+        return chi2, conw, con_up, chi_nd, nod, fin_chi2, bic, aic
 
 
     def plot_bbmodel_sed(self, zbes, x1_tot, ytmp16, ytmp50, ytmp84, 

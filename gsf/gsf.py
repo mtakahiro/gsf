@@ -19,7 +19,7 @@ start = timeit.default_timer()
 
 
 def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave=10,
-    f_IGM=True):
+    f_IGM=True, upmass=300):
     '''
     Purpose
     -------
@@ -32,6 +32,8 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
+
+    MB.upmass = upmass
 
     #
     # Then load Func and Basic with param range.
@@ -62,7 +64,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
             elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
                     from .templates_z0 import make_templates_z0_bpass
-                    make_templates_z0_bpass(MB, lammax=lammax)
+                    make_templates_z0_bpass(MB, lammax=lammax, upmass=MB.upmass)
                 else:
                     from .templates_z0 import make_templates_z0
                     make_templates_z0(MB, lammax=lammax)
@@ -88,7 +90,7 @@ def run_gsf_template(inputs, fplt=0, tau_lim=0.001, idman=None, nthin=1, delwave
 def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, idman:str=None, 
     zman=None, zman_min=None, zman_max=None, f_label=True, f_symbol=True, 
     f_SFMS=False, f_fill=True, save_sed=True, figpdf=False, mmax_sfh=300, 
-    f_prior_sfh=False, norder_sfh_prior=3, 
+    f_prior_sfh=False, norder_sfh_prior=3, upmass=300,
     f_shuffle=False, amp_shuffle=1e-2, Zini=None, tau_lim=0.001,
     skip_sfh=False, f_fancyplot=False, skip_zhist=False, f_sfh_yaxis_force=True, tset_SFR_SED=0.1, 
     nthin=1, delwave=1, f_plot_resid=False, scale=None, f_plot_filter=True,
@@ -123,6 +125,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
     MB.tau_lim = tau_lim
     MB.nthin = nthin
     MB.delwave = delwave
+    MB.upmass = upmass
 
     if os.path.exists(MB.DIR_TMP) == False:
         os.mkdir(MB.DIR_TMP)
@@ -157,7 +160,7 @@ def run_gsf_all(parfile, fplt, cornerplot=True, f_plot_chain=True, f_Alog=True, 
             elif MB.SFH_FORM == -99:
                 if MB.f_bpass == 1:
                     from .templates_z0 import make_templates_z0_bpass
-                    make_templates_z0_bpass(MB, lammax=lammax)
+                    make_templates_z0_bpass(MB, lammax=lammax, upmass=MB.upmass)
                 else:
                     from .templates_z0 import make_templates_z0
                     make_templates_z0(MB, lammax=lammax)
@@ -281,5 +284,6 @@ if __name__ == "__main__":
     '''
     parfile = sys.argv[1]
     fplt = int(sys.argv[2])
+    upmass = float(sys.argv[3]) if len(sys.argv) > 3 else 300
 
-    run_gsf_all(parfile, fplt)
+    run_gsf_all(parfile, fplt, upmass=upmass)

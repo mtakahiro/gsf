@@ -70,6 +70,9 @@ def get_cloudy_nebular_file(lib_str, bin_str, imf, age_cloudy_str, logZ, dir_clo
     if lib_str == 'ygdr':
         # @@@
         logz_cloudy_str = 'em10'
+    elif lib_str == 'blackbody':
+        # @@@
+        logz_cloudy_str = 'em10'
 
     suff_cloudy = '%s_%s_%s_%s_z%s'%(lib_str, bin_str, imf, age_cloudy_str, logz_cloudy_str)
     file_grid_emi = os.path.join(dir_cloudy, '%s.grd'%(suff_cloudy)) # Contain 1 SED, for a given logU and age.
@@ -747,6 +750,8 @@ def make_templates_z0_bpass_v2p3(MB, lammin=100, lammax=160000, Zforce=None, Zsu
         imf_str = '135all_100'
     elif nimf == 1:
         imf_str = '_chab100'
+    if nimf == 2: # kroupa, broken power law, 
+        imf_str = '135_300'
     else:
         imf_str = ''
 
@@ -1005,10 +1010,12 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
     nimf = MB.nimf
     if nimf == 0: # Salpeter
         imf_str = '135all_%d'%(upmass)
-        imf_str = '135_%d'%(upmass)
         MB.imf_str = imf_str 
     elif nimf == 1:
         imf_str = '_chab%d'%(upmass)
+        MB.imf_str = imf_str 
+    elif nimf == 2: # kroupa, broken power law,
+        imf_str = '135_%d'%(upmass)
         MB.imf_str = imf_str 
     else:
         imf_str = ''
@@ -1219,9 +1226,11 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
 
                             lib_str = 'bpass'
                             if MB.nimf == 0:
-                                imf_cloudy = 'imf135_300'
+                                imf_cloudy = 'imf135all_100'
                             elif MB.nimf == 1:
                                 imf_cloudy = 'imf_chab300'
+                            elif MB.nimf == 2:
+                                imf_cloudy = 'imf135_300'
                             else:
                                 hoge
 
@@ -1253,9 +1262,22 @@ def make_templates_z0_bpass(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0.0
 
                                 file_sed_emi = get_cloudy_nebular_file(lib_str, bin_str, imf_cloudy, age_cloudy_str, logz_cloudy, 
                                                                     dir_cloudy=MB.dir_cloudy, logU=logUtmp, loghden=loghden_cloudy)
+                                print(file_sed_emi)
 
                                 flux_nebular_only, emline_luminosity = get_nebular_spectrum_cloudy(file_sed_emi, wave, flux, norm=True)
-                                
+
+                                # for A in np.arange(0,1,0.1):
+                                for A in np.arange(0,10,1):
+                                    flux_nebular_only_test = flux_nebular_only * A
+                                    flux_sum = flux + flux_nebular_only_test
+                                    _beta = get_uvbeta(wave, flux_sum, 0, lam_blue=1650, lam_red=2300)
+                                    results_line = get_line_flux(wave, flux_sum, 0, 
+                                                                # lines=self.lines_dict, 
+                                                                # results=results_line, 
+                                                                fl_noline=None, verbose=False)#ytmp_nl[kk,:]*scale)
+                                    label = 'EWLya %.1e EWHe2 %.1e EWHb %.1e EWHa %.1e'%(results_line['H1_1215.67']['ew0'][0],results_line['He2_1640.41']['ew0'][0],results_line['H1_4861.32']['ew0'][0],results_line['H1_6562.80']['ew0'][0])
+                                    print(round(A,2), Z[zz], np.log10(age[ss]), logUtmp, _beta, label)
+
                                 tree_spec.update({'fspec_nebular_Z%d'%zz+'_logU%d'%nlogU: flux_nebular_only}) # in Lsun/AA
                                 tree_spec.update({'emline_wavelengths_Z%d'%zz+'_logU%d'%nlogU: wave})
                                 tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
@@ -1617,6 +1639,9 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                 con = (wave0>lammin) & (wave0<lammax)
                 wave, flux = wave0[con], flux0[con]
 
+                _beta = get_uvbeta(wave, flux, 0, lam_blue=1650, lam_red=2300)
+                # print(Z[zz], np.log10(age[ss]), _beta)
+
                 # Temp
                 mlost[ss] = ms[ss] / mass_formed_tot
                 Ls[ss] = np.nansum(flux0) # bolometric Luminosity, in Lsun.
@@ -1648,17 +1673,18 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                     except:
                         lib_str = MB.file_temp.split('/')[-1].split('_')[1] #'ygdr'
                         imf_cloudy = 'imf_%s_%s'%(MB.file_temp.split('/')[-1].split('_')[2], MB.file_temp.split('/')[-1].split('_')[3])
-                        # imf_cloudy = imf_cloudy.replace('_fcov','')
                             
                     bin_str = 'none'
                     if 'AGE_CLOUDY' in MB.inputs:
                         age_cloudy_str = MB.inputs['AGE_CLOUDY']
                     else:
                         age_cloudy_str = '1e6'
+
                     if 'LOGZ_CLOUDY' in MB.inputs:
                         logz_cloudy = float(MB.inputs['LOGZ_CLOUDY'])
                     else:
                         logz_cloudy = Z[zz]
+
                     if 'LOGHDEN_CLOUDY' in MB.inputs:
                         loghden_cloudy = float(MB.inputs['LOGHDEN_CLOUDY'])
                     else:
@@ -1690,7 +1716,8 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
 
                             flux_nebular_only, emline_luminosity = get_nebular_spectrum_cloudy(file_sed_emi, wave, flux, norm=True)
 
-                            for A in np.arange(0,1,0.1):
+                            # for A in np.arange(0,1,0.1):
+                            for A in np.arange(0,10,1):
                                 flux_nebular_only_test = flux_nebular_only * A
                                 flux_sum = flux + flux_nebular_only_test
                                 _beta = get_uvbeta(wave, flux_sum, 0, lam_blue=1650, lam_red=2300)
@@ -1706,12 +1733,16 @@ def make_templates_z0_general(MB, lammin=100, lammax=160000, Zforce=None, Zsun=0
                             tree_spec.update({'emline_luminosity_Z%d'%zz+'_logU%d'%nlogU: emline_luminosity}) # in Lsun
                             tree_spec.update({'emline_mass_Z%d'%zz+'_logU%d'%nlogU: mstel_emi}) # in Msun
 
-                            # plt.plot(wave, flux, label='stellar')
-                            # plt.plot(wave, flux_nebular_only_test, label='nebular')
-                            # plt.xlim(1200,7000)
-                            # plt.ylim(1e-5,1e1)
-                            # plt.yscale('log')
-                            # plt.show()
+                            if False:#True:#
+                                _norm = np.nanmedian(flux[(wave>1000) & (wave<1200)])
+                                plt.plot(wave, flux/_norm, label='stellar')
+                                plt.plot(wave, flux_nebular_only_test/_norm, label='nebular')
+                                plt.xlim(1200,7000)
+                                plt.ylim(1e-5,1e1)
+                                plt.yscale('log')
+                                plt.xscale('log')
+                                plt.show()
+                                hoge
 
                     else:
                         # When no cloudy directory is specified.

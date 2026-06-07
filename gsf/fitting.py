@@ -135,7 +135,8 @@ class Mainbody(GsfBase):
 
             'Templates_nebular' : [
                            'ADD_NEBULAE', 'logUMIN', 'logUMAX', 'DELlogU', 'logUFIX', 
-                           'DIR_CLOUDY', 'AGE_CLOUDY', 'LOGHDEN_CLOUDY', 'NEBULAE_TIED',
+                           'DIR_CLOUDY', 'AGE_CLOUDY', 'LOGHDEN_CLOUDY', 'LOGZ_CLOUDY', 
+                           'NEBULAE_TIED',
                             ],
 
             'Fitting' : ['MC_SAMP', 'NMC', 'NWALK', 'NMCZ', 'NWALKZ', 
@@ -368,16 +369,13 @@ class Mainbody(GsfBase):
 
             try:
                 fd_temp = ascii.read(self.file_temp)
-                logUs_temp = fd_temp['logU']
-                con = (logUs_temp==-99)
-                logZs_temp = np.sort(np.unique(fd_temp['logZ'][con]))
-                ages_temp = np.sort(np.unique(fd_temp['logT'][con]))
             except:
                 fd_temp = asdf.open(self.file_temp)
-                logUs_temp = fd_temp['logU']
-                con = (logUs_temp==-99)
-                logZs_temp = np.sort(np.unique(fd_temp['logZ'][con]))
-                ages_temp = np.sort(np.unique(fd_temp['logT'][con]))
+
+            logUs_temp = fd_temp['logU']
+            con = (logUs_temp==-99)
+            logZs_temp = np.array([float(s) for s in np.sort(np.unique(fd_temp['logZ'][con]))])
+            ages_temp = np.array([float(s) for s in np.sort(np.unique(fd_temp['logT'][con]))])
 
             self.f_general = True
             self.f_bpass = 0
@@ -2067,7 +2065,8 @@ class Mainbody(GsfBase):
 
                 out = minimize(class_post.residual, self.fit_params, args=(self.dict['fy'], self.dict['ey'], self.dict['wht2'], self.f_dust), method=fit_name) 
                 # showing this is confusing.
-                # print('\nMinimizer refinement;')
+                print('\nMinimizer refinement, including Aneb, z etc.')
+                print('Params are;',fit_report(out))
 
                 # Fix params to what we had before.
                 if self.fzmc:

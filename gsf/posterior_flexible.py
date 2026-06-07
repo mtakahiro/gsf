@@ -111,7 +111,7 @@ class Post():
             resid[con_res] = np.sqrt(tmp[con_res])
 
         # @@@;
-        if False:#'Aneb' in vals:
+        if False:#True:#False:#'Aneb' in vals:
             # try:
             #     vals['Aneb'] = 1.0
             # except:
@@ -127,7 +127,7 @@ class Post():
             resid_lines = (results_line['H1_4861.32']['flux'][0]-flux_hb) / fluxerr_hb #* 10
             con_res = (wht>0)
             resid[con_res] += resid_lines/(len(resid[con_res]))
-            print(resid_lines/(len(resid[con_res])))
+            # print(resid_lines/(len(resid[con_res])))
             # print(results_line['H1_4861.32']['flux'][0], flux_hb, resid_lines)#, resid
 
         if not out:

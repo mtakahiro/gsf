@@ -100,10 +100,12 @@ def get_line_flux(wl_obs, fl_obs, z_obs, ndata=10, delta_lam=15,
             plt.scatter(wl_obs[con_line], fl_obs[con_line], c='r')
             plt.scatter(wl_obs[con_cont], fl_obs[con_cont], c='b')
             plt.scatter(_wl_line_obs, _cont, c='b', marker='+')
-            plt.xlim((lines[key]*(1+z_obs)-500), (lines[key]*(1+z_obs)+500))
-            plt.xlim(4500*(1+z_obs), 6900*(1+z_obs))
+            # plt.xlim((lines[key]*(1+z_obs)-500), (lines[key]*(1+z_obs)+500))
+            plt.xlim(wl_cont_b_b-100, wl_cont_r_r+100)
+            plt.yscale('log')
             plt.show()
             print(key, _fluxdens, _cont, _flux, delta_lam_model)
+            hoge
 
     if plot:
         hoge
