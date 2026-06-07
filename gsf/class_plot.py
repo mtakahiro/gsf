@@ -2555,7 +2555,7 @@ class PLOT(object):
                 x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
                 lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
                 )
-            Lbol[kk] = np.nansum(ytmp[kk,:-1] * _diff_wl) / self.mb.Lsun
+            Lbol[kk] = np.nansum( (ytmp[kk,:] / (1+zmc) * (4 * np.pi * self.mb.DL**2))[:-1] * _diff_wl) / self.mb.Lsun
             
             results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
                                               lines=self.lines_dict, 
@@ -3157,7 +3157,7 @@ class PLOT(object):
                 if kk == 0:
                     deldt = (x1_dust[1] - x1_dust[0])
                     x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
-                    _diff_wl = np.diff(x1_tot)
+                    _diff_wl = np.diff(x1_tot / (1+zmc))
                     # Redefine??
                     ytmp = np.zeros((mmax,len(x1_tot)), dtype=float)
                     ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float)
@@ -3208,7 +3208,7 @@ class PLOT(object):
                 x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
                 lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
                 )
-            Lbol[kk] = np.nansum(ytmp[kk,:-1] * _diff_wl) / self.mb.Lsun
+            Lbol[kk] = np.nansum( (ytmp[kk,:] / (1+zmc) * (4 * np.pi * self.mb.DL**2))[:-1] * _diff_wl) / self.mb.Lsun
 
             results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
                                               lines=self.lines_dict, 
