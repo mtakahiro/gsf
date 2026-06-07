@@ -21,6 +21,7 @@ from .function import *
 from .function_igm import *
 from .templates import get_LSF
 
+
 class PLOT(object):
     '''
     '''
@@ -1625,6 +1626,7 @@ class PLOT(object):
         Luvs_nl = np.nanpercentile(Luv1600_nl, percs) 
         Luvs_noatn = np.nanpercentile(Luv1600_noatn, percs) 
         betas_med = np.nanpercentile(betas, [16,50,84])
+        Lbols = np.nanpercentile(self.dict_model['Lbol'], percs) 
 
         #
         # SFR from attenuation corrected LUV;
@@ -1659,6 +1661,11 @@ class PLOT(object):
             # print(AVs_med[ii], fl_cor, SFRUV[ii], SFRUV_BETA[ii], SFRUV_UNCOR[ii])
 
         for ii in range(len(percs)):
+
+            if not np.isnan(Luvs[ii]):
+                hdr['LBOL%d'%percs[ii]] = Lbols[ii] #10**(-0.4*hdr['MUV16']) * self.mb.Lsun # in Fnu, or erg/s/Hz #* 4 * np.pi * DL10**2
+            else:
+                hdr['LBOL%d'%percs[ii]] = -99
 
             if not np.isnan(Muvs[ii]):
                 hdr['MUV%d'%percs[ii]] = Muvs[ii]
@@ -2357,6 +2364,7 @@ class PLOT(object):
         Luv1600_noatn = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         Fuv2800 = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         Lir = np.zeros(mmax, dtype=float) # For L(8-1000um)
+        Lbol = np.zeros(mmax, dtype=float) # For bolometric L
         UVJ = np.zeros((mmax,4), dtype=float) # For UVJ color;
         Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
         betas = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
@@ -2501,6 +2509,7 @@ class PLOT(object):
                 if kk == 0:
                     deldt = (x1_dust[1] - x1_dust[0])
                     x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
+                    _diff_wl = np.diff(x1_tot)
                     # Redefine??
                     ytmp = np.zeros((mmax,len(x1_tot)), dtype=float) # Full model template
                     ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float) # Model template, no nebular component
@@ -2535,6 +2544,7 @@ class PLOT(object):
 
             else:
                 x1_tot = xm_tmp
+                _diff_wl = np.diff(x1_tot)
                 ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
                 ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
                 ytmp_noatn[kk,:] = fm_tmp_noatn[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -2545,6 +2555,7 @@ class PLOT(object):
                 x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
                 lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
                 )
+            Lbol[kk] = np.nansum(ytmp[kk,:-1] * _diff_wl) / self.mb.Lsun
             
             results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
                                               lines=self.lines_dict, 
@@ -2585,7 +2596,7 @@ class PLOT(object):
         self.dict_model = {'ysum':ysum, 'x0':x0, 'ytmp':ytmp, 'ytmp_nl':ytmp_nl, 'ytmp_noatn':ytmp_noatn,
                            'x1_tot':x1_tot, 'xm_tmp':xm_tmp, 'ytmp_each':ytmp_each, 'ysump':ysump, 
                            'f_50_comp':f_50_comp, 
-                           'Fuv':Fuv, 'Fuv2800':Fuv2800, 'Lir':Lir, 'Luv1600':Luv1600, 'Luv1600_nl':Luv1600_nl, 'Luv1600_noatn':Luv1600_noatn,
+                           'Fuv':Fuv, 'Fuv2800':Fuv2800, 'Lbol':Lbol, 'Lir':Lir, 'Luv1600':Luv1600, 'Luv1600_nl':Luv1600_nl, 'Luv1600_noatn':Luv1600_noatn,
                            'betas':betas, 'UVJ':UVJ, 'AVs':AVs, 'nbeta_obs':nbeta_obs, 'beta_obs_percs':beta_obs_percs,
                            'xhis':_xhis, 'xhis_percs':np.percentile(_xhis, percs),
                            'MD50':MD50, 'TD50':TD50,
@@ -3044,6 +3055,7 @@ class PLOT(object):
         Luv1600_nl = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         Luv1600_noatn = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         Fuv2800 = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
+        Lbol = np.zeros(mmax, dtype=float) # For bolometric L
         Lir = np.zeros(mmax, dtype=float) # For L(8-1000um)
         UVJ = np.zeros((mmax,4), dtype=float) # For UVJ color;
         Cmznu = 10**((48.6+m0set)/(-2.5)) # Conversion from m0_25 to fnu
@@ -3145,6 +3157,7 @@ class PLOT(object):
                 if kk == 0:
                     deldt = (x1_dust[1] - x1_dust[0])
                     x1_tot = np.append(xm_tmp,np.arange(np.max(xm_tmp),np.max(x1_dust)*2,deldt))
+                    _diff_wl = np.diff(x1_tot)
                     # Redefine??
                     ytmp = np.zeros((mmax,len(x1_tot)), dtype=float)
                     ytmp_nl = np.zeros((mmax,len(x1_tot)), dtype=float)
@@ -3179,6 +3192,7 @@ class PLOT(object):
 
             else:
                 x1_tot = xm_tmp
+                _diff_wl = np.diff(x1_tot)
                 ytmp[kk,:] = fm_tmp[:] * c / np.square(xm_tmp[:]) /d_scale
                 ytmp_nl[kk,:] = fm_tmp_nl[:] * c / np.square(xm_tmp[:]) /d_scale
                 ytmp_noatn[kk,:] = fm_tmp_noatn[:] * c / np.square(xm_tmp[:]) /d_scale
@@ -3194,6 +3208,7 @@ class PLOT(object):
                 x1_tot, ytmp[kk,:], ytmp_nl[kk,:], ytmp_noatn[kk,:], scale, d_scale, Cmznu,
                 lam_b=lam_b, lam_r=lam_r, wl_Luv_min=wl_Luv_min, wl_Luv_max=wl_Luv_max
                 )
+            Lbol[kk] = np.nansum(ytmp[kk,:-1] * _diff_wl) / self.mb.Lsun
 
             results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
                                               lines=self.lines_dict, 
@@ -3211,7 +3226,7 @@ class PLOT(object):
         self.dict_model = {'ysum':ysum, 'x0':x0, 'ytmp':ytmp, 'ytmp_nl':ytmp_nl, 'ytmp_noatn':ytmp_noatn,
                            'x1_tot':x1_tot, 'xm_tmp':xm_tmp, 'ytmp_each':ytmp_each, 'ysump':ysump, 
                            'f_50_comp':f_50_comp,
-                           'Fuv':Fuv, 'Fuv2800':Fuv2800, 'Lir':Lir, 'Luv1600':Luv1600, 'Luv1600_nl':Luv1600_nl, 'Luv1600_noatn':Luv1600_noatn,
+                           'Fuv':Fuv, 'Fuv2800':Fuv2800, 'Lbol':Lbol, 'Lir':Lir, 'Luv1600':Luv1600, 'Luv1600_nl':Luv1600_nl, 'Luv1600_noatn':Luv1600_noatn,
                            'betas':betas, 'UVJ':UVJ, 'AVs':AVs, 'nbeta_obs':nbeta_obs, 'beta_obs_percs':beta_obs_percs,
                            'xhis':_xhis, 'xhis_percs':np.percentile(_xhis, percs),
                            'MD50':MD50, 'TD50':TD50,
