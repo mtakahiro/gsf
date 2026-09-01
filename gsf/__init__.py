@@ -1,35 +1,22 @@
-"""gsf
-
-Package entry point for gsf (Galactic SED Fitting).
-
-This module exposes package metadata and performs minimal runtime
-initialization. Docstrings across the package follow NumPy/Sphinx
-conventions to enable automatic documentation generation with Sphinx
-and the Napoleon extension.
-"""
-
 import re
-import sys
-import os
-from pkg_resources import get_distribution, DistributionNotFound
-
-__version_commit__ = ''
-_regex_git_hash = re.compile(r'.*\+g(\w+)')
-
+#import sys
+#import os
+# from pkg_resources import get_distribution, DistributionNotFound
 from .version import __version__
-# try:
-#     __version__ = get_distribution(__name__).version
-# except DistributionNotFound:
-#     __version__ = 'dev'
+__version_commit__ = ""
+_regex_git_hash = re.compile(r".*\+g(\w+)")
 
 if '+' in __version__:
     commit = _regex_git_hash.match(__version__).groups()
     if commit:
         __version_commit__ = commit[0]
 
-__author__ = 'Takahiro Morishita'
-__email__ = 'takahiro@ipac.caltech.edu'
-__credits__ = 'IPAC'
+from importlib.metadata import version
+__version_commit__ = version("gsf")
+
+__author__ = "Takahiro Morishita"
+__email__ = "morishita@astr.tohoku.ac.jp"
+__credits__ = "Tohoku University"
 
 package = 'gsf'
 
