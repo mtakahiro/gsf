@@ -10,27 +10,27 @@ build-backend="setuptools.build_meta"
 
 [project]
 name="gsf"
-requires-python=">=3.11"
+requires-python=">=3.13"
 authors = [
-    {name = "Morishita Takahiro", email = "takahiro@ipac.caltech.edu"},
+    {name = "Morishita Takahiro", email = "morishita@astr.tohoku.ac.jp"},
 ]
 dependencies = [
-    'asdf',
-    'astropy',
-    'colorama',
-    'corner',
-    'dust_extinction',
-    'emcee',
-    'fsps>=0.4.7',
-    'lmfit',
-    'multiprocess',
-    'numpy>=1.21',
-    'pandas',
-    'pytest',
-    'scipy>=1.5.1',
-    'specutils',
-    'sphinx_automodapi',
-    'zeus-mcmc'
+#    'asdf',
+#    'astropy',
+#    'colorama',
+#    'corner',
+#    'dust_extinction',
+#    'emcee',
+#    'fsps>=0.4.7',
+#    'lmfit',
+#    'multiprocess',
+#    'numpy>=1.21',
+#    'pandas',
+#    'pytest',
+#    'scipy>=1.5.1',
+#    'specutils',
+#    'sphinx_automodapi',
+#    'zeus-mcmc'
 ]
 
 dynamic=["version","readme"]

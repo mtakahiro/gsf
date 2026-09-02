@@ -15,4 +15,4 @@ specutils
 sphinx_automodapi
 zeus-mcmc
 # git+https://github.com/dfm/python-fsps
-# git+https://github.com/mtakahiro/gsf
+git+https://github.com/mtakahiro/gsf
