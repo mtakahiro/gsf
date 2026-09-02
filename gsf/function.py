@@ -21,7 +21,7 @@ from astropy.cosmology import WMAP9
 from dust_extinction.averages import G03_SMCBar
 from astropy.modeling.polynomial import Chebyshev1D
 from specutils.fitting import continuum 
-from specutils.spectra.spectrum1d import Spectrum1D
+from specutils.spectra.spectrum import Spectrum
 from astropy.io import ascii
 
 
@@ -373,10 +373,10 @@ def get_ews_model(fd_gsf, wl_b, wl_r, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_
         mask = ((wave_model>wl_cont_b_b*(1+z)) & ((wave_model<wl_cont_b_r*(1+z)))) | ((wave_model>wl_cont_r_b*(1+z)) & ((wave_model<wl_cont_r_r*(1+z))))
 
         spec_unit = u.MJy
-        obs_200 = Spectrum1D(spectral_axis=wave_model[mask]*u.AA, flux=flux_model[mask]*spec_unit)
+        obs_200 = Spectrum(spectral_axis=wave_model[mask]*u.AA, flux=flux_model[mask]*spec_unit)
         continuum_200 = continuum.fit_generic_continuum(obs_200, model=Chebyshev1D(norder_cont))
 
-        obs_200 = Spectrum1D(spectral_axis=wave_model*u.AA, flux=flux_model*spec_unit)
+        obs_200 = Spectrum(spectral_axis=wave_model*u.AA, flux=flux_model*spec_unit)
         flux_model_cont = continuum_200(obs_200.spectral_axis).value #  # erg/s/cm2/pixel
 
         mask_emi = (wave_model>wl_b*(1+z)) & (wave_model<wl_r*(1+z))
@@ -432,10 +432,10 @@ def get_ews(fd_gsf, z, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r,
         # flux_cont = np.nanmedian(flux_model)
 
         spec_unit = u.MJy
-        obs_200 = Spectrum1D(spectral_axis=wave_model[mask]*u.AA, flux=flux_model[mask]*spec_unit)
+        obs_200 = Spectrum(spectral_axis=wave_model[mask]*u.AA, flux=flux_model[mask]*spec_unit)
         continuum_200 = continuum.fit_generic_continuum(obs_200, model=Chebyshev1D(norder_cont))
 
-        obs_200 = Spectrum1D(spectral_axis=wave_model*u.AA, flux=flux_model*spec_unit)
+        obs_200 = Spectrum(spectral_axis=wave_model*u.AA, flux=flux_model*spec_unit)
         flux_model_cont = continuum_200(obs_200.spectral_axis).value
 
         fint = interpolate.interp1d(wave_model, flux_model_cont, kind='nearest', fill_value="extrapolate")
