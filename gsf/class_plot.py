@@ -3516,8 +3516,16 @@ class PLOT(object):
             lnlike = -0.5 * (np.sum(resid**2) - 2 * chi_nd)
         else:
             lnlike = -0.5 * (np.sum(resid**2))
-        bic = bayesian_info_criterion(lnlike, ndim_eff, len(wht3[conw]))
-        aic = akaike_info_criterion(lnlike, ndim_eff, len(wht3[conw]))
+        try:
+            bic = bayesian_info_criterion(lnlike, ndim_eff, len(wht3[conw]))
+        except:
+            print('BIC calculation failed, set to -99')
+            bic = -99
+        try:
+            aic = akaike_info_criterion(lnlike, ndim_eff, len(wht3[conw]))
+        except:
+            print('AIC calculation failed, set to -99')
+            aic = -99
 
         print('\n')
         print('No-of-detection    : %d'%(len(wht3[conw])))
