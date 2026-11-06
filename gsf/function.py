@@ -353,20 +353,31 @@ def get_sed_plot(file, ax=None, unit='uJy', show_bb=True, show_obs=True,
 
 
 def get_ews_model(fd_gsf, wl_b, wl_r, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r, 
-            percs=[16,50,84], norder_cont=1, snlim=1, stellar_only=False, return_lines=False):
+            percs=[16,50,84], norder_cont=1, snlim=1, stellar_only=False, return_lines=False,
+            return_continuum=False,
+            plot=False):
     '''
     Parameters
     ----------
     wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_cont_r_r : float
         Rest-frame wavelengths that define the range of continuum flux.
     '''
-    z = fd_gsf['sed']['REDSHIFT']
+    z = float(fd_gsf['sed']['REDSHIFT'])
     flux_key = 'fnu'
     if stellar_only:
         flux_key = 'fnu_noline'
 
     ews = np.zeros(3, float)
     els = np.zeros(3, float)
+    unit = fd_gsf['sed']['MODEL']['%s_%d'%(flux_key, 50)].unit
+    if unit == 'uJy':
+        m0set = 8.9 + 2.5*np.log10(10**6) #31.4
+    elif unit == 'nJy':
+        m0set = 8.9 + 2.5*np.log10(10**9) #31.4
+    else:
+        print('Warning: unknown unit for flux density, using uJy')
+        error
+        
     for ii in range(len(percs)):
         flux_model = fd_gsf['sed']['MODEL']['%s_%d'%(flux_key, percs[ii])].value
         wave_model = fd_gsf['sed']['MODEL']['wave'].value
@@ -385,23 +396,34 @@ def get_ews_model(fd_gsf, wl_b, wl_r, wl_cont_b_b, wl_cont_b_r, wl_cont_r_b, wl_
         # fint = interpolate.interp1d(wave_model, flux_model_cont, kind='nearest', fill_value="extrapolate")
         # flux_model_cont_resamp = fint(wave_obs[con_obs]) # This us flam
         delm = np.nanmedian(np.diff(wave_model[mask_emi])) # AA per pixel
-        ews[ii] = flux_emi / np.nanmean(flux_model_cont[mask_emi]) * delm
+        continuum_mean = np.nanmean(flux_model_cont[mask_emi])
+        ews[ii] = flux_emi / continuum_mean * delm
 
-        m0set = 31.4
+        # print(m0set)
         flux_lam = fnutolam(wave_model, flux_model-flux_model_cont, m0set=m0set, m0=-48.6)
+        flux_model_cont_lam = fnutolam(wave_model, flux_model_cont, m0set=m0set, m0=-48.6)
+        continuum_lam_mean = np.nanmean(flux_model_cont_lam[mask_emi])
         els[ii] = np.nansum((flux_lam)[mask_emi]) * delm # erg/s/cm2
 
-    # if ews[1]<0:
-    #     import matplotlib.pyplot as plt
-    #     plt.plot(wave_model, flux_model)
-    #     plt.plot(wave_model, flux_model_cont)
-    #     plt.xlim((wl_cont_b_b-100)*(1+z), (wl_cont_r_r+100)*(1+z))
-    #     plt.show()
-    #     print(ews/(1+z))
-    #     oge
+    if plot:
+        import matplotlib.pyplot as plt
+        plt.plot(wave_model, flux_model,color='k')
+        # plt.plot(wave_model, flux_model_cont,color='r')
+        print(wl_cont_b_b*(1+z), wl_cont_b_r*(1+z), wl_cont_r_b*(1+z),wl_cont_r_r*(1+z))
+        con = ((wave_model>wl_cont_b_b*(1+z)) & (wave_model<wl_cont_b_r*(1+z))) 
+        plt.plot(wave_model[con], flux_model[con], color='orange', alpha=1, ls='--')
+        con = ((wave_model>wl_cont_r_b*(1+z)) & (wave_model<wl_cont_r_r*(1+z)))
+        plt.plot(wave_model[con], flux_model[con], color='orange', alpha=1, ls='--')
+
+        plt.xlim((wl_cont_b_b-100)*(1+z), (wl_cont_r_r+100)*(1+z))
+        plt.show()
+        print(ews/(1+z))
 
     if return_lines:
+        if return_continuum:
+            return ews/(1+z), els, continuum_lam_mean, 'flam'
         return ews/(1+z), els
+    
     return ews/(1+z)
 
 
@@ -541,7 +563,8 @@ def str2bool(v):
 
 def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300, 
                elam=[],
-               return_results=False, get_error=False):
+               return_results=False, get_error=False,
+               degree=1):
     '''
     Purpose
     -------
@@ -568,22 +591,25 @@ def get_uvbeta(lm, flam, zbes, lam_blue=1650, lam_red=2300,
                         continue
                     for n in range(nmc):
                         flam_err[:,n][ii] = random.gauss(flam[ii], elam[ii])
+                    # print('SN = ',flam[ii]/elam[ii], lm[ii]/(1.+zbes))
 
                 for n in range(nmc):
-                    fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam_err[:,n])[con_uv], 1)#, w=1/np.square(elam[con_uv]))
+                    fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam_err[:,n])[con_uv], degree, w=1/np.square(elam[con_uv]))
                     betas[n] = fit_results[0]
+                    # print(fit_results)
                 return betas
 
             else:
-                fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1, w=1/np.square(elam[con_uv]))
+                fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], degree, w=1/np.square(elam[con_uv]))
                 beta = fit_results[0]
         else:
-            fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], 1) #, w=flam[con_uv])
+            fit_results = np.polyfit(np.log10(lm/(1.+zbes))[con_uv], np.log10(flam)[con_uv], degree) #, w=flam[con_uv])
             beta = fit_results[0]
 
         if np.isnan(beta):
             beta = -99
     except:
+        print('get_uvbeta failed')
         beta = -99
 
     if return_results:

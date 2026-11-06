@@ -46,7 +46,7 @@ class PLOT(object):
         cm = plt.get_cmap('gist_rainbow_r')
         self.col = np.atleast_2d([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
 
-        self.lines_dict = {'H1_1215.67':1215.67, 'H1_4861.32':4861.32, 'H1_6562.80':6562.80}
+        self.lines_dict = {'H1_1215.67':1215.67, 'He2_1640.42':1640.42, 'H1_4861.32':4861.32, 'H1_6562.80':6562.80}
 
         return 
 
@@ -1423,7 +1423,7 @@ class PLOT(object):
                         col_dat='r', col_dia='b',
                         show_noattn=False, f_fancyplot=False, f_fill=False,
                         f_chind=False, f_exclude=False, f_plot_filter=False, f_label=True,
-                        verbose=False, taumodel=False, line_fluxes={}):
+                        verbose=False, taumodel=False, line_fluxes={}, line_fluxes_noatn={}):
         """"""
         age  = self.mb.age
         nage = self.mb.nage # is this true to tau model too??
@@ -1611,6 +1611,11 @@ class PLOT(object):
             hdr['hierarch reduced-chi2'] = fin_chi2
         except:
             hdr['hierarch reduced-chi2'] = 0
+
+        if np.isinf(bic):
+            bic = 0
+        if np.isinf(aic):
+            aic = 0
         hdr['bic'] = bic
         hdr['aic'] = aic
 
@@ -1846,6 +1851,19 @@ class PLOT(object):
                     tree_spec['model'].update({'spectral_ew0_%s_16'%(key): np.nanpercentile(line_fluxes[key]['ew0'],16) * u.AA})
                     tree_spec['model'].update({'spectral_ew0_%s_50'%(key): np.nanpercentile(line_fluxes[key]['ew0'],50) * u.AA})
                     tree_spec['model'].update({'spectral_ew0_%s_84'%(key): np.nanpercentile(line_fluxes[key]['ew0'],84) * u.AA})
+
+        # Emission lines and equivalent width0 from the full spectrum, no attenuation;
+        if line_fluxes_noatn is not None:
+            for key in line_fluxes_noatn.keys():
+                tree_spec['model'].update({'spectral_lineflux_noatn_%s_16'%(key): np.nanpercentile(line_fluxes_noatn[key]['flux'],16) * u.erg / u.s / u.cm**2})
+                tree_spec['model'].update({'spectral_lineflux_noatn_%s_50'%(key): np.nanpercentile(line_fluxes_noatn[key]['flux'],50) * u.erg / u.s / u.cm**2})
+                tree_spec['model'].update({'spectral_lineflux_noatn_%s_84'%(key): np.nanpercentile(line_fluxes_noatn[key]['flux'],84) * u.erg / u.s / u.cm**2})
+                tree_spec['model'].update({'spectral_continuumfnu_noatn_%s_16'%(key): np.nanpercentile(line_fluxes_noatn[key]['continuum'],16) * u.erg / u.s / u.cm**2 / u.AA})
+                tree_spec['model'].update({'spectral_continuumfnu_noatn_%s_50'%(key): np.nanpercentile(line_fluxes_noatn[key]['continuum'],50) * u.erg / u.s / u.cm**2 / u.AA})
+                tree_spec['model'].update({'spectral_continuumfnu_noatn_%s_84'%(key): np.nanpercentile(line_fluxes_noatn[key]['continuum'],84) * u.erg / u.s / u.cm**2 / u.AA})
+                tree_spec['model'].update({'spectral_ew0_noatn_%s_16'%(key): np.nanpercentile(line_fluxes_noatn[key]['ew0'],16) * u.AA})
+                tree_spec['model'].update({'spectral_ew0_noatn_%s_50'%(key): np.nanpercentile(line_fluxes_noatn[key]['ew0'],50) * u.AA})
+                tree_spec['model'].update({'spectral_ew0_noatn_%s_84'%(key): np.nanpercentile(line_fluxes_noatn[key]['ew0'],84) * u.AA})
 
         # broad band EW;
         try:
@@ -2371,6 +2389,7 @@ class PLOT(object):
         AVs = np.zeros(mmax, dtype=float) # For Fuv(1500-2800)
         _xhis = np.zeros(mmax, dtype=float)
         results_line = None
+        results_line_noatn = None
 
         # From random chain;
         for kk in range(0,mmax,1):
@@ -2561,6 +2580,10 @@ class PLOT(object):
                                               lines=self.lines_dict, 
                                               results=results_line, 
                                               fl_noline=None)#ytmp_nl[kk,:]*scale)
+            results_line_noatn = get_line_flux(x1_tot, (ytmp_noatn[kk,:])*scale, zmc, 
+                                              lines=self.lines_dict, 
+                                              results=results_line_noatn, 
+                                              fl_noline=None)#ytmp_nl[kk,:]*scale)
 
             # @@@ Extra;
             # self.lines_dict = {'H1_6562.80':6562.80}
@@ -2615,7 +2638,7 @@ class PLOT(object):
                              col_dat=col_dat, col_dia=col_dia,
                              show_noattn=show_noattn, f_fancyplot=f_fancyplot, f_fill=f_fill,
                              f_chind=MB.f_chind, f_exclude=f_exclude, f_plot_filter=f_plot_filter, f_label=f_label, 
-                             verbose=verbose, taumodel=False, line_fluxes=results_line)
+                             verbose=verbose, taumodel=False, line_fluxes=results_line, line_fluxes_noatn=results_line_noatn)
 
         ####################
         ## Save
@@ -3211,6 +3234,10 @@ class PLOT(object):
             Lbol[kk] = np.nansum( (ytmp[kk,:]*scale / (1+zmc) * (4 * np.pi * self.DL**2))[:-1] * _diff_wl) / self.mb.Lsun
 
             results_line = get_line_flux(x1_tot, (ytmp[kk,:])*scale, zmc, 
+                                              lines=self.lines_dict, 
+                                              results=results_line, 
+                                              fl_noline=None)#ytmp_nl[kk,:]*scale)
+            results_line_noatn = get_line_flux(x1_tot, (ytmp_noatn[kk,:])*scale, zmc, 
                                               lines=self.lines_dict, 
                                               results=results_line, 
                                               fl_noline=None)#ytmp_nl[kk,:]*scale)
